@@ -1,0 +1,94 @@
+# NAMELESS: Open-Source Meeting Platform with Annotations
+# AI Rules and Configuration Guidelines
+
+## Project Overview
+NAMELESS is a self-hosted, open-source meeting platform with real-time screen annotations. Built on LiveKit SFU, Electron + React, and a modular architecture that separates media transport from annotation logic.
+
+## Tech Stack
+- **Desktop Client**: Electron + React + TypeScript
+- **Media Backend**: LiveKit SFU + DataTracks (self-hosted or LiveKit Cloud)
+- **App Server**: Node.js (authentication, room management, token issuance)
+- **Annotation Transport**: LiveKit DataTracks (WebRTC DataChannel)
+- **Future**: Native overlay helper (Rust/Swift/C++) for OS-level performance
+
+## Code Style & Standards
+- Use TypeScript for type safety
+- Follow functional programming principles where appropriate
+- Write self-documenting code with clear variable names
+- Prefer composition over inheritance
+- Use modern ES6+ features
+- Desktop-first development (macOS, Windows)
+
+## Architecture Principles
+- **Separation of Concerns**: Media transport (LiveKit) is independent from annotation logic
+- **Event-Driven**: Annotations use lightweight vector events, not pixel data
+- **Resolution Independence**: Normalize coordinates to [0,1] space for cross-device compatibility
+- **Decentralized Rendering**: Each client renders annotations locally for low latency
+- **Modular Design**: Components can be extended or replaced independently
+
+## Testing
+- Write unit tests for core functionality
+- Integration tests for meeting workflows
+- E2E tests for critical user paths
+- Aim for >80% code coverage
+
+## Documentation
+- Document public APIs
+- Include JSDoc comments for complex functions
+- Keep README files updated
+- Document architectural decisions in ADRs
+
+## Security & Privacy
+- Never commit API keys or secrets
+- Use environment variables for configuration
+- Implement proper authentication and authorization
+- Follow OWASP security best practices
+- Respect user privacy in meeting recordings/annotations
+
+## Performance Requirements
+- **Annotation Latency**: < 200ms end-to-end
+- **Scalability**: Support 10-20 participants per room
+- **Real-time Optimization**: Prioritize low-latency over perfect quality
+- Minimize bundle size (Electron app considerations)
+- Use lazy loading for non-critical features
+- Implement proper caching strategies
+- Profile before optimizing - focus on critical paths
+
+## Accessibility
+- Follow WCAG 2.1 AA standards
+- Ensure keyboard navigation works
+- Provide proper ARIA labels
+- Test with screen readers
+
+## Annotation System Rules
+- **Vector-Based**: Transmit stroke metadata only, never pixel data
+- **Coordinate Normalization**: Use normalized coordinates [0,1] for resolution independence
+- **Event Types**: stroke_add, stroke_end, stroke_delete, clear_all, sync_request, sync_state
+- **Ownership**: Annotators manage own strokes; hosts/sharers can delete any
+- **Late Joiners**: Must receive sync_state to hydrate existing annotations
+- **Canvas Overlay**: Render annotations on separate canvas layer over video element
+
+## Role-Based Permissions
+- **Host**: Enable/disable annotations, clear all, manage users
+- **Sharer**: Share screen, delete any stroke
+- **Annotator**: Create/delete own strokes
+- **Viewer**: View only (no annotation authoring)
+
+## v1 Non-Goals (Do Not Implement)
+- PSTN/phone dial-in
+- Browser annotation tools (view-only web is fine)
+- OS-level ink overlays (future feature)
+- Complex shapes/whiteboards (keep simple: draw, highlight, basic shapes)
+- Recording & replay (future feature)
+
+## License & Commercial Use
+- Base license: Apache 2.0 (inherited from LiveKit)
+- Commercial usage: Fully permitted
+- Keep code open-source friendly and well-documented
+
+## Git Workflow
+- Use conventional commits
+- Create feature branches for new work
+- Keep commits atomic and well-described
+- Review code before merging
+
