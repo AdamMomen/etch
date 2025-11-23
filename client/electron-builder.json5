@@ -1,13 +1,20 @@
 // @see - https://www.electron.build/configuration/configuration
 {
   $schema: "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  appId: "YourAppID",
+  appId: "com.nameless.app",
   asar: true,
-  productName: "YourAppName",
+  productName: "NAMELESS",
   directories: {
     output: "release/${version}",
+    buildResources: "build",
   },
   files: ["dist", "dist-electron"],
+  extraResources: [
+    {
+      from: "build/icon.png",
+      to: "build/icon.png",
+    },
+  ],
   mac: {
     target: ["dmg"],
     artifactName: "${productName}-Mac-${version}-Installer.${ext}",
@@ -16,6 +23,7 @@
     gatekeeperAssess: false,
     entitlements: "build/entitlements.mac.plist",
     entitlementsInherit: "build/entitlements.mac.plist",
+    icon: "build/icon.png",
   },
   win: {
     target: [

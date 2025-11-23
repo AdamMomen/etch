@@ -7,6 +7,7 @@
     "dev": "vite",
     "dev:setup": "./scripts/add-electron-permissions.sh",
     "build": "tsc && vite build && electron-builder",
+    "build:skip-icon": "tsc && vite build && electron-builder --config.mac.icon=null",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },

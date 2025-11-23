@@ -31,15 +31,14 @@ app.setAsDefaultProtocolClient("nameless");
 let win: BrowserWindow | null;
 
 function createWindow() {
-  // Set dock icon on macOS for better recognition
-  if (process.platform === "darwin") {
-    app.dock.setIcon(path.join(process.env.VITE_PUBLIC, "electron-vite.svg"));
-  }
+  // Note: Dock icon is handled automatically by electron-builder in production
+  // In dev mode, Electron uses its default icon (no need to set manually)
 
+  // Window icon - electron-builder handles this automatically in production
+  // In dev mode, we don't set an icon (Electron uses default)
   win = new BrowserWindow({
     width: 1200,
     height: 800,
-    icon: path.join(process.env.VITE_PUBLIC, "electron-vite.svg"),
     webPreferences: {
       preload: path.join(__dirname, "preload.mjs"),
       nodeIntegration: false,

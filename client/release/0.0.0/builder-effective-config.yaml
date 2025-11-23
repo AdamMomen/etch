@@ -2,13 +2,16 @@ directories:
   output: release/${version}
   buildResources: build
 $schema: https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json
-appId: YourAppID
+appId: com.nameless.app
 asar: true
-productName: YourAppName
+productName: NAMELESS
 files:
   - filter:
       - dist
       - dist-electron
+extraResources:
+  - from: build/icon.png
+    to: build/icon.png
 mac:
   target:
     - dmg
@@ -18,6 +21,7 @@ mac:
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  icon: build/icon.png
 win:
   target:
     - target: nsis
