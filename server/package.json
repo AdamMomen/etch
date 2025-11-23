@@ -2,6 +2,7 @@
   "name": "nameless-server",
   "version": "0.1.0",
   "description": "NAMELESS App Server - Node.js + Express",
+  "type": "module",
   "main": "dist/index.js",
   "author": "Adam Momen",
   "license": "Apache-2.0",
