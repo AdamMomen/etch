@@ -159,7 +159,14 @@ export class AnnotationService {
    */
   private async sendMessage(message: AnnotationMessage): Promise<void> {
     const data = new TextEncoder().encode(JSON.stringify(message));
-    await this.publishData(data);
+    console.log(`📤 Sending ${message.type} message:`, message);
+    try {
+      await this.publishData(data);
+      console.log(`✅ ${message.type} message sent successfully`);
+    } catch (error) {
+      console.error(`❌ Failed to send ${message.type} message:`, error);
+      throw error;
+    }
   }
 
   /**

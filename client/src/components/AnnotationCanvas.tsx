@@ -6,17 +6,20 @@ import {
   denormalizeCoordinates,
 } from "../utils/coordinateUtils";
 import { AnnotationMessage } from "@nameless/shared";
+import { RoomEvent } from "livekit-client";
 
 interface AnnotationCanvasProps {
   videoElement?: HTMLVideoElement | null;
   color?: string;
   width?: number;
+  onServiceReady?: (service: AnnotationService) => void;
 }
 
 const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
   videoElement,
   color = "#ff0000",
   width = 2,
+  onServiceReady,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { room, localParticipant, isConnected } = useLiveKit();
@@ -32,43 +35,71 @@ const AnnotationCanvas: React.FC<AnnotationCanvasProps> = ({
     }
 
     const ownerId = localParticipant.identity || "unknown";
+    console.log("🎨 Initializing AnnotationCanvas for:", ownerId);
+
     const service = new AnnotationService(ownerId, async (data) => {
-      await localParticipant.publishData(data);
+      try {
+        console.log("📤 Publishing annotation data:", data.byteLength, "bytes");
+        await localParticipant.publishData(data);
+        console.log("✅ Annotation data published successfully");
+      } catch (error) {
+        console.error("❌ Failed to publish annotation data:", error);
+      }
     });
 
     setAnnotationService(service);
 
+    // Notify parent component that service is ready (for clear button)
+    if (onServiceReady) {
+      onServiceReady(service);
+    }
+
     // Subscribe to DataTrack messages
-    const handleData = (payload: Uint8Array) => {
+    const handleData = (
+      payload: Uint8Array,
+      participant?: any,
+      kind?: any,
+      topic?: string
+    ) => {
+      console.log("📨 Data received:", {
+        from: participant?.identity || "unknown",
+        size: payload.byteLength,
+        kind,
+        topic,
+      });
       try {
         const message: AnnotationMessage = JSON.parse(
           new TextDecoder().decode(payload)
         );
+        console.log("✅ Parsed annotation message:", message.type);
         service.handleMessage(message);
         redrawCanvas();
       } catch (error) {
-        console.error("Failed to parse annotation message:", error);
+        console.error("❌ Failed to parse annotation message:", error);
+        console.error("Raw payload:", new TextDecoder().decode(payload));
       }
     };
 
-    // Listen for data from remote participants
-    room.on("dataReceived", handleData);
-
-    // Also listen for data from local participant (for testing)
-    localParticipant.on("dataReceived", handleData);
+    // Listen for data from remote participants using RoomEvent
+    room.on(RoomEvent.DataReceived, handleData);
 
     // Request sync on join
     const syncRequest: AnnotationMessage = {
       type: "sync_request",
       requestedBy: ownerId,
     };
-    localParticipant.publishData(
-      new TextEncoder().encode(JSON.stringify(syncRequest))
-    );
+    console.log("🔄 Sending sync request...");
+    localParticipant
+      .publishData(new TextEncoder().encode(JSON.stringify(syncRequest)))
+      .then(() => {
+        console.log("✅ Sync request sent");
+      })
+      .catch((error) => {
+        console.error("❌ Failed to send sync request:", error);
+      });
 
     return () => {
-      room.off("dataReceived", handleData);
-      localParticipant.off("dataReceived", handleData);
+      room.off(RoomEvent.DataReceived, handleData);
     };
   }, [room, isConnected, localParticipant]);
 

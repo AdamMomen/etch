@@ -29,10 +29,25 @@ pnpm dev
 
 For development mode, you need to grant Screen Recording permission to Electron:
 
-1. Run `pnpm dev:setup` for guided setup
-2. Or manually add Electron.app to System Preferences > Security & Privacy > Screen Recording
+**Quick Setup (Recommended - One-Time):**
+```bash
+# Create symlink in /Applications (persists across Electron updates)
+pnpm dev:symlink
 
-See [MACOS_PERMISSIONS.md](./MACOS_PERMISSIONS.md) for detailed instructions.
+# Then grant permission to "Electron-NAMELESS" in System Preferences
+# This only needs to be done once!
+```
+
+**Alternative:**
+```bash
+# Use helper script to open System Preferences
+pnpm dev:setup
+# Then manually add Electron.app to Screen Recording permissions
+```
+
+**Why the symlink?** macOS recognizes apps in `/Applications` more reliably. Once you grant permission to the symlink, it persists even when Electron updates in `node_modules`. This means you don't need to rebuild or re-grant permissions every time!
+
+See [MACOS_PERMISSIONS.md](./MACOS_PERMISSIONS.md) or [DEVELOPMENT_PERMISSIONS.md](./DEVELOPMENT_PERMISSIONS.md) for detailed instructions.
 
 **Note:** The built app handles permissions automatically - this is only needed for development.
 

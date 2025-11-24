@@ -156,14 +156,17 @@
     <div class="container">
         <h1>NAMELESS</h1>
         <p class="subtitle">Join a room to view screen share and annotations</p>
+        <div style="font-size: 12px; color: #6b7280; margin-bottom: 20px; padding: 10px; background: #f9fafb; border-radius: 8px;">
+            <strong>Debug:</strong> Open browser console (F12) to see connection logs
+        </div>
         
         <div id="joinCard" class="card">
             <div class="form-group">
                 <label for="roomId">Room ID</label>
                 <input type="text" id="roomId" placeholder="Enter room ID" />
             </div>
-            <button id="joinBtn" onclick="joinRoom()">Join Room</button>
-            <button class="btn-secondary" onclick="createRoom()">Create Room</button>
+            <button id="joinBtn">Join Room</button>
+            <button id="createBtn" class="btn-secondary">Create Room</button>
             <div id="status"></div>
         </div>
         
@@ -171,7 +174,7 @@
             <div class="status success" id="connectedStatus">
                 Connected to room: <span id="roomIdDisplay"></span>
             </div>
-            <button onclick="leaveRoom()">Leave Room</button>
+            <button id="leaveBtn">Leave Room</button>
             <div id="videoContainer">
                 <video id="screenVideo" autoplay playsinline></video>
                 <canvas id="annotationCanvas"></canvas>
@@ -196,10 +199,12 @@
             }
             
             try {
+                console.log('🚀 Starting join room process for:', roomId);
                 showStatus('Joining room...', 'info');
                 document.getElementById('joinBtn').disabled = true;
                 
                 // Get token from server
+                console.log('📡 Fetching token from:', `${API_BASE}/api/rooms/join`);
                 const response = await fetch(`${API_BASE}/api/rooms/join`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -207,47 +212,83 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to join room');
+                    const errorText = await response.text();
+                    console.error('❌ Join failed:', response.status, errorText);
+                    throw new Error(`Failed to join room: ${response.status} ${errorText}`);
                 }
                 
                 const { token } = await response.json();
+                console.log('✅ Got token, fetching LiveKit URL...');
+                
                 const urlResponse = await fetch(`${API_BASE}/api/rooms/livekit-url`);
+                if (!urlResponse.ok) {
+                    throw new Error('Failed to get LiveKit URL');
+                }
                 const { url } = await urlResponse.json();
+                console.log('✅ LiveKit URL:', url);
                 
                 // Connect to LiveKit
                 room = new Room();
                 
                 room.on(RoomEvent.Connected, () => {
-                    showStatus('Connected!', 'success');
+                    console.log('✅ Connected to LiveKit room');
+                    showStatus('Connected! Waiting for screen share...', 'success');
                     document.getElementById('joinCard').classList.add('hidden');
                     document.getElementById('roomCard').classList.remove('hidden');
                     document.getElementById('roomIdDisplay').textContent = roomId;
                 });
                 
-                room.on(RoomEvent.TrackSubscribed, (track) => {
+                room.on(RoomEvent.Disconnected, () => {
+                    console.log('❌ Disconnected from room');
+                    showStatus('Disconnected from room', 'error');
+                });
+                
+                room.on(RoomEvent.TrackSubscribed, (track, publication, participant) => {
+                    console.log('📹 Track subscribed:', {
+                        kind: track.kind,
+                        source: track.source,
+                        participant: participant?.identity
+                    });
                     if (track.kind === 'video' && track.source === 'screen_share') {
                         const video = document.getElementById('screenVideo');
                         track.attach(video);
                         document.getElementById('videoContainer').style.display = 'block';
+                        showStatus('Screen share received!', 'success');
                         
                         video.onloadedmetadata = () => {
+                            console.log('📺 Video metadata loaded:', video.videoWidth, 'x', video.videoHeight);
                             setupAnnotationCanvas(video);
                         };
                     }
                 });
                 
-                room.on(RoomEvent.DataReceived, (payload) => {
+                room.on(RoomEvent.ParticipantConnected, (participant) => {
+                    console.log('👤 Participant connected:', participant.identity);
+                });
+                
+                room.on(RoomEvent.DataReceived, (payload, participant, kind, topic) => {
+                    console.log('📨 Data received:', {
+                        from: participant?.identity || 'unknown',
+                        kind,
+                        topic,
+                        size: payload.byteLength
+                    });
                     try {
                         const message = JSON.parse(new TextDecoder().decode(payload));
+                        console.log('✅ Annotation message:', message.type);
                         handleAnnotationMessage(message);
                     } catch (e) {
-                        console.error('Failed to parse annotation:', e);
+                        console.error('❌ Failed to parse annotation:', e);
+                        console.error('Raw payload:', new TextDecoder().decode(payload));
                     }
                 });
                 
+                console.log('🔌 Connecting to LiveKit...');
                 await room.connect(url, token);
+                console.log('✅ Connection initiated');
                 
             } catch (error) {
+                console.error('❌ Join room error:', error);
                 showStatus(`Error: ${error.message}`, 'error');
                 document.getElementById('joinBtn').disabled = false;
             }
@@ -255,6 +296,7 @@
         
         window.createRoom = async function() {
             try {
+                console.log('Creating room...');
                 showStatus('Creating room...', 'info');
                 const response = await fetch(`${API_BASE}/api/rooms/create`, {
                     method: 'POST',
@@ -263,14 +305,18 @@
                 });
                 
                 if (!response.ok) {
-                    throw new Error('Failed to create room');
+                    const errorText = await response.text();
+                    console.error('Create room failed:', response.status, errorText);
+                    throw new Error(`Failed to create room: ${response.status} ${errorText}`);
                 }
                 
                 const { roomId } = await response.json();
+                console.log('Room created:', roomId);
                 document.getElementById('roomId').value = roomId;
-                showStatus(`Room created: ${roomId}`, 'success');
+                showStatus(`Room created: ${roomId}. Joining...`, 'success');
                 await joinRoom();
             } catch (error) {
+                console.error('Create room error:', error);
                 showStatus(`Error: ${error.message}`, 'error');
             }
         };
@@ -287,6 +333,7 @@
         };
         
         window.showStatus = function(message, type) {
+            console.log(`[Status ${type}]:`, message);
             const statusEl = document.getElementById('status');
             statusEl.textContent = message;
             statusEl.className = `status ${type}`;
@@ -372,6 +419,19 @@
         
         function denormalizeCoords(xNorm, yNorm, width, height) {
             return [xNorm * width, yNorm * height];
+        }
+        
+        // Attach event listeners when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+        
+        function init() {
+            document.getElementById('joinBtn').addEventListener('click', joinRoom);
+            document.getElementById('createBtn').addEventListener('click', createRoom);
+            document.getElementById('leaveBtn').addEventListener('click', leaveRoom);
         }
     </script>
 </body>

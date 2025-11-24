@@ -174,16 +174,8 @@ const ScreenShare: React.FC<ScreenShareProps> = ({
         )}
       </div>
 
-      {isSharing && (
-        <div className="relative bg-black rounded-lg overflow-hidden">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            className="w-full h-auto"
-          />
-        </div>
-      )}
+      {/* Don't show local preview - ScreenShareViewer will handle it */}
+      {/* The local track is published, so ScreenShareViewer will pick it up */}
     </div>
   );
 };
