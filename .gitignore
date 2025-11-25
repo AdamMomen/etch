@@ -7,7 +7,12 @@ node_modules/
 dist/
 dist-electron/
 build/
+release/
 *.tsbuildinfo
+
+# Backup directories
+*-backup-*/
+client-backup-*/
 
 # Environment variables
 .env
