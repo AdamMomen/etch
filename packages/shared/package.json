@@ -1,0 +1,11 @@
+{
+  "name": "@nameless/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "echo 'Shared types not yet implemented - see Story 1.3'"
+  }
+}

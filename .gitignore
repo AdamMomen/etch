@@ -10,6 +10,14 @@ build/
 release/
 *.tsbuildinfo
 
+# Tauri build artifacts
+packages/client/src-tauri/target/
+*.dmg
+*.msi
+*.app
+*.AppImage
+*.deb
+
 # Backup directories
 *-backup-*/
 client-backup-*/
