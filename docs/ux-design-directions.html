@@ -1,0 +1,1651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NAMELESS - Design Direction Mockups</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --background: #09090b;
+      --background-subtle: #0a0a0c;
+      --card: #0c0c0e;
+      --card-hover: #111113;
+      --border: rgba(255, 255, 255, 0.06);
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --text-faint: #52525b;
+      --accent: #8b5cf6;
+      --accent-hover: #7c3aed;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --error: #ef4444;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--background);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 60px 20px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    /* Navigation */
+    .nav {
+      position: sticky;
+      top: 0;
+      background: var(--background);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 20px;
+      z-index: 100;
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      padding: 8px 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .nav-btn:hover {
+      background: var(--card-hover);
+      color: var(--text-primary);
+    }
+
+    .nav-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    /* Main */
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 40px 20px;
+    }
+
+    /* Direction Section */
+    .direction {
+      margin-bottom: 80px;
+      scroll-margin-top: 80px;
+    }
+
+    .direction-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 24px;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .direction-number {
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--accent);
+      line-height: 1;
+      opacity: 0.5;
+    }
+
+    .direction-info {
+      flex: 1;
+    }
+
+    .direction-name {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .direction-personality {
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    .direction-traits {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .trait {
+      padding: 4px 10px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    /* App Frame */
+    .app-frame {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .titlebar {
+      height: 40px;
+      background: var(--background-subtle);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+    }
+
+    .traffic-light {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .close { background: #ff5f57; }
+    .minimize { background: #febc2e; }
+    .maximize { background: #28c840; }
+
+    .titlebar-title {
+      flex: 1;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-right: 52px;
+    }
+
+    /* Common Elements */
+    .btn {
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-primary {
+      background: var(--text-primary);
+      color: var(--background);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+    }
+
+    .input {
+      padding: 8px 12px;
+      background: var(--background);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: var(--text-primary);
+    }
+
+    .input::placeholder {
+      color: var(--text-faint);
+    }
+
+    .avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    .toolbar-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .toolbar-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    /* ========================================
+       DIRECTION 1: Classic Sidebar
+       ======================================== */
+    .d1-body {
+      display: flex;
+      height: 500px;
+    }
+
+    .d1-sidebar {
+      width: 240px;
+      background: var(--background-subtle);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .d1-sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .d1-room-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .d1-room-status {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .d1-participants {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .d1-section-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-faint);
+      margin-bottom: 12px;
+    }
+
+    .d1-participant {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 8px;
+      margin-bottom: 4px;
+      cursor: pointer;
+    }
+
+    .d1-participant:hover {
+      background: var(--card);
+    }
+
+    .d1-participant-info {
+      flex: 1;
+    }
+
+    .d1-participant-name {
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .d1-participant-role {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .d1-sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+    }
+
+    .d1-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: var(--background);
+    }
+
+    .d1-toolbar {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .d1-toolbar-divider {
+      width: 1px;
+      height: 20px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    .d1-toolbar-spacer {
+      flex: 1;
+    }
+
+    .d1-canvas {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);
+      background-size: 20px 20px;
+      position: relative;
+    }
+
+    .d1-screen-content {
+      width: 85%;
+      height: 80%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-faint);
+      font-size: 0.9rem;
+      position: relative;
+    }
+
+    .annotation-circle {
+      position: absolute;
+      width: 80px;
+      height: 50px;
+      border: 3px solid #f97316;
+      border-radius: 50%;
+      top: 25%;
+      left: 20%;
+      transform: rotate(-10deg);
+    }
+
+    .annotation-line {
+      position: absolute;
+      width: 60px;
+      height: 3px;
+      background: #06b6d4;
+      top: 55%;
+      right: 25%;
+      transform: rotate(5deg);
+    }
+
+    /* ========================================
+       DIRECTION 2: Minimal Floating
+       ======================================== */
+    .d2-body {
+      height: 500px;
+      position: relative;
+      background: var(--background);
+    }
+
+    .d2-canvas {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(rgba(255,255,255,0.01) 1px, transparent 1px),
+                  linear-gradient(90deg, rgba(255,255,255,0.01) 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    .d2-screen-content {
+      width: 90%;
+      height: 85%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-faint);
+      position: relative;
+    }
+
+    .d2-floating-toolbar {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .d2-floating-participants {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .d2-floating-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 3px solid var(--background);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: white;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .d2-floating-avatar:hover {
+      transform: scale(1.1);
+    }
+
+    .d2-room-info {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .d2-room-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .d2-room-count {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .d2-controls {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      display: flex;
+      gap: 12px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .d2-control-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--card-hover);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .d2-control-btn.danger {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: rgba(239, 68, 68, 0.2);
+      color: var(--error);
+    }
+
+    .d2-control-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    /* ========================================
+       DIRECTION 3: Split View
+       ======================================== */
+    .d3-body {
+      display: flex;
+      height: 500px;
+    }
+
+    .d3-left {
+      flex: 2;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border);
+    }
+
+    .d3-toolbar {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--background-subtle);
+    }
+
+    .d3-canvas {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--background);
+      position: relative;
+    }
+
+    .d3-screen {
+      width: 90%;
+      height: 85%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-faint);
+      position: relative;
+    }
+
+    .d3-right {
+      flex: 1;
+      min-width: 280px;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      background: var(--background-subtle);
+    }
+
+    .d3-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .d3-tab {
+      flex: 1;
+      padding: 12px;
+      text-align: center;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+    }
+
+    .d3-tab:hover {
+      color: var(--text-secondary);
+    }
+
+    .d3-tab.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--accent);
+    }
+
+    .d3-panel {
+      flex: 1;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .d3-participant-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    .d3-participant-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+    }
+
+    .d3-participant-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      margin: 0 auto 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: white;
+    }
+
+    .d3-participant-name {
+      font-size: 0.75rem;
+      font-weight: 500;
+      margin-bottom: 2px;
+    }
+
+    .d3-participant-role {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+    }
+
+    /* ========================================
+       DIRECTION 4: Command Palette Focus
+       ======================================== */
+    .d4-body {
+      height: 500px;
+      position: relative;
+      background: var(--background);
+    }
+
+    .d4-canvas {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .d4-screen {
+      width: 92%;
+      height: 88%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-faint);
+      position: relative;
+    }
+
+    .d4-command-palette {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+
+    .d4-command-input {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .d4-command-input input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      font-size: 1rem;
+      color: var(--text-primary);
+      outline: none;
+    }
+
+    .d4-command-input input::placeholder {
+      color: var(--text-faint);
+    }
+
+    .d4-command-icon {
+      color: var(--text-muted);
+    }
+
+    .d4-command-results {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .d4-command-section {
+      padding: 8px;
+    }
+
+    .d4-command-section-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-faint);
+      padding: 8px 12px;
+    }
+
+    .d4-command-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .d4-command-item:hover {
+      background: var(--card-hover);
+    }
+
+    .d4-command-item.selected {
+      background: var(--accent);
+    }
+
+    .d4-command-item-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: var(--background);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+    }
+
+    .d4-command-item-text {
+      flex: 1;
+    }
+
+    .d4-command-item-name {
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .d4-command-item-desc {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+
+    .d4-command-item-shortcut {
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      font-family: monospace;
+    }
+
+    .d4-hint {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.75rem;
+      color: var(--text-faint);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .d4-kbd {
+      padding: 2px 6px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    /* ========================================
+       DIRECTION 5: Dense Dashboard
+       ======================================== */
+    .d5-body {
+      display: flex;
+      height: 500px;
+    }
+
+    .d5-sidebar {
+      width: 60px;
+      background: var(--background-subtle);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 0;
+      gap: 8px;
+    }
+
+    .d5-sidebar-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .d5-sidebar-btn:hover {
+      background: var(--card);
+      color: var(--text-secondary);
+    }
+
+    .d5-sidebar-btn.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .d5-sidebar-spacer {
+      flex: 1;
+    }
+
+    .d5-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .d5-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      background: var(--background-subtle);
+    }
+
+    .d5-header-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .d5-header-status {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .d5-header-spacer {
+      flex: 1;
+    }
+
+    .d5-content {
+      flex: 1;
+      display: flex;
+    }
+
+    .d5-canvas-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .d5-toolbar-row {
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--background);
+    }
+
+    .d5-canvas {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #050507;
+      position: relative;
+    }
+
+    .d5-screen {
+      width: 88%;
+      height: 85%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-faint);
+      position: relative;
+    }
+
+    .d5-panel {
+      width: 200px;
+      background: var(--background-subtle);
+      border-left: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .d5-panel-header {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .d5-panel-content {
+      flex: 1;
+      padding: 8px;
+      overflow-y: auto;
+    }
+
+    .d5-participant-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      margin-bottom: 2px;
+    }
+
+    .d5-participant-row:hover {
+      background: var(--card);
+    }
+
+    .d5-participant-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    .d5-participant-name {
+      flex: 1;
+      font-size: 0.75rem;
+    }
+
+    .d5-participant-status {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    /* ========================================
+       DIRECTION 6: Focus Mode
+       ======================================== */
+    .d6-body {
+      height: 500px;
+      position: relative;
+      background: #000;
+    }
+
+    .d6-canvas {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .d6-screen {
+      width: 95%;
+      height: 92%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-faint);
+      position: relative;
+    }
+
+    .d6-toolbar-minimal {
+      position: absolute;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(12, 12, 14, 0.9);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      display: flex;
+      gap: 4px;
+      opacity: 0.5;
+      transition: opacity 0.2s;
+    }
+
+    .d6-toolbar-minimal:hover {
+      opacity: 1;
+    }
+
+    .d6-mini-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 4px;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      cursor: pointer;
+    }
+
+    .d6-mini-btn:hover {
+      background: var(--card-hover);
+      color: var(--text-primary);
+    }
+
+    .d6-mini-btn.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .d6-participants-minimal {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+      display: flex;
+      gap: -8px;
+    }
+
+    .d6-mini-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: white;
+      margin-left: -8px;
+    }
+
+    .d6-mini-avatar:first-child {
+      margin-left: 0;
+    }
+
+    .d6-status-minimal {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.5;
+    }
+
+    .d6-escape-hint {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      font-size: 0.65rem;
+      color: var(--text-faint);
+      opacity: 0.3;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 60px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer p {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>NAMELESS Design Directions</h1>
+    <p>6 different approaches to explore for your meeting app layout and interactions</p>
+  </header>
+
+  <nav class="nav">
+    <a href="#d1" class="nav-btn active">1. Classic Sidebar</a>
+    <a href="#d2" class="nav-btn">2. Minimal Floating</a>
+    <a href="#d3" class="nav-btn">3. Split View</a>
+    <a href="#d4" class="nav-btn">4. Command Palette</a>
+    <a href="#d5" class="nav-btn">5. Dense Dashboard</a>
+    <a href="#d6" class="nav-btn">6. Focus Mode</a>
+  </nav>
+
+  <main class="main">
+    <!-- Direction 1: Classic Sidebar -->
+    <section class="direction" id="d1">
+      <div class="direction-header">
+        <div class="direction-number">01</div>
+        <div class="direction-info">
+          <h2 class="direction-name">Classic Sidebar</h2>
+          <p class="direction-personality">Familiar layout with persistent sidebar for participants and controls. Professional and predictable.</p>
+          <div class="direction-traits">
+            <span class="trait">Familiar Pattern</span>
+            <span class="trait">Always Visible Controls</span>
+            <span class="trait">Clear Hierarchy</span>
+            <span class="trait">Desktop Optimized</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-frame">
+        <div class="titlebar">
+          <div class="traffic-light close"></div>
+          <div class="traffic-light minimize"></div>
+          <div class="traffic-light maximize"></div>
+          <div class="titlebar-title">NAMELESS — Team Standup</div>
+        </div>
+        <div class="d1-body">
+          <div class="d1-sidebar">
+            <div class="d1-sidebar-header">
+              <div class="d1-room-name">Team Standup</div>
+              <div class="d1-room-status">
+                <span class="status-dot"></span>
+                Connected · 3 participants
+              </div>
+            </div>
+            <div class="d1-participants">
+              <div class="d1-section-label">Participants</div>
+              <div class="d1-participant">
+                <div class="avatar" style="background: linear-gradient(135deg, #f97316, #fb923c);">Y</div>
+                <div class="d1-participant-info">
+                  <div class="d1-participant-name">You</div>
+                  <div class="d1-participant-role">Host · Sharing</div>
+                </div>
+                <span class="status-dot"></span>
+              </div>
+              <div class="d1-participant">
+                <div class="avatar" style="background: linear-gradient(135deg, #06b6d4, #22d3ee);">A</div>
+                <div class="d1-participant-info">
+                  <div class="d1-participant-name">Alice</div>
+                  <div class="d1-participant-role">Annotator</div>
+                </div>
+                <span class="status-dot"></span>
+              </div>
+              <div class="d1-participant">
+                <div class="avatar" style="background: linear-gradient(135deg, #a855f7, #c084fc);">B</div>
+                <div class="d1-participant-info">
+                  <div class="d1-participant-name">Bob</div>
+                  <div class="d1-participant-role">Viewer</div>
+                </div>
+                <span class="status-dot"></span>
+              </div>
+            </div>
+            <div class="d1-sidebar-footer">
+              <button class="btn btn-secondary" style="flex: 1;">Invite</button>
+              <button class="btn btn-secondary" style="color: var(--error);">Leave</button>
+            </div>
+          </div>
+          <div class="d1-main">
+            <div class="d1-toolbar">
+              <div class="toolbar-btn active">P</div>
+              <div class="toolbar-btn">H</div>
+              <div class="toolbar-btn">E</div>
+              <div class="d1-toolbar-divider"></div>
+              <div class="toolbar-btn">C</div>
+              <div class="d1-toolbar-spacer"></div>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">Alice is sharing</span>
+            </div>
+            <div class="d1-canvas">
+              <div class="d1-screen-content">
+                Shared Screen Content
+                <div class="annotation-circle"></div>
+                <div class="annotation-line"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Direction 2: Minimal Floating -->
+    <section class="direction" id="d2">
+      <div class="direction-header">
+        <div class="direction-number">02</div>
+        <div class="direction-info">
+          <h2 class="direction-name">Minimal Floating</h2>
+          <p class="direction-personality">Around-inspired. Maximum screen real estate with floating UI elements. Content-first approach.</p>
+          <div class="direction-traits">
+            <span class="trait">Maximum Canvas</span>
+            <span class="trait">Around-style Bubbles</span>
+            <span class="trait">Non-intrusive</span>
+            <span class="trait">Modern Feel</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-frame">
+        <div class="titlebar">
+          <div class="traffic-light close"></div>
+          <div class="traffic-light minimize"></div>
+          <div class="traffic-light maximize"></div>
+          <div class="titlebar-title">NAMELESS — Team Standup</div>
+        </div>
+        <div class="d2-body">
+          <div class="d2-canvas">
+            <div class="d2-screen-content">
+              Shared Screen Content
+              <div class="annotation-circle"></div>
+              <div class="annotation-line"></div>
+            </div>
+          </div>
+
+          <div class="d2-room-info">
+            <span class="status-dot"></span>
+            <div>
+              <div class="d2-room-name">Team Standup</div>
+              <div class="d2-room-count">3 participants</div>
+            </div>
+          </div>
+
+          <div class="d2-floating-toolbar">
+            <div class="toolbar-btn active">P</div>
+            <div class="toolbar-btn">H</div>
+            <div class="toolbar-btn">E</div>
+            <div style="height: 1px; background: var(--border); margin: 4px 0;"></div>
+            <div class="toolbar-btn">C</div>
+          </div>
+
+          <div class="d2-floating-participants">
+            <div class="d2-floating-avatar" style="background: linear-gradient(135deg, #06b6d4, #22d3ee);">A</div>
+            <div class="d2-floating-avatar" style="background: linear-gradient(135deg, #a855f7, #c084fc);">B</div>
+          </div>
+
+          <div class="d2-controls">
+            <div class="d2-control-btn">🎤</div>
+            <div class="d2-control-btn">📹</div>
+            <div class="d2-control-btn active">🖥</div>
+            <div class="d2-control-btn danger">✕</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Direction 3: Split View -->
+    <section class="direction" id="d3">
+      <div class="direction-header">
+        <div class="direction-number">03</div>
+        <div class="direction-info">
+          <h2 class="direction-name">Split View</h2>
+          <p class="direction-personality">IDE-inspired with tabbed panel. Extensible for future features like chat or activity log.</p>
+          <div class="direction-traits">
+            <span class="trait">IDE Familiar</span>
+            <span class="trait">Tabbed Panels</span>
+            <span class="trait">Extensible</span>
+            <span class="trait">Power User</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-frame">
+        <div class="titlebar">
+          <div class="traffic-light close"></div>
+          <div class="traffic-light minimize"></div>
+          <div class="traffic-light maximize"></div>
+          <div class="titlebar-title">NAMELESS — Team Standup</div>
+        </div>
+        <div class="d3-body">
+          <div class="d3-left">
+            <div class="d3-toolbar">
+              <div class="toolbar-btn active">P</div>
+              <div class="toolbar-btn">H</div>
+              <div class="toolbar-btn">E</div>
+              <div style="width: 1px; height: 20px; background: var(--border); margin: 0 8px;"></div>
+              <div class="toolbar-btn">C</div>
+              <div style="flex: 1;"></div>
+              <span style="font-size: 0.75rem; color: var(--success); display: flex; align-items: center; gap: 6px;">
+                <span class="status-dot"></span> Connected
+              </span>
+            </div>
+            <div class="d3-canvas">
+              <div class="d3-screen">
+                Shared Screen Content
+                <div class="annotation-circle"></div>
+                <div class="annotation-line"></div>
+              </div>
+            </div>
+          </div>
+          <div class="d3-right">
+            <div class="d3-tabs">
+              <div class="d3-tab active">People</div>
+              <div class="d3-tab">Chat</div>
+              <div class="d3-tab">Activity</div>
+            </div>
+            <div class="d3-panel">
+              <div class="d3-participant-grid">
+                <div class="d3-participant-card">
+                  <div class="d3-participant-avatar" style="background: linear-gradient(135deg, #f97316, #fb923c);">Y</div>
+                  <div class="d3-participant-name">You</div>
+                  <div class="d3-participant-role">Host</div>
+                </div>
+                <div class="d3-participant-card">
+                  <div class="d3-participant-avatar" style="background: linear-gradient(135deg, #06b6d4, #22d3ee);">A</div>
+                  <div class="d3-participant-name">Alice</div>
+                  <div class="d3-participant-role">Annotator</div>
+                </div>
+                <div class="d3-participant-card">
+                  <div class="d3-participant-avatar" style="background: linear-gradient(135deg, #a855f7, #c084fc);">B</div>
+                  <div class="d3-participant-name">Bob</div>
+                  <div class="d3-participant-role">Viewer</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Direction 4: Command Palette Focus -->
+    <section class="direction" id="d4">
+      <div class="direction-header">
+        <div class="direction-number">04</div>
+        <div class="direction-info">
+          <h2 class="direction-name">Command Palette Focus</h2>
+          <p class="direction-personality">Linear/Raycast-inspired. Keyboard-first with command palette for all actions. Minimal persistent UI.</p>
+          <div class="direction-traits">
+            <span class="trait">Keyboard First</span>
+            <span class="trait">Command Palette</span>
+            <span class="trait">Power Users</span>
+            <span class="trait">Linear Inspired</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-frame">
+        <div class="titlebar">
+          <div class="traffic-light close"></div>
+          <div class="traffic-light minimize"></div>
+          <div class="traffic-light maximize"></div>
+          <div class="titlebar-title">NAMELESS — Team Standup</div>
+        </div>
+        <div class="d4-body">
+          <div class="d4-canvas">
+            <div class="d4-screen">
+              Shared Screen Content
+              <div class="annotation-circle"></div>
+              <div class="annotation-line"></div>
+            </div>
+          </div>
+
+          <div class="d4-command-palette">
+            <div class="d4-command-input">
+              <span class="d4-command-icon">⌘</span>
+              <input type="text" placeholder="Type a command or search..." />
+            </div>
+            <div class="d4-command-results">
+              <div class="d4-command-section">
+                <div class="d4-command-section-label">Annotation Tools</div>
+                <div class="d4-command-item selected">
+                  <div class="d4-command-item-icon">✏️</div>
+                  <div class="d4-command-item-text">
+                    <div class="d4-command-item-name">Pen Tool</div>
+                    <div class="d4-command-item-desc">Draw freehand annotations</div>
+                  </div>
+                  <div class="d4-command-item-shortcut">P</div>
+                </div>
+                <div class="d4-command-item">
+                  <div class="d4-command-item-icon">🖍️</div>
+                  <div class="d4-command-item-text">
+                    <div class="d4-command-item-name">Highlighter</div>
+                    <div class="d4-command-item-desc">Semi-transparent highlight</div>
+                  </div>
+                  <div class="d4-command-item-shortcut">H</div>
+                </div>
+                <div class="d4-command-item">
+                  <div class="d4-command-item-icon">🧹</div>
+                  <div class="d4-command-item-text">
+                    <div class="d4-command-item-name">Clear All</div>
+                    <div class="d4-command-item-desc">Remove all annotations</div>
+                  </div>
+                  <div class="d4-command-item-shortcut">C</div>
+                </div>
+              </div>
+              <div class="d4-command-section">
+                <div class="d4-command-section-label">Actions</div>
+                <div class="d4-command-item">
+                  <div class="d4-command-item-icon">📤</div>
+                  <div class="d4-command-item-text">
+                    <div class="d4-command-item-name">Invite Participant</div>
+                    <div class="d4-command-item-desc">Share room link</div>
+                  </div>
+                  <div class="d4-command-item-shortcut">⌘I</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="d4-hint">
+            Press <span class="d4-kbd">⌘K</span> to open commands
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Direction 5: Dense Dashboard -->
+    <section class="direction" id="d5">
+      <div class="direction-header">
+        <div class="direction-number">05</div>
+        <div class="direction-info">
+          <h2 class="direction-name">Dense Dashboard</h2>
+          <p class="direction-personality">Information-rich with icon sidebar navigation. Efficient for power users who want everything visible.</p>
+          <div class="direction-traits">
+            <span class="trait">Information Dense</span>
+            <span class="trait">Icon Navigation</span>
+            <span class="trait">Slack-like</span>
+            <span class="trait">Efficient</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-frame">
+        <div class="titlebar">
+          <div class="traffic-light close"></div>
+          <div class="traffic-light minimize"></div>
+          <div class="traffic-light maximize"></div>
+          <div class="titlebar-title">NAMELESS — Team Standup</div>
+        </div>
+        <div class="d5-body">
+          <div class="d5-sidebar">
+            <div class="d5-sidebar-btn active">🏠</div>
+            <div class="d5-sidebar-btn">👥</div>
+            <div class="d5-sidebar-btn">💬</div>
+            <div class="d5-sidebar-btn">⚙️</div>
+            <div class="d5-sidebar-spacer"></div>
+            <div class="d5-sidebar-btn" style="color: var(--error);">✕</div>
+          </div>
+          <div class="d5-main">
+            <div class="d5-header">
+              <div class="d5-header-title">Team Standup</div>
+              <div class="d5-header-status">
+                <span class="status-dot"></span>
+                Connected · 23ms
+              </div>
+              <div class="d5-header-spacer"></div>
+              <button class="btn btn-secondary" style="font-size: 0.75rem; padding: 6px 10px;">Invite</button>
+            </div>
+            <div class="d5-content">
+              <div class="d5-canvas-area">
+                <div class="d5-toolbar-row">
+                  <div class="toolbar-btn active" style="width: 28px; height: 28px; font-size: 0.7rem;">P</div>
+                  <div class="toolbar-btn" style="width: 28px; height: 28px; font-size: 0.7rem;">H</div>
+                  <div class="toolbar-btn" style="width: 28px; height: 28px; font-size: 0.7rem;">E</div>
+                  <div style="width: 1px; height: 16px; background: var(--border);"></div>
+                  <div class="toolbar-btn" style="width: 28px; height: 28px; font-size: 0.7rem;">C</div>
+                </div>
+                <div class="d5-canvas">
+                  <div class="d5-screen">
+                    Shared Screen Content
+                    <div class="annotation-circle"></div>
+                    <div class="annotation-line"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="d5-panel">
+                <div class="d5-panel-header">Participants (3)</div>
+                <div class="d5-panel-content">
+                  <div class="d5-participant-row">
+                    <div class="d5-participant-avatar" style="background: linear-gradient(135deg, #f97316, #fb923c);">Y</div>
+                    <div class="d5-participant-name">You (Host)</div>
+                    <span class="d5-participant-status"></span>
+                  </div>
+                  <div class="d5-participant-row">
+                    <div class="d5-participant-avatar" style="background: linear-gradient(135deg, #06b6d4, #22d3ee);">A</div>
+                    <div class="d5-participant-name">Alice</div>
+                    <span class="d5-participant-status"></span>
+                  </div>
+                  <div class="d5-participant-row">
+                    <div class="d5-participant-avatar" style="background: linear-gradient(135deg, #a855f7, #c084fc);">B</div>
+                    <div class="d5-participant-name">Bob</div>
+                    <span class="d5-participant-status"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Direction 6: Focus Mode -->
+    <section class="direction" id="d6">
+      <div class="direction-header">
+        <div class="direction-number">06</div>
+        <div class="direction-info">
+          <h2 class="direction-name">Focus Mode</h2>
+          <p class="direction-personality">Absolute minimal UI. All controls fade until needed. Maximum immersion in shared content.</p>
+          <div class="direction-traits">
+            <span class="trait">Ultra Minimal</span>
+            <span class="trait">Fade on Idle</span>
+            <span class="trait">Immersive</span>
+            <span class="trait">Presentation Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="app-frame">
+        <div class="titlebar">
+          <div class="traffic-light close"></div>
+          <div class="traffic-light minimize"></div>
+          <div class="traffic-light maximize"></div>
+          <div class="titlebar-title">NAMELESS — Team Standup</div>
+        </div>
+        <div class="d6-body">
+          <div class="d6-canvas">
+            <div class="d6-screen">
+              Shared Screen Content
+              <div class="annotation-circle"></div>
+              <div class="annotation-line"></div>
+            </div>
+          </div>
+
+          <div class="d6-toolbar-minimal">
+            <div class="d6-mini-btn active">P</div>
+            <div class="d6-mini-btn">H</div>
+            <div class="d6-mini-btn">E</div>
+            <div class="d6-mini-btn">C</div>
+          </div>
+
+          <div class="d6-participants-minimal">
+            <div class="d6-mini-avatar" style="background: linear-gradient(135deg, #f97316, #fb923c);">Y</div>
+            <div class="d6-mini-avatar" style="background: linear-gradient(135deg, #06b6d4, #22d3ee);">A</div>
+            <div class="d6-mini-avatar" style="background: linear-gradient(135deg, #a855f7, #c084fc);">B</div>
+          </div>
+
+          <div class="d6-status-minimal">
+            <span class="status-dot"></span>
+            Connected
+          </div>
+
+          <div class="d6-escape-hint">ESC for menu</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>NAMELESS UX Design — Design Direction Exploration</p>
+    <p style="margin-top: 8px; color: var(--text-faint);">Pick your favorite or combine elements from multiple directions</p>
+  </footer>
+
+  <script>
+    // Simple navigation highlighting
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

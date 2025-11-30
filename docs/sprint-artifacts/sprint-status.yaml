@@ -1,0 +1,124 @@
+# generated: 2025-11-30
+# project: nameless
+# project_key: nameless
+# tracking_system: file-system
+# story_location: docs/sprint-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic exists in epic file but not contexted
+#   - contexted: Epic tech context created (required before drafting stories)
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - drafted: Story file created in stories folder
+#   - ready-for-dev: Draft approved and story context created
+#   - in-progress: Developer actively working on implementation
+#   - review: Under SM review (via code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - completed: Retrospective has been done
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epics should be 'contexted' before stories can be 'drafted'
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically drafts next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', SM reviews, then Dev moves to 'done'
+
+generated: 2025-11-30
+project: nameless
+project_key: nameless
+tracking_system: file-system
+story_location: docs/sprint-artifacts
+
+development_status:
+  # Epic 1: Foundation & Project Setup (5 stories)
+  epic-1: contexted
+  1-1-initialize-monorepo-with-tauri-desktop-app: ready-for-dev
+  1-2-configure-hono-api-server-with-health-endpoint: backlog
+  1-3-create-shared-types-package: backlog
+  1-4-set-up-vitest-testing-framework: backlog
+  1-5-configure-development-scripts-and-tooling: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Basic Meeting Experience (14 stories)
+  epic-2: backlog
+  2-1-implement-room-creation-api-endpoint: backlog
+  2-2-implement-room-join-api-endpoint: backlog
+  2-3-build-home-screen-with-create-join-meeting-ui: backlog
+  2-4-implement-join-meeting-flow-with-name-input: backlog
+  2-5-create-meeting-room-layout-shell: backlog
+  2-6-integrate-livekit-room-connection: backlog
+  2-7-implement-audio-publishing-and-controls: backlog
+  2-8-implement-video-publishing-and-controls: backlog
+  2-9-display-remote-participant-audio-video-streams: backlog
+  2-10-implement-device-selection-for-microphone-and-camera: backlog
+  2-11-implement-participant-volume-control: backlog
+  2-12-implement-leave-meeting-flow: backlog
+  2-13-implement-room-invite-link-generation-and-sharing: backlog
+  2-14-implement-user-preferences-storage: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Screen Sharing (6 stories)
+  epic-3: backlog
+  3-1-implement-screen-share-initiation-via-getdisplaymedia: backlog
+  3-2-display-shared-screen-for-viewers: backlog
+  3-3-implement-stop-screen-sharing: backlog
+  3-4-enforce-single-active-screen-share: backlog
+  3-5-implement-screen-share-quality-optimization: backlog
+  3-6-create-sharers-transparent-overlay-window: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Real-Time Annotations (11 stories) - CORE VALUE
+  epic-4: backlog
+  4-1-create-annotation-canvas-component-for-viewers: backlog
+  4-2-implement-annotation-store-with-zustand: backlog
+  4-3-implement-local-stroke-drawing-pen-tool: backlog
+  4-4-implement-highlighter-tool: backlog
+  4-5-implement-eraser-tool: backlog
+  4-6-build-annotation-toolbar-component: backlog
+  4-7-implement-datatrack-annotation-sync: backlog
+  4-8-implement-late-joiner-annotation-sync: backlog
+  4-9-implement-resolution-independent-coordinates: backlog
+  4-10-assign-unique-colors-per-participant: backlog
+  4-11-render-annotations-on-sharers-overlay: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Permissions & Moderation (8 stories)
+  epic-5: backlog
+  5-1-implement-role-system-infrastructure: backlog
+  5-2-display-user-role-in-ui: backlog
+  5-3-enforce-annotation-permissions: backlog
+  5-4-implement-host-clear-all-annotations: backlog
+  5-5-implement-sharer-delete-any-annotation: backlog
+  5-6-implement-host-role-assignment: backlog
+  5-7-implement-remove-participant: backlog
+  5-8-implement-room-wide-annotation-toggle: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Connection Resilience (7 stories)
+  epic-6: backlog
+  6-1-implement-connection-state-management: backlog
+  6-2-display-connection-status-indicator: backlog
+  6-3-implement-automatic-reconnection: backlog
+  6-4-preserve-annotation-state-during-reconnection: backlog
+  6-5-queue-local-actions-during-offline: backlog
+  6-6-implement-graceful-degradation: backlog
+  6-7-handle-disconnection-notifications: backlog
+  epic-6-retrospective: optional
+
+  # Epic 7: Self-Hosting & Deployment (8 stories)
+  epic-7: backlog
+  7-1-create-docker-compose-deployment-configuration: backlog
+  7-2-create-server-dockerfile-with-multi-stage-build: backlog
+  7-3-implement-health-check-endpoints: backlog
+  7-4-write-self-hosting-documentation: backlog
+  7-5-implement-update-notification-system: backlog
+  7-6-implement-recent-rooms-history: backlog
+  7-7-create-production-build-and-release-pipeline: backlog
+  7-8-implement-livekit-integration-configuration: backlog
+  epic-7-retrospective: optional
