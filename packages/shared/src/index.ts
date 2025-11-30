@@ -1,2 +1,23 @@
-// Placeholder for shared types - see Story 1.3
-export {}
+// Types
+export type {
+  Point,
+  Stroke,
+  Role,
+  Participant,
+  RoomState,
+  CreateRoomRequest,
+  CreateRoomResponse,
+  JoinRoomRequest,
+  JoinRoomResponse,
+  ApiError,
+  HealthResponse,
+} from './types'
+
+// Constants
+export {
+  PARTICIPANT_COLORS,
+  type ParticipantColor,
+  MAX_STROKE_POINTS,
+  MAX_PARTICIPANTS,
+  TOKEN_EXPIRY_SECONDS,
+} from './constants'

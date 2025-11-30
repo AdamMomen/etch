@@ -1,0 +1,124 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>3</storyId>
+    <title>Create Shared Types Package</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-3-create-shared-types-package.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>shared TypeScript types available to both client and server</iWant>
+    <soThat>type safety is maintained across the entire codebase</soThat>
+    <tasks>
+      <task id="1" ac="1.3.6,1.3.7">Initialize Shared Package - Update package.json with type:module, main, types, exports config; create tsconfig.json extending base config</task>
+      <task id="2" ac="1.3.2">Create Stroke Types - Define Point and Stroke interfaces in src/types/stroke.ts</task>
+      <task id="3" ac="1.3.3">Create Room Types - Define Role, Participant, RoomState in src/types/room.ts</task>
+      <task id="4" ac="1.3.4">Create API Types - Define CreateRoomRequest/Response, JoinRoomRequest/Response, ApiError, HealthResponse in src/types/api.ts</task>
+      <task id="5" ac="1.3.1">Create Types Index - Re-export all types from src/types/index.ts</task>
+      <task id="6" ac="1.3.5">Create Constants - PARTICIPANT_COLORS, MAX_STROKE_POINTS, MAX_PARTICIPANTS in src/constants/</task>
+      <task id="7" ac="1.3.1">Create Package Index - Export all from types and constants in src/index.ts</task>
+      <task id="8" ac="1.3.1,1.3.7">Verify Package Integration - Build, test imports in server and client</task>
+      <task id="9" ac="1.3.2,1.3.3,1.3.4,1.3.5">Write Unit Tests - Configure Vitest, test type exports and constants</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-1.3.1">Package Import - @nameless/shared importable in client and server with TypeScript recognition</criterion>
+    <criterion id="AC-1.3.2">Point and Stroke Types - Point{x,y,pressure?}, Stroke{id,participantId,tool,color,points,createdAt}</criterion>
+    <criterion id="AC-1.3.3">Room and Participant Types - Role type, Participant interface, RoomState interface</criterion>
+    <criterion id="AC-1.3.4">API Types - CreateRoomRequest/Response, JoinRoomRequest/Response, ApiError interfaces</criterion>
+    <criterion id="AC-1.3.5">Constants - PARTICIPANT_COLORS array, MAX_STROKE_POINTS=10000, MAX_PARTICIPANTS=10</criterion>
+    <criterion id="AC-1.3.6">Package Configuration - type:module, proper exports configuration for TypeScript</criterion>
+    <criterion id="AC-1.3.7">Build Output - TypeScript compiles to dist/ with .d.ts declarations</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="Data Architecture" snippet="Defines Point, Stroke, Participant, RoomState interfaces with normalized [0,1] coordinates for resolution-independence." />
+      <doc path="docs/architecture.md" title="Architecture" section="Project Structure" snippet="Defines packages/shared/ structure with types/ and constants/ subdirectories." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Tech Spec" section="AC-1.4 Shared Types Package" snippet="Specifies @nameless/shared exports Point, Stroke, Participant, RoomState types and PARTICIPANT_COLORS, MAX_STROKE_POINTS constants." />
+      <doc path="docs/epics.md" title="Epics" section="Story 1.3" snippet="Complete story definition with acceptance criteria for shared types package." />
+      <doc path="docs/prd.md" title="PRD" section="Annotation System" snippet="Defines annotation data model requirements: strokes with coordinates, participant colors, role-based permissions." />
+    </docs>
+    <code>
+      <file path="packages/shared/package.json" kind="config" symbol="package.json" reason="Existing placeholder package.json - needs updating with proper exports configuration" />
+      <file path="packages/shared/src/index.ts" kind="entry" symbol="index.ts" reason="Existing placeholder entry point - currently exports empty object" />
+      <file path="packages/server/package.json" kind="config" symbol="package.json" reason="Reference for package structure pattern - uses type:module, scripts pattern" />
+      <file path="packages/server/tsconfig.json" kind="config" symbol="tsconfig.json" reason="Reference for tsconfig pattern - extends ../../tsconfig.base.json with outDir/rootDir" />
+      <file path="packages/server/vitest.config.ts" kind="config" symbol="vitest.config.ts" reason="Reference for Vitest configuration pattern - environment:node, include pattern" />
+      <file path="packages/server/src/routes/health.ts" kind="route" symbol="healthRouter" lines="1-13" reason="Current health endpoint returns {status, timestamp} - HealthResponse type should match this" />
+      <file path="tsconfig.base.json" kind="config" symbol="tsconfig.base.json" reason="Base TypeScript config - packages should extend this with declaration:true for types output" />
+      <file path="pnpm-workspace.yaml" kind="config" symbol="pnpm-workspace.yaml" reason="Workspace config - packages/* already includes packages/shared" />
+    </code>
+    <dependencies>
+      <node>
+        <root>
+          <package name="typescript" version="^5.6.0" />
+          <package name="vitest" version="^2.0.0" />
+          <package name="eslint" version="^8.57.0" />
+          <package name="prettier" version="^3.3.0" />
+        </root>
+        <server>
+          <package name="hono" version="^4.6.0" />
+          <package name="@hono/node-server" version="^1.13.0" />
+          <package name="zod" version="^3.23.0" />
+          <package name="typescript" version="^5.6.0" />
+          <package name="vitest" version="^2.0.0" />
+        </server>
+        <shared>
+          <note>Currently minimal - needs typescript as devDependency for build</note>
+        </shared>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="architecture.md">Use ES modules with "type": "module" in package.json</constraint>
+    <constraint source="architecture.md">Extend tsconfig.base.json for shared TypeScript configuration</constraint>
+    <constraint source="architecture.md">Normalized coordinates [0,1] for resolution-independence in Point type</constraint>
+    <constraint source="architecture.md">PARTICIPANT_COLORS: ['#f97316', '#06b6d4', '#a855f7', '#22c55e', '#ec4899'] (Orange, Cyan, Purple, Green, Pink)</constraint>
+    <constraint source="tech-spec-epic-1.md">Package must build to dist/ with .d.ts declarations</constraint>
+    <constraint source="tech-spec-epic-1.md">Exports must work for both CJS and ESM consumers</constraint>
+    <constraint source="server/tsconfig.json">Use outDir:dist, rootDir:src, noEmit:false pattern</constraint>
+    <constraint source="story">Types must match Architecture doc "Data Architecture" section exactly</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="Point" kind="TypeScript interface" signature="interface Point { x: number; y: number; pressure?: number; }" path="packages/shared/src/types/stroke.ts" />
+    <interface name="Stroke" kind="TypeScript interface" signature="interface Stroke { id: string; participantId: string; tool: 'pen' | 'highlighter'; color: string; points: Point[]; createdAt: number; }" path="packages/shared/src/types/stroke.ts" />
+    <interface name="Role" kind="TypeScript type" signature="type Role = 'host' | 'sharer' | 'annotator' | 'viewer'" path="packages/shared/src/types/room.ts" />
+    <interface name="Participant" kind="TypeScript interface" signature="interface Participant { id: string; name: string; role: Role; color: string; isLocal: boolean; }" path="packages/shared/src/types/room.ts" />
+    <interface name="RoomState" kind="TypeScript interface" signature="interface RoomState { id: string; participants: Participant[]; isScreenSharing: boolean; sharerId: string | null; annotationsEnabled: boolean; }" path="packages/shared/src/types/room.ts" />
+    <interface name="CreateRoomRequest" kind="TypeScript interface" signature="interface CreateRoomRequest { hostName: string; }" path="packages/shared/src/types/api.ts" />
+    <interface name="CreateRoomResponse" kind="TypeScript interface" signature="interface CreateRoomResponse { roomId: string; token: string; livekitUrl: string; }" path="packages/shared/src/types/api.ts" />
+    <interface name="JoinRoomRequest" kind="TypeScript interface" signature="interface JoinRoomRequest { participantName: string; role?: Role; }" path="packages/shared/src/types/api.ts" />
+    <interface name="JoinRoomResponse" kind="TypeScript interface" signature="interface JoinRoomResponse { token: string; livekitUrl: string; }" path="packages/shared/src/types/api.ts" />
+    <interface name="ApiError" kind="TypeScript interface" signature="interface ApiError { error: { code: string; message: string; } }" path="packages/shared/src/types/api.ts" />
+    <interface name="HealthResponse" kind="TypeScript interface" signature="interface HealthResponse { status: 'ok'; timestamp: number; }" path="packages/shared/src/types/api.ts" />
+    <interface name="PARTICIPANT_COLORS" kind="const array" signature="const PARTICIPANT_COLORS = ['#f97316', '#06b6d4', '#a855f7', '#22c55e', '#ec4899'] as const" path="packages/shared/src/constants/colors.ts" />
+    <interface name="MAX_STROKE_POINTS" kind="const number" signature="const MAX_STROKE_POINTS = 10000" path="packages/shared/src/constants/limits.ts" />
+    <interface name="MAX_PARTICIPANTS" kind="const number" signature="const MAX_PARTICIPANTS = 10" path="packages/shared/src/constants/limits.ts" />
+  </interfaces>
+
+  <tests>
+    <standards>
+      Vitest is the testing framework for the monorepo. Tests use node environment for non-browser packages. Test files are co-located with source files using *.test.ts pattern. Server package has working Vitest configuration to reference. Coverage thresholds are 60% for initial setup per tech-spec.
+    </standards>
+    <locations>
+      <location>packages/shared/src/**/*.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-1.3.1">Test that all types and constants can be imported from @nameless/shared</idea>
+      <idea ac="AC-1.3.2">Test Point type accepts x, y, optional pressure; Stroke type has all required fields</idea>
+      <idea ac="AC-1.3.3">Test Role type accepts only valid roles; Participant and RoomState have correct shapes</idea>
+      <idea ac="AC-1.3.4">Test API types match expected request/response shapes for room endpoints</idea>
+      <idea ac="AC-1.3.5">Test PARTICIPANT_COLORS has exactly 5 hex colors; MAX_STROKE_POINTS=10000; MAX_PARTICIPANTS=10</idea>
+      <idea ac="AC-1.3.6">Test package.json has type:module and correct exports configuration</idea>
+      <idea ac="AC-1.3.7">Test build produces dist/ with index.js and index.d.ts files</idea>
+    </ideas>
+  </tests>
+</story-context>
