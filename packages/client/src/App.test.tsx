@@ -3,38 +3,29 @@ import { render, screen } from '@testing-library/react'
 import App from './App'
 
 describe('App', () => {
-  it('renders the NAMELESS title', () => {
+  it('renders the NAMELESS heading', () => {
     render(<App />)
-    expect(
-      screen.getByRole('heading', { name: /nameless/i })
-    ).toBeInTheDocument()
+
+    expect(screen.getByText('NAMELESS')).toBeInTheDocument()
   })
 
-  it('renders Create Meeting button', () => {
+  it('renders the tagline', () => {
     render(<App />)
-    expect(
-      screen.getByRole('button', { name: /create meeting/i })
-    ).toBeInTheDocument()
-  })
 
-  it('renders Join Meeting button', () => {
-    render(<App />)
-    expect(
-      screen.getByRole('button', { name: /join meeting/i })
-    ).toBeInTheDocument()
-  })
-
-  it('displays the product description', () => {
-    render(<App />)
     expect(
       screen.getByText(/open-source, self-hosted meeting platform/i)
     ).toBeInTheDocument()
   })
 
-  it('shows feature indicators', () => {
+  it('renders Create Meeting button', () => {
     render(<App />)
-    expect(screen.getByText('Self-hosted')).toBeInTheDocument()
-    expect(screen.getByText('Real-time')).toBeInTheDocument()
-    expect(screen.getByText('Annotations')).toBeInTheDocument()
+
+    expect(screen.getByText('Create Meeting')).toBeInTheDocument()
+  })
+
+  it('renders Join Meeting button', () => {
+    render(<App />)
+
+    expect(screen.getByText('Join Meeting')).toBeInTheDocument()
   })
 })

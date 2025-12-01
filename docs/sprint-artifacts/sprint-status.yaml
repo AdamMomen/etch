@@ -41,14 +41,14 @@ development_status:
   1-1-initialize-monorepo-with-tauri-desktop-app: done
   1-2-configure-hono-api-server-with-health-endpoint: done
   1-3-create-shared-types-package: done
-  1-4-set-up-vitest-testing-framework: backlog
-  1-5-configure-development-scripts-and-tooling: backlog
+  1-4-set-up-vitest-testing-framework: done
+  1-5-configure-development-scripts-and-tooling: done
   epic-1-retrospective: optional
 
   # Epic 2: Basic Meeting Experience (14 stories)
-  epic-2: backlog
-  2-1-implement-room-creation-api-endpoint: backlog
-  2-2-implement-room-join-api-endpoint: backlog
+  epic-2: contexted
+  2-1-implement-room-creation-api-endpoint: done
+  2-2-implement-room-join-api-endpoint: review
   2-3-build-home-screen-with-create-join-meeting-ui: backlog
   2-4-implement-join-meeting-flow-with-name-input: backlog
   2-5-create-meeting-room-layout-shell: backlog

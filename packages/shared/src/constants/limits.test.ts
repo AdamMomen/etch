@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { MAX_STROKE_POINTS, MAX_PARTICIPANTS, TOKEN_EXPIRY_SECONDS } from './limits'
+import {
+  MAX_STROKE_POINTS,
+  MAX_PARTICIPANTS,
+  TOKEN_EXPIRY_SECONDS,
+} from './limits'
 
 describe('MAX_STROKE_POINTS', () => {
   it('should be 10000', () => {

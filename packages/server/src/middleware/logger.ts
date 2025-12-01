@@ -8,6 +8,11 @@ interface LogEntry {
   path?: string
   status?: number
   duration?: number
+  // Additional context fields
+  roomId?: string
+  participantId?: string
+  error?: string
+  [key: string]: string | number | undefined
 }
 
 function log(entry: LogEntry): void {

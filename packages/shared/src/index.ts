@@ -21,3 +21,13 @@ export {
   MAX_PARTICIPANTS,
   TOKEN_EXPIRY_SECONDS,
 } from './constants'
+
+// Test Utilities
+export {
+  createMockStroke,
+  createMockPoint,
+  createMockParticipant,
+  createMockHost,
+  createMockViewer,
+  createMockSharer,
+} from './test-utils'

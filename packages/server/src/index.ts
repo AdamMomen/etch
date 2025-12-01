@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { healthRouter } from './routes/health'
+import { roomsRouter } from './routes/rooms'
 import { logger, log } from './middleware/logger'
 
 const app = new Hono()
@@ -19,6 +20,7 @@ app.use(
 
 // Mount routes
 app.route('/api', healthRouter)
+app.route('/api/rooms', roomsRouter)
 
 // Start server
 const port = parseInt(process.env.PORT || '3000', 10)

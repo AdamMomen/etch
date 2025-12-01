@@ -63,7 +63,10 @@ describe('@nameless/shared exports', () => {
         participantId: 'user-1',
         tool: 'pen',
         color: '#f97316',
-        points: [{ x: 0, y: 0 }, { x: 1, y: 1 }],
+        points: [
+          { x: 0, y: 0 },
+          { x: 1, y: 1 },
+        ],
         createdAt: Date.now(),
       }
       expect(stroke.id).toBe('stroke-1')
@@ -104,7 +107,10 @@ describe('@nameless/shared exports', () => {
         token: 'jwt-token',
         livekitUrl: 'wss://livekit.example.com',
       }
-      const joinReq: JoinRoomRequest = { participantName: 'User', role: 'annotator' }
+      const joinReq: JoinRoomRequest = {
+        participantName: 'User',
+        role: 'annotator',
+      }
       const joinRes: JoinRoomResponse = {
         token: 'jwt-token',
         livekitUrl: 'wss://livekit.example.com',
