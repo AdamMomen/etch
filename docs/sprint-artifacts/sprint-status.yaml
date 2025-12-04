@@ -48,15 +48,15 @@ development_status:
   # Epic 2: Basic Meeting Experience (14 stories)
   epic-2: contexted
   2-1-implement-room-creation-api-endpoint: done
-  2-2-implement-room-join-api-endpoint: review
-  2-3-build-home-screen-with-create-join-meeting-ui: backlog
-  2-4-implement-join-meeting-flow-with-name-input: backlog
-  2-5-create-meeting-room-layout-shell: backlog
-  2-6-integrate-livekit-room-connection: backlog
-  2-7-implement-audio-publishing-and-controls: backlog
-  2-8-implement-video-publishing-and-controls: backlog
-  2-9-display-remote-participant-audio-video-streams: backlog
-  2-10-implement-device-selection-for-microphone-and-camera: backlog
+  2-2-implement-room-join-api-endpoint: done
+  2-3-build-home-screen-with-create-join-meeting-ui: done
+  2-4-implement-join-meeting-flow-with-name-input: done
+  2-5-create-meeting-room-layout-shell: done
+  2-6-integrate-livekit-room-connection: done
+  2-7-implement-audio-publishing-and-controls: done
+  2-8-implement-video-publishing-and-controls: done
+  2-9-display-remote-participant-audio-video-streams: done
+  2-10-implement-device-selection-for-microphone-and-camera: in-progress
   2-11-implement-participant-volume-control: backlog
   2-12-implement-leave-meeting-flow: backlog
   2-13-implement-room-invite-link-generation-and-sharing: backlog

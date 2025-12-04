@@ -1,0 +1,245 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>10</storyId>
+    <title>Implement Device Selection for Microphone and Camera</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-10-implement-device-selection-for-microphone-and-camera.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to select which microphone and camera to use</iWant>
+    <soThat>I can use my preferred devices for the meeting</soThat>
+    <tasks>
+      <task id="1" title="Create useDevices hook" ac="2.10.1, 2.10.3, 2.10.6">
+        <subtask>Create `packages/client/src/hooks/useDevices.ts`</subtask>
+        <subtask>Use `navigator.mediaDevices.enumerateDevices()` to list devices</subtask>
+        <subtask>Filter by device kind (audioinput, videoinput)</subtask>
+        <subtask>Listen for `devicechange` event to refresh list</subtask>
+        <subtask>Handle permission edge cases (empty labels before permission granted)</subtask>
+        <subtask>Return `{ audioDevices, videoDevices, refresh }`</subtask>
+      </task>
+      <task id="2" title="Create DeviceSelector component" ac="2.10.1, 2.10.3">
+        <subtask>Create `packages/client/src/components/MeetingRoom/DeviceSelector.tsx`</subtask>
+        <subtask>Use shadcn/ui DropdownMenu component</subtask>
+        <subtask>Accept props: `devices`, `selectedDeviceId`, `onSelect`, `type` (audio/video)</subtask>
+        <subtask>Display "System Default" as first option with `deviceId: 'default'`</subtask>
+        <subtask>Show checkmark icon next to currently selected device</subtask>
+        <subtask>Truncate long device names with ellipsis</subtask>
+      </task>
+      <task id="3" title="Integrate DeviceSelector with MicrophoneButton" ac="2.10.1, 2.10.2">
+        <subtask>Update `MicrophoneButton.tsx` to include dropdown trigger</subtask>
+        <subtask>Add small dropdown arrow indicator next to mic icon</subtask>
+        <subtask>Connect to useDevices hook for audio devices</subtask>
+        <subtask>Wire onSelect to device switching logic</subtask>
+      </task>
+      <task id="4" title="Integrate DeviceSelector with CameraButton" ac="2.10.3, 2.10.4">
+        <subtask>Update `CameraButton.tsx` to include dropdown trigger</subtask>
+        <subtask>Add small dropdown arrow indicator next to camera icon</subtask>
+        <subtask>Connect to useDevices hook for video devices</subtask>
+        <subtask>Wire onSelect to device switching logic</subtask>
+      </task>
+      <task id="5" title="Implement device switching via LiveKit" ac="2.10.2, 2.10.4">
+        <subtask>Update `useLiveKit.ts` or create `useDeviceSwitch` hook</subtask>
+        <subtask>Use `room.switchActiveDevice(kind, deviceId)` for switching</subtask>
+        <subtask>Handle switch success/failure states</subtask>
+        <subtask>Update local state to reflect new device selection</subtask>
+      </task>
+      <task id="6" title="Create settingsStore for device preferences" ac="2.10.2, 2.10.4">
+        <subtask>Update `packages/client/src/stores/settingsStore.ts`</subtask>
+        <subtask>Add `preferredMicrophoneId` and `preferredCameraId` state</subtask>
+        <subtask>Load preferences on room join and apply if device available</subtask>
+      </task>
+      <task id="7" title="Implement toast notifications" ac="2.10.2, 2.10.4, 2.10.5">
+        <subtask>Uses sonner toast already in project</subtask>
+        <subtask>Show "Switched to {device}" on successful switch</subtask>
+        <subtask>Show "Device disconnected, switched to {default}" on disconnect fallback</subtask>
+        <subtask>Toast auto-dismiss after 3 seconds</subtask>
+      </task>
+      <task id="8" title="Handle device disconnection" ac="2.10.5">
+        <subtask>Listen for `devicechange` event</subtask>
+        <subtask>Detect when current device is no longer in list</subtask>
+        <subtask>Trigger fallback to default device</subtask>
+        <subtask>Show disconnect toast notification</subtask>
+      </task>
+      <task id="9" title="Write tests" ac="all">
+        <subtask>Test useDevices hook with mocked navigator.mediaDevices</subtask>
+        <subtask>Test DeviceSelector component renders device list</subtask>
+        <subtask>Test device selection updates state correctly</subtask>
+        <subtask>Test device disconnection triggers fallback</subtask>
+        <subtask>Test preferences persist to localStorage</subtask>
+        <subtask>Test toast notifications appear on device changes</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.10.1" title="Microphone Device List">
+      <given>I'm in a meeting</given>
+      <when>I click a dropdown arrow next to the microphone button</when>
+      <then>I see a list of available microphones with device names</then>
+      <and>A checkmark indicates the currently selected device</and>
+      <and>"System Default" option appears at top of the list</and>
+    </criterion>
+    <criterion id="AC-2.10.2" title="Microphone Device Switching">
+      <given>The microphone dropdown is open</given>
+      <when>I select a different microphone</when>
+      <then>The device switches immediately</then>
+      <and>A brief toast shows "Switched to {device}"</and>
+      <and>The selection persists for future meetings</and>
+    </criterion>
+    <criterion id="AC-2.10.3" title="Camera Device List">
+      <given>I'm in a meeting</given>
+      <when>I click a dropdown arrow next to the camera button</when>
+      <then>I see a list of available cameras with device names</then>
+      <and>A checkmark indicates the currently selected device</and>
+      <and>"System Default" option appears at top of the list</and>
+    </criterion>
+    <criterion id="AC-2.10.4" title="Camera Device Switching">
+      <given>The camera dropdown is open</given>
+      <when>I select a different camera</when>
+      <then>The device switches immediately</then>
+      <and>A brief toast shows "Switched to {device}"</and>
+      <and>The selection persists for future meetings</and>
+    </criterion>
+    <criterion id="AC-2.10.5" title="Device Disconnection Handling">
+      <given>I have a non-default device selected</given>
+      <when>That device is disconnected mid-meeting</when>
+      <then>The system falls back to the default device</then>
+      <and>A toast shows "Device disconnected, switched to {default}"</and>
+    </criterion>
+    <criterion id="AC-2.10.6" title="Device List Updates">
+      <given>The device dropdown is closed</given>
+      <when>I connect or disconnect a device</when>
+      <then>The device list updates on next dropdown open</then>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Audio & Video Requirements">
+        <snippet>FR12: Users can select which microphone and camera to use. FR14: Users can adjust volume of individual participants.</snippet>
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="State Management">
+        <snippet>Zustand for lightweight stores. settingsStore for user preferences with persist middleware. State Locations: User settings in settingsStore + localStorage - Persisted locally.</snippet>
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="LiveKit Integration">
+        <snippet>room.switchActiveDevice(kind, deviceId) for device switching. LiveKit Client provides WebRTC connection management and track handling.</snippet>
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Custom Hook Pattern">
+        <snippet>Hook encapsulating LiveKit + logic pattern. Example useLiveKit hook shows how to integrate LiveKit with Zustand stores.</snippet>
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="Feedback Patterns">
+        <snippet>Toast notifications for success/error/warning states. Toast placement: bottom-right corner. Auto-dismiss after 3-5 seconds. Use sonner for toast implementation.</snippet>
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="Form Patterns">
+        <snippet>shadcn/ui DropdownMenu for device selection. Checkmark on currently selected item. Hover state with background highlight.</snippet>
+      </doc>
+      <doc path="docs/epics.md" title="Epics" section="Story 2.10">
+        <snippet>Prerequisites: Story 2.8. Technical Notes: Use navigator.mediaDevices.enumerateDevices(), shadcn/ui DropdownMenu, store device preferences in settingsStore (localStorage).</snippet>
+      </doc>
+      <doc path="docs/sprint-artifacts/2-9-display-remote-participant-audio-video-streams.md" title="Story 2.9 - Remote Participants" section="Completion Notes">
+        <snippet>All 256 client tests pass. useLiveKit hook contains room connection and track management. Zustand store pattern: create with StateType. Speaking indicator CSS animation in index.css:95-106.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file path="packages/client/src/stores/settingsStore.ts" kind="store" symbol="useSettingsStore" lines="1-36" reason="Extend this store to add preferredMicrophoneId and preferredCameraId state with persist middleware">
+        <note>Already has persist middleware configured with 'nameless-settings' key. Add new device preference fields here.</note>
+      </file>
+      <file path="packages/client/src/hooks/useLiveKit.ts" kind="hook" symbol="useLiveKit" lines="1-212" reason="Room instance needed for device switching. May need to expose room.switchActiveDevice() through this hook or create separate useDeviceSwitch hook">
+        <note>Returns room object which has switchActiveDevice method. Consider whether to add device switching here or create dedicated hook.</note>
+      </file>
+      <file path="packages/client/src/components/MeetingRoom/MicrophoneButton.tsx" kind="component" symbol="MicrophoneButton" lines="1-53" reason="Needs modification to include dropdown trigger for device selection">
+        <note>Currently a simple toggle button. Needs wrapper with DropdownMenu for device list. Uses useAudio hook internally.</note>
+      </file>
+      <file path="packages/client/src/components/MeetingRoom/CameraButton.tsx" kind="component" symbol="CameraButton" lines="1-53" reason="Needs modification to include dropdown trigger for device selection">
+        <note>Currently a simple toggle button. Needs wrapper with DropdownMenu for device list. Uses useVideo hook internally.</note>
+      </file>
+      <file path="packages/client/src/hooks/useAudio.ts" kind="hook" symbol="useAudio" lines="1-115" reason="Audio control hook that interfaces with LiveKit. Device switching may be added here or in separate hook">
+        <note>Uses useSettingsStore for muted state. May need switchDevice capability added.</note>
+      </file>
+      <file path="packages/client/src/hooks/useVideo.ts" kind="hook" symbol="useVideo" lines="1-124" reason="Video control hook that interfaces with LiveKit. Device switching may be added here or in separate hook">
+        <note>Uses useSettingsStore for videoOff state. May need switchDevice capability added.</note>
+      </file>
+      <file path="packages/client/src/stores/roomStore.ts" kind="store" symbol="useRoomStore" lines="1-111" reason="Room and participant state management. Reference for Zustand patterns used in project">
+        <note>Shows pattern for Zustand store with actions. Use similar pattern for any new store additions.</note>
+      </file>
+      <file path="packages/client/src/components/ui/button.tsx" kind="component" symbol="Button" reason="Base button component used by MicrophoneButton and CameraButton">
+        <note>shadcn/ui Button component. Used as base for device buttons.</note>
+      </file>
+      <file path="packages/client/src/components/ui/tooltip.tsx" kind="component" symbol="Tooltip" reason="Tooltip component that may be useful for device names">
+        <note>Already exists. Can use for truncated device name hover states.</note>
+      </file>
+    </code>
+    <dependencies>
+      <package manager="pnpm" ecosystem="node">
+        <dep name="livekit-client" version="^2.16.0" note="Provides Room.switchActiveDevice() for device switching" />
+        <dep name="zustand" version="^5.0.9" note="State management with persist middleware for localStorage" />
+        <dep name="sonner" version="^2.0.7" note="Toast notifications already in use" />
+        <dep name="@radix-ui/react-slot" version="^1.2.4" note="Base for shadcn/ui components" />
+        <dep name="lucide-react" version="^0.555.0" note="Icons including Check, ChevronDown for dropdown" />
+        <dep name="react" version="^19.2.0" />
+        <dep name="react-dom" version="^19.2.0" />
+      </package>
+      <missing>
+        <dep name="@radix-ui/react-dropdown-menu" note="REQUIRED: shadcn/ui DropdownMenu not yet installed. Run: npx shadcn@latest add dropdown-menu" />
+      </missing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="architecture" type="pattern">Use Zustand with persist middleware for device preferences - follow existing settingsStore pattern</constraint>
+    <constraint source="architecture" type="pattern">React functional components with TypeScript - see MicrophoneButton.tsx pattern</constraint>
+    <constraint source="architecture" type="pattern">Custom hooks encapsulate LiveKit logic - follow useAudio/useVideo pattern</constraint>
+    <constraint source="ux-spec" type="behavior">Toast notifications auto-dismiss after 3 seconds using sonner</constraint>
+    <constraint source="ux-spec" type="ui">Device dropdowns show checkmark on selected item</constraint>
+    <constraint source="ux-spec" type="ui">"System Default" always appears as first option</constraint>
+    <constraint source="architecture" type="api">Use room.switchActiveDevice(kind, deviceId) for device switching - LiveKit native method</constraint>
+    <constraint source="story" type="requirement">Device preferences persist to localStorage for future meetings</constraint>
+    <constraint source="story" type="requirement">Device disconnection triggers automatic fallback to default device</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="Room.switchActiveDevice" kind="livekit-method" path="livekit-client">
+      <signature>async switchActiveDevice(kind: 'audioinput' | 'videoinput' | 'audiooutput', deviceId: string, exact?: boolean): Promise&lt;boolean&gt;</signature>
+      <note>Use 'default' as deviceId for system default. Returns true on success.</note>
+    </interface>
+    <interface name="navigator.mediaDevices.enumerateDevices" kind="web-api" path="browser-native">
+      <signature>async enumerateDevices(): Promise&lt;MediaDeviceInfo[]&gt;</signature>
+      <note>Returns list of available media devices. Filter by kind: 'audioinput' | 'videoinput'. Labels may be empty before permission granted.</note>
+    </interface>
+    <interface name="devicechange event" kind="event" path="navigator.mediaDevices">
+      <signature>navigator.mediaDevices.addEventListener('devicechange', callback)</signature>
+      <note>Fires when devices connect/disconnect. Refresh device list in callback.</note>
+    </interface>
+    <interface name="useSettingsStore" kind="zustand-store" path="packages/client/src/stores/settingsStore.ts">
+      <signature>interface SettingsState { displayName, apiBaseUrl, sidebarCollapsed, isMuted, isVideoOff, ... }</signature>
+      <note>Add preferredMicrophoneId: string | null and preferredCameraId: string | null</note>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <paragraph>Tests use Vitest + React Testing Library. Co-located test files (*.test.ts(x)) next to source files. Mock browser APIs like navigator.mediaDevices. Follow existing patterns in useAudio.test.ts, MicrophoneButton.test.tsx. All 256 current client tests pass - maintain or increase coverage.</paragraph>
+    </standards>
+    <locations>
+      <glob>packages/client/src/**/*.test.ts</glob>
+      <glob>packages/client/src/**/*.test.tsx</glob>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.10.1, AC-2.10.3">Test useDevices hook returns correct filtered device lists for audio and video</idea>
+      <idea ac="AC-2.10.1, AC-2.10.3">Test DeviceSelector renders device list with System Default first</idea>
+      <idea ac="AC-2.10.1, AC-2.10.3">Test checkmark appears next to selected device</idea>
+      <idea ac="AC-2.10.2, AC-2.10.4">Test device selection calls room.switchActiveDevice with correct params</idea>
+      <idea ac="AC-2.10.2, AC-2.10.4">Test toast notification appears on successful device switch</idea>
+      <idea ac="AC-2.10.2, AC-2.10.4">Test device preference saved to localStorage via settingsStore</idea>
+      <idea ac="AC-2.10.5">Test device disconnection detection triggers fallback</idea>
+      <idea ac="AC-2.10.5">Test disconnect toast notification shows correct message</idea>
+      <idea ac="AC-2.10.6">Test devicechange event triggers device list refresh</idea>
+      <idea ac="AC-2.10.6">Test dropdown shows updated list after device connect/disconnect</idea>
+    </ideas>
+  </tests>
+</story-context>

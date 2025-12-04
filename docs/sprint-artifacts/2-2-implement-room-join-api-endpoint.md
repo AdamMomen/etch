@@ -1,6 +1,6 @@
 # Story 2.2: Implement Room Join API Endpoint
 
-Status: review
+Status: done
 
 ## Story
 
@@ -278,4 +278,149 @@ N/A - Implementation was straightforward
 |------|--------|--------|
 | 2025-12-01 | Initial story draft from create-story workflow | SM Agent |
 | 2025-12-01 | Implementation complete - all ACs satisfied, 14 tests added | Dev Agent |
+| 2025-12-01 | Senior Developer Review notes appended - APPROVED | SM Agent |
+
+---
+
+## Senior Developer Review (AI)
+
+### Review Metadata
+
+- **Reviewer:** BMad
+- **Date:** 2025-12-01
+- **Story:** 2.2 - Implement Room Join API Endpoint
+- **Story Key:** 2-2-implement-room-join-api-endpoint
+
+### Outcome: ✅ APPROVED
+
+All acceptance criteria are fully implemented with comprehensive test coverage. The implementation follows established patterns from Story 2.1 and aligns with the architecture and tech spec requirements.
+
+### Summary
+
+The room join endpoint (`POST /api/rooms/:roomId/join`) has been successfully implemented with:
+- Zod validation for request body (participantName 1-50 chars, optional role)
+- Proper error handling (404 for missing rooms, 400 for validation, 500 for server errors)
+- LiveKit token generation with correct metadata (role, color)
+- Color cycling through PARTICIPANT_COLORS
+- 14 integration tests covering all acceptance criteria
+
+### Key Findings
+
+**No HIGH or MEDIUM severity findings.**
+
+**LOW Severity (Advisory):**
+- Note: Pre-existing ESLint warning about unused `Role` import in `packages/shared/src/test-utils/factories.ts:1` - not introduced by this story
+
+### Acceptance Criteria Coverage
+
+| AC# | Description | Status | Evidence |
+|-----|-------------|--------|----------|
+| AC-2.2.1 | Room Join Endpoint | ✅ IMPLEMENTED | `rooms.ts:132-221` - POST /:roomId/join handler returns 200 with token and livekitUrl |
+| AC-2.2.2 | LiveKit Token Generation | ✅ IMPLEMENTED | `rooms.ts:179-185` - generateToken() called with role and color; `rooms.test.ts:275-299` - test verifies JWT claims |
+| AC-2.2.3 | Color Assignment Cycling | ✅ IMPLEMENTED | `roomStore.ts:117-118` - colorIndex = participants.size % PARTICIPANT_COLORS.length; `rooms.test.ts:377-422` - tests verify cycling |
+| AC-2.2.4 | Room Not Found Error | ✅ IMPLEMENTED | `rooms.ts:152-161` - returns 404 with ROOM_NOT_FOUND; `rooms.test.ts:425-441` - test verifies |
+| AC-2.2.5 | Validation Error (missing name) | ✅ IMPLEMENTED | `rooms.ts:115-124` - Zod schema with min(1); `rooms.test.ts:444-473` - tests verify |
+| AC-2.2.6 | Name Length Validation | ✅ IMPLEMENTED | `rooms.ts:122` - max(50); `rooms.test.ts:476-491` - test verifies 51 chars returns 400 |
+| AC-2.2.7 | Participant Added to Store | ✅ IMPLEMENTED | `rooms.ts:167-172` - addParticipant(); `rooms.test.ts:323-342` - test verifies participant in room |
+
+**Summary:** 7 of 7 acceptance criteria fully implemented
+
+### Task Completion Validation
+
+| Task | Marked As | Verified As | Evidence |
+|------|-----------|-------------|----------|
+| Task 1: Add types | ✅ Complete | ✅ Verified | `api.ts:26-41` - JoinRoomRequest/JoinRoomResponse exist (pre-existing from Story 2.1) |
+| Task 1.1: JoinRoomRequest type | ✅ Complete | ✅ Verified | `api.ts:26-31` |
+| Task 1.2: JoinRoomResponse type | ✅ Complete | ✅ Verified | `api.ts:36-41` |
+| Task 1.3: Export types | ✅ Complete | ✅ Verified | `shared/src/index.ts` exports all API types |
+| Task 2: Color assignment logic | ✅ Complete | ✅ Verified | `roomStore.ts:117-118` - cycling logic exists (pre-existing) |
+| Task 2.1: getNextColor function | ✅ Complete | ✅ Verified | Inline in addParticipant at `roomStore.ts:117` |
+| Task 2.2: Cycling implementation | ✅ Complete | ✅ Verified | `roomStore.ts:117` - colorIndex % PARTICIPANT_COLORS.length |
+| Task 2.3: Unit tests | ✅ Complete | ✅ Verified | `roomStore.test.ts` has color cycling tests |
+| Task 3: Add participant to store | ✅ Complete | ✅ Verified | `roomStore.ts:105-130` - addParticipant exists (pre-existing) |
+| Task 3.1: addParticipant function | ✅ Complete | ✅ Verified | `roomStore.ts:105-130` |
+| Task 3.2: Return participant with color | ✅ Complete | ✅ Verified | `roomStore.ts:120-129` |
+| Task 3.3: Handle room not found | ✅ Complete | ✅ Verified | `roomStore.ts:112-114` returns undefined |
+| Task 3.4: Unit tests | ✅ Complete | ✅ Verified | `roomStore.test.ts` has addParticipant tests |
+| Task 4: Create join route | ✅ Complete | ✅ Verified | `rooms.ts:132-221` - POST /:roomId/join handler |
+| Task 4.1: Handler in rooms.ts | ✅ Complete | ✅ Verified | `rooms.ts:132` |
+| Task 4.2: Zod schema | ✅ Complete | ✅ Verified | `rooms.ts:115-124` - joinRoomSchema |
+| Task 4.3: Validate room exists | ✅ Complete | ✅ Verified | `rooms.ts:152-153` - getRoom() check |
+| Task 4.4: Return 404 | ✅ Complete | ✅ Verified | `rooms.ts:154-161` |
+| Task 4.5: Return 400 | ✅ Complete | ✅ Verified | `rooms.ts:134-144` - validation error handler |
+| Task 5: Generate token | ✅ Complete | ✅ Verified | `rooms.ts:163-185` |
+| Task 5.1: Generate UUID | ✅ Complete | ✅ Verified | `rooms.ts:164` - crypto.randomUUID() |
+| Task 5.2: Add to room | ✅ Complete | ✅ Verified | `rooms.ts:167-172` - addParticipant() |
+| Task 5.3: Generate LiveKit token | ✅ Complete | ✅ Verified | `rooms.ts:179-185` - generateToken() |
+| Task 5.4: Return 200 | ✅ Complete | ✅ Verified | `rooms.ts:198-203` |
+| Task 6: Integration testing | ✅ Complete | ✅ Verified | `rooms.test.ts:231-520` - 14 tests |
+| Task 6.1: Successful join test | ✅ Complete | ✅ Verified | `rooms.test.ts:259-273` |
+| Task 6.2: Non-existent room test | ✅ Complete | ✅ Verified | `rooms.test.ts:425-441` |
+| Task 6.3: Validation error tests | ✅ Complete | ✅ Verified | `rooms.test.ts:443-519` - 5 tests |
+| Task 6.4: Color cycling tests | ✅ Complete | ✅ Verified | `rooms.test.ts:377-422` - 2 tests |
+| Task 6.5: Token claims verification | ✅ Complete | ✅ Verified | `rooms.test.ts:275-321` |
+| Task 6.6: Participant stored test | ✅ Complete | ✅ Verified | `rooms.test.ts:323-342` |
+
+**Summary:** 27 of 27 completed tasks verified, 0 questionable, 0 falsely marked complete
+
+### Test Coverage and Gaps
+
+**Tests Present:**
+- 14 integration tests for join endpoint in `rooms.test.ts:231-520`
+- Tests cover all 7 acceptance criteria
+- Edge cases covered: empty name, missing name, name too long, invalid JSON, non-string name, non-existent room, viewer role override, max length name
+
+**Test Quality:** Good
+- Proper test isolation with `clearRooms()` and env var setup
+- Token claims verified by decoding JWT payload
+- Room store state verified after operations
+
+**No test gaps identified.**
+
+### Architectural Alignment
+
+✅ **Tech Spec Compliance:**
+- API contract matches `tech-spec-epic-2.md` exactly
+- Error codes (VALIDATION_ERROR, ROOM_NOT_FOUND, JOIN_FAILED) match spec
+- Default role is 'annotator' as specified
+
+✅ **Architecture Patterns:**
+- Uses `zValidator` for Zod validation per architecture.md
+- Error format `{ error: { code, message } }` matches standard
+- HTTP status codes correct (200, 400, 404, 500)
+
+✅ **Code Organization:**
+- Route handler in `routes/rooms.ts` alongside room creation
+- Reuses existing services (roomStore, livekit)
+- Tests co-located with source
+
+### Security Notes
+
+✅ **No security concerns found:**
+- Input validation via Zod prevents injection
+- Room existence checked before token generation
+- No sensitive data exposed in error messages
+- Token generation uses proper LiveKit SDK
+
+### Best-Practices and References
+
+**Technologies:**
+- Node.js + TypeScript
+- Hono framework with Zod validator
+- LiveKit server SDK for token generation
+- Vitest for testing
+
+**References:**
+- [Hono Zod Validator](https://hono.dev/middleware/builtin/zod-validator)
+- [LiveKit JWT Tokens](https://docs.livekit.io/home/server/generating-tokens/)
+- [Zod Schema Validation](https://zod.dev/)
+
+### Action Items
+
+**Code Changes Required:**
+(None - all requirements met)
+
+**Advisory Notes:**
+- Note: Consider adding rate limiting for join endpoint in production (not required for MVP)
+- Note: Pre-existing unused `Role` import in `factories.ts` could be cleaned up in future story
 
