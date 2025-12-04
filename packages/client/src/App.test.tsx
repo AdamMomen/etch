@@ -17,15 +17,25 @@ describe('App', () => {
     ).toBeInTheDocument()
   })
 
-  it('renders Create Meeting button', () => {
+  it('renders Start Meeting button', () => {
     render(<App />)
 
-    expect(screen.getByText('Create Meeting')).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: /start meeting/i })
+    ).toBeInTheDocument()
   })
 
-  it('renders Join Meeting button', () => {
+  it('renders Join button', () => {
     render(<App />)
 
-    expect(screen.getByText('Join Meeting')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /join/i })).toBeInTheDocument()
+  })
+
+  it('renders room code input', () => {
+    render(<App />)
+
+    expect(
+      screen.getByPlaceholderText(/enter room code or link/i)
+    ).toBeInTheDocument()
   })
 })

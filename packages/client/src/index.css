@@ -90,3 +90,25 @@
 html {
   color-scheme: dark;
 }
+
+/* Speaking indicator animation - per UX spec: subtle pulse animation on participant border */
+@keyframes speaking-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--speaking-color, rgba(139, 92, 246, 0.4));
+  }
+  50% {
+    box-shadow: 0 0 0 4px var(--speaking-color, rgba(139, 92, 246, 0.2));
+  }
+}
+
+.animate-speaking-pulse {
+  animation: speaking-pulse 1s ease-in-out infinite;
+}
+
+/* Respect reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  .animate-speaking-pulse {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--speaking-color, rgba(139, 92, 246, 0.4));
+  }
+}

@@ -21,6 +21,10 @@ export interface Participant {
   color: string
   /** Whether this is the local user */
   isLocal: boolean
+  /** Whether the participant is currently speaking (audio detected) */
+  isSpeaking?: boolean
+  /** Whether the participant has video enabled */
+  hasVideo?: boolean
 }
 
 /**
