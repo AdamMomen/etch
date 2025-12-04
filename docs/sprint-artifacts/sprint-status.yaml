@@ -56,9 +56,9 @@ development_status:
   2-7-implement-audio-publishing-and-controls: done
   2-8-implement-video-publishing-and-controls: done
   2-9-display-remote-participant-audio-video-streams: done
-  2-10-implement-device-selection-for-microphone-and-camera: in-progress
-  2-11-implement-participant-volume-control: backlog
-  2-12-implement-leave-meeting-flow: backlog
+  2-10-implement-device-selection-for-microphone-and-camera: done
+  2-11-implement-participant-volume-control: done
+  2-12-implement-leave-meeting-flow: done
   2-13-implement-room-invite-link-generation-and-sharing: backlog
   2-14-implement-user-preferences-storage: backlog
   epic-2-retrospective: optional

@@ -19,6 +19,10 @@ vi.mock('livekit-client', async () => {
     VideoPresets: {
       h720: { width: 1280, height: 720 },
     },
+    RoomEvent: {
+      LocalTrackPublished: 'localTrackPublished',
+      LocalTrackUnpublished: 'localTrackUnpublished',
+    },
   }
 })
 
@@ -58,6 +62,8 @@ describe('CameraButton', () => {
         isCameraEnabled: false,
         getTrackPublication: mockGetTrackPublication,
       } as unknown as Room['localParticipant'],
+      on: vi.fn(),
+      off: vi.fn(),
     }
 
     mockSetCameraEnabled.mockResolvedValue(undefined)

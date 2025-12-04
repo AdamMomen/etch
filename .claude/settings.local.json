@@ -7,7 +7,8 @@
       "WebSearch",
       "Bash(pnpm test:client:*)",
       "Bash(pnpm build:web:*)",
-      "Bash(pnpm build:client:*)"
+      "Bash(pnpm build:client:*)",
+      "Bash(grep:*)"
     ],
     "deny": [],
     "ask": []

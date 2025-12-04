@@ -1,8 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render } from '@testing-library/react'
+import { act } from 'react'
 import { Track } from 'livekit-client'
 import type { RemoteTrackPublication, RemoteTrack } from 'livekit-client'
 import { RemoteParticipantAudio } from './RemoteParticipantAudio'
+import { useVolumeStore } from '@/stores/volumeStore'
 
 // Mock livekit-client
 vi.mock('livekit-client', () => ({
@@ -21,22 +23,32 @@ vi.mock('livekit-client', () => ({
 describe('RemoteParticipantAudio', () => {
   const mockAttach = vi.fn()
   const mockDetach = vi.fn()
-  let mockTrack: Partial<RemoteTrack>
+  const mockSetVolume = vi.fn()
+  let mockTrack: Partial<RemoteTrack> & { setVolume?: ReturnType<typeof vi.fn> }
   let mockTrackPublication: Partial<RemoteTrackPublication>
 
   beforeEach(() => {
     vi.clearAllMocks()
+    // Reset volume store to default state
+    useVolumeStore.getState().resetVolumes()
 
+    // Mock track with setVolume method (RemoteAudioTrack method for volume control)
     mockTrack = {
       kind: Track.Kind.Audio as any,
       attach: mockAttach,
       detach: mockDetach,
-    }
+      setVolume: mockSetVolume, // Required for volume control (AC-2.11.3)
+    } as Partial<RemoteTrack> & { setVolume?: ReturnType<typeof vi.fn> }
 
     mockTrackPublication = {
       isSubscribed: true,
       track: mockTrack as RemoteTrack,
     }
+  })
+
+  afterEach(() => {
+    // Clean up volume store after each test
+    useVolumeStore.getState().resetVolumes()
   })
 
   describe('AC-2.9.2: Remote Audio Playback', () => {
@@ -142,6 +154,86 @@ describe('RemoteParticipantAudio', () => {
       expect(mockAttach).toHaveBeenCalled()
       unmount()
       expect(mockDetach).toHaveBeenCalled()
+    })
+  })
+
+  describe('AC-2.11.3: Volume Adjustment', () => {
+    it('applies default volume (1.0) on mount', () => {
+      render(
+        <RemoteParticipantAudio
+          trackPublication={mockTrackPublication as RemoteTrackPublication}
+          participantId="participant-1"
+        />
+      )
+
+      // Default volume should be 1.0 (100%)
+      expect(mockSetVolume).toHaveBeenCalledWith(1.0)
+    })
+
+    it('applies volume from store when changed', async () => {
+      render(
+        <RemoteParticipantAudio
+          trackPublication={mockTrackPublication as RemoteTrackPublication}
+          participantId="participant-1"
+        />
+      )
+
+      // Change volume to 50%
+      await act(async () => {
+        useVolumeStore.getState().setVolume('participant-1', 0.5)
+      })
+
+      // Should apply the new volume
+      expect(mockSetVolume).toHaveBeenCalledWith(0.5)
+    })
+
+    it('applies muted volume (0) when set to 0', async () => {
+      render(
+        <RemoteParticipantAudio
+          trackPublication={mockTrackPublication as RemoteTrackPublication}
+          participantId="participant-1"
+        />
+      )
+
+      // Mute participant
+      await act(async () => {
+        useVolumeStore.getState().setVolume('participant-1', 0)
+      })
+
+      expect(mockSetVolume).toHaveBeenCalledWith(0)
+    })
+
+    it('applies boosted volume (>1.0) for volume boost', async () => {
+      render(
+        <RemoteParticipantAudio
+          trackPublication={mockTrackPublication as RemoteTrackPublication}
+          participantId="participant-1"
+        />
+      )
+
+      // Boost volume to 150%
+      await act(async () => {
+        useVolumeStore.getState().setVolume('participant-1', 1.5)
+      })
+
+      expect(mockSetVolume).toHaveBeenCalledWith(1.5)
+    })
+
+    it('clamps volume to max of 2.0 (200%)', async () => {
+      render(
+        <RemoteParticipantAudio
+          trackPublication={mockTrackPublication as RemoteTrackPublication}
+          participantId="participant-1"
+        />
+      )
+
+      // Try to set volume above 200%
+      await act(async () => {
+        useVolumeStore.getState().setVolume('participant-1', 3.0)
+      })
+
+      // Volume should be clamped to 2.0
+      expect(mockSetVolume).toHaveBeenCalledWith(2.0)
     })
   })
 })

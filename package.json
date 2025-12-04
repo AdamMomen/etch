@@ -15,11 +15,15 @@
     "format": "prettier --write \"packages/*/src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"packages/*/src/**/*.{ts,tsx}\"",
     "typecheck": "pnpm --filter client exec tsc --noEmit && pnpm --filter server exec tsc --noEmit && pnpm --filter @nameless/shared exec tsc --noEmit",
+    "pretest": "pkill -f vitest 2>/dev/null || true",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "pretest:client": "pkill -f vitest 2>/dev/null || true",
     "test:client": "pnpm --filter client test run",
+    "pretest:server": "pkill -f vitest 2>/dev/null || true",
     "test:server": "pnpm --filter server test run",
+    "pretest:shared": "pkill -f vitest 2>/dev/null || true",
     "test:shared": "pnpm --filter @nameless/shared test run"
   },
   "devDependencies": {

@@ -18,6 +18,7 @@ vi.mock('react-router-dom', async () => {
 
 // Mock useLiveKit hook
 const mockRetry = vi.fn()
+const mockLeaveRoom = vi.fn().mockResolvedValue(undefined)
 const mockSetMicrophoneEnabled = vi.fn().mockResolvedValue(undefined)
 const mockLocalParticipant = {
   setMicrophoneEnabled: mockSetMicrophoneEnabled,
@@ -28,6 +29,8 @@ const mockLocalParticipant = {
 const mockRoom = {
   localParticipant: mockLocalParticipant,
   remoteParticipants: new Map(),
+  on: vi.fn(),
+  off: vi.fn(),
 }
 vi.mock('@/hooks/useLiveKit', () => ({
   useLiveKit: () => ({
@@ -37,6 +40,7 @@ vi.mock('@/hooks/useLiveKit', () => ({
     isConnected: true,
     error: null,
     retry: mockRetry,
+    leaveRoom: mockLeaveRoom,
   }),
 }))
 
@@ -353,24 +357,118 @@ describe('MeetingRoom', () => {
   })
 
   describe('Leave Button Functionality (AC-2.5.8)', () => {
-    it('navigates to home when leave is clicked', async () => {
+    it('navigates to home when leave is clicked (non-host)', async () => {
+      // Set up as non-host participant
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'local-user-id',
+            name: 'Test User',
+            role: 'annotator', // Non-host role
+            color: '#f97316',
+            isLocal: true,
+          },
+        })
+      })
+
       const user = userEvent.setup()
       renderMeetingRoom()
 
       const leaveButton = screen.getByLabelText('Leave meeting')
       await user.click(leaveButton)
 
-      expect(mockNavigate).toHaveBeenCalledWith('/')
+      // Wait for async leave operation to complete
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/')
+      })
     })
 
-    it('clears room store when leaving', async () => {
+    it('clears room store when leaving (non-host)', async () => {
+      // Set up as non-host participant
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'local-user-id',
+            name: 'Test User',
+            role: 'annotator', // Non-host role
+            color: '#f97316',
+            isLocal: true,
+          },
+        })
+      })
+
       const user = userEvent.setup()
       renderMeetingRoom()
 
       const leaveButton = screen.getByLabelText('Leave meeting')
       await user.click(leaveButton)
 
-      expect(useRoomStore.getState().currentRoom).toBeNull()
+      // Wait for async leave operation to complete
+      await waitFor(() => {
+        expect(useRoomStore.getState().currentRoom).toBeNull()
+      })
+    })
+
+    it('shows confirmation dialog when host clicks leave', async () => {
+      // Host is set by default in beforeEach
+      const user = userEvent.setup()
+      renderMeetingRoom()
+
+      const leaveButton = screen.getByLabelText('Leave meeting')
+      await user.click(leaveButton)
+
+      // Should show confirmation dialog
+      await waitFor(() => {
+        expect(screen.getByText('Leave meeting?')).toBeInTheDocument()
+        expect(screen.getByText(/You are the host/)).toBeInTheDocument()
+      })
+    })
+
+    it('leaves when host confirms in dialog', async () => {
+      // Host is set by default in beforeEach
+      const user = userEvent.setup()
+      renderMeetingRoom()
+
+      const leaveButton = screen.getByLabelText('Leave meeting')
+      await user.click(leaveButton)
+
+      // Wait for dialog to appear
+      await waitFor(() => {
+        expect(screen.getByText('Leave meeting?')).toBeInTheDocument()
+      })
+
+      // Click the Leave button in the dialog
+      const confirmButton = screen.getByRole('button', { name: 'Leave' })
+      await user.click(confirmButton)
+
+      // Wait for async leave operation to complete
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/')
+      })
+    })
+
+    it('stays in meeting when host cancels dialog', async () => {
+      // Host is set by default in beforeEach
+      const user = userEvent.setup()
+      renderMeetingRoom()
+
+      const leaveButton = screen.getByLabelText('Leave meeting')
+      await user.click(leaveButton)
+
+      // Wait for dialog to appear
+      await waitFor(() => {
+        expect(screen.getByText('Leave meeting?')).toBeInTheDocument()
+      })
+
+      // Click Cancel
+      const cancelButton = screen.getByRole('button', { name: 'Cancel' })
+      await user.click(cancelButton)
+
+      // Dialog should close and we should still be in the room
+      await waitFor(() => {
+        expect(screen.queryByText('Leave meeting?')).not.toBeInTheDocument()
+      })
+      expect(mockNavigate).not.toHaveBeenCalled()
     })
   })
 

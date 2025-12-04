@@ -19,6 +19,10 @@ vi.mock('livekit-client', async () => {
     VideoPresets: {
       h720: { width: 1280, height: 720 },
     },
+    RoomEvent: {
+      LocalTrackPublished: 'localTrackPublished',
+      LocalTrackUnpublished: 'localTrackUnpublished',
+    },
   }
 })
 
@@ -27,6 +31,8 @@ vi.mock('sonner', () => ({
   toast: {
     error: vi.fn(),
     info: vi.fn(),
+    warning: vi.fn(),
+    success: vi.fn(),
   },
 }))
 
@@ -44,6 +50,8 @@ describe('useVideo', () => {
         isCameraEnabled: false,
         getTrackPublication: mockGetTrackPublication,
       } as unknown as Room['localParticipant'],
+      on: vi.fn(),
+      off: vi.fn(),
     }
 
     // Reset stores
@@ -347,6 +355,158 @@ describe('useVideo', () => {
       })
 
       expect(result.current.videoTrack).toBe(null)
+    })
+  })
+
+  describe('device disconnection handling (AC-2.10.5)', () => {
+    it('falls back to default when current camera is disconnected', async () => {
+      const { toast } = await import('sonner')
+      let deviceChangeCallback: (() => void) | null = null
+      const mockEnumerateDevices = vi.fn()
+      const mockSwitchActiveDevice = vi.fn().mockResolvedValue(true)
+
+      // Setup mock room with switchActiveDevice
+      const roomWithSwitch = {
+        ...mockRoom,
+        switchActiveDevice: mockSwitchActiveDevice,
+      }
+
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          enumerateDevices: mockEnumerateDevices,
+          addEventListener: vi.fn((event, callback) => {
+            if (event === 'devicechange') {
+              deviceChangeCallback = callback
+            }
+          }),
+          removeEventListener: vi.fn(),
+        },
+        writable: true,
+        configurable: true,
+      })
+
+      // Reset settings with a selected device
+      useSettingsStore.setState({
+        isVideoOff: true,
+        preferredCameraId: 'external-camera',
+      })
+
+      // Device disconnection - external-camera is NOT in the list
+      mockEnumerateDevices.mockResolvedValue([
+        { deviceId: 'default', kind: 'videoinput', label: 'Default' },
+      ])
+
+      renderHook(() => useVideo({ room: roomWithSwitch as Room }))
+
+      // Trigger devicechange
+      await act(async () => {
+        deviceChangeCallback?.()
+      })
+
+      await waitFor(() => {
+        expect(mockSwitchActiveDevice).toHaveBeenCalledWith('videoinput', 'default')
+        expect(toast.warning).toHaveBeenCalledWith(
+          'Camera disconnected, switched to System Default'
+        )
+      })
+
+      // Cleanup
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: undefined,
+        writable: true,
+        configurable: true,
+      })
+    })
+
+    it('does not fall back if current camera still exists', async () => {
+      const { toast } = await import('sonner')
+      vi.clearAllMocks()
+
+      let deviceChangeCallback: (() => void) | null = null
+      const mockEnumerateDevices = vi.fn()
+      const mockSwitchActiveDevice = vi.fn().mockResolvedValue(true)
+
+      // Setup mock room with switchActiveDevice
+      const roomWithSwitch = {
+        ...mockRoom,
+        switchActiveDevice: mockSwitchActiveDevice,
+      }
+
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          enumerateDevices: mockEnumerateDevices,
+          addEventListener: vi.fn((event, callback) => {
+            if (event === 'devicechange') {
+              deviceChangeCallback = callback
+            }
+          }),
+          removeEventListener: vi.fn(),
+        },
+        writable: true,
+        configurable: true,
+      })
+
+      // Reset settings with a selected device
+      useSettingsStore.setState({
+        isVideoOff: true,
+        preferredCameraId: 'external-camera',
+      })
+
+      // Devices still include external-camera
+      mockEnumerateDevices.mockResolvedValue([
+        { deviceId: 'default', kind: 'videoinput', label: 'Default' },
+        { deviceId: 'external-camera', kind: 'videoinput', label: 'External Camera' },
+      ])
+
+      renderHook(() => useVideo({ room: roomWithSwitch as Room }))
+
+      // Trigger devicechange
+      await act(async () => {
+        deviceChangeCallback?.()
+      })
+
+      // Wait a bit for any async operations, then check
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 50))
+      })
+
+      expect(mockSwitchActiveDevice).not.toHaveBeenCalled()
+      expect(toast.warning).not.toHaveBeenCalled()
+
+      // Cleanup
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: undefined,
+        writable: true,
+        configurable: true,
+      })
+    })
+
+    it('does not monitor devicechange when using default camera', () => {
+      const mockAddEventListener = vi.fn()
+
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          enumerateDevices: vi.fn(),
+          addEventListener: mockAddEventListener,
+          removeEventListener: vi.fn(),
+        },
+        writable: true,
+        configurable: true,
+      })
+
+      useSettingsStore.setState({ preferredCameraId: 'default' })
+
+      renderHook(() => useVideo({ room: mockRoom as Room }))
+
+      // Should not add listener when already on default
+      expect(mockAddEventListener).not.toHaveBeenCalled()
+
+      // Cleanup
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: undefined,
+        writable: true,
+        configurable: true,
+      })
     })
   })
 })

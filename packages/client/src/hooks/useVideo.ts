@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Room, VideoPresets, Track } from 'livekit-client'
+import { Room, VideoPresets, Track, RoomEvent, LocalTrackPublication } from 'livekit-client'
 import { toast } from 'sonner'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useRoomStore } from '@/stores/roomStore'
@@ -112,7 +112,7 @@ export function useVideo({ room }: UseVideoOptions): UseVideoReturn {
     }
   }, [room, setPreferredCamera])
 
-  // Sync publishing state with LiveKit's actual state
+  // Sync publishing state with LiveKit's actual state and listen for track events
   useEffect(() => {
     if (!room) {
       setIsPublishing(false)
@@ -120,16 +120,76 @@ export function useVideo({ room }: UseVideoOptions): UseVideoReturn {
       return
     }
 
-    const isCameraEnabled = room.localParticipant.isCameraEnabled
-    setIsPublishing(isCameraEnabled)
+    // Initial sync
+    const syncTrackState = () => {
+      const isCameraEnabled = room.localParticipant.isCameraEnabled
+      setIsPublishing(isCameraEnabled)
 
-    if (isCameraEnabled) {
-      const trackPub = room.localParticipant.getTrackPublication(Track.Source.Camera)
-      if (trackPub?.track) {
-        setVideoTrack(trackPub.track)
+      if (isCameraEnabled) {
+        const trackPub = room.localParticipant.getTrackPublication(Track.Source.Camera)
+        if (trackPub?.track) {
+          setVideoTrack(trackPub.track)
+        }
+      } else {
+        setVideoTrack(null)
       }
     }
+
+    syncTrackState()
+
+    // Listen for local track published event
+    const handleLocalTrackPublished = (publication: LocalTrackPublication) => {
+      if (publication.source === Track.Source.Camera && publication.track) {
+        setVideoTrack(publication.track)
+        setIsPublishing(true)
+      }
+    }
+
+    // Listen for local track unpublished event
+    const handleLocalTrackUnpublished = (publication: LocalTrackPublication) => {
+      if (publication.source === Track.Source.Camera) {
+        setVideoTrack(null)
+        setIsPublishing(false)
+      }
+    }
+
+    room.on(RoomEvent.LocalTrackPublished, handleLocalTrackPublished)
+    room.on(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished)
+
+    return () => {
+      room.off(RoomEvent.LocalTrackPublished, handleLocalTrackPublished)
+      room.off(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished)
+    }
   }, [room])
+
+  // Handle device disconnection - fall back to default when current device is removed
+  useEffect(() => {
+    if (!room || !currentDeviceId || currentDeviceId === 'default') return
+
+    const handleDeviceChange = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const videoDevices = devices.filter((d) => d.kind === 'videoinput')
+        const currentDeviceExists = videoDevices.some((d) => d.deviceId === currentDeviceId)
+
+        if (!currentDeviceExists) {
+          // Current device was disconnected, fall back to default
+          await room.switchActiveDevice('videoinput', 'default')
+          setCurrentDeviceId('default')
+          setPreferredCamera('default')
+          toast.warning('Camera disconnected, switched to System Default')
+        }
+      } catch (error) {
+        console.error('Error handling device change:', error)
+      }
+    }
+
+    navigator.mediaDevices?.addEventListener('devicechange', handleDeviceChange)
+
+    return () => {
+      navigator.mediaDevices?.removeEventListener('devicechange', handleDeviceChange)
+    }
+  }, [room, currentDeviceId, setPreferredCamera])
 
   return {
     isVideoOff,

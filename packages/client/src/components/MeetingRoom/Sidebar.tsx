@@ -1,6 +1,7 @@
 import { Users, UserPlus, ChevronLeft, ChevronRight, Crown, Video, VideoOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { VolumePopover } from './VolumePopover'
 import type { Participant } from '@nameless/shared'
 
 interface SidebarProps {
@@ -98,7 +99,7 @@ interface ParticipantListItemProps {
 function ParticipantListItem({ participant, isLocal }: ParticipantListItemProps) {
   return (
     <li
-      className="flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/50"
+      className="group flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/50"
     >
       {/* Avatar with speaking indicator */}
       <div className="relative shrink-0">
@@ -135,6 +136,16 @@ function ParticipantListItem({ participant, isLocal }: ParticipantListItemProps)
           </span>
         )}
       </div>
+
+      {/* Volume control - only show for remote participants on hover */}
+      {!isLocal && (
+        <div className="shrink-0 opacity-0 transition-opacity group-hover:opacity-100">
+          <VolumePopover
+            participantId={participant.id}
+            participantName={participant.name}
+          />
+        </div>
+      )}
 
       {/* Video indicator */}
       <div className="shrink-0">

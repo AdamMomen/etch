@@ -22,6 +22,8 @@ vi.mock('sonner', () => ({
   toast: {
     error: vi.fn(),
     info: vi.fn(),
+    warning: vi.fn(),
+    success: vi.fn(),
   },
 }))
 
@@ -305,6 +307,158 @@ describe('useAudio', () => {
       await waitFor(() => {
         const state = useRoomStore.getState()
         expect(state.localParticipant?.isSpeaking).toBe(true)
+      })
+    })
+  })
+
+  describe('device disconnection handling (AC-2.10.5)', () => {
+    it('falls back to default when current device is disconnected', async () => {
+      const { toast } = await import('sonner')
+      let deviceChangeCallback: (() => void) | null = null
+      const mockEnumerateDevices = vi.fn()
+      const mockSwitchActiveDevice = vi.fn().mockResolvedValue(true)
+
+      // Setup mock room with switchActiveDevice
+      const roomWithSwitch = {
+        ...mockRoom,
+        switchActiveDevice: mockSwitchActiveDevice,
+      }
+
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          enumerateDevices: mockEnumerateDevices,
+          addEventListener: vi.fn((event, callback) => {
+            if (event === 'devicechange') {
+              deviceChangeCallback = callback
+            }
+          }),
+          removeEventListener: vi.fn(),
+        },
+        writable: true,
+        configurable: true,
+      })
+
+      // Reset settings with a selected device
+      useSettingsStore.setState({
+        isMuted: true,
+        preferredMicrophoneId: 'external-mic',
+      })
+
+      // Device disconnection - external-mic is NOT in the list
+      mockEnumerateDevices.mockResolvedValue([
+        { deviceId: 'default', kind: 'audioinput', label: 'Default' },
+      ])
+
+      renderHook(() => useAudio({ room: roomWithSwitch as Room }))
+
+      // Trigger devicechange
+      await act(async () => {
+        deviceChangeCallback?.()
+      })
+
+      await waitFor(() => {
+        expect(mockSwitchActiveDevice).toHaveBeenCalledWith('audioinput', 'default')
+        expect(toast.warning).toHaveBeenCalledWith(
+          'Device disconnected, switched to System Default'
+        )
+      })
+
+      // Cleanup
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: undefined,
+        writable: true,
+        configurable: true,
+      })
+    })
+
+    it('does not fall back if current device still exists', async () => {
+      const { toast } = await import('sonner')
+      vi.clearAllMocks()
+
+      let deviceChangeCallback: (() => void) | null = null
+      const mockEnumerateDevices = vi.fn()
+      const mockSwitchActiveDevice = vi.fn().mockResolvedValue(true)
+
+      // Setup mock room with switchActiveDevice
+      const roomWithSwitch = {
+        ...mockRoom,
+        switchActiveDevice: mockSwitchActiveDevice,
+      }
+
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          enumerateDevices: mockEnumerateDevices,
+          addEventListener: vi.fn((event, callback) => {
+            if (event === 'devicechange') {
+              deviceChangeCallback = callback
+            }
+          }),
+          removeEventListener: vi.fn(),
+        },
+        writable: true,
+        configurable: true,
+      })
+
+      // Reset settings with a selected device
+      useSettingsStore.setState({
+        isMuted: true,
+        preferredMicrophoneId: 'external-mic',
+      })
+
+      // Devices still include external-mic
+      mockEnumerateDevices.mockResolvedValue([
+        { deviceId: 'default', kind: 'audioinput', label: 'Default' },
+        { deviceId: 'external-mic', kind: 'audioinput', label: 'External Mic' },
+      ])
+
+      renderHook(() => useAudio({ room: roomWithSwitch as Room }))
+
+      // Trigger devicechange
+      await act(async () => {
+        deviceChangeCallback?.()
+      })
+
+      // Wait a bit for any async operations, then check
+      await act(async () => {
+        await new Promise((r) => setTimeout(r, 50))
+      })
+
+      expect(mockSwitchActiveDevice).not.toHaveBeenCalled()
+      expect(toast.warning).not.toHaveBeenCalled()
+
+      // Cleanup
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: undefined,
+        writable: true,
+        configurable: true,
+      })
+    })
+
+    it('does not monitor devicechange when using default device', () => {
+      const mockAddEventListener = vi.fn()
+
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          enumerateDevices: vi.fn(),
+          addEventListener: mockAddEventListener,
+          removeEventListener: vi.fn(),
+        },
+        writable: true,
+        configurable: true,
+      })
+
+      useSettingsStore.setState({ preferredMicrophoneId: 'default' })
+
+      renderHook(() => useAudio({ room: mockRoom as Room }))
+
+      // Should not add listener when already on default
+      expect(mockAddEventListener).not.toHaveBeenCalled()
+
+      // Cleanup
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: undefined,
+        writable: true,
+        configurable: true,
       })
     })
   })

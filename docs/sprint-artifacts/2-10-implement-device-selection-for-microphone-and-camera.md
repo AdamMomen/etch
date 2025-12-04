@@ -1,6 +1,6 @@
 # Story 2.10: Implement Device Selection for Microphone and Camera
 
-Status: review
+Status: done
 
 ## Story
 
@@ -53,65 +53,65 @@ So that **I can use my preferred devices for the meeting**.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Create useDevices hook** (AC: 2.10.1, 2.10.3, 2.10.6)
-  - [ ] Create `packages/client/src/hooks/useDevices.ts`
-  - [ ] Use `navigator.mediaDevices.enumerateDevices()` to list devices
-  - [ ] Filter by device kind (audioinput, videoinput)
-  - [ ] Listen for `devicechange` event to refresh list
-  - [ ] Handle permission edge cases (empty labels before permission granted)
-  - [ ] Return `{ audioDevices, videoDevices, refresh }`
+- [x] **Task 1: Create useDevices hook** (AC: 2.10.1, 2.10.3, 2.10.6)
+  - [x] Create `packages/client/src/hooks/useDevices.ts`
+  - [x] Use `navigator.mediaDevices.enumerateDevices()` to list devices
+  - [x] Filter by device kind (audioinput, videoinput)
+  - [x] Listen for `devicechange` event to refresh list
+  - [x] Handle permission edge cases (empty labels before permission granted)
+  - [x] Return `{ audioDevices, videoDevices, refresh }`
 
-- [ ] **Task 2: Create DeviceSelector component** (AC: 2.10.1, 2.10.3)
-  - [ ] Create `packages/client/src/components/MeetingRoom/DeviceSelector.tsx`
-  - [ ] Use shadcn/ui DropdownMenu component
-  - [ ] Accept props: `devices`, `selectedDeviceId`, `onSelect`, `type` (audio/video)
-  - [ ] Display "System Default" as first option with `deviceId: 'default'`
-  - [ ] Show checkmark icon next to currently selected device
-  - [ ] Truncate long device names with ellipsis
+- [x] **Task 2: Create DeviceSelector component** (AC: 2.10.1, 2.10.3)
+  - [x] Create `packages/client/src/components/MeetingRoom/DeviceSelector.tsx`
+  - [x] Use shadcn/ui DropdownMenu component
+  - [x] Accept props: `devices`, `selectedDeviceId`, `onSelect`, `type` (audio/video)
+  - [x] Display "System Default" as first option with `deviceId: 'default'`
+  - [x] Show checkmark icon next to currently selected device
+  - [x] Truncate long device names with ellipsis
 
-- [ ] **Task 3: Integrate DeviceSelector with MicrophoneButton** (AC: 2.10.1, 2.10.2)
-  - [ ] Update `MicrophoneButton.tsx` to include dropdown trigger
-  - [ ] Add small dropdown arrow indicator next to mic icon
-  - [ ] Connect to useDevices hook for audio devices
-  - [ ] Wire onSelect to device switching logic
+- [x] **Task 3: Integrate DeviceSelector with MicrophoneButton** (AC: 2.10.1, 2.10.2)
+  - [x] Update `MicrophoneButton.tsx` to include dropdown trigger
+  - [x] Add small dropdown arrow indicator next to mic icon
+  - [x] Connect to useDevices hook for audio devices
+  - [x] Wire onSelect to device switching logic
 
-- [ ] **Task 4: Integrate DeviceSelector with CameraButton** (AC: 2.10.3, 2.10.4)
-  - [ ] Update `CameraButton.tsx` (or create if needed) to include dropdown trigger
-  - [ ] Add small dropdown arrow indicator next to camera icon
-  - [ ] Connect to useDevices hook for video devices
-  - [ ] Wire onSelect to device switching logic
+- [x] **Task 4: Integrate DeviceSelector with CameraButton** (AC: 2.10.3, 2.10.4)
+  - [x] Update `CameraButton.tsx` (or create if needed) to include dropdown trigger
+  - [x] Add small dropdown arrow indicator next to camera icon
+  - [x] Connect to useDevices hook for video devices
+  - [x] Wire onSelect to device switching logic
 
-- [ ] **Task 5: Implement device switching via LiveKit** (AC: 2.10.2, 2.10.4)
-  - [ ] Update `useLiveKit.ts` or create `useDeviceSwitch` hook
-  - [ ] Use `room.switchActiveDevice(kind, deviceId)` for switching
-  - [ ] Handle switch success/failure states
-  - [ ] Update local state to reflect new device selection
+- [x] **Task 5: Implement device switching via LiveKit** (AC: 2.10.2, 2.10.4)
+  - [x] Update `useLiveKit.ts` or create `useDeviceSwitch` hook
+  - [x] Use `room.switchActiveDevice(kind, deviceId)` for switching
+  - [x] Handle switch success/failure states
+  - [x] Update local state to reflect new device selection
 
-- [ ] **Task 6: Create settingsStore for device preferences** (AC: 2.10.2, 2.10.4)
-  - [ ] Create `packages/client/src/stores/settingsStore.ts`
-  - [ ] Use Zustand with `persist` middleware for localStorage
-  - [ ] Store `preferredMicrophoneId` and `preferredCameraId`
-  - [ ] Load preferences on room join and apply if device available
+- [x] **Task 6: Create settingsStore for device preferences** (AC: 2.10.2, 2.10.4)
+  - [x] Create `packages/client/src/stores/settingsStore.ts`
+  - [x] Use Zustand with `persist` middleware for localStorage
+  - [x] Store `preferredMicrophoneId` and `preferredCameraId`
+  - [x] Load preferences on room join and apply if device available
 
-- [ ] **Task 7: Implement toast notifications** (AC: 2.10.2, 2.10.4, 2.10.5)
-  - [ ] Add toast component if not already present (shadcn/ui toast)
-  - [ ] Show "Switched to {device}" on successful switch
-  - [ ] Show "Device disconnected, switched to {default}" on disconnect fallback
-  - [ ] Toast auto-dismiss after 3 seconds
+- [x] **Task 7: Implement toast notifications** (AC: 2.10.2, 2.10.4, 2.10.5)
+  - [x] Add toast component if not already present (shadcn/ui toast)
+  - [x] Show "Switched to {device}" on successful switch
+  - [x] Show "Device disconnected, switched to {default}" on disconnect fallback
+  - [x] Toast auto-dismiss after 3 seconds
 
-- [ ] **Task 8: Handle device disconnection** (AC: 2.10.5)
-  - [ ] Listen for `devicechange` event
-  - [ ] Detect when current device is no longer in list
-  - [ ] Trigger fallback to default device
-  - [ ] Show disconnect toast notification
+- [x] **Task 8: Handle device disconnection** (AC: 2.10.5)
+  - [x] Listen for `devicechange` event
+  - [x] Detect when current device is no longer in list
+  - [x] Trigger fallback to default device
+  - [x] Show disconnect toast notification
 
-- [ ] **Task 9: Write tests** (AC: all)
-  - [ ] Test useDevices hook with mocked navigator.mediaDevices
-  - [ ] Test DeviceSelector component renders device list
-  - [ ] Test device selection updates state correctly
-  - [ ] Test device disconnection triggers fallback
-  - [ ] Test preferences persist to localStorage
-  - [ ] Test toast notifications appear on device changes
+- [x] **Task 9: Write tests** (AC: all)
+  - [x] Test useDevices hook with mocked navigator.mediaDevices
+  - [x] Test DeviceSelector component renders device list
+  - [x] Test device selection updates state correctly
+  - [x] Test device disconnection triggers fallback
+  - [x] Test preferences persist to localStorage
+  - [x] Test toast notifications appear on device changes
 
 ## Dev Notes
 
@@ -302,13 +302,39 @@ May need to add shadcn/ui components:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+claude-opus-4-5-20251101
 
 ### Debug Log References
 
+- Resumed partially completed story with existing implementation in place
+- Added device disconnection handling (AC-2.10.5) which was missing from initial implementation
+- Added tests for device disconnection scenarios
+
 ### Completion Notes List
 
+- **All 298 client tests pass** - increased from 256 tests in Story 2.9
+- **Device Selection Feature Complete**: Users can now select microphone and camera devices from dropdown menus
+- **Device Persistence**: Device preferences stored in localStorage via Zustand persist middleware
+- **Device Disconnection Handling**: Automatic fallback to system default when selected device is disconnected
+- **Toast Notifications**: Success toasts on device switch, warning toasts on device disconnection
+- **Key Implementation Pattern**: Device switching integrated into useAudio/useVideo hooks rather than creating separate hook
+
 ### File List
+
+**New Files:**
+- `packages/client/src/hooks/useDevices.ts` - Device enumeration hook with devicechange listener
+- `packages/client/src/hooks/useDevices.test.ts` - Tests for useDevices hook
+- `packages/client/src/components/MeetingRoom/DeviceSelector.tsx` - Dropdown component for device selection
+- `packages/client/src/components/MeetingRoom/DeviceSelector.test.tsx` - Tests for DeviceSelector component
+
+**Modified Files:**
+- `packages/client/src/stores/settingsStore.ts` - Added preferredMicrophoneId and preferredCameraId
+- `packages/client/src/hooks/useAudio.ts` - Added switchDevice function and device disconnection handling
+- `packages/client/src/hooks/useAudio.test.ts` - Added device disconnection tests
+- `packages/client/src/hooks/useVideo.ts` - Added switchDevice function and device disconnection handling
+- `packages/client/src/hooks/useVideo.test.ts` - Added device disconnection tests
+- `packages/client/src/components/MeetingRoom/MicrophoneButton.tsx` - Integrated DeviceSelector
+- `packages/client/src/components/MeetingRoom/CameraButton.tsx` - Integrated DeviceSelector
 
 ---
 
@@ -317,3 +343,91 @@ May need to add shadcn/ui components:
 | Date | Change | Author |
 |------|--------|--------|
 | 2025-12-03 | Initial story draft from create-story workflow | SM Agent |
+| 2025-12-04 | Completed all tasks, added device disconnection handling, all tests pass (298) | Dev Agent |
+| 2025-12-04 | Senior Developer Review notes appended - APPROVED | SM Agent |
+
+---
+
+## Senior Developer Review (AI)
+
+### Reviewer
+BMad (AI Code Review Agent)
+
+### Date
+2025-12-04
+
+### Outcome
+**APPROVE** - All acceptance criteria implemented, all tasks verified complete, 298 tests pass.
+
+### Summary
+Story 2.10 implements device selection for microphone and camera with full feature parity to the acceptance criteria. The implementation follows project architecture patterns, uses appropriate libraries (LiveKit, Zustand, shadcn/ui), and includes comprehensive test coverage. Device disconnection handling was added as a late enhancement and is properly implemented.
+
+### Key Findings
+
+**No HIGH or MEDIUM severity issues found.**
+
+**LOW severity (advisory):**
+- `useDevices.ts:52-53,60-61`: Fallback device labels use deviceId prefix (e.g., "Microphone abc1") which exposes internal IDs. Consider using sequential numbering instead.
+- DeviceSelector could show a loading skeleton while devices enumerate.
+
+### Acceptance Criteria Coverage
+
+| AC# | Description | Status | Evidence |
+|-----|-------------|--------|----------|
+| AC-2.10.1 | Microphone Device List | IMPLEMENTED | `DeviceSelector.tsx:47-50,86-88`, `MicrophoneButton.tsx:65-71` |
+| AC-2.10.2 | Microphone Device Switching | IMPLEMENTED | `useAudio.ts:80-93`, `MicrophoneButton.tsx:20-27`, `settingsStore.ts:38` |
+| AC-2.10.3 | Camera Device List | IMPLEMENTED | `DeviceSelector.tsx:47-50`, `CameraButton.tsx:65-71` |
+| AC-2.10.4 | Camera Device Switching | IMPLEMENTED | `useVideo.ts:99-113`, `CameraButton.tsx:20-27`, `settingsStore.ts:39` |
+| AC-2.10.5 | Device Disconnection Handling | IMPLEMENTED | `useAudio.ts:125-152`, `useVideo.ts:134-161` |
+| AC-2.10.6 | Device List Updates | IMPLEMENTED | `useDevices.ts:81-97` |
+
+**Summary: 6 of 6 acceptance criteria fully implemented**
+
+### Task Completion Validation
+
+| Task | Marked | Verified | Evidence |
+|------|--------|----------|----------|
+| Task 1: useDevices hook | [x] | ✓ VERIFIED | `useDevices.ts:1-106` |
+| Task 2: DeviceSelector component | [x] | ✓ VERIFIED | `DeviceSelector.tsx:1-103` |
+| Task 3: MicrophoneButton integration | [x] | ✓ VERIFIED | `MicrophoneButton.tsx:65-71` |
+| Task 4: CameraButton integration | [x] | ✓ VERIFIED | `CameraButton.tsx:65-71` |
+| Task 5: LiveKit device switching | [x] | ✓ VERIFIED | `useAudio.ts:80-93`, `useVideo.ts:99-113` |
+| Task 6: settingsStore preferences | [x] | ✓ VERIFIED | `settingsStore.ts:10-11,30-31,38-39` |
+| Task 7: Toast notifications | [x] | ✓ VERIFIED | `MicrophoneButton.tsx:25`, `CameraButton.tsx:25`, `useAudio.ts:140` |
+| Task 8: Device disconnection | [x] | ✓ VERIFIED | `useAudio.ts:125-152`, `useVideo.ts:134-161` |
+| Task 9: Tests | [x] | ✓ VERIFIED | 42 new tests across 4 test files |
+
+**Summary: 9 of 9 completed tasks verified, 0 questionable, 0 false completions**
+
+### Test Coverage and Gaps
+
+- **298 total tests pass** (up from 256 in Story 2.9)
+- New test files: `useDevices.test.ts` (13 tests), `DeviceSelector.test.tsx` (15 tests)
+- Updated: `settingsStore.test.ts` (9 tests), `useAudio.test.ts`, `useVideo.test.ts`
+- All ACs have corresponding tests with AC references in describe blocks
+- Device disconnection edge cases tested
+
+### Architectural Alignment
+
+- ✅ Zustand with persist middleware for device preferences
+- ✅ React functional components with TypeScript
+- ✅ Custom hooks pattern (useDevices, useAudio, useVideo)
+- ✅ shadcn/ui DropdownMenu component
+- ✅ Sonner toast library
+- ✅ LiveKit room.switchActiveDevice() API
+
+### Security Notes
+
+No security concerns. Device enumeration uses standard Web APIs. No user input vulnerabilities.
+
+### Best-Practices and References
+
+- [LiveKit Device Management](https://docs.livekit.io/client-sdk-js/)
+- [MDN enumerateDevices()](https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/enumerateDevices)
+- [Zustand Persist Middleware](https://zustand.docs.pmnd.rs/integrations/persisting-store-data)
+
+### Action Items
+
+**Advisory Notes (no blockers):**
+- Note: Consider using sequential numbering for fallback device labels instead of deviceId prefix
+- Note: Could add loading skeleton to DeviceSelector during device enumeration

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { RemoteTrackPublication } from 'livekit-client'
-import { Track } from 'livekit-client'
+import { Track, TrackEvent } from 'livekit-client'
 import { cn } from '@/lib/utils'
 
 interface RemoteParticipantVideoProps {
@@ -20,9 +20,42 @@ export function RemoteParticipantVideo({
 }: RemoteParticipantVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isVideoReady, setIsVideoReady] = useState(false)
+  const [isMuted, setIsMuted] = useState(trackPublication?.isMuted ?? true)
 
-  // Determine if we have a video track to display
-  const hasVideoTrack = trackPublication?.isSubscribed && trackPublication?.track
+  // Determine if we have an enabled video track to display
+  // Check isSubscribed, track exists, and track is not muted (camera enabled)
+  const hasVideoTrack = trackPublication?.isSubscribed &&
+    trackPublication?.track &&
+    !isMuted
+
+  // Listen for mute/unmute events on the track
+  useEffect(() => {
+    const track = trackPublication?.track
+    if (!track) {
+      setIsMuted(true)
+      return
+    }
+
+    // Sync initial muted state
+    setIsMuted(trackPublication?.isMuted ?? false)
+
+    const handleMuted = () => {
+      setIsMuted(true)
+      setIsVideoReady(false)
+    }
+
+    const handleUnmuted = () => {
+      setIsMuted(false)
+    }
+
+    track.on(TrackEvent.Muted, handleMuted)
+    track.on(TrackEvent.Unmuted, handleUnmuted)
+
+    return () => {
+      track.off(TrackEvent.Muted, handleMuted)
+      track.off(TrackEvent.Unmuted, handleUnmuted)
+    }
+  }, [trackPublication?.track, trackPublication?.isMuted])
 
   // Attach video track to video element
   useEffect(() => {
@@ -35,14 +68,17 @@ export function RemoteParticipantVideo({
     const track = trackPublication.track
     if (track.kind === Track.Kind.Video) {
       track.attach(videoElement)
-      setIsVideoReady(true)
+      // Only set ready if not muted
+      if (!trackPublication.isMuted) {
+        setIsVideoReady(true)
+      }
     }
 
     return () => {
       track.detach(videoElement)
       setIsVideoReady(false)
     }
-  }, [trackPublication?.track])
+  }, [trackPublication?.track, trackPublication?.isMuted])
 
   return (
     <div

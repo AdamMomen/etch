@@ -7,11 +7,20 @@ import {
   RemoteTrackPublication,
   Track,
   Participant as LKParticipant,
+  DataPacket_Kind,
 } from 'livekit-client'
 import { toast } from 'sonner'
 import { useRoomStore } from '@/stores/roomStore'
 import { parseParticipantMetadata } from '@/utils/participantMetadata'
 import type { Participant } from '@nameless/shared'
+
+// Role transfer message type
+interface RoleTransferMessage {
+  type: 'role_transfer'
+  newHostId: string
+  previousHostId: string
+  timestamp: number
+}
 
 export interface UseLiveKitOptions {
   token: string | null
@@ -25,6 +34,7 @@ export interface UseLiveKitReturn {
   isConnected: boolean
   error: string | null
   retry: () => void
+  leaveRoom: () => Promise<void>
 }
 
 export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKitReturn {
@@ -139,6 +149,44 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
       }
     }
 
+    // Handle data messages (e.g., role transfer)
+    const handleDataReceived = (
+      payload: Uint8Array,
+      _participant?: RemoteParticipant,
+      _kind?: DataPacket_Kind
+    ) => {
+      if (cancelled) return
+
+      try {
+        const message = JSON.parse(new TextDecoder().decode(payload)) as RoleTransferMessage
+
+        if (message.type === 'role_transfer') {
+          const localIdentity = room.localParticipant?.identity
+
+          // Check if this transfer is for us (we are the new host)
+          if (message.newHostId === localIdentity) {
+            // Update local participant role to host
+            updateParticipant(localIdentity, { role: 'host' })
+
+            // Show notification to the new host
+            toast.success('You are now the host', {
+              description: 'The previous host has left the meeting.',
+            })
+          }
+
+          // Update the previous host's role for all participants (if they're still connected)
+          if (message.previousHostId && message.previousHostId !== localIdentity) {
+            updateParticipant(message.previousHostId, { role: 'annotator' })
+          }
+
+          // If we received this message, sender (previous host) is leaving
+          // so we don't need to update their local state
+        }
+      } catch {
+        // Not a JSON message or not a role transfer message, ignore
+      }
+    }
+
     // Set up event listeners
     room.on(RoomEvent.ConnectionStateChanged, handleConnectionStateChange)
     room.on(RoomEvent.ParticipantConnected, handleParticipantConnected)
@@ -146,6 +194,7 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
     room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
     room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
     room.on(RoomEvent.ActiveSpeakersChanged, handleActiveSpeakersChanged)
+    room.on(RoomEvent.DataReceived, handleDataReceived)
 
     // Async connection logic
     const connect = async () => {
@@ -188,6 +237,7 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
       room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed)
       room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
       room.off(RoomEvent.ActiveSpeakersChanged, handleActiveSpeakersChanged)
+      room.off(RoomEvent.DataReceived, handleDataReceived)
       room.disconnect()
       clearParticipants()
     }
@@ -200,6 +250,27 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
     setRetryTrigger(retryCounterRef.current)
   }, [])
 
+  const leaveRoom = useCallback(async () => {
+    if (!room) return
+
+    try {
+      // Stop all local tracks first
+      await room.localParticipant.setMicrophoneEnabled(false)
+      await room.localParticipant.setCameraEnabled(false)
+
+      // Disconnect from room
+      await room.disconnect()
+
+      // Clear participants from store
+      clearParticipants()
+    } catch (err) {
+      // Even if disabling tracks fails, still try to disconnect
+      console.error('Error during leave:', err)
+      await room.disconnect()
+      clearParticipants()
+    }
+  }, [room, clearParticipants])
+
   return {
     room: isConnected ? room : null,
     connectionState,
@@ -207,5 +278,6 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
     isConnected,
     error,
     retry,
+    leaveRoom,
   }
 }

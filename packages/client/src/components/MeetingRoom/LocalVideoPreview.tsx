@@ -33,6 +33,8 @@ export function LocalVideoPreview({
     }
   }, [videoTrack])
 
+  const showVideo = !isVideoOff && videoTrack
+
   return (
     <div
       className={cn(
@@ -40,27 +42,33 @@ export function LocalVideoPreview({
         className
       )}
     >
-      {isVideoOff || !videoTrack ? (
-        // Avatar placeholder when video is off
-        <div className="flex h-full w-full items-center justify-center">
-          <div
-            className="flex h-20 w-20 items-center justify-center rounded-full text-3xl font-medium text-white"
-            style={{ backgroundColor: participantColor }}
-          >
-            {participantName.charAt(0).toUpperCase()}
-          </div>
+      {/* Avatar placeholder - visible when video is off */}
+      <div
+        className={cn(
+          'absolute inset-0 flex items-center justify-center transition-opacity duration-300',
+          showVideo ? 'opacity-0' : 'opacity-100'
+        )}
+      >
+        <div
+          className="flex h-20 w-20 items-center justify-center rounded-full text-3xl font-medium text-white"
+          style={{ backgroundColor: participantColor }}
+        >
+          {participantName.charAt(0).toUpperCase()}
         </div>
-      ) : (
-        // Video element when camera is on
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted // Local preview should be muted to avoid echo
-          className="h-full w-full object-cover"
-          style={{ transform: 'scaleX(-1)' }} // Mirror for natural self-view
-        />
-      )}
+      </div>
+
+      {/* Video element - always rendered so track can attach, visibility controlled by CSS */}
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted // Local preview should be muted to avoid echo
+        className={cn(
+          'h-full w-full object-cover transition-opacity duration-300',
+          showVideo ? 'opacity-100' : 'opacity-0'
+        )}
+        style={{ transform: 'scaleX(-1)' }} // Mirror for natural self-view
+      />
 
       {/* Name overlay */}
       <div className="absolute bottom-2 left-2 rounded bg-black/50 px-2 py-1 text-xs text-white">

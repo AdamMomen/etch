@@ -16,11 +16,17 @@ vi.mock('livekit-client', () => ({
       Microphone: 'microphone',
     },
   },
+  TrackEvent: {
+    Muted: 'muted',
+    Unmuted: 'unmuted',
+  },
 }))
 
 describe('RemoteParticipantVideo', () => {
   const mockAttach = vi.fn()
   const mockDetach = vi.fn()
+  const mockOn = vi.fn()
+  const mockOff = vi.fn()
   let mockTrack: Partial<RemoteTrack>
   let mockTrackPublication: Partial<RemoteTrackPublication>
 
@@ -31,10 +37,13 @@ describe('RemoteParticipantVideo', () => {
       kind: Track.Kind.Video as any,
       attach: mockAttach,
       detach: mockDetach,
+      on: mockOn,
+      off: mockOff,
     }
 
     mockTrackPublication = {
       isSubscribed: true,
+      isMuted: false,
       track: mockTrack as RemoteTrack,
     }
   })

@@ -1,0 +1,172 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>11</storyId>
+    <title>Implement Participant Volume Control</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-11-implement-participant-volume-control.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to adjust the volume of individual participants</iWant>
+    <soThat>I can balance audio levels to my preference</soThat>
+    <tasks>
+      <task id="1" ac="2.11.1,2.11.2,2.11.5">
+        Create VolumeControl component with shadcn/ui Slider, 0-200% range, boost zone styling, mute indicator
+      </task>
+      <task id="2" ac="2.11.2">
+        Create VolumePopover wrapper using shadcn/ui Popover, trigger on click, close on outside click/escape
+      </task>
+      <task id="3" ac="2.11.1">
+        Integrate volume icon into sidebar ParticipantListItem with hover visibility, wire up VolumePopover
+      </task>
+      <task id="4" ac="2.11.3,2.11.4,2.11.5">
+        Implement volume control via LiveKit track.setVolume() or Web Audio API GainNode, range 0-2
+      </task>
+      <task id="5" ac="2.11.6">
+        Create volume state management in roomStore or separate volumeStore, session-only (no persist)
+      </task>
+      <task id="6" ac="2.11.3">
+        Connect volume state to RemoteParticipantAudio component, apply volume changes
+      </task>
+      <task id="7" ac="2.11.4,2.11.5">
+        Add visual feedback for volume states: VolumeX for muted, Volume2 normal, boost styling
+      </task>
+      <task id="8" ac="all">
+        Write tests for VolumeControl, VolumePopover, volume state, audio application
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="2.11.1" title="Volume Control Trigger">
+      Hovering participant in sidebar shows volume slider icon
+    </ac>
+    <ac id="2.11.2" title="Volume Slider Display">
+      Clicking volume icon shows slider popover (0-200%), shows current level, defaults to 100%
+    </ac>
+    <ac id="2.11.3" title="Volume Adjustment">
+      Dragging slider adjusts participant audio volume locally with instant change
+    </ac>
+    <ac id="2.11.4" title="Mute via Volume">
+      Setting volume to 0% mutes participant for local user only, shows mute indicator
+    </ac>
+    <ac id="2.11.5" title="Volume Boost">
+      Volume can boost to 200%, slider visually indicates boost zone
+    </ac>
+    <ac id="2.11.6" title="Session Persistence">
+      Volume persists for session, resets to 100% on rejoin
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="Zustand Store Pattern"
+           snippet="Zustand stores use create&lt;StateType&gt;((set) =&gt; ({})) pattern. Volume state should NOT use persist middleware (session-only)." />
+      <doc path="docs/architecture.md" title="Architecture" section="React Component Pattern"
+           snippet="Functional components with TypeScript interfaces for props. Use shadcn/ui components." />
+      <doc path="docs/epics.md" title="Epics" section="Story 2.11"
+           snippet="Per-participant volume control 0-200%, Web Audio API gain node or LiveKit setVolume(), shadcn/ui Slider." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Tech Spec Epic 2" section="AC-2.11"
+           snippet="Hovering participant shows volume slider, 0-200% range, instant changes, session persistence." />
+      <doc path="docs/prd.md" title="PRD" section="FR14"
+           snippet="Users can adjust volume of individual participants (local mix)." />
+    </docs>
+    <code>
+      <file path="packages/client/src/components/MeetingRoom/RemoteParticipantAudio.tsx" kind="component"
+            symbol="RemoteParticipantAudio" lines="1-51"
+            reason="Audio playback component where volume will be applied via track.setVolume() or audio element" />
+      <file path="packages/client/src/components/MeetingRoom/Sidebar.tsx" kind="component"
+            symbol="ParticipantListItem" lines="93-149"
+            reason="Participant list item component where volume icon needs to be integrated on hover" />
+      <file path="packages/client/src/stores/roomStore.ts" kind="store"
+            symbol="useRoomStore" lines="1-111"
+            reason="Zustand store pattern reference; volume state can be added here or in separate volumeStore" />
+      <file path="packages/client/src/stores/settingsStore.ts" kind="store"
+            symbol="useSettingsStore" lines="1-44"
+            reason="Example of Zustand with persist middleware; volume should NOT persist (use regular create)" />
+      <file path="packages/client/src/components/MeetingRoom/DeviceSelector.tsx" kind="component"
+            symbol="DeviceSelector"
+            reason="Reference for dropdown/popover pattern with callbacks and shadcn/ui integration" />
+      <file path="packages/client/src/hooks/useDevices.ts" kind="hook"
+            symbol="useDevices"
+            reason="Hook pattern reference for browser API integration (use similar for volume)" />
+      <file path="packages/client/src/components/ui/dropdown-menu.tsx" kind="ui-component"
+            symbol="DropdownMenu"
+            reason="Existing shadcn/ui component; Popover follows similar pattern (needs to be added)" />
+    </code>
+    <dependencies>
+      <ecosystem name="node">
+        <package name="livekit-client" version="^2.16.0" note="RemoteTrack.setVolume() for volume control" />
+        <package name="zustand" version="^5.0.9" note="State management without persist for session-only volume" />
+        <package name="@radix-ui/react-dropdown-menu" version="^2.1.16" note="Need to add @radix-ui/react-popover and @radix-ui/react-slider" />
+        <package name="lucide-react" version="^0.555.0" note="Volume2, VolumeX icons for volume states" />
+        <package name="sonner" version="^2.0.7" note="Toast notifications (optional for volume feedback)" />
+        <package name="tailwind-merge" version="^3.4.0" note="For conditional class merging (boost zone styling)" />
+      </ecosystem>
+      <missing>
+        <package name="@radix-ui/react-slider" note="Required for shadcn/ui Slider component - run: npx shadcn@latest add slider" />
+        <package name="@radix-ui/react-popover" note="Required for shadcn/ui Popover component - run: npx shadcn@latest add popover" />
+      </missing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">
+      Volume state must be session-only (NOT persisted to localStorage). Reset on room disconnect.
+    </constraint>
+    <constraint type="ui-pattern">
+      Volume icon appears on hover using Tailwind group-hover pattern. Popover positions to right of participant item.
+    </constraint>
+    <constraint type="performance">
+      Volume changes must be instant (no delay). LiveKit setVolume() preferred for simplicity.
+    </constraint>
+    <constraint type="ux">
+      Default volume: 100% (1.0). Volume range: 0-200% (0.0-2.0). Visual distinction for boost zone (&gt;100%).
+    </constraint>
+    <constraint type="accessibility">
+      Volume icon should not appear for local participant. Mute state should have clear visual indicator (VolumeX icon).
+    </constraint>
+    <constraint type="testing">
+      Tests use Vitest + React Testing Library. Mock livekit-client Track object. Reference existing test patterns in RemoteParticipantAudio.test.tsx.
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="RemoteTrack.setVolume" kind="method"
+               signature="setVolume(volume: number): void"
+               path="livekit-client"
+               note="Volume range 0.0 to any positive number. Values above 1.0 boost audio." />
+    <interface name="VolumeControl props" kind="react-props"
+               signature="{ participantId: string; volume: number; onVolumeChange: (volume: number) => void }"
+               path="packages/client/src/components/MeetingRoom/VolumeControl.tsx (to be created)" />
+    <interface name="useVolumeStore" kind="zustand-store"
+               signature="{ volumes: Record&lt;string, number&gt;; setVolume: (id: string, vol: number) => void; getVolume: (id: string) => number; resetVolumes: () => void }"
+               path="packages/client/src/stores/volumeStore.ts (to be created)" />
+  </interfaces>
+
+  <tests>
+    <standards>
+      Tests use Vitest with React Testing Library. Co-locate test files with source (ComponentName.test.tsx).
+      Tests should reference acceptance criteria IDs in describe blocks (e.g., "AC-2.11.1: Volume Control Trigger").
+      Mock livekit-client Track object with attach/detach/setVolume methods. Mock navigator.mediaDevices if needed.
+      Current test count: 256 client tests passing - maintain or increase coverage.
+    </standards>
+    <locations>
+      <glob>packages/client/src/**/*.test.tsx</glob>
+      <glob>packages/client/src/**/*.test.ts</glob>
+    </locations>
+    <ideas>
+      <idea ac="2.11.1">Test volume icon appears on hover (using fireEvent.mouseEnter), not for local participant</idea>
+      <idea ac="2.11.2">Test VolumePopover opens on click, shows slider at current volume, closes on escape/outside click</idea>
+      <idea ac="2.11.3">Test onVolumeChange callback fires when slider value changes, volume applies instantly</idea>
+      <idea ac="2.11.4">Test VolumeX icon appears when volume is 0, mute indicator visible</idea>
+      <idea ac="2.11.5">Test slider allows values above 100, boost styling applied when volume &gt; 1.0</idea>
+      <idea ac="2.11.6">Test volume state persists in store during session, resets on clearRoom/disconnect</idea>
+      <idea ac="integration">Test RemoteParticipantAudio applies volume from store via track.setVolume()</idea>
+    </ideas>
+  </tests>
+</story-context>

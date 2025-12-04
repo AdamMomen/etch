@@ -122,6 +122,35 @@ export function useAudio({ room }: UseAudioOptions): UseAudioReturn {
     setIsPublishing(room.localParticipant.isMicrophoneEnabled)
   }, [room])
 
+  // Handle device disconnection - fall back to default when current device is removed
+  useEffect(() => {
+    if (!room || !currentDeviceId || currentDeviceId === 'default') return
+
+    const handleDeviceChange = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices()
+        const audioDevices = devices.filter((d) => d.kind === 'audioinput')
+        const currentDeviceExists = audioDevices.some((d) => d.deviceId === currentDeviceId)
+
+        if (!currentDeviceExists) {
+          // Current device was disconnected, fall back to default
+          await room.switchActiveDevice('audioinput', 'default')
+          setCurrentDeviceId('default')
+          setPreferredMicrophone('default')
+          toast.warning('Device disconnected, switched to System Default')
+        }
+      } catch (error) {
+        console.error('Error handling device change:', error)
+      }
+    }
+
+    navigator.mediaDevices?.addEventListener('devicechange', handleDeviceChange)
+
+    return () => {
+      navigator.mediaDevices?.removeEventListener('devicechange', handleDeviceChange)
+    }
+  }, [room, currentDeviceId, setPreferredMicrophone])
+
   return {
     isMuted,
     isPublishing,

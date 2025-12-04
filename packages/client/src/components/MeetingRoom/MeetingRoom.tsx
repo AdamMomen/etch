@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useRoomStore } from '@/stores/roomStore'
+import { useVolumeStore } from '@/stores/volumeStore'
 import { useLiveKit } from '@/hooks/useLiveKit'
 import { useVideo } from '@/hooks/useVideo'
 import { useDevices } from '@/hooks/useDevices'
@@ -13,6 +15,7 @@ import { ConnectionStatusIndicator } from './ConnectionStatusIndicator'
 import { LocalVideoPreview } from './LocalVideoPreview'
 import { ParticipantGrid } from './ParticipantGrid'
 import { ParticipantBubbles } from './ParticipantBubbles'
+import { LeaveConfirmDialog } from './LeaveConfirmDialog'
 import { cn } from '@/lib/utils'
 
 const RESPONSIVE_BREAKPOINT = 1000
@@ -32,10 +35,16 @@ export function MeetingRoom() {
   } = useRoomStore()
 
   // Connect to LiveKit using room info
-  const { room, retry } = useLiveKit({
+  const { room, retry, leaveRoom } = useLiveKit({
     token: currentRoom?.token ?? null,
     livekitUrl: currentRoom?.livekitUrl ?? null,
   })
+
+  // Leave confirmation dialog state for host
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+
+  // Track if we're in the process of leaving (to handle window close)
+  const isLeavingRef = useRef(false)
 
   // Video state and controls
   const { isVideoOff, videoTrack } = useVideo({ room })
@@ -48,6 +57,12 @@ export function MeetingRoom() {
 
   // Screen sharing state (placeholder - will be fully implemented in Epic 3)
   const [isScreenSharing] = useState(false)
+
+  // Get resetVolumes from volumeStore for cleanup on leave
+  const resetVolumes = useVolumeStore((state) => state.resetVolumes)
+
+  // Check if local participant is the host
+  const isHost = localParticipant?.role === 'host'
 
   // Combine local and remote participants for display
   const participants = useMemo(() => {
@@ -67,17 +82,93 @@ export function MeetingRoom() {
     })
   }, [localParticipant, remoteParticipants])
 
-  // Keyboard shortcut for sidebar toggle (Cmd+\ or Ctrl+\)
+  // Transfer host role to next participant before leaving (if host and others remain)
+  const transferHostRole = useCallback(async () => {
+    if (!room || !isHost || remoteParticipants.length === 0) return
+
+    // Get next participant by array order (first remote participant)
+    const nextHost = remoteParticipants[0]
+    if (!nextHost) return
+
+    // Send role transfer message via DataTrack
+    const message = {
+      type: 'role_transfer',
+      newHostId: nextHost.id,
+      previousHostId: localParticipant?.id,
+      timestamp: Date.now(),
+    }
+
+    try {
+      await room.localParticipant.publishData(
+        new TextEncoder().encode(JSON.stringify(message)),
+        { reliable: true }
+      )
+    } catch (err) {
+      console.error('Failed to send role transfer message:', err)
+      // Continue with leave even if role transfer message fails
+    }
+  }, [room, isHost, remoteParticipants, localParticipant?.id])
+
+  // Perform the actual leave operation
+  const performLeave = useCallback(async () => {
+    // If host and there are other participants, transfer host role first
+    if (isHost && remoteParticipants.length > 0) {
+      await transferHostRole()
+    }
+
+    await leaveRoom()
+    clearRoom()
+    resetVolumes() // Reset per-participant volume settings (AC: 2.11.6)
+    navigate('/')
+    toast.success('Left the meeting')
+  }, [isHost, remoteParticipants.length, transferHostRole, leaveRoom, clearRoom, resetVolumes, navigate])
+
+  // Handle leave button click - show confirmation for host, immediate leave for participants
+  const handleLeave = useCallback(() => {
+    if (isHost) {
+      setShowLeaveConfirm(true)
+    } else {
+      performLeave()
+    }
+  }, [isHost, performLeave])
+
+  // Handle host leave confirmation
+  const handleLeaveConfirm = useCallback(() => {
+    setShowLeaveConfirm(false)
+    performLeave()
+  }, [performLeave])
+
+  const handleScreenShare = useCallback(() => {
+    toast.info('Screen sharing will be available in a future update')
+  }, [])
+
+  const handleInvite = useCallback(() => {
+    // Copy room link to clipboard (placeholder - full implementation in Story 2.13)
+    const roomLink = `${window.location.origin}/join/${roomId}`
+    navigator.clipboard.writeText(roomLink).then(() => {
+      toast.success('Room link copied to clipboard')
+    }).catch(() => {
+      toast.error('Failed to copy room link')
+    })
+  }, [roomId])
+
+  // Keyboard shortcuts - must be after handleLeave is defined
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+\ or Ctrl+\ for sidebar toggle
       if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
         e.preventDefault()
         toggleSidebar()
       }
+      // Cmd+W or Ctrl+W for leave meeting
+      if ((e.metaKey || e.ctrlKey) && e.key === 'w') {
+        e.preventDefault()
+        handleLeave()
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [toggleSidebar])
+  }, [toggleSidebar, handleLeave])
 
   // Responsive sidebar collapse
   useEffect(() => {
@@ -94,25 +185,47 @@ export function MeetingRoom() {
     return () => window.removeEventListener('resize', handleResize)
   }, [setSidebarCollapsed])
 
-  const handleScreenShare = () => {
-    toast.info('Screen sharing will be available in a future update')
-  }
+  // Handle Tauri window close event - disconnect before closing
+  useEffect(() => {
+    // Only set up the listener if we're connected
+    if (!isConnected) return
 
-  const handleLeave = () => {
-    clearRoom()
-    navigate('/')
-    toast.success('Left the meeting')
-  }
+    let unlistenFn: (() => void) | null = null
 
-  const handleInvite = () => {
-    // Copy room link to clipboard (placeholder - full implementation in Story 2.13)
-    const roomLink = `${window.location.origin}/join/${roomId}`
-    navigator.clipboard.writeText(roomLink).then(() => {
-      toast.success('Room link copied to clipboard')
-    }).catch(() => {
-      toast.error('Failed to copy room link')
-    })
-  }
+    const setupCloseHandler = async () => {
+      try {
+        const appWindow = getCurrentWindow()
+        unlistenFn = await appWindow.onCloseRequested(async (event) => {
+          // Prevent double-handling
+          if (isLeavingRef.current) return
+
+          // Prevent default close behavior
+          event.preventDefault()
+          isLeavingRef.current = true
+
+          try {
+            // Perform clean disconnect
+            await leaveRoom()
+            clearRoom()
+            resetVolumes()
+          } finally {
+            // Now allow the window to close
+            await appWindow.close()
+          }
+        })
+      } catch {
+        // Not running in Tauri environment (e.g., web browser), skip
+      }
+    }
+
+    setupCloseHandler()
+
+    return () => {
+      if (unlistenFn) {
+        unlistenFn()
+      }
+    }
+  }, [isConnected, leaveRoom, clearRoom, resetVolumes])
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -241,6 +354,13 @@ export function MeetingRoom() {
         room={room}
         onScreenShare={handleScreenShare}
         onLeave={handleLeave}
+      />
+
+      {/* Host Leave Confirmation Dialog */}
+      <LeaveConfirmDialog
+        open={showLeaveConfirm}
+        onOpenChange={setShowLeaveConfirm}
+        onConfirm={handleLeaveConfirm}
       />
     </div>
   )
