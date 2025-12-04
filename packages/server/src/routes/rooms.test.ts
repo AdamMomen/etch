@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { app } from '../index'
+import { app } from '../app'
 import { clearRooms, getRoom } from '../services/roomStore'
 import { PARTICIPANT_COLORS } from '@nameless/shared'
 
