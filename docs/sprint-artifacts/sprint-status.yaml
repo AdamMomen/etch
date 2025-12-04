@@ -60,12 +60,12 @@ development_status:
   2-11-implement-participant-volume-control: done
   2-12-implement-leave-meeting-flow: done
   2-13-implement-room-invite-link-generation-and-sharing: done
-  2-14-implement-user-preferences-storage: backlog
+  2-14-implement-user-preferences-storage: done
   epic-2-retrospective: optional
 
   # Epic 3: Screen Sharing (10 stories)
-  epic-3: backlog
-  3-1-implement-screen-share-initiation-hybrid-capture: backlog
+  epic-3: contexted
+  3-1-implement-screen-share-initiation-hybrid-capture: review
   3-2-display-shared-screen-for-viewers: backlog
   3-3-implement-stop-screen-sharing: backlog
   3-4-enforce-single-active-screen-share: backlog

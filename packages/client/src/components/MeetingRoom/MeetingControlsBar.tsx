@@ -1,19 +1,18 @@
-import { MonitorUp, LogOut, Link } from 'lucide-react'
+import { LogOut, Link } from 'lucide-react'
 import { Room } from 'livekit-client'
 import { Button } from '@/components/ui/button'
 import { MicrophoneButton } from './MicrophoneButton'
 import { CameraButton } from './CameraButton'
+import { ScreenShareButton } from '@/components/ScreenShare'
 
 interface MeetingControlsBarProps {
   room: Room | null
-  onScreenShare: () => void
   onLeave: () => void
   onInvite?: () => void
 }
 
 export function MeetingControlsBar({
   room,
-  onScreenShare,
   onLeave,
   onInvite,
 }: MeetingControlsBarProps) {
@@ -26,15 +25,7 @@ export function MeetingControlsBar({
       <CameraButton room={room} />
 
       {/* Screen Share */}
-      <Button
-        variant="outline"
-        size="icon"
-        onClick={onScreenShare}
-        className="h-12 w-12 rounded-full"
-        aria-label="Share screen"
-      >
-        <MonitorUp className="h-5 w-5" />
-      </Button>
+      <ScreenShareButton room={room} />
 
       {/* Invite Participants */}
       {onInvite && (

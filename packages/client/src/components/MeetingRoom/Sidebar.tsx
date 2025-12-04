@@ -1,4 +1,4 @@
-import { Users, UserPlus, ChevronLeft, ChevronRight, Crown, Video, VideoOff } from 'lucide-react'
+import { Users, UserPlus, ChevronLeft, ChevronRight, Crown, Video, VideoOff, MonitorUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { VolumePopover } from './VolumePopover'
@@ -129,12 +129,20 @@ function ParticipantListItem({ participant, isLocal }: ParticipantListItemProps)
             <span className="ml-1 text-muted-foreground">(You)</span>
           )}
         </span>
-        {participant.role === 'host' && (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Crown className="h-3 w-3 text-yellow-500" />
-            Host
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {participant.role === 'host' && (
+            <span className="flex items-center gap-1 text-xs text-muted-foreground">
+              <Crown className="h-3 w-3 text-yellow-500" />
+              Host
+            </span>
+          )}
+          {participant.isScreenSharing && (
+            <span className="flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
+              <MonitorUp className="h-3 w-3" />
+              Sharing
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Volume control - only show for remote participants on hover */}

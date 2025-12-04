@@ -25,6 +25,8 @@ export interface Participant {
   isSpeaking?: boolean
   /** Whether the participant has video enabled */
   hasVideo?: boolean
+  /** Whether the participant is currently sharing their screen */
+  isScreenSharing?: boolean
 }
 
 /**

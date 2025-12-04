@@ -1,0 +1,384 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>1</storyId>
+    <title>Implement Screen Share Initiation (Hybrid Capture)</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-1-implement-screen-share-initiation-hybrid-capture.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>meeting participant</asA>
+    <iWant>to share my entire screen or a specific window</iWant>
+    <soThat>other participants can see what I'm working on</soThat>
+    <tasks>
+      <task id="1" ac="3.1.1-3.1.7">
+        <name>Create screenShareStore</name>
+        <subtasks>
+          <subtask>Create packages/client/src/stores/screenShareStore.ts</subtask>
+          <subtask>Add state: isSharing, sharerId, sharerName, isLocalSharing, sharedSource, sharedSourceId</subtask>
+          <subtask>Add actions: startSharing(), stopSharing(), setRemoteSharer()</subtask>
+          <subtask>Export store and types</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="3.1.1-3.1.3">
+        <name>Create useScreenShare hook</name>
+        <subtasks>
+          <subtask>Create packages/client/src/hooks/useScreenShare.ts</subtask>
+          <subtask>Implement startScreenShare() using getDisplayMedia (Windows)</subtask>
+          <subtask>Configure video constraints: 1920x1080, 30fps, VP9 codec</subtask>
+          <subtask>Publish track to LiveKit with Track.Source.ScreenShare</subtask>
+          <subtask>Handle picker cancellation gracefully</subtask>
+          <subtask>Add platform detection for hybrid capture (Windows vs macOS/Linux)</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="3.1.1,3.1.4,3.1.5">
+        <name>Create ScreenShareButton component</name>
+        <subtasks>
+          <subtask>Create packages/client/src/components/ScreenShare/ScreenShareButton.tsx</subtask>
+          <subtask>Style: outline variant when not sharing, accent when sharing</subtask>
+          <subtask>Show "Share Screen" / "Stop Sharing" text</subtask>
+          <subtask>Add "Sharing" badge state indicator</subtask>
+          <subtask>Integrate with useScreenShare hook</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="3.1.6">
+        <name>Implement keyboard shortcut</name>
+        <subtasks>
+          <subtask>Add useEffect in MeetingRoom to listen for ⌘S / Ctrl+S</subtask>
+          <subtask>Prevent default browser save behavior</subtask>
+          <subtask>Trigger startScreenShare on keypress</subtask>
+        </subtasks>
+      </task>
+      <task id="5" ac="3.1.3">
+        <name>Implement main window minimize</name>
+        <subtasks>
+          <subtask>Create Tauri command minimize_main_window in Rust</subtask>
+          <subtask>Create Tauri command restore_main_window in Rust</subtask>
+          <subtask>Call minimize after successful track publish</subtask>
+          <subtask>Store window position/size before minimizing</subtask>
+        </subtasks>
+      </task>
+      <task id="6" ac="all">
+        <name>Integrate into MeetingRoom</name>
+        <subtasks>
+          <subtask>Add ScreenShareButton to ControlBar</subtask>
+          <subtask>Wire up screenShareStore state</subtask>
+          <subtask>Update participant list to show "Sharing" badge</subtask>
+        </subtasks>
+      </task>
+      <task id="7" ac="3.1.7">
+        <name>Add platform detection stub for sidecar</name>
+        <subtasks>
+          <subtask>Create Tauri command get_platform() returning "windows" | "macos" | "linux"</subtask>
+          <subtask>Add conditional logic in useScreenShare to check platform</subtask>
+          <subtask>For macOS/Linux: show "Screen sharing requires Story 3.10" message (stub)</subtask>
+          <subtask>For Windows: use getDisplayMedia path</subtask>
+        </subtasks>
+      </task>
+      <task id="8" ac="all">
+        <name>Write tests</name>
+        <subtasks>
+          <subtask>Test screenShareStore state transitions</subtask>
+          <subtask>Test useScreenShare hook (mock getDisplayMedia)</subtask>
+          <subtask>Test ScreenShareButton renders correctly</subtask>
+          <subtask>Test keyboard shortcut triggers share</subtask>
+          <subtask>Test platform detection logic</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.1.1">
+      <title>Share Screen Button Shows Native Picker</title>
+      <given>I'm in a meeting room</given>
+      <when>I click the "Share Screen" button</when>
+      <then>The system shows the native screen/window picker dialog, and the picker shows available screens (for multi-monitor setups), and the picker shows open application windows, and preview thumbnails are shown where supported</then>
+    </criterion>
+    <criterion id="AC-3.1.2">
+      <title>Selection Starts Capture</title>
+      <given>I've selected a screen or window in the picker</given>
+      <when>I confirm the selection</when>
+      <then>Screen capture starts immediately, and the screen share track is published to LiveKit, and encoding uses 1080p/VP9 at 4-6 Mbps</then>
+    </criterion>
+    <criterion id="AC-3.1.3">
+      <title>Main Window Minimizes</title>
+      <given>Screen capture has started</given>
+      <when>The track is successfully published</when>
+      <then>The main Nameless window automatically minimizes, and the selected window/screen is focused (brought to foreground)</then>
+    </criterion>
+    <criterion id="AC-3.1.4">
+      <title>Sharing Badge Displayed</title>
+      <given>I'm sharing my screen</given>
+      <when>Viewing the participant list</when>
+      <then>My participant entry shows a "Sharing" badge</then>
+    </criterion>
+    <criterion id="AC-3.1.5">
+      <title>Cancel Picker Does Nothing</title>
+      <given>I click "Share Screen"</given>
+      <when>I cancel or dismiss the native picker</when>
+      <then>No screen share starts, and the main window stays open, and the button remains in default state</then>
+    </criterion>
+    <criterion id="AC-3.1.6">
+      <title>Keyboard Shortcut</title>
+      <given>I'm in a meeting room</given>
+      <when>I press ⌘S (Mac) or Ctrl+S (Windows/Linux)</when>
+      <then>The share screen flow is triggered (same as button click)</then>
+    </criterion>
+    <criterion id="AC-3.1.7">
+      <title>Platform Detection (Hybrid Capture)</title>
+      <given>I'm on Windows</given>
+      <when>I initiate screen share</when>
+      <then>WebView getDisplayMedia API is used</then>
+      <given>I'm on macOS or Linux</given>
+      <when>I initiate screen share</when>
+      <then>The Rust sidecar is used for capture (requires Story 3.10)</then>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification: Screen Sharing</title>
+        <section>Full document</section>
+        <snippet>Complete technical spec for screen sharing including screenShareStore interface, useScreenShare hook signature, Tauri commands (get_platform, minimize_main_window, restore_main_window), and LiveKit integration patterns.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture - Screen Capture Strategy</title>
+        <section>ADR-007: Hybrid Screen Capture</section>
+        <snippet>Windows uses WebView getDisplayMedia(), macOS/Linux use Rust sidecar. WKWebView doesn't support getDisplayMedia - this is a WebKit limitation requiring native capture for macOS.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture - ADR-003 Hybrid Rendering</title>
+        <section>ADR-003: Hybrid Rendering</section>
+        <snippet>Floating control bar, share border, annotation overlay are Tauri native windows. Main window minimizes during share, sharer sees floating control bar with meeting controls.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>PRD - Screen Sharing Requirements</title>
+        <section>FR15-FR26</section>
+        <snippet>FR15: Share entire screen, FR16: Share specific window, FR17: Stop sharing, FR21: Main window minimizes, FR23: Floating control bar appears on top of all windows.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design - Sharer Experience</title>
+        <section>4.1 Sharer's View</section>
+        <snippet>When sharing: main window minimizes, floating control bar with mic/camera/stop share/leave appears, visual border around shared content, annotation overlay for drawings.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Tech Spec - LiveKit Screen Share API</title>
+        <section>APIs and Interfaces</section>
+        <snippet>Use navigator.mediaDevices.getDisplayMedia with 1920x1080 ideal resolution, 30fps, VP9 codec, 6Mbps max bitrate. Publish with Track.Source.ScreenShare.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Tech Spec - Package Structure</title>
+        <section>Package Structure</section>
+        <snippet>New files: stores/screenShareStore.ts, hooks/useScreenShare.ts, components/ScreenShare/ScreenShareButton.tsx, src-tauri/src/screen_share.rs</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/2-14-implement-user-preferences-storage.md</path>
+        <title>Story 2.14 Dev Notes - Learnings</title>
+        <section>Dev Notes</section>
+        <snippet>settingsStore pattern with Zustand persist middleware, test patterns with 413 tests passing, Tauri command patterns in src-tauri/src/</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>packages/client/src/stores/settingsStore.ts</path>
+        <kind>store</kind>
+        <symbol>useSettingsStore</symbol>
+        <lines>1-58</lines>
+        <reason>Reference pattern for Zustand store with persist middleware - use same pattern for screenShareStore</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/hooks/useLiveKit.ts</path>
+        <kind>hook</kind>
+        <symbol>useLiveKit</symbol>
+        <lines>40-283</lines>
+        <reason>LiveKit room integration pattern, track publishing, event handling - useScreenShare will integrate with this room</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/MeetingRoom.tsx</path>
+        <kind>component</kind>
+        <symbol>MeetingRoom</symbol>
+        <lines>1-408</lines>
+        <reason>Main component to integrate screen share button and state, keyboard shortcuts pattern at line 158-184</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/MeetingControlsBar.tsx</path>
+        <kind>component</kind>
+        <symbol>MeetingControlsBar</symbol>
+        <lines>1-65</lines>
+        <reason>Control bar where ScreenShareButton will be integrated, current placeholder for screen share button</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src-tauri/src/lib.rs</path>
+        <kind>rust</kind>
+        <symbol>run</symbol>
+        <lines>1-17</lines>
+        <reason>Tauri entry point where new commands (get_platform, minimize_main_window) need to be registered</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/hooks/useVideo.ts</path>
+        <kind>hook</kind>
+        <symbol>useVideo</symbol>
+        <lines>full</lines>
+        <reason>Reference for track management pattern - similar approach needed for screen share track</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/Sidebar.tsx</path>
+        <kind>component</kind>
+        <symbol>Sidebar</symbol>
+        <lines>full</lines>
+        <reason>Participant list display where "Sharing" badge will be added</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package>livekit-client</package>
+        <version>^2.16.0</version>
+        <purpose>Screen share track publishing with Track.Source.ScreenShare</purpose>
+      </node>
+      <node>
+        <package>@tauri-apps/api</package>
+        <version>^2.9.1</version>
+        <purpose>Window management (minimize/restore) and Tauri command invocation</purpose>
+      </node>
+      <node>
+        <package>zustand</package>
+        <version>^5.0.9</version>
+        <purpose>Screen share state management store</purpose>
+      </node>
+      <node>
+        <package>lucide-react</package>
+        <version>^0.555.0</version>
+        <purpose>MonitorUp icon for share button</purpose>
+      </node>
+      <node>
+        <package>sonner</package>
+        <version>^2.0.7</version>
+        <purpose>Toast notifications for share status and errors</purpose>
+      </node>
+      <node>
+        <package>react-router-dom</package>
+        <version>^7.9.6</version>
+        <purpose>Navigation context in MeetingRoom</purpose>
+      </node>
+      <rust>
+        <crate>tauri</crate>
+        <purpose>Tauri command definitions and window API</purpose>
+      </rust>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">
+      <name>Zustand Store Pattern</name>
+      <description>Follow settingsStore.ts pattern: interface definition, default values, create() with actions. Export typed store hook.</description>
+    </constraint>
+    <constraint type="pattern">
+      <name>React Hook Pattern</name>
+      <description>Hooks like useVideo.ts pattern: return object with state and actions, use useCallback for actions, cleanup in useEffect return.</description>
+    </constraint>
+    <constraint type="pattern">
+      <name>Component Structure</name>
+      <description>Components in folders with index.ts barrel export. Follow MeetingRoom component patterns.</description>
+    </constraint>
+    <constraint type="tauri">
+      <name>Tauri Commands</name>
+      <description>Commands defined with #[tauri::command] macro, registered in lib.rs invoke_handler. Async functions return Result types.</description>
+    </constraint>
+    <constraint type="testing">
+      <name>Test Co-location</name>
+      <description>Test files co-located: store.test.ts, hook.test.ts, Component.test.tsx. 413+ tests currently passing - maintain coverage.</description>
+    </constraint>
+    <constraint type="livekit">
+      <name>LiveKit Track Publishing</name>
+      <description>Use room.localParticipant.publishTrack() with Track.Source.ScreenShare, videoEncoding settings, VP9 codec.</description>
+    </constraint>
+    <constraint type="platform">
+      <name>Platform-Specific Capture</name>
+      <description>Windows: getDisplayMedia works. macOS/Linux: Show stub message until Story 3.10 implements Rust sidecar.</description>
+    </constraint>
+    <constraint type="keyboard">
+      <name>Keyboard Shortcuts</name>
+      <description>⌘S/Ctrl+S for share screen. Prevent default save behavior. Check not in input field before triggering.</description>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ScreenShareState</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface ScreenShareState { isSharing: boolean; sharerId: string | null; sharerName: string | null; isLocalSharing: boolean; sharedSource: 'screen' | 'window' | null; sharedSourceId: string | null; startSharing: (source: 'screen' | 'window', sourceId: string) => void; stopSharing: () => void; setRemoteSharer: (id: string | null, name: string | null) => void; }</signature>
+      <path>packages/client/src/stores/screenShareStore.ts</path>
+    </interface>
+    <interface>
+      <name>UseScreenShareReturn</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface UseScreenShareReturn { isSharing: boolean; isLocalSharing: boolean; canShare: boolean; sharerName: string | null; startScreenShare: () => Promise&lt;void&gt;; stopScreenShare: () => void; screenTrack: LocalVideoTrack | null; }</signature>
+      <path>packages/client/src/hooks/useScreenShare.ts</path>
+    </interface>
+    <interface>
+      <name>getDisplayMedia API</name>
+      <kind>Browser API</kind>
+      <signature>navigator.mediaDevices.getDisplayMedia({ video: { width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30, max: 60 } }, audio: false })</signature>
+      <path>Web API</path>
+    </interface>
+    <interface>
+      <name>LiveKit publishTrack</name>
+      <kind>LiveKit API</kind>
+      <signature>room.localParticipant.publishTrack(track, { name: 'screen', source: Track.Source.ScreenShare, videoEncoding: { maxBitrate: 6_000_000, maxFramerate: 30 }, videoCodec: 'vp9' })</signature>
+      <path>livekit-client</path>
+    </interface>
+    <interface>
+      <name>get_platform</name>
+      <kind>Tauri Command</kind>
+      <signature>#[tauri::command] fn get_platform() -> String</signature>
+      <path>packages/client/src-tauri/src/screen_share.rs</path>
+    </interface>
+    <interface>
+      <name>minimize_main_window</name>
+      <kind>Tauri Command</kind>
+      <signature>#[tauri::command] async fn minimize_main_window(window: tauri::Window) -> Result&lt;(), String&gt;</signature>
+      <path>packages/client/src-tauri/src/screen_share.rs</path>
+    </interface>
+    <interface>
+      <name>restore_main_window</name>
+      <kind>Tauri Command</kind>
+      <signature>#[tauri::command] async fn restore_main_window(window: tauri::Window) -> Result&lt;(), String&gt;</signature>
+      <path>packages/client/src-tauri/src/screen_share.rs</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing uses Vitest with React Testing Library. Tests are co-located with source files (*.test.ts, *.test.tsx). Mock external dependencies (LiveKit, Tauri invoke). Use @testing-library/user-event for interactions. Current suite has 413+ tests passing - maintain coverage. Follow existing test patterns in stores and hooks.
+    </standards>
+    <locations>
+      <location>packages/client/src/stores/*.test.ts</location>
+      <location>packages/client/src/hooks/*.test.ts</location>
+      <location>packages/client/src/components/**/*.test.tsx</location>
+    </locations>
+    <ideas>
+      <idea ac="3.1.1">Test ScreenShareButton click triggers native picker via getDisplayMedia mock</idea>
+      <idea ac="3.1.2">Test screenShareStore startSharing() updates state correctly (isSharing, isLocalSharing, sharedSource)</idea>
+      <idea ac="3.1.3">Test useScreenShare calls minimize_main_window after successful track publish</idea>
+      <idea ac="3.1.4">Test Sidebar/ParticipantListItem shows "Sharing" badge when participant.isSharing is true</idea>
+      <idea ac="3.1.5">Test getDisplayMedia rejection (user cancel) leaves state unchanged and shows no error</idea>
+      <idea ac="3.1.6">Test keyboard shortcut Ctrl+S triggers startScreenShare (mock event, verify hook called)</idea>
+      <idea ac="3.1.7">Test platform detection: Windows returns 'windows', macOS shows stub message</idea>
+      <idea ac="all">Test screenShareStore stopSharing() resets all state to initial values</idea>
+      <idea ac="all">Test setRemoteSharer() updates sharerId and sharerName correctly</idea>
+      <idea ac="3.1.3">Test restore_main_window called when sharing stops</idea>
+    </ideas>
+  </tests>
+</story-context>

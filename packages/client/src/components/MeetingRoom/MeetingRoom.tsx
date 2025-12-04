@@ -7,6 +7,7 @@ import { useRoomStore } from '@/stores/roomStore'
 import { useVolumeStore } from '@/stores/volumeStore'
 import { useLiveKit } from '@/hooks/useLiveKit'
 import { useVideo } from '@/hooks/useVideo'
+import { useScreenShare } from '@/hooks/useScreenShare'
 import { useDevices } from '@/hooks/useDevices'
 import { useDeviceDisconnection } from '@/hooks/useDeviceDisconnection'
 import { Sidebar } from './Sidebar'
@@ -63,8 +64,8 @@ export function MeetingRoom() {
   // Handle device disconnection - auto fallback to default
   useDeviceDisconnection({ room, audioDevices, videoDevices })
 
-  // Screen sharing state (placeholder - will be fully implemented in Epic 3)
-  const [isScreenSharing] = useState(false)
+  // Screen share state and controls
+  const { isSharing: isScreenSharing, startScreenShare } = useScreenShare({ room })
 
   // Get resetVolumes from volumeStore for cleanup on leave
   const resetVolumes = useVolumeStore((state) => state.resetVolumes)
@@ -146,10 +147,6 @@ export function MeetingRoom() {
     performLeave()
   }, [performLeave])
 
-  const handleScreenShare = useCallback(() => {
-    toast.info('Screen sharing will be available in a future update')
-  }, [])
-
   const handleInvite = useCallback(() => {
     setShowInviteModal(true)
   }, [])
@@ -178,10 +175,15 @@ export function MeetingRoom() {
         e.preventDefault()
         setShowInviteModal(true)
       }
+      // Cmd+S or Ctrl+S for screen share (AC-3.1.6)
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault()
+        startScreenShare()
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [toggleSidebar, handleLeave])
+  }, [toggleSidebar, handleLeave, startScreenShare])
 
   // Responsive sidebar collapse
   useEffect(() => {
@@ -384,7 +386,6 @@ export function MeetingRoom() {
       {/* Bottom Controls Bar */}
       <MeetingControlsBar
         room={room}
-        onScreenShare={handleScreenShare}
         onLeave={handleLeave}
         onInvite={handleInvite}
       />
