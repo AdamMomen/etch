@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm build:*)"
+      "Bash(pnpm build:*)",
+      "Bash(pnpm test:*)",
+      "Bash(cat:*)",
+      "WebSearch",
+      "Bash(pnpm test:client:*)",
+      "Bash(pnpm build:web:*)",
+      "Bash(pnpm build:client:*)"
     ],
     "deny": [],
     "ask": []
