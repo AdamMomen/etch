@@ -18,14 +18,14 @@ This document provides the complete epic and story breakdown for NAMELESS, decom
 | Epic | Title | User Value | Stories | FRs |
 |------|-------|------------|---------|-----|
 | **Epic 1** | Foundation & Project Setup | Enables all development work | 5 | Infrastructure |
-| **Epic 2** | Basic Meeting Experience | Users can create/join rooms and communicate via A/V | 14 | FR1-4, FR6-14, FR38-41, FR47-50 |
-| **Epic 3** | Screen Sharing | Users can share and view screens in meetings | 6 | FR15-20 |
-| **Epic 4** | Real-Time Annotations | Users can draw on shared screens (CORE VALUE) | 11 | FR21-24, FR27-30 |
-| **Epic 5** | Permissions & Moderation | Hosts can manage meetings and control annotations | 8 | FR5, FR25-26, FR31-37 |
-| **Epic 6** | Connection Resilience | Users stay connected and recover from network issues | 7 | FR42-46 |
-| **Epic 7** | Self-Hosting & Deployment | Teams can deploy their own NAMELESS instance | 8 | FR51-56 |
+| **Epic 2** | Basic Meeting Experience | Users can create/join rooms and communicate via A/V | 14 | FR1-4, FR6-14, FR44-47, FR53-56 |
+| **Epic 3** | Screen Sharing | Users can share and view screens in meetings + floating control bar | 10 | FR15-26 |
+| **Epic 4** | Real-Time Annotations | Users can draw on shared screens (CORE VALUE) | 11 | FR27-30, FR33-36 |
+| **Epic 5** | Permissions & Moderation | Hosts can manage meetings and control annotations | 8 | FR5, FR31-32, FR37-43 |
+| **Epic 6** | Connection Resilience | Users stay connected and recover from network issues | 7 | FR48-52 |
+| **Epic 7** | Self-Hosting & Deployment | Teams can deploy their own NAMELESS instance | 9 | FR57-62 |
 
-**Total: 7 Epics, 59 Stories, 56 Functional Requirements**
+**Total: 7 Epics, 64 Stories, 62 Functional Requirements**
 
 ---
 
@@ -49,61 +49,67 @@ This document provides the complete epic and story breakdown for NAMELESS, decom
 - **FR13:** Users can see and hear other participants' audio/video streams
 - **FR14:** Users can adjust volume of individual participants (local mix)
 
-### Screen Sharing (FR15-20)
+### Screen Sharing (FR15-26)
 - **FR15:** Users can share their entire screen
 - **FR16:** Users can share a specific application window
 - **FR17:** Users can stop screen sharing at any time
 - **FR18:** Only one participant can share screen at a time (MVP)
 - **FR19:** All participants can view the shared screen
 - **FR20:** Shared screen displays at appropriate quality for content visibility
+- **FR21:** When sharing begins, the main Nameless window automatically minimizes and the shared window/screen is focused
+- **FR22:** A visual border appears around the shared window/screen to indicate active sharing
+- **FR23:** A floating control bar appears on top of all windows showing sharing status, participant face circles, and meeting controls
+- **FR24:** The floating control bar remains visible across all screens/desktops when the main application is minimized
+- **FR25:** The floating control bar can be repositioned by dragging
+- **FR26:** The floating control bar provides quick access to: mute/unmute, camera toggle, stop sharing, and leave meeting
 
-### Annotation System (FR21-30)
-- **FR21:** Users with annotator permissions can draw freehand strokes on shared screens
-- **FR22:** Users can use a pen tool for precise line drawing
-- **FR23:** Users can use a highlighter tool for semi-transparent emphasis
-- **FR24:** Users can use an eraser tool to remove their own strokes
-- **FR25:** Hosts can clear all annotations from the shared screen
-- **FR26:** Sharers can delete any annotation on their shared screen
-- **FR27:** Annotations appear in real-time for all participants (< 200ms latency)
-- **FR28:** Each participant's annotations display in a distinct color
-- **FR29:** Late-joining participants see all existing annotations immediately
-- **FR30:** Annotations are resolution-independent (scale correctly on different displays)
+### Annotation System (FR27-36)
+- **FR27:** Users with annotator permissions can draw freehand strokes on shared screens
+- **FR28:** Users can use a pen tool for precise line drawing
+- **FR29:** Users can use a highlighter tool for semi-transparent emphasis
+- **FR30:** Users can use an eraser tool to remove their own strokes
+- **FR31:** Hosts can clear all annotations from the shared screen
+- **FR32:** Sharers can delete any annotation on their shared screen
+- **FR33:** Annotations appear in real-time for all participants (< 200ms latency)
+- **FR34:** Each participant's annotations display in a distinct color
+- **FR35:** Late-joining participants see all existing annotations immediately
+- **FR36:** Annotations are resolution-independent (scale correctly on different displays)
 
-### Permission & Roles (FR31-37)
-- **FR31:** Room creator is automatically assigned the Host role
-- **FR32:** Hosts can assign roles to other participants (Annotator, Viewer)
-- **FR33:** Hosts can enable or disable annotation capability for the room
-- **FR34:** Annotators can create and delete their own annotations
-- **FR35:** Viewers can observe the meeting but cannot annotate
-- **FR36:** Sharers have elevated permissions on their own shared content
-- **FR37:** Users can see their current role and permissions clearly
+### Permission & Roles (FR37-43)
+- **FR37:** Room creator is automatically assigned the Host role
+- **FR38:** Hosts can assign roles to other participants (Annotator, Viewer)
+- **FR39:** Hosts can enable or disable annotation capability for the room
+- **FR40:** Annotators can create and delete their own annotations
+- **FR41:** Viewers can observe the meeting but cannot annotate
+- **FR42:** Sharers have elevated permissions on their own shared content
+- **FR43:** Users can see their current role and permissions clearly
 
-### Authentication & Access (FR38-41)
-- **FR38:** Rooms use token-based authentication for access control
-- **FR39:** Users do not need to create an account to join meetings
-- **FR40:** Room tokens can be generated by the self-hosted server
-- **FR41:** Invalid or expired tokens are rejected with clear error messages
+### Authentication & Access (FR44-47)
+- **FR44:** Rooms use token-based authentication for access control
+- **FR45:** Users do not need to create an account to join meetings
+- **FR46:** Room tokens can be generated by the self-hosted server
+- **FR47:** Invalid or expired tokens are rejected with clear error messages
 
-### Connection & State Management (FR42-46)
-- **FR42:** Application automatically reconnects after brief network interruptions
-- **FR43:** Annotation state is preserved and restored after reconnection
-- **FR44:** Users receive clear feedback when connection is lost
-- **FR45:** Users receive notification when reconnection succeeds
-- **FR46:** Application handles graceful degradation during poor network conditions
+### Connection & State Management (FR48-52)
+- **FR48:** Application automatically reconnects after brief network interruptions
+- **FR49:** Annotation state is preserved and restored after reconnection
+- **FR50:** Users receive clear feedback when connection is lost
+- **FR51:** Users receive notification when reconnection succeeds
+- **FR52:** Application handles graceful degradation during poor network conditions
 
-### Desktop Application (FR47-52)
-- **FR47:** Application runs on macOS (Intel and Apple Silicon)
-- **FR48:** Application runs on Windows 10 and 11
-- **FR49:** Application requests necessary system permissions (screen capture, microphone, camera)
-- **FR50:** Application stores user preferences locally
-- **FR51:** Application displays notification when updates are available
-- **FR52:** Users can access recent rooms from the application
+### Desktop Application (FR53-58)
+- **FR53:** Application runs on macOS (Intel and Apple Silicon)
+- **FR54:** Application runs on Windows 10 and 11
+- **FR55:** Application requests necessary system permissions (screen capture, microphone, camera)
+- **FR56:** Application stores user preferences locally
+- **FR57:** Application displays notification when updates are available
+- **FR58:** Users can access recent rooms from the application
 
-### Self-Hosting & Deployment (FR53-56)
-- **FR53:** Server can be deployed via Docker Compose with minimal configuration
-- **FR54:** Server integrates with self-hosted LiveKit instance
-- **FR55:** Deployment documentation enables setup without external support
-- **FR56:** Server provides health check endpoints for monitoring
+### Self-Hosting & Deployment (FR59-62)
+- **FR59:** Server can be deployed via Docker Compose with minimal configuration
+- **FR60:** Server integrates with self-hosted LiveKit instance
+- **FR61:** Deployment documentation enables setup without external support
+- **FR62:** Server provides health check endpoints for monitoring
 
 ---
 
@@ -111,15 +117,15 @@ This document provides the complete epic and story breakdown for NAMELESS, decom
 
 | Epic | Functional Requirements Covered |
 |------|--------------------------------|
-| **Epic 1: Foundation** | Infrastructure for all FRs (FR47, FR48 partial) |
-| **Epic 2: Basic Meeting** | FR1, FR2, FR3, FR4, FR6, FR7, FR8-14, FR38-41, FR47-50 |
-| **Epic 3: Screen Sharing** | FR15, FR16, FR17, FR18, FR19, FR20 |
-| **Epic 4: Annotations** | FR21, FR22, FR23, FR24, FR27, FR28, FR29, FR30 |
-| **Epic 5: Permissions** | FR5, FR25, FR26, FR31, FR32, FR33, FR34, FR35, FR36, FR37 |
-| **Epic 6: Connection Resilience** | FR42, FR43, FR44, FR45, FR46 |
-| **Epic 7: Self-Hosting** | FR51, FR52, FR53, FR54, FR55, FR56 |
+| **Epic 1: Foundation** | Infrastructure for all FRs (FR53, FR54 partial) |
+| **Epic 2: Basic Meeting** | FR1, FR2, FR3, FR4, FR6, FR7, FR8-14, FR44-47, FR53-56 |
+| **Epic 3: Screen Sharing** | FR15-26 (includes floating control bar, share border, auto-minimize) |
+| **Epic 4: Annotations** | FR27, FR28, FR29, FR30, FR33, FR34, FR35, FR36 |
+| **Epic 5: Permissions** | FR5, FR31, FR32, FR37, FR38, FR39, FR40, FR41, FR42, FR43 |
+| **Epic 6: Connection Resilience** | FR48, FR49, FR50, FR51, FR52 |
+| **Epic 7: Self-Hosting** | FR57, FR58, FR59, FR60, FR61, FR62 |
 
-**Coverage Validation:** ✅ All 56 FRs mapped to at least one epic.
+**Coverage Validation:** ✅ All 62 FRs mapped to at least one epic.
 
 ---
 
@@ -936,15 +942,15 @@ thresholds: {
 
 ## Epic 3: Screen Sharing
 
-**Goal:** Enable users to share their screen or specific windows so others can see what they're working on - the foundation for the annotation experience.
+**Goal:** Enable users to share their screen or specific windows so others can see what they're working on - including the floating control bar and share border indicator that keep sharers in control while their main window is minimized.
 
-**User Value:** After this epic, users can share their screens in meetings, enabling visual collaboration.
+**User Value:** After this epic, users can share their screens in meetings with a professional UX - the main window minimizes, a floating control bar provides meeting controls, and a border indicator shows what's being captured.
 
-**FRs Addressed:** FR15, FR16, FR17, FR18, FR19, FR20
+**FRs Addressed:** FR15-26 (Screen Sharing + Floating Control Bar + Share Border + Auto-Minimize)
 
 ---
 
-### Story 3.1: Implement Screen Share Initiation via getDisplayMedia
+### Story 3.1: Implement Screen Share Initiation (Hybrid Capture)
 
 **As a** user,
 **I want** to share my entire screen or a specific window,
@@ -963,24 +969,85 @@ thresholds: {
 
 **And** after selecting a screen/window:
   - Screen capture starts immediately
-  - "Share Screen" button changes to "Stop Sharing" (filled accent style)
+  - **Main Nameless window automatically minimizes**
+  - **Selected window/screen is focused (brought to foreground)**
+  - Screen share track is published to LiveKit at 1080p/VP9/4-6Mbps
+  - Floating control bar appears (Story 3.7)
+  - Share border indicator appears (Story 3.8)
   - My participant entry shows "Sharing" badge
-  - Screen share track is published to LiveKit
 
 **And** if I cancel the picker:
   - No screen share starts
+  - Main window stays open
   - Button remains in default state
 
 **And** keyboard shortcut `⌘S` (Ctrl+S) triggers share flow
 
-**Prerequisites:** Story 2.6
+**Prerequisites:** Story 2.6, Story 3.10 (for macOS/Linux)
 
 **Technical Notes:**
-- Use WebView `getDisplayMedia()` API (per Architecture ADR-007)
+- **Hybrid capture approach** (per Architecture ADR-007, updated 2025-12-01):
+  - **Windows:** Use WebView `getDisplayMedia()` API (WebView2 has full WebRTC support)
+  - **macOS/Linux:** Use Rust sidecar for native capture (Story 3.10) - WKWebView doesn't support getDisplayMedia
+- Resolution: 1080p with VP9 codec at 4-6 Mbps (optimized for text clarity)
 - Use `room.localParticipant.setScreenShareEnabled()` or create screen track manually
 - Request with `{ video: true, audio: true }` for system audio option
 - Hardware-accelerated capture at 60fps target
 - LiveKit handles encoding and transmission
+- Use Tauri window API to minimize main window after share starts
+- Focus the shared window/screen using platform APIs
+
+---
+
+### Story 3.10: Implement Rust Screen Capture Sidecar (macOS/Linux)
+
+**As a** macOS or Linux user,
+**I want** screen sharing to work on my platform,
+**So that** I can share my screen with the same quality as Windows users.
+
+**Acceptance Criteria:**
+
+**Given** I'm on macOS or Linux
+**When** the app detects my platform at runtime
+**Then** screen capture uses the Rust sidecar instead of WebView getDisplayMedia
+
+**And** the sidecar provides:
+  - Native screen capture via `xcap` or `scrap` Rust crates
+  - Screen/window picker UI (native dialog)
+  - VP9 encoding at 1080p / 4-6 Mbps bitrate
+  - Frame streaming to LiveKit via custom video track
+
+**And** the capture quality matches Windows:
+  - 1080p resolution (minimum)
+  - VP9 codec for text clarity
+  - 4-6 Mbps bitrate target
+  - 60fps capable
+
+**And** on macOS:
+  - Screen recording permission is requested if not granted
+  - Permission dialog shows "NAMELESS wants to record this Mac's screen"
+  - User can grant permission in System Preferences
+
+**And** the sidecar lifecycle is managed:
+  - Sidecar spawns when screen share starts
+  - Sidecar terminates when screen share stops
+  - Graceful fallback if sidecar fails to start (error message, suggest Windows)
+
+**Prerequisites:** Story 1.1 (monorepo structure)
+
+**Technical Notes:**
+- Create `packages/capture-sidecar/` Rust binary
+- Use Tauri's sidecar management via `tauri-plugin-shell`
+- Recommended crates:
+  - `xcap` - Cross-platform screen capture (used by tauri-plugin-screenshots)
+  - `scrap` - From RustDesk, proven at scale for remote desktop
+  - `vpx-encode` or similar for VP9 encoding
+- IPC between sidecar and Tauri main process via stdin/stdout or local socket
+- Stream encoded frames to LiveKit using custom video track API
+- Handle macOS screen recording permission via `CGPreflightScreenCaptureAccess()` / `CGRequestScreenCaptureAccess()`
+- Linux may need X11/Wayland detection for proper capture API selection
+
+**FRs Addressed:** FR15, FR16, FR20 (platform-specific implementation)
 
 ---
 
@@ -1030,30 +1097,36 @@ thresholds: {
 **Acceptance Criteria:**
 
 **Given** I'm currently sharing my screen
-**When** I click "Stop Sharing" button
+**When** I click "Stop Sharing" on the **floating control bar**
 **Then** screen capture stops immediately
 
-**And** the UI updates:
+**And** the sharer's UI updates:
+  - **Floating control bar is dismissed**
+  - **Share border indicator is dismissed**
+  - **Annotation overlay is dismissed**
+  - **Main Nameless window restores from minimized state**
   - Button returns to "Share Screen" state (outline style)
   - "Sharing" badge removed from my participant entry
-  - Main content area returns to video grid layout
-  - Participant videos return from floating bubbles to grid
 
 **And** other participants see:
   - Shared screen disappears
   - Toast: "{name} stopped sharing"
   - Layout returns to video grid
+  - Participant videos return from floating bubbles to grid
 
 **And** pressing `⌘S` again while sharing also stops sharing
 **And** if browser/OS stops the capture (user clicked "Stop sharing" in system UI):
   - App detects this and updates state accordingly
+  - All native windows (floating bar, border, overlay) are dismissed
+  - Main window restores
 
-**Prerequisites:** Story 3.1, 3.2
+**Prerequisites:** Story 3.1, 3.2, 3.7, 3.8
 
 **Technical Notes:**
 - Use `room.localParticipant.setScreenShareEnabled(false)`
 - Listen to track ended event for system-initiated stops
-- Clean up any transparent overlay windows (for sharer annotations later)
+- Clean up all Tauri native windows: floating control bar, share border, annotation overlay
+- Restore main window using Tauri window API
 - Smooth transition animation when switching layouts
 
 ---
@@ -1174,6 +1247,151 @@ Per Implementation Readiness assessment, Windows transparent overlay behavior ne
 - Document findings and update ADR-003 with Windows-specific notes
 
 **Recommendation:** Create minimal POC for Windows transparent overlay before full implementation.
+
+---
+
+### Story 3.7: Create Sharer's Floating Control Bar
+
+**As a** screen sharer,
+**I want** a floating control bar that stays visible on top of all windows,
+**So that** I can access meeting controls (mic, camera, stop sharing, leave) without switching back to the minimized Nameless window.
+
+**Acceptance Criteria:**
+
+**Given** I start sharing my screen
+**When** the screen share is active
+**Then** a floating control bar window is created by Tauri
+
+**And** the floating control bar:
+  - Is always on top of ALL windows and screens (highest z-order)
+  - Shows sharing status indicator (red dot + "Sharing" text)
+  - Shows mic toggle button (mute/unmute)
+  - Shows camera toggle button (enable/disable)
+  - Shows participant face circles (Around-style, up to 4 visible, "+N" for overflow)
+  - Shows "Stop Share" button (accent color)
+  - Shows "Leave" button (destructive style)
+  - Has semi-transparent dark background (`rgba(0,0,0,0.85)`)
+  - Has rounded corners (12px radius)
+  - Has compact height (~48px)
+
+**And** the control bar behavior:
+  - Default position: top-center of primary screen
+  - Is draggable - can be repositioned anywhere on any screen
+  - Position is persisted between sessions
+  - Works across all screens/desktops (multi-monitor)
+  - Fades to 60% opacity after 5 seconds idle
+  - Returns to full opacity on hover
+
+**And** button actions:
+  - Mic toggle: mutes/unmutes microphone
+  - Camera toggle: enables/disables camera
+  - Stop Share: stops sharing, dismisses all native windows, restores main window
+  - Leave: shows confirmation, then leaves meeting
+
+**And** when I stop sharing:
+  - Floating control bar is destroyed
+  - Main Nameless window restores from minimized state
+
+**Prerequisites:** Story 3.1
+
+**Technical Notes:**
+- Use Tauri window creation with `alwaysOnTop: true`, `decorations: false`
+- macOS: NSWindow with `level: .floating`, `collectionBehavior: .canJoinAllSpaces`
+- Windows: `WS_EX_TOPMOST` window style
+- Render React component inside the floating window
+- Store position in settingsStore with localStorage persistence
+- Communicate with main window via Tauri events for button actions
+
+**FRs Addressed:** FR21, FR23, FR24, FR25, FR26
+
+---
+
+### Story 3.8: Create Share Border Indicator
+
+**As a** screen sharer,
+**I want** a visual border around my shared content,
+**So that** I can clearly see what is being captured and shared with others.
+
+**Acceptance Criteria:**
+
+**Given** I start sharing my screen
+**When** the screen share is active
+**Then** a visible border appears around the shared content
+
+**And** the border indicator:
+  - Is a thin colored border (3-4px, accent color or red)
+  - Exactly frames the shared window/screen boundaries
+  - Is always visible while sharing (doesn't fade)
+  - Is click-through (doesn't intercept mouse events)
+  - Has no fill (transparent interior)
+
+**And** when sharing a specific window:
+  - Border tracks the window position if it moves
+  - Border resizes if window resizes
+
+**And** when sharing a full screen:
+  - Border appears at screen edges
+
+**And** when I stop sharing:
+  - Border indicator is destroyed
+  - No visual artifacts remain
+
+**Prerequisites:** Story 3.1
+
+**Technical Notes:**
+- Use Tauri transparent window with only border rendering
+- Position using platform APIs to track shared window bounds
+- Use `transparent: true`, `decorations: false`, `alwaysOnTop: true`
+- z-order: below floating control bar, above annotation overlay
+- macOS: May need to handle fullscreen apps specially
+- Windows: Use `WS_EX_TRANSPARENT` + `WS_EX_LAYERED` for click-through
+
+**FRs Addressed:** FR22
+
+---
+
+### Story 3.9: Implement Main Window Auto-Minimize and Restore
+
+**As a** screen sharer,
+**I want** the Nameless window to automatically minimize when I start sharing,
+**So that** my shared content is visible and I can focus on presenting.
+
+**Acceptance Criteria:**
+
+**Given** I'm in a meeting and initiate screen share
+**When** I select a window/screen to share
+**Then** the main Nameless window automatically minimizes
+
+**And** the shared window/screen is brought to focus (foreground)
+**And** the floating control bar, share border, and annotation overlay appear
+
+**And** when I stop sharing (via floating bar "Stop Share"):
+  - Main Nameless window restores from minimized state
+  - Window returns to its previous position and size
+  - All native windows (floating bar, border, overlay) are dismissed
+
+**And** when I click "Leave" on floating bar:
+  - Confirmation dialog appears (if host)
+  - On confirm, all native windows dismissed
+  - Main window restores briefly, then closes/returns to home
+
+**And** if the screen share is stopped by the OS (e.g., user clicks system stop):
+  - App detects track ended event
+  - All native windows dismissed
+  - Main window restores
+
+**Prerequisites:** Story 3.1, 3.7, 3.8
+
+**Technical Notes:**
+- Use Tauri window API: `window.minimize()`, `window.unminimize()`
+- Store window position/size before minimizing for exact restore
+- Focus shared window using platform-specific APIs:
+  - macOS: `NSApp.activate(ignoringOtherApps:)`
+  - Windows: `SetForegroundWindow`
+- Listen to LiveKit track ended event for system-initiated stops
+- Coordinate with floating control bar button actions via Tauri events
+
+**FRs Addressed:** FR21
 
 ---
 
@@ -2543,6 +2761,67 @@ TOKEN_EXPIRY_SECONDS=3600
 - Use LiveKit SDK to test connection
 - Log: "Connected to LiveKit at wss://..."
 - Error: "Failed to connect to LiveKit: [reason]"
+
+---
+
+### Story 7.9: Implement Auto-Update for Desktop Client
+
+**As a** user,
+**I want** the app to automatically update itself,
+**So that** I always have the latest features and security fixes without manual intervention.
+
+**Acceptance Criteria:**
+
+**Given** a new version is available
+**When** the app checks for updates (on startup and periodically)
+**Then** a notification appears indicating an update is available
+
+**And** the update flow:
+  1. App checks update server for new version
+  2. If update available, shows notification: "Update available (v1.2.0)"
+  3. User clicks "Update Now" or "Later"
+  4. If "Update Now": downloads update in background with progress
+  5. Shows "Restart to complete update" when ready
+  6. On restart, new version is active
+
+**And** the update is seamless:
+  - Download happens in background (non-blocking)
+  - Progress indicator shows download status
+  - Update is verified (signature check) before applying
+  - Rollback on failure (keep current version)
+
+**And** update settings:
+  - Check frequency: configurable (default: on app launch)
+  - Auto-download: optional (default: prompt before download)
+  - Release channel: stable (future: beta channel)
+
+**And** the update server is configurable for self-hosted:
+  - Default: GitHub Releases
+  - Self-hosted option: custom update server URL
+
+**Prerequisites:** Story 1.1 (Tauri setup)
+
+**Technical Notes:**
+- Use Tauri's built-in updater (`tauri-plugin-updater`)
+- Update manifest on GitHub Releases or self-hosted
+- Signing key for update verification (code signing)
+- Update JSON format:
+```json
+{
+  "version": "1.2.0",
+  "notes": "Bug fixes and improvements",
+  "pub_date": "2025-01-15T12:00:00Z",
+  "platforms": {
+    "darwin-aarch64": { "url": "...", "signature": "..." },
+    "darwin-x86_64": { "url": "...", "signature": "..." },
+    "windows-x86_64": { "url": "...", "signature": "..." }
+  }
+}
+```
+- Handle: update in progress, update failed, already latest
+- Research validated: auto-update is part of "premium feel"
+
+**FRs Addressed:** FR57 (enhanced from notification to full auto-update)
 
 ---
 

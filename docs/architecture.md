@@ -60,8 +60,10 @@ pnpm add livekit-client @livekit/components-react
 | Deployment | Docker Compose + Caddy | N/A | FR53-56 | One-liner self-hosting, auto SSL, simple Caddyfile |
 | Reverse Proxy | Caddy | Latest | FR53-56 | Auto HTTPS, minimal config, self-hoster friendly |
 | Media Transport | LiveKit | Latest | FR8-20 | WebRTC SFU, self-hostable, DataTracks for annotation sync |
-| Screen Capture | WebView getDisplayMedia() | N/A | FR15-20 | Hardware-accelerated, 60fps, LiveKit-compatible |
-| Sharer Overlay | Tauri transparent window | N/A | FR21-30 | OS-level overlay for sharer to see annotations on their screen |
+| Screen Capture | Hybrid: Rust Sidecar (macOS) + getDisplayMedia (Windows) | N/A | FR15-20 | Native capture for macOS (WKWebView limitation), browser API for Windows |
+| Sharer Annotation Overlay | Tauri transparent window | N/A | FR27-36 | OS-level overlay for sharer to see annotations on their screen |
+| Sharer Floating Control Bar | Tauri native window | N/A | FR21-26 | Always-on-top control bar with meeting controls when sharing |
+| Share Border Indicator | Tauri transparent window | N/A | FR22 | Visual border around shared window/screen |
 | Icons | Lucide | Latest | FR47-52 | Included with shadcn/ui, consistent style |
 | Window Controls | tauri-controls | Latest | FR47-52 | Native look per OS (macOS/Windows/Linux) |
 
@@ -121,6 +123,15 @@ nameless/
 │   │   ├── tailwind.config.ts
 │   │   ├── tsconfig.json
 │   │   └── package.json
+│   │
+│   ├── capture-sidecar/            # Rust screen capture sidecar (macOS)
+│   │   ├── src/
+│   │   │   ├── main.rs             # Sidecar entry point
+│   │   │   ├── capture.rs          # Screen capture logic (xcap/scrap)
+│   │   │   ├── encode.rs           # VP9 encoding for LiveKit
+│   │   │   └── ipc.rs              # Communication with Tauri main process
+│   │   ├── Cargo.toml
+│   │   └── README.md
 │   │
 │   ├── server/                     # Hono API server
 │   │   ├── src/
@@ -250,7 +261,10 @@ return token.toJwt();
 
 NAMELESS separates annotation from media transport - annotations flow as lightweight vector events via DataTracks, not embedded in video. Each client reconstructs the canvas locally, enabling sub-200ms latency.
 
-**Key Innovation:** The sharer sees annotations on their actual screen (VS Code, Figma, etc.), not inside NAMELESS - via a native transparent overlay window.
+**Key Innovations:**
+1. **Annotation Overlay:** The sharer sees annotations on their actual screen (VS Code, Figma, etc.), not inside NAMELESS - via a native transparent overlay window.
+2. **Floating Control Bar:** When sharing, the main Nameless window minimizes and a floating control bar appears on top of all windows, giving the sharer access to meeting controls (mic, camera, participant faces, stop share, leave) without switching apps.
+3. **Share Border Indicator:** A visual border around the shared window/screen shows exactly what's being captured.
 
 ### Component Architecture
 
@@ -280,19 +294,38 @@ NAMELESS separates annotation from media transport - annotations flow as lightwe
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-**Sharer's Client (Hybrid - WebView + Native Overlay):**
+**Sharer's Client (Hybrid - WebView + Native Windows):**
+
+When sharing, the main window **minimizes** and three native elements appear:
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  MAIN WINDOW (WebView)                                           │
+│  MAIN WINDOW (WebView) - MINIMIZED DURING SHARE                  │
 │  ├── Meeting controls, participant list                          │
 │  ├── getDisplayMedia() → LiveKit screen track                    │
 │  └── DataTrack handler → AnnotationStore                         │
-└──────────────────────────┬──────────────────────────────────────┘
-                           │ annotation events
+└─────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────┐
+│  FLOATING CONTROL BAR (Tauri native window)                      │
+│  ├── Always on top of ALL windows & screens                      │
+│  ├── Draggable, repositionable                                   │
+│  ├── Shows: 🔴 Sharing | [🎤][📷] | [○○○] | [Stop] [Leave]       │
+│  └── Dismisses + restores main window on "Stop Share"            │
+└─────────────────────────────────────────────────────────────────┘
+                           │ visible above everything
                            ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  TRANSPARENT OVERLAY WINDOW (Tauri native)                       │
-│  ├── Always on top, click-through                                │
+│  SHARE BORDER INDICATOR (Tauri transparent window)               │
+│  ├── Visual border around shared window/screen                   │
+│  ├── Indicates what is being captured                            │
+│  └── Click-through (doesn't intercept interactions)              │
+└─────────────────────────────────────────────────────────────────┘
+                           │ frames the content
+                           ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  ANNOTATION OVERLAY WINDOW (Tauri transparent window)            │
+│  ├── Always on top, click-through (except when drawing)          │
 │  ├── Positioned over shared screen/window                        │
 │  └── Canvas renders annotations from AnnotationStore             │
 └─────────────────────────────────────────────────────────────────┘
@@ -306,17 +339,96 @@ NAMELESS separates annotation from media transport - annotations flow as lightwe
 └─────────────────────────────────────────────────────────────────┘
 ```
 
+**Window z-order (top to bottom):**
+1. Floating Control Bar (always topmost)
+2. Annotation Overlay (click-through unless drawing)
+3. Share Border Indicator (click-through)
+4. Shared Content (user's app)
+
 ### Screen Capture Strategy
 
 | Component | Technology | Rationale |
 |-----------|------------|-----------|
-| Screen capture | WebView `getDisplayMedia()` | Hardware-accelerated, 60fps, LiveKit-compatible |
+| Screen capture (macOS) | Rust sidecar (`xcap`/`scrap` crates) | WKWebView doesn't support `getDisplayMedia()` |
+| Screen capture (Windows) | WebView `getDisplayMedia()` | WebView2 has full WebRTC support |
+| Screen capture (Linux) | Rust sidecar | WebKitGTK WebRTC support is inconsistent |
+| Video encoding | VP9 @ 4-6 Mbps | Optimal for text clarity (crisp code) |
 | Viewer annotations | `<canvas>` over `<video>` | Standard web compositing |
 | Sharer annotations | Tauri transparent window | OS-level overlay on actual shared content |
+| Sharer floating control bar | Tauri native window | Always-on-top meeting controls during share |
+| Share border indicator | Tauri transparent window | Visual frame showing capture area |
 
-**Why not Rust for screen capture?**
-POC testing showed Rust ScreenCaptureKit achieved only ~16fps due to per-frame capture overhead.
-`getDisplayMedia()` is proven, hardware-accelerated, and integrates directly with LiveKit.
+**Screen Capture Architecture:**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   Screen Capture Flow                            │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────────┐   │
+│  │                    Platform Detection                     │   │
+│  │         (Tauri checks OS at runtime)                      │   │
+│  └─────────────────────────┬────────────────────────────────┘   │
+│                            │                                     │
+│            ┌───────────────┼───────────────┐                    │
+│            ▼               ▼               ▼                    │
+│      ┌──────────┐   ┌──────────┐   ┌──────────┐                │
+│      │  macOS   │   │ Windows  │   │  Linux   │                │
+│      │ Sidecar  │   │ WebView  │   │ Sidecar  │                │
+│      │ (xcap)   │   │(getDisp) │   │ (scrap)  │                │
+│      └────┬─────┘   └────┬─────┘   └────┬─────┘                │
+│           │              │              │                       │
+│           └──────────────┼──────────────┘                       │
+│                          ▼                                      │
+│             ┌───────────────────────┐                           │
+│             │    VP9 Encoding       │                           │
+│             │   (4-6 Mbps target)   │                           │
+│             └───────────┬───────────┘                           │
+│                         ▼                                       │
+│             ┌───────────────────────┐                           │
+│             │   LiveKit Track       │                           │
+│             │   (Screen Share)      │                           │
+│             └───────────────────────┘                           │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Sidecar Architecture (macOS/Linux):**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   Tauri Main Process                             │
+│  ┌──────────────┐        ┌──────────────────┐                   │
+│  │   WebView    │◄──────►│   Rust Backend   │                   │
+│  │  (UI/React)  │  IPC   │   (Tauri Core)   │                   │
+│  └──────────────┘        └────────┬─────────┘                   │
+│                                   │ Sidecar API                  │
+│                          ┌────────▼─────────┐                   │
+│                          │  capture-sidecar │                   │
+│                          │  (Rust binary)   │                   │
+│                          ├──────────────────┤                   │
+│                          │ - xcap/scrap     │                   │
+│                          │ - VP9 encoding   │                   │
+│                          │ - Frame streaming│                   │
+│                          └────────┬─────────┘                   │
+└───────────────────────────────────┼─────────────────────────────┘
+                                    │
+                           ┌────────▼─────────┐
+                           │     LiveKit      │
+                           │   (custom track) │
+                           └──────────────────┘
+```
+
+**Why Rust Sidecar for macOS?**
+- macOS WKWebView (used by Tauri) does NOT support `getDisplayMedia()`
+- This is a WebKit limitation, not a Tauri limitation
+- Same issue affects Linux WebKitGTK with inconsistent WebRTC support
+- Windows WebView2 (Chromium-based) has full WebRTC support
+
+**Recommended Rust Crates:**
+- `xcap` - Cross-platform screen capture (used by tauri-plugin-screenshots)
+- `scrap` - From RustDesk, proven at scale for remote desktop
+- `vpx-encode` or `rav1e` - VP9/AV1 encoding
 
 ### Data Flow
 
@@ -1168,28 +1280,35 @@ LIVEKIT_API_SECRET=your-production-secret
 
 ---
 
-### ADR-003: Hybrid Annotation Rendering (WebView + Native Overlay)
+### ADR-003: Hybrid Rendering (WebView + Native Windows)
 
 **Status:** Accepted
 
-**Context:** Where to render annotations - and how does the sharer see annotations on their shared content?
+**Context:** Where to render annotations - and how does the sharer see annotations on their shared content? How does the sharer access meeting controls when the main window is minimized?
 
-**Decision:** Hybrid approach with two rendering modes:
+**Decision:** Hybrid approach with multiple rendering modes:
 1. **Viewers:** Canvas overlay on `<video>` element in WebView
-2. **Sharer:** Native transparent overlay window (Tauri) on top of their shared screen/window
+2. **Sharer:** Three native Tauri windows:
+   - **Floating Control Bar:** Always-on-top window with meeting controls (mic, camera, stop share, leave, participant faces)
+   - **Annotation Overlay:** Transparent window for drawing annotations on shared content
+   - **Share Border Indicator:** Transparent window showing visual frame around captured area
 
 **Rationale:**
 - Sharer needs to see annotations on their actual screen (VS Code, Figma, etc.), not inside NAMELESS
-- This requires OS-level transparent window that floats above other apps
+- Sharer needs meeting controls accessible without switching apps (main window minimizes during share)
+- Floating control bar provides: sharing indicator, mic/camera toggles, participant faces, stop share, leave
+- Share border shows exactly what's being captured
 - Viewers see annotations composited on the video element (standard web)
 - WebView handles screen capture via `getDisplayMedia()` (proven, hardware-accelerated)
-- Tauri handles native overlay window (transparent, always-on-top, click-through)
+- Tauri handles native windows (transparent overlays, always-on-top control bar)
 
 **Architecture:**
 ```
-Sharer's machine:
-├── NAMELESS main window (WebView) - controls, participants
-├── Transparent overlay window (Tauri) - annotations on top of shared content
+Sharer's machine (during screen share):
+├── NAMELESS main window (WebView) - MINIMIZED
+├── Floating Control Bar (Tauri native) - always on top, draggable
+├── Share Border Indicator (Tauri transparent) - frames captured area
+├── Annotation Overlay (Tauri transparent) - annotations on shared content
 └── Screen capture via getDisplayMedia() - sent to LiveKit
 
 Viewer's machine:
@@ -1198,12 +1317,23 @@ Viewer's machine:
 │   └── <canvas> overlay - annotations
 ```
 
+**Window Lifecycle:**
+1. User clicks "Share Screen" → screen picker appears
+2. User selects window/screen → main window minimizes
+3. Three native elements created: floating bar, border indicator, annotation overlay
+4. User clicks "Stop Share" on floating bar → native windows destroyed, main window restores
+
 **Consequences:**
-- More complex than pure WebView approach
+- More complex than pure WebView approach (three native windows to manage)
 - Need to sync annotation coordinates between overlay and video
-- Sharer's overlay window must track shared screen/window position
+- Sharer's overlay windows must track shared screen/window position
+- Floating control bar needs to work across all screens/spaces
 - Two rendering pipelines must produce identical visual results
 - Future: Native overlay could be extracted as annotation SDK
+
+**Platform Considerations:**
+- **macOS:** NSWindow with `level: .floating`, `collectionBehavior: .canJoinAllSpaces`
+- **Windows:** `WS_EX_TOPMOST` + `WS_EX_TRANSPARENT` (for click-through), `SetWindowPos` for always-on-top
 
 ---
 
@@ -1272,36 +1402,62 @@ Viewer's machine:
 
 ---
 
-### ADR-007: WebRTC getDisplayMedia for Screen Capture
+### ADR-007: Hybrid Screen Capture (Sidecar + WebView)
 
-**Status:** Accepted
+**Status:** Accepted (Updated 2025-12-01 based on domain research)
 
 **Context:** How to capture the screen for sharing - Rust/native APIs or WebView/browser APIs?
 
-**Decision:** Use WebRTC `getDisplayMedia()` in WebView instead of native ScreenCaptureKit via Rust.
+**Decision:** Use a **hybrid approach**:
+- **macOS/Linux:** Rust sidecar binary using `xcap`/`scrap` crates for native screen capture
+- **Windows:** WebView `getDisplayMedia()` (WebView2 has full WebRTC support)
 
 **Rationale:**
-- `getDisplayMedia()` is hardware-accelerated, 60fps capable out of the box
-- Direct integration with LiveKit (`createLocalScreenTracks()` uses it internally)
-- Proven approach used by all major web-based meeting apps
-- Rust ScreenCaptureKit POC achieved only ~16fps due to per-frame capture overhead
-- Proper SCStream usage in Rust is complex (delegate pattern, continuous streaming)
-- Browser APIs handle permissions, picker UI, and capture natively
+- macOS WKWebView does NOT support `getDisplayMedia()` - this is a WebKit limitation
+- Linux WebKitGTK has inconsistent WebRTC support
+- Windows WebView2 (Chromium-based) has full `getDisplayMedia()` support
+- Tauri's sidecar pattern is proven (Hopp uses exactly this approach)
+- Rust crates `xcap` and `scrap` (from RustDesk) are production-ready
+
+**Research Findings (2025-12-01):**
+- Hopp app uses Tauri + Rust sidecar for screen capture
+- RustDesk proves native Rust screen capture at scale
+- The key insight: native capture is REQUIRED for macOS, not just an optimization
+
+**Resolution Strategy:**
+- MVP: 1080p @ 4-6 Mbps with VP9 codec
+- Focus on text clarity (high bitrate) over raw resolution
+- 5K not needed - crisp text at 1080p beats blurry text at 4K
 
 **Alternatives Considered:**
-1. **Rust ScreenCaptureKit streaming** - Complex, requires proper SCStream lifecycle management, reinventing what browsers already do well
-2. **Rust screenshot per frame** - Too slow (16fps), per-capture overhead
-3. **WebView getDisplayMedia** - Chosen, proven, integrates with LiveKit
+1. **Pure WebView getDisplayMedia** - ❌ Won't work on macOS (WKWebView limitation)
+2. **Electron** - Works but violates startup speed and bundle size goals
+3. **Windows-only MVP** - Loses 50%+ of developer market (Mac-heavy)
+4. **Rust sidecar on all platforms** - Chosen for macOS/Linux, optional for Windows
 
 **Consequences:**
-- Screen capture is WebView-only (not pure Rust)
-- Tauri still provides value: native overlay window, system tray, auto-updates, smaller bundle
-- Future optimization possible if needed (native capture for SDK extraction)
+- More complex architecture (two capture paths)
+- Need to maintain sidecar binary alongside Tauri app
+- Platform-specific code paths for screen capture
+- Graceful fallback if sidecar fails (show error, suggest Windows)
+- Sidecar increases bundle size slightly (~2-5MB)
 
-**Note:** Keeping native ScreenCaptureKit as future option if we need:
-- SDK that works outside browser context
-- Performance optimizations beyond browser capabilities
-- Recording features that bypass browser limitations
+**Implementation:**
+```
+packages/capture-sidecar/
+├── src/
+│   ├── main.rs          # Entry point, IPC with Tauri
+│   ├── capture.rs       # xcap/scrap screen capture
+│   ├── encode.rs        # VP9 encoding
+│   └── ipc.rs           # Communication protocol
+├── Cargo.toml
+└── README.md
+```
+
+**Sidecar Communication:**
+- Tauri manages sidecar lifecycle via `tauri-plugin-shell`
+- IPC via stdin/stdout or local socket
+- Frame data streamed to LiveKit via custom video track
 
 ---
 

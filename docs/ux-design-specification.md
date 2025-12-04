@@ -49,6 +49,8 @@ _Generated using BMad Method - Create UX Design Workflow v1.0_
 - Annotation canvas overlay
 - Participant video bubbles (Around-style floating heads)
 - Screen share viewer with annotation layer
+- Sharer floating control bar (always-on-top controls when sharing)
+- Share border indicator (visual frame around shared content)
 - Permission/role indicators
 - Connection status indicators
 
@@ -144,6 +146,18 @@ The annotation experience should feel like placing a transparent sheet of glass 
 3. **Transparency** - Annotations overlay content without obscuring it
 4. **Natural tool access** - Number keys (1-8, 0) like Excalidraw, or click toolbar icons
 5. **Ephemeral default** - Strokes feel temporary, easy to clear, not precious artifacts
+
+**Sharer Experience: "Stay in Your Flow"**
+
+When you're sharing your screen, NAMELESS gets out of your way:
+
+1. **App minimizes** - Main Nameless window disappears, your shared content is front and center
+2. **Floating control bar** - Small, draggable bar stays on top with essential controls
+3. **Visual share border** - Clear indication of what's being captured
+4. **Annotation overlay** - See everyone's drawings on your actual screen, not in a separate window
+5. **One-click stop** - End sharing instantly from the floating bar
+
+This means the sharer can continue working in VS Code, Figma, or any app while staying connected to the meeting and seeing annotations in real-time.
 
 **Why This Matters:**
 The moment someone draws a circle around a button and says "this one" - and everyone sees it instantly - that's the magic moment. The UX must make that moment effortless and immediate.
@@ -320,9 +334,9 @@ Based on Direction #1 (Classic Sidebar) + #3 (Split View):
 - Toolbar: Persistent annotation tools + connection status
 - Canvas: Main shared screen area with annotation overlay
 
-#### Focus Mode
+#### Focus Mode (Viewer)
 
-Based on Direction #6 - toggle with `F` key or double-click canvas:
+Based on Direction #6 - toggle with `F` key or double-click canvas. This is what **viewers** see when watching a shared screen:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -345,6 +359,48 @@ Based on Direction #6 - toggle with `F` key or double-click canvas:
 - ESC or `F` exits focus mode
 - Participant avatars stack in corner (Around-style)
 - Maximum canvas space for content
+
+#### Sharer's View (When You Are Sharing)
+
+When the user initiates screen sharing, the main Nameless window **minimizes** and a floating control bar appears. The sharer sees their actual shared content (VS Code, Figma, browser, etc.) with overlays:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  YOUR SHARED SCREEN/WINDOW (e.g., VS Code, Figma, Browser)  │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │ 🔴 Sharing │ [🎤] [📷] │ [Y][A][B] │ [Stop Share] [Leave]│  ← Floating Control Bar
+│  └─────────────────────────────────────────────────────┘   │
+│                                                             │
+│  ┌ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┐   │
+│  │              Annotation Overlay                     │   │  ← Transparent overlay
+│  │           (strokes appear here)                     │   │     for annotations
+│  └ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ─ ┘   │
+│                                                             │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │                 Visual Share Border                  │   │  ← Border indicates
+│  └─────────────────────────────────────────────────────┘   │     what's being shared
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Sharer's view characteristics:**
+- Main Nameless window is **minimized** (not visible)
+- Shared window/screen is **focused** and in foreground
+- **Visual border** around shared content indicates active sharing
+- **Floating control bar** stays on top of all windows & screens
+- **Annotation overlay** shows strokes from all participants on top of shared content
+- Control bar is **draggable** - can be repositioned anywhere on screen
+- Control bar shows: sharing indicator, mic/camera toggles, participant faces, Stop Share, Leave
+
+**Floating Control Bar contents:**
+| Element | Description |
+|---------|-------------|
+| 🔴 "Sharing" | Red indicator showing you're actively sharing |
+| Mic toggle | Mute/unmute microphone |
+| Camera toggle | Enable/disable camera |
+| Participant faces | Small circular avatars (Around-style) showing who's in the call |
+| "Stop Share" | Stops sharing, restores main window |
+| "Leave" | Leave meeting entirely |
 
 #### Command Palette (⌘K)
 
@@ -575,8 +631,11 @@ flowchart LR
 |------|--------|----------|
 | 1 | Click "Share" or press `⌘S` | Screen/window picker appears |
 | 2 | Select screen or window | Sharing starts immediately |
-| 3 | - | Annotation canvas activates for all participants |
-| 4 | Click "Stop Sharing" | Returns to non-sharing state |
+| 3 | - | Main Nameless window minimizes, selected window/screen is focused |
+| 4 | - | Visual border appears around shared content indicating active share |
+| 5 | - | Floating control bar appears on top of all windows & screens |
+| 6 | - | Annotation canvas activates for all participants |
+| 7 | Click "Stop Sharing" on floating bar | Sharing stops, main window restores, floating bar dismissed |
 
 #### Invite Participants (Mid-Meeting)
 
@@ -807,6 +866,75 @@ flowchart LR
 - ARIA role: `toolbar`
 - Each button has `aria-pressed` state
 - Keyboard navigable with Tab/Arrow keys
+
+---
+
+#### Sharer Floating Control Bar
+
+**Purpose:** Persistent control bar for the sharer that stays visible on top of all windows when sharing screen, allowing meeting controls without switching back to the Nameless app.
+
+**Anatomy:**
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  🔴 Sharing  │  [🎤]  [📷]  │  [○][○][○]  │  [Stop Share]  [Leave] │
+└──────────────────────────────────────────────────────────────────┘
+     Status       Controls      Participants     Actions
+```
+
+**Elements:**
+
+| Element | Description | Behavior |
+|---------|-------------|----------|
+| Status indicator | Red dot + "Sharing" text | Always visible, indicates active share |
+| Mic toggle | Microphone icon | Click to mute/unmute |
+| Camera toggle | Camera icon | Click to enable/disable video |
+| Participant faces | 3-4 small circular avatars | Shows who's in the call, overflow as "+N" |
+| Stop Share | Button (accent color) | Stops sharing, restores main window |
+| Leave | Button (destructive) | Leaves meeting entirely |
+
+**Visual Design:**
+- Semi-transparent dark background (`rgba(0,0,0,0.85)`)
+- Rounded corners (12px radius)
+- Subtle border (`1px solid rgba(255,255,255,0.1)`)
+- Compact height (~48px)
+- Width adapts to content (~400-500px)
+
+**States:**
+| State | Appearance |
+|-------|------------|
+| Default | Full opacity, all controls visible |
+| Idle (5s) | Fades to 60% opacity |
+| Hover | Returns to full opacity |
+| Dragging | Slight scale up (1.02), drop shadow |
+
+**Positioning:**
+- Default: Top-center of primary screen
+- Draggable: Can be repositioned anywhere on any screen
+- Position persisted: Remembers last position between sessions
+- Multi-monitor: Follows cursor to active screen or stays pinned
+
+**Variants:**
+- **Expanded** (default): Full bar with all elements
+- **Compact**: Icon-only mode (user preference)
+
+**Behavior:**
+- Appears automatically when screen sharing starts
+- Stays on top of ALL windows (including fullscreen apps)
+- Main Nameless window minimizes when bar appears
+- Clicking "Stop Share" dismisses bar and restores main window
+- Clicking "Leave" shows confirmation, then exits meeting
+- Draggable via any non-interactive area
+
+**Accessibility:**
+- ARIA role: `toolbar`
+- `aria-label`: "Screen sharing controls"
+- All buttons keyboard accessible (Tab navigation)
+- ESC key: No action (doesn't dismiss - intentional to prevent accidental close)
+- Screen reader: Announces "You are sharing your screen" when bar appears
+
+**Platform Considerations:**
+- **macOS**: Uses `NSWindow` with `level: .floating` and `collectionBehavior: .canJoinAllSpaces`
+- **Windows**: Uses `WS_EX_TOPMOST` window style with `SetWindowPos` for always-on-top
 
 ---
 
@@ -1214,7 +1342,7 @@ This document defines the complete user experience for NAMELESS v1.
 
 | Category | Details |
 |----------|---------|
-| **Design System** | shadcn/ui + Tailwind CSS with 6 custom components |
+| **Design System** | shadcn/ui + Tailwind CSS with 8 custom components |
 | **Visual Foundation** | Dark mode default, light mode option, 5-color annotation palette |
 | **Design Direction** | Hybrid layout (Classic Sidebar + Focus Mode + Command Palette) |
 | **User Journeys** | 3 primary flows (Create, Join, Annotate) + 3 secondary flows |
@@ -1282,6 +1410,8 @@ This document defines the complete user experience for NAMELESS v1.
 4. `ConnectionStatus` — network health indicator
 5. `MeetingControls` — mic/camera/share/leave bar
 6. `ParticipantListItem` — sidebar participant row
+7. `SharerFloatingBar` — always-on-top control bar when sharing (native window)
+8. `ShareBorderIndicator` — visual frame around shared content
 
 **Key patterns to implement:**
 - Toast system (success, error, warning, info)

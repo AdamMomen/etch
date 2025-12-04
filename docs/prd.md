@@ -199,9 +199,18 @@ Desktop client technology is TBD, evaluated on:
 ### System Integration
 
 **Screen Capture:**
-- Access to screen capture APIs (macOS: ScreenCaptureKit, Windows: DXGI/WGC)
+- Hybrid approach: Rust sidecar for macOS/Linux (WKWebView limitation), WebView for Windows
+- macOS: Native capture via `xcap`/`scrap` Rust crates (WKWebView doesn't support getDisplayMedia)
+- Windows: WebView2 getDisplayMedia() (full WebRTC support)
 - Permission prompts for screen recording access
 - Support for capturing specific windows or full displays
+
+**Screen Sharing Quality (Research-Validated):**
+- Resolution: 1080p (sufficient for readable code with high bitrate)
+- Codec: VP9 (optimal quality-to-bandwidth for screen content)
+- Bitrate: 4-6 Mbps (high enough for crisp text, reasonable bandwidth)
+- Focus: Text clarity over raw resolution (crisp 1080p > blurry 4K)
+- Future: 1440p option in v1.1, 4K in v2.0 if demand exists
 
 **Audio/Video:**
 - Microphone and camera access
@@ -209,24 +218,28 @@ Desktop client technology is TBD, evaluated on:
 - Device selection (multiple mics/cameras)
 
 **Overlay Rendering:**
-- Transparent overlay window for annotation canvas
-- Proper z-ordering (annotations above video, below system UI)
+- Transparent overlay window for annotation canvas (positioned over shared content)
+- Floating control bar window for sharer (always-on-top, above all windows & screens)
+- Visual border around shared window/screen to indicate active sharing
+- Proper z-ordering (control bar > annotations > shared content border > application windows)
 - High refresh rate rendering for smooth strokes
+- Control bar follows sharer across screens/desktops
 
 **Clipboard:**
 - Copy annotation snapshots to clipboard (future)
 
 ### Update Strategy
 
-**MVP Approach:**
-- Manual updates via GitHub releases
+**MVP Approach (Research-Validated for "Premium Feel"):**
+- Auto-update mechanism via Tauri's built-in updater
 - In-app notification when new version available
-- Download link to release page
+- One-click update installation
+- Seamless restart after update
 
 **Post-MVP:**
-- Auto-update mechanism (Tauri has built-in, Electron has electron-updater)
 - Delta updates to minimize download size
 - Staged rollouts for stability
+- Update channels (stable, beta)
 
 ### Offline Capabilities
 
@@ -274,7 +287,11 @@ Desktop client technology is TBD, evaluated on:
 - Or: Click join link → Enter name → Join
 
 **Sharing screen:**
-- Click share → Pick window/display → Sharing (annotation canvas auto-activates)
+- Click share → Pick window/display → Sharing begins
+- Main Nameless window is minimized - selected window/screen is focused (border indicates sharing)
+- Floating control bar appears on top of all windows & screens
+- Shows: sharing indicator, participant face circles, mic/camera toggles, stop share, leave
+- Annotation canvas auto-activates for all participants
 
 **Annotating:**
 - Move cursor to annotation area → Draw (pen is default tool)
@@ -321,61 +338,67 @@ Desktop client technology is TBD, evaluated on:
 - **FR17:** Users can stop screen sharing at any time
 - **FR18:** Only one participant can share screen at a time (MVP)
 - **FR19:** All participants can view the shared screen
-- **FR20:** Shared screen displays at appropriate quality for content visibility
+- **FR20:** Shared screen displays at 1080p resolution with VP9 codec at 4-6 Mbps bitrate, optimized for text clarity
+- **FR21:** When sharing begins, the main Nameless window automatically minimizes and the shared window/screen is focused
+- **FR22:** A visual border appears around the shared window/screen to indicate active sharing
+- **FR23:** A floating control bar appears on top of all windows showing sharing status, participant face circles, and meeting controls
+- **FR24:** The floating control bar remains visible across all screens/desktops when the main application is minimized
+- **FR25:** The floating control bar can be repositioned by dragging
+- **FR26:** The floating control bar provides quick access to: mute/unmute, camera toggle, stop sharing, and leave meeting
 
 ### Annotation System
 
-- **FR21:** Users with annotator permissions can draw freehand strokes on shared screens
-- **FR22:** Users can use a pen tool for precise line drawing
-- **FR23:** Users can use a highlighter tool for semi-transparent emphasis
-- **FR24:** Users can use an eraser tool to remove their own strokes
-- **FR25:** Hosts can clear all annotations from the shared screen
-- **FR26:** Sharers can delete any annotation on their shared screen
-- **FR27:** Annotations appear in real-time for all participants (< 200ms latency)
-- **FR28:** Each participant's annotations display in a distinct color
-- **FR29:** Late-joining participants see all existing annotations immediately
-- **FR30:** Annotations are resolution-independent (scale correctly on different displays)
+- **FR27:** Users with annotator permissions can draw freehand strokes on shared screens
+- **FR28:** Users can use a pen tool for precise line drawing
+- **FR29:** Users can use a highlighter tool for semi-transparent emphasis
+- **FR30:** Users can use an eraser tool to remove their own strokes
+- **FR31:** Hosts can clear all annotations from the shared screen
+- **FR32:** Sharers can delete any annotation on their shared screen
+- **FR33:** Annotations appear in real-time for all participants (< 200ms latency)
+- **FR34:** Each participant's annotations display in a distinct color
+- **FR35:** Late-joining participants see all existing annotations immediately
+- **FR36:** Annotations are resolution-independent (scale correctly on different displays)
 
 ### Permission & Roles
 
-- **FR31:** Room creator is automatically assigned the Host role
-- **FR32:** Hosts can assign roles to other participants (Annotator, Viewer)
-- **FR33:** Hosts can enable or disable annotation capability for the room
-- **FR34:** Annotators can create and delete their own annotations
-- **FR35:** Viewers can observe the meeting but cannot annotate
-- **FR36:** Sharers have elevated permissions on their own shared content
-- **FR37:** Users can see their current role and permissions clearly
+- **FR37:** Room creator is automatically assigned the Host role
+- **FR38:** Hosts can assign roles to other participants (Annotator, Viewer)
+- **FR39:** Hosts can enable or disable annotation capability for the room
+- **FR40:** Annotators can create and delete their own annotations
+- **FR41:** Viewers can observe the meeting but cannot annotate
+- **FR42:** Sharers have elevated permissions on their own shared content
+- **FR43:** Users can see their current role and permissions clearly
 
 ### Authentication & Access
 
-- **FR38:** Rooms use token-based authentication for access control
-- **FR39:** Users do not need to create an account to join meetings
-- **FR40:** Room tokens can be generated by the self-hosted server
-- **FR41:** Invalid or expired tokens are rejected with clear error messages
+- **FR44:** Rooms use token-based authentication for access control
+- **FR45:** Users do not need to create an account to join meetings
+- **FR46:** Room tokens can be generated by the self-hosted server
+- **FR47:** Invalid or expired tokens are rejected with clear error messages
 
 ### Connection & State Management
 
-- **FR42:** Application automatically reconnects after brief network interruptions
-- **FR43:** Annotation state is preserved and restored after reconnection
-- **FR44:** Users receive clear feedback when connection is lost
-- **FR45:** Users receive notification when reconnection succeeds
-- **FR46:** Application handles graceful degradation during poor network conditions
+- **FR48:** Application automatically reconnects after brief network interruptions
+- **FR49:** Annotation state is preserved and restored after reconnection
+- **FR50:** Users receive clear feedback when connection is lost
+- **FR51:** Users receive notification when reconnection succeeds
+- **FR52:** Application handles graceful degradation during poor network conditions
 
 ### Desktop Application
 
-- **FR47:** Application runs on macOS (Intel and Apple Silicon)
-- **FR48:** Application runs on Windows 10 and 11
-- **FR49:** Application requests necessary system permissions (screen capture, microphone, camera)
-- **FR50:** Application stores user preferences locally
-- **FR51:** Application displays notification when updates are available
-- **FR52:** Users can access recent rooms from the application
+- **FR53:** Application runs on macOS (Intel and Apple Silicon)
+- **FR54:** Application runs on Windows 10 and 11
+- **FR55:** Application requests necessary system permissions (screen capture, microphone, camera)
+- **FR56:** Application stores user preferences locally
+- **FR57:** Application displays notification when updates are available
+- **FR58:** Users can access recent rooms from the application
 
 ### Self-Hosting & Deployment
 
-- **FR53:** Server can be deployed via Docker Compose with minimal configuration
-- **FR54:** Server integrates with self-hosted LiveKit instance
-- **FR55:** Deployment documentation enables setup without external support
-- **FR56:** Server provides health check endpoints for monitoring
+- **FR59:** Server can be deployed via Docker Compose with minimal configuration
+- **FR60:** Server integrates with self-hosted LiveKit instance
+- **FR61:** Deployment documentation enables setup without external support
+- **FR62:** Server provides health check endpoints for monitoring
 
 ---
 
@@ -472,7 +495,7 @@ MVP scope is modest - focus on correctness first, scale later.
 | **MVP Scope** | Desktop app (macOS/Windows), A/V/screen share, annotation tools, role permissions |
 | **Success Metrics** | 500+ GitHub stars, 50+ deployments, 10+ contributors |
 
-**Functional Requirements:** 56 capabilities across meeting management, A/V, screen sharing, annotations, permissions, auth, connection handling, desktop app, and deployment.
+**Functional Requirements:** 62 capabilities across meeting management, A/V, screen sharing (including floating control bar), annotations, permissions, auth, connection handling, desktop app, and deployment.
 
 **Non-Functional Requirements:** Performance (< 200ms annotation latency), security (encrypted, no server persistence), scalability (2-10 participants), reliability (> 95% connection success).
 
