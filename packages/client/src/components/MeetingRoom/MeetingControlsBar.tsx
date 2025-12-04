@@ -1,4 +1,4 @@
-import { MonitorUp, LogOut } from 'lucide-react'
+import { MonitorUp, LogOut, Link } from 'lucide-react'
 import { Room } from 'livekit-client'
 import { Button } from '@/components/ui/button'
 import { MicrophoneButton } from './MicrophoneButton'
@@ -8,12 +8,14 @@ interface MeetingControlsBarProps {
   room: Room | null
   onScreenShare: () => void
   onLeave: () => void
+  onInvite?: () => void
 }
 
 export function MeetingControlsBar({
   room,
   onScreenShare,
   onLeave,
+  onInvite,
 }: MeetingControlsBarProps) {
   return (
     <footer className="flex h-16 shrink-0 items-center justify-center gap-3 border-t bg-background px-4">
@@ -33,6 +35,19 @@ export function MeetingControlsBar({
       >
         <MonitorUp className="h-5 w-5" />
       </Button>
+
+      {/* Invite Participants */}
+      {onInvite && (
+        <Button
+          variant="outline"
+          size="icon"
+          onClick={onInvite}
+          className="h-12 w-12 rounded-full"
+          aria-label="Invite participants"
+        >
+          <Link className="h-5 w-5" />
+        </Button>
+      )}
 
       {/* Leave Meeting */}
       <Button

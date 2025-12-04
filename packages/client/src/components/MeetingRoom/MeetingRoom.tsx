@@ -16,6 +16,8 @@ import { LocalVideoPreview } from './LocalVideoPreview'
 import { ParticipantGrid } from './ParticipantGrid'
 import { ParticipantBubbles } from './ParticipantBubbles'
 import { LeaveConfirmDialog } from './LeaveConfirmDialog'
+import { InviteModal } from './InviteModal'
+import { generateInviteLink, copyToClipboard } from '@/lib/invite'
 import { cn } from '@/lib/utils'
 
 const RESPONSIVE_BREAKPOINT = 1000
@@ -42,6 +44,12 @@ export function MeetingRoom() {
 
   // Leave confirmation dialog state for host
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false)
+
+  // Invite modal state
+  const [showInviteModal, setShowInviteModal] = useState(false)
+
+  // Track if auto-copy has been done (to prevent duplicates)
+  const hasAutoCopiedRef = useRef(false)
 
   // Track if we're in the process of leaving (to handle window close)
   const isLeavingRef = useRef(false)
@@ -143,18 +151,18 @@ export function MeetingRoom() {
   }, [])
 
   const handleInvite = useCallback(() => {
-    // Copy room link to clipboard (placeholder - full implementation in Story 2.13)
-    const roomLink = `${window.location.origin}/join/${roomId}`
-    navigator.clipboard.writeText(roomLink).then(() => {
-      toast.success('Room link copied to clipboard')
-    }).catch(() => {
-      toast.error('Failed to copy room link')
-    })
-  }, [roomId])
+    setShowInviteModal(true)
+  }, [])
 
   // Keyboard shortcuts - must be after handleLeave is defined
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger shortcuts when typing in input fields
+      const target = e.target as HTMLElement
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return
+      }
+
       // Cmd+\ or Ctrl+\ for sidebar toggle
       if ((e.metaKey || e.ctrlKey) && e.key === '\\') {
         e.preventDefault()
@@ -164,6 +172,11 @@ export function MeetingRoom() {
       if ((e.metaKey || e.ctrlKey) && e.key === 'w') {
         e.preventDefault()
         handleLeave()
+      }
+      // Cmd+I or Ctrl+I for invite modal (AC-2.13.4)
+      if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
+        e.preventDefault()
+        setShowInviteModal(true)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -226,6 +239,25 @@ export function MeetingRoom() {
       }
     }
   }, [isConnected, leaveRoom, clearRoom, resetVolumes])
+
+  // Auto-copy invite link on room creation for host (AC-2.13.3)
+  useEffect(() => {
+    // Only run once when host first connects to a newly created room
+    if (
+      isConnected &&
+      isHost &&
+      roomId &&
+      !hasAutoCopiedRef.current
+    ) {
+      hasAutoCopiedRef.current = true
+      const inviteLink = generateInviteLink(roomId)
+      copyToClipboard(inviteLink).then((success) => {
+        if (success) {
+          toast.success('Invite link copied!')
+        }
+      })
+    }
+  }, [isConnected, isHost, roomId])
 
   return (
     <div className="flex h-screen flex-col bg-background">
@@ -354,6 +386,7 @@ export function MeetingRoom() {
         room={room}
         onScreenShare={handleScreenShare}
         onLeave={handleLeave}
+        onInvite={handleInvite}
       />
 
       {/* Host Leave Confirmation Dialog */}
@@ -361,6 +394,13 @@ export function MeetingRoom() {
         open={showLeaveConfirm}
         onOpenChange={setShowLeaveConfirm}
         onConfirm={handleLeaveConfirm}
+      />
+
+      {/* Invite Modal */}
+      <InviteModal
+        open={showInviteModal}
+        onOpenChange={setShowInviteModal}
+        roomId={roomId || currentRoom?.roomId || ''}
       />
     </div>
   )

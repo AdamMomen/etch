@@ -4,6 +4,7 @@ import { persist } from 'zustand/middleware'
 interface SettingsState {
   displayName: string
   apiBaseUrl: string
+  inviteDomain: string | null // Custom domain for invite links (e.g., 'meet.example.com')
   sidebarCollapsed: boolean
   isMuted: boolean
   isVideoOff: boolean
@@ -11,6 +12,7 @@ interface SettingsState {
   preferredCameraId: string | null
   setDisplayName: (name: string) => void
   setApiBaseUrl: (url: string) => void
+  setInviteDomain: (domain: string | null) => void
   toggleSidebar: () => void
   setSidebarCollapsed: (collapsed: boolean) => void
   setMuted: (muted: boolean) => void
@@ -24,6 +26,7 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       displayName: '',
       apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+      inviteDomain: null, // Uses current origin by default
       sidebarCollapsed: false,
       isMuted: true, // Users start muted by default per UX spec
       isVideoOff: true, // Users start with video off by default per UX spec
@@ -31,6 +34,7 @@ export const useSettingsStore = create<SettingsState>()(
       preferredCameraId: null,
       setDisplayName: (name) => set({ displayName: name }),
       setApiBaseUrl: (url) => set({ apiBaseUrl: url }),
+      setInviteDomain: (domain) => set({ inviteDomain: domain }),
       toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
       setMuted: (muted) => set({ isMuted: muted }),
