@@ -1,0 +1,258 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>4</storyId>
+    <title>Enforce Single Active Screen Share</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-4-enforce-single-active-screen-share.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>meeting participant</asA>
+    <iWant>only one person to share at a time</iWant>
+    <soThat>there's no confusion about what content to focus on</soThat>
+    <tasks>
+      <task id="1" ac="3.4.1, 3.4.3">
+        <title>Implement canShare state tracking</title>
+        <subtasks>
+          <subtask>Verify useScreenShare hook returns canShare boolean (already exists from Story 3.1)</subtask>
+          <subtask>Verify canShare is false when isSharing and not isLocalSharing (remote participant sharing)</subtask>
+          <subtask>Verify canShare becomes true when remote sharer stops (track unsubscribed)</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="3.4.1">
+        <title>Disable ScreenShareButton when cannot share</title>
+        <subtasks>
+          <subtask>Update ScreenShareButton.tsx to accept disabled prop</subtask>
+          <subtask>Pass disabled={!canShare} from MeetingControlsBar</subtask>
+          <subtask>Style disabled state: reduced opacity, cursor-not-allowed</subtask>
+          <subtask>Ensure onClick handler is no-op when disabled</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="3.4.2">
+        <title>Add tooltip with sharer name</title>
+        <subtasks>
+          <subtask>Add Tooltip component from shadcn/ui to ScreenShareButton</subtask>
+          <subtask>When disabled, show tooltip content: "{sharerName} is sharing. Ask them to stop first."</subtask>
+          <subtask>Use sharerName from useScreenShare hook</subtask>
+          <subtask>Ensure tooltip doesn't show when button is enabled</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="3.4.3">
+        <title>Verify state updates on remote share events</title>
+        <subtasks>
+          <subtask>Verify TrackSubscribed handler sets canShare = false for remote screen shares</subtask>
+          <subtask>Verify TrackUnsubscribed handler sets canShare = true when remote share ends</subtask>
+          <subtask>Test rapid share/stop cycles don't cause race conditions</subtask>
+        </subtasks>
+      </task>
+      <task id="5" ac="all">
+        <title>Write tests</title>
+        <subtasks>
+          <subtask>Test button disabled state when remote participant sharing</subtask>
+          <subtask>Test tooltip content shows correct sharer name</subtask>
+          <subtask>Test button re-enables when remote stops sharing</subtask>
+          <subtask>Test local user can still share when canShare is true</subtask>
+          <subtask>Test rapid share/stop transitions</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.4.1" title="Share Screen Button Disabled When Someone Sharing">
+      <given>Another participant is currently sharing their screen</given>
+      <when>I look at my Share Screen button</when>
+      <then>The button is visually disabled (grayed out, not clickable) and clicking it does nothing</then>
+    </criterion>
+    <criterion id="AC-3.4.2" title="Disabled Message Shows Sharer Name">
+      <given>Another participant is currently sharing their screen</given>
+      <when>I hover over the disabled Share Screen button</when>
+      <then>I see a tooltip message: "{sharerName} is sharing. Ask them to stop first."</then>
+    </criterion>
+    <criterion id="AC-3.4.3" title="Button Re-enables When Sharer Stops">
+      <given>Another participant was sharing their screen</given>
+      <when>They stop sharing</when>
+      <then>My Share Screen button becomes enabled again and I can now initiate my own screen share</then>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification: Screen Sharing</title>
+        <section>Story 3.4: Single Active Screen Share</section>
+        <snippet>AC-3.4.1: "Share Screen" disabled when someone sharing. AC-3.4.2: Message shown when disabled showing sharer name. AC-3.4.3: Button re-enables when sharer stops.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Authorization (Roles)</section>
+        <snippet>Screen sharing permissions follow role-based model. Only one screen share at a time per FR18. Single share enforcement is MVP constraint.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR18</section>
+        <snippet>Only one participant can share screen at a time (MVP constraint). This aligns with focus-on-single-content UX philosophy.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/3-3-implement-stop-screen-sharing.md</path>
+        <title>Story 3.3: Implement Stop Screen Sharing</title>
+        <section>Dev Agent Record</section>
+        <snippet>canShare state exists in useScreenShare.ts. stopScreenShare at lines 181-221. TrackSubscribed/Unsubscribed handlers at lines 228-270. Toast patterns using sonner established.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>packages/client/src/hooks/useScreenShare.ts</path>
+        <kind>hook</kind>
+        <symbol>useScreenShare</symbol>
+        <lines>1-301</lines>
+        <reason>Primary hook managing screen share state. Returns canShare, isSharing, isLocalSharing, sharerName. Contains TrackSubscribed/Unsubscribed handlers that manage canShare state.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/stores/screenShareStore.ts</path>
+        <kind>store</kind>
+        <symbol>useScreenShareStore</symbol>
+        <lines>1-56</lines>
+        <reason>Zustand store with isSharing, sharerId, sharerName, isLocalSharing state. Used by useScreenShare hook for state management.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/ScreenShare/ScreenShareButton.tsx</path>
+        <kind>component</kind>
+        <symbol>ScreenShareButton</symbol>
+        <lines>1-45</lines>
+        <reason>Button component to modify. Currently uses canShare for disabled prop (line 29). Needs tooltip wrapper with conditional content.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/MeetingControlsBar.tsx</path>
+        <kind>component</kind>
+        <symbol>MeetingControlsBar</symbol>
+        <lines>1-56</lines>
+        <reason>Parent component rendering ScreenShareButton. Currently passes only room prop; may need to pass additional props if refactored.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/ui/tooltip.tsx</path>
+        <kind>component</kind>
+        <symbol>Tooltip, TooltipTrigger, TooltipContent</symbol>
+        <lines>1-101</lines>
+        <reason>Custom Tooltip component based on React context. Exports Tooltip, TooltipTrigger (with asChild prop), TooltipContent. Ready to use for AC-3.4.2.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/hooks/useScreenShare.test.ts</path>
+        <kind>test</kind>
+        <symbol>useScreenShare tests</symbol>
+        <lines>1-512</lines>
+        <reason>Existing test file with mocking patterns for Room, Tauri invoke, sonner toast, TrackSubscribed/Unsubscribed events. Follow these patterns for new tests.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/ScreenShare/ScreenShareButton.test.tsx</path>
+        <kind>test</kind>
+        <symbol>ScreenShareButton tests</symbol>
+        <lines>1-157</lines>
+        <reason>Existing tests including disabled state test (lines 52-61). Uses createMockScreenShare helper. Add tooltip tests here.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <ecosystem name="node">
+        <package name="livekit-client" version="^2.16.0">WebRTC/LiveKit client for room events</package>
+        <package name="zustand" version="^5.0.9">State management for screenShareStore</package>
+        <package name="sonner" version="^2.0.7">Toast notifications</package>
+        <package name="lucide-react" version="^0.555.0">Icons (MonitorUp, MonitorOff)</package>
+        <package name="@radix-ui/react-slot" version="^1.2.4">Used by Button component</package>
+      </ecosystem>
+      <ecosystem name="testing">
+        <package name="vitest" version="^2.0.0">Test runner</package>
+        <package name="@testing-library/react" version="^16.3.0">React testing utilities</package>
+        <package name="@testing-library/user-event" version="^14.6.1">User interaction simulation</package>
+        <package name="@testing-library/jest-dom" version="^6.9.1">DOM matchers</package>
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="architecture">MVP allows only one screen share at a time (FR18 single share enforcement)</constraint>
+    <constraint source="architecture">Follow Zustand store pattern with typed state and actions</constraint>
+    <constraint source="architecture">Use shadcn/ui components (Tooltip available in ui folder)</constraint>
+    <constraint source="dev-notes">Most state management already exists - this is primarily UI updates and verification</constraint>
+    <constraint source="testing">Follow existing test patterns with vitest and React Testing Library</constraint>
+    <constraint source="testing">Mock useScreenShare hook in component tests</constraint>
+    <constraint source="testing">Use createMockScreenShare helper for consistent test setup</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>UseScreenShareReturn</name>
+      <kind>TypeScript interface</kind>
+      <signature>
+interface UseScreenShareReturn {
+  isSharing: boolean
+  isLocalSharing: boolean
+  canShare: boolean
+  sharerName: string | null
+  screenTrack: LocalVideoTrack | null
+  remoteScreenTrack: RemoteVideoTrack | null
+  startScreenShare: () => Promise&lt;void&gt;
+  stopScreenShare: () => Promise&lt;void&gt;
+}
+      </signature>
+      <path>packages/client/src/hooks/useScreenShare.ts:21-30</path>
+    </interface>
+    <interface>
+      <name>ScreenShareState</name>
+      <kind>TypeScript interface (Zustand store)</kind>
+      <signature>
+interface ScreenShareState {
+  isSharing: boolean
+  sharerId: string | null
+  sharerName: string | null
+  isLocalSharing: boolean
+  sharedSource: 'screen' | 'window' | null
+  sharedSourceId: string | null
+  startSharing: (source: 'screen' | 'window', sourceId: string) => void
+  stopSharing: () => void
+  setRemoteSharer: (id: string | null, name: string | null) => void
+}
+      </signature>
+      <path>packages/client/src/stores/screenShareStore.ts:3-16</path>
+    </interface>
+    <interface>
+      <name>Tooltip Components</name>
+      <kind>React components</kind>
+      <signature>
+&lt;Tooltip&gt;
+  &lt;TooltipTrigger asChild&gt;
+    &lt;Button disabled={disabled}&gt;...&lt;/Button&gt;
+  &lt;/TooltipTrigger&gt;
+  &lt;TooltipContent&gt;{message}&lt;/TooltipContent&gt;
+&lt;/Tooltip&gt;
+      </signature>
+      <path>packages/client/src/components/ui/tooltip.tsx</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing uses vitest with React Testing Library. Tests are co-located with source files (*.test.ts/tsx). Component tests mock hooks using vi.mock(). Hook tests use renderHook from @testing-library/react. User interactions use userEvent.setup(). Async operations wrapped in act(). Follow existing patterns in useScreenShare.test.ts and ScreenShareButton.test.tsx.
+    </standards>
+    <locations>
+      <location>packages/client/src/hooks/useScreenShare.test.ts</location>
+      <location>packages/client/src/components/ScreenShare/ScreenShareButton.test.tsx</location>
+    </locations>
+    <ideas>
+      <idea ac="3.4.1">Test button has disabled attribute when canShare=false and isLocalSharing=false</idea>
+      <idea ac="3.4.1">Test button onClick does not call startScreenShare when disabled</idea>
+      <idea ac="3.4.1">Test button has visual disabled styling (class assertions)</idea>
+      <idea ac="3.4.2">Test tooltip renders with correct sharer name when button disabled</idea>
+      <idea ac="3.4.2">Test tooltip does not render when button is enabled</idea>
+      <idea ac="3.4.2">Test tooltip content matches expected message format</idea>
+      <idea ac="3.4.3">Test canShare becomes true when TrackUnsubscribed fires for remote screen share</idea>
+      <idea ac="3.4.3">Test button re-enables after remote sharer stops</idea>
+      <idea ac="3.4.3">Test rapid share/stop cycles maintain consistent state</idea>
+    </ideas>
+  </tests>
+</story-context>

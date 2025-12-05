@@ -32,28 +32,18 @@ export interface UseScreenShareReturn {
 // Platform type from Tauri command
 type Platform = 'windows' | 'macos' | 'linux'
 
-// Check if running in Tauri environment
-const isTauriEnvironment = (): boolean => {
-  return typeof window !== 'undefined' && '__TAURI__' in window
-}
-
 // Get platform from Tauri command
 const getPlatform = async (): Promise<Platform> => {
-  if (!isTauriEnvironment()) {
-    // Fallback for web browser testing
-    return 'windows'
-  }
   try {
     return await invoke<Platform>('get_platform')
   } catch {
-    // Fallback if command fails
+    // Fallback if command fails (e.g., running in browser)
     return 'windows'
   }
 }
 
 // Minimize main window via Tauri
 const minimizeMainWindow = async (): Promise<void> => {
-  if (!isTauriEnvironment()) return
   try {
     await invoke('minimize_main_window')
   } catch (error) {
@@ -63,7 +53,6 @@ const minimizeMainWindow = async (): Promise<void> => {
 
 // Restore main window via Tauri
 const restoreMainWindow = async (): Promise<void> => {
-  if (!isTauriEnvironment()) return
   try {
     await invoke('restore_main_window')
   } catch (error) {
@@ -204,6 +193,12 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
         updateParticipant(localParticipant.id, { isScreenSharing: false })
       }
 
+      // TODO: Native window cleanup for sharer overlay windows (Stories 3.6, 3.7, 3.8)
+      // When implemented, destroy these windows here:
+      // - Floating control bar (Story 3.7) - invoke('destroy_floating_window', { label: 'floating-controls' })
+      // - Share border indicator (Story 3.8) - invoke('destroy_floating_window', { label: 'share-border' })
+      // - Annotation overlay (Story 3.6) - invoke('destroy_floating_window', { label: 'annotation-overlay' })
+
       // Restore main window
       await restoreMainWindow()
     } catch (error) {
@@ -233,6 +228,8 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
         setRemoteScreenTrack(track as RemoteVideoTrack)
         setRemoteSharer(participant.identity, participant.name || participant.identity)
         updateParticipant(participant.identity, { isScreenSharing: true })
+        // Disable local share button when remote participant starts sharing (AC-3.4.1)
+        setCanShare(false)
       }
     }
 
@@ -243,9 +240,15 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
       participant: RemoteParticipant
     ) => {
       if (track.source === Track.Source.ScreenShare) {
+        // Notify viewers that the sharer stopped (AC-3.3.8)
+        const sharerDisplayName = participant.name || participant.identity
+        toast.info(`${sharerDisplayName} stopped sharing`)
+
         setRemoteScreenTrack(null)
         setRemoteSharer(null, null)
         updateParticipant(participant.identity, { isScreenSharing: false })
+        // Re-enable local share button when remote participant stops sharing (AC-3.4.3)
+        setCanShare(true)
       }
     }
 

@@ -153,4 +153,85 @@ describe('ScreenShareButton', () => {
       expect(screen.getByLabelText('Stop sharing')).toBeInTheDocument()
     })
   })
+
+  describe('tooltip (AC-3.4.2)', () => {
+    it('should render with tooltip wrapper when disabled and sharer name exists', () => {
+      vi.mocked(useScreenShare).mockReturnValue(
+        createMockScreenShare({
+          canShare: false,
+          sharerName: 'Alice',
+        })
+      )
+
+      render(<ScreenShareButton room={null} />)
+
+      // Button should be disabled
+      const button = screen.getByRole('button', { name: /share screen/i })
+      expect(button).toBeDisabled()
+
+      // The tooltip wrapper should exist (relative inline-block div wrapping the button)
+      const tooltipWrapper = button.closest('.relative.inline-block')
+      expect(tooltipWrapper).toBeInTheDocument()
+    })
+
+    it('should show tooltip content on hover when disabled', async () => {
+      vi.mocked(useScreenShare).mockReturnValue(
+        createMockScreenShare({
+          canShare: false,
+          sharerName: 'Alice',
+        })
+      )
+
+      const user = userEvent.setup()
+      render(<ScreenShareButton room={null} />)
+
+      const button = screen.getByRole('button', { name: /share screen/i })
+
+      // Find the span wrapper that receives hover events (not the disabled button)
+      const spanWrapper = button.parentElement
+      expect(spanWrapper?.tagName).toBe('SPAN')
+
+      if (spanWrapper) {
+        await user.hover(spanWrapper)
+      }
+
+      // Tooltip should show sharer name
+      expect(screen.getByText('Alice is sharing. Ask them to stop first.')).toBeInTheDocument()
+    })
+
+    it('should not have tooltip wrapper when button is enabled', () => {
+      vi.mocked(useScreenShare).mockReturnValue(
+        createMockScreenShare({
+          canShare: true,
+          sharerName: null,
+        })
+      )
+
+      render(<ScreenShareButton room={null} />)
+
+      const button = screen.getByRole('button', { name: /share screen/i })
+
+      // Button should not have tooltip wrapper when enabled
+      const tooltipWrapper = button.closest('.relative.inline-block')
+      expect(tooltipWrapper).not.toBeInTheDocument()
+    })
+
+    it('should not have tooltip wrapper when user is sharing themselves', () => {
+      vi.mocked(useScreenShare).mockReturnValue(
+        createMockScreenShare({
+          isLocalSharing: true,
+          canShare: false,
+          sharerName: null,
+        })
+      )
+
+      render(<ScreenShareButton room={null} />)
+
+      const button = screen.getByRole('button', { name: /stop sharing/i })
+
+      // Button should not have tooltip wrapper when user is local sharer
+      const tooltipWrapper = button.closest('.relative.inline-block')
+      expect(tooltipWrapper).not.toBeInTheDocument()
+    })
+  })
 })

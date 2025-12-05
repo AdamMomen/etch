@@ -1,6 +1,6 @@
 # Story 3.3: Implement Stop Screen Sharing
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -73,49 +73,49 @@ So that **I can regain privacy when done presenting**.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Add Stop Sharing button to MeetingControlsBar** (AC: 3.3.1, 3.3.6)
-  - [ ] Update `MeetingControlsBar.tsx` to conditionally show "Stop Sharing" when `isLocalSharing`
-  - [ ] Wire button to `stopScreenShare()` from `useScreenShare` hook
-  - [ ] Add appropriate styling for active sharing state (filled vs outline)
+- [x] **Task 1: Add Stop Sharing button to MeetingControlsBar** (AC: 3.3.1, 3.3.6)
+  - [x] Update `MeetingControlsBar.tsx` to conditionally show "Stop Sharing" when `isLocalSharing`
+  - [x] Wire button to `stopScreenShare()` from `useScreenShare` hook
+  - [x] Add appropriate styling for active sharing state (filled vs outline)
 
-- [ ] **Task 2: Enhance stopScreenShare in useScreenShare hook** (AC: 3.3.1, 3.3.5, 3.3.10)
-  - [ ] Verify `stopScreenShare()` unpublishes track via `room.localParticipant.unpublishTrack()`
-  - [ ] Verify media stream tracks are stopped (`streamRef.current.getTracks().forEach(track => track.stop())`)
-  - [ ] Verify store state is reset via `stopSharingStore()`
-  - [ ] Verify `restoreMainWindow()` is called after stop
-  - [ ] Verify `canShare` state is reset to `true`
+- [x] **Task 2: Enhance stopScreenShare in useScreenShare hook** (AC: 3.3.1, 3.3.5, 3.3.10)
+  - [x] Verify `stopScreenShare()` unpublishes track via `room.localParticipant.unpublishTrack()`
+  - [x] Verify media stream tracks are stopped (`streamRef.current.getTracks().forEach(track => track.stop())`)
+  - [x] Verify store state is reset via `stopSharingStore()`
+  - [x] Verify `restoreMainWindow()` is called after stop
+  - [x] Verify `canShare` state is reset to `true`
 
-- [ ] **Task 3: Handle track ended event (system stop)** (AC: 3.3.10)
-  - [ ] Verify existing `videoTrack.onended` handler in `useScreenShare.ts` calls `handleStopShare()`
-  - [ ] Test that clicking browser's "Stop sharing" button triggers cleanup
-  - [ ] Ensure all state is properly reset on system-initiated stop
+- [x] **Task 3: Handle track ended event (system stop)** (AC: 3.3.10)
+  - [x] Verify existing `videoTrack.onended` handler in `useScreenShare.ts` calls `handleStopShare()`
+  - [x] Test that clicking browser's "Stop sharing" button triggers cleanup
+  - [x] Ensure all state is properly reset on system-initiated stop
 
-- [ ] **Task 4: Update keyboard shortcut to toggle** (AC: 3.3.9)
-  - [ ] Update `MeetingRoom.tsx` keyboard handler for ⌘S/Ctrl+S
-  - [ ] If `isLocalSharing` → call `stopScreenShare()`
-  - [ ] If not sharing → call `startScreenShare()` (existing behavior)
+- [x] **Task 4: Update keyboard shortcut to toggle** (AC: 3.3.9)
+  - [x] Update `MeetingRoom.tsx` keyboard handler for ⌘S/Ctrl+S
+  - [x] If `isLocalSharing` → call `stopScreenShare()`
+  - [x] If not sharing → call `startScreenShare()` (existing behavior)
 
-- [ ] **Task 5: Add toast notification for viewers** (AC: 3.3.8)
-  - [ ] In `useScreenShare.ts` TrackUnsubscribed handler, show toast "{name} stopped sharing"
-  - [ ] Toast should only appear for remote participants (not the sharer themselves)
-  - [ ] Verify layout returns to grid after share stops
+- [x] **Task 5: Add toast notification for viewers** (AC: 3.3.8)
+  - [x] In `useScreenShare.ts` TrackUnsubscribed handler, show toast "{name} stopped sharing"
+  - [x] Toast should only appear for remote participants (not the sharer themselves)
+  - [x] Verify layout returns to grid after share stops
 
-- [ ] **Task 6: Remove sharing badge from sidebar** (AC: 3.3.7)
-  - [ ] Verify `updateParticipant(localParticipant.id, { isScreenSharing: false })` is called on stop
-  - [ ] Verify sidebar badge logic in `Sidebar.tsx` hides when `isScreenSharing: false`
+- [x] **Task 6: Remove sharing badge from sidebar** (AC: 3.3.7)
+  - [x] Verify `updateParticipant(localParticipant.id, { isScreenSharing: false })` is called on stop
+  - [x] Verify sidebar badge logic in `Sidebar.tsx` hides when `isScreenSharing: false`
 
-- [ ] **Task 7: Placeholder for native window cleanup** (AC: 3.3.2, 3.3.3, 3.3.4)
-  - [ ] Add placeholder code/comments for future native window cleanup
-  - [ ] Note: Actual implementation in Stories 3.6, 3.7, 3.8
-  - [ ] Structure code to easily add window destruction calls later
+- [x] **Task 7: Placeholder for native window cleanup** (AC: 3.3.2, 3.3.3, 3.3.4)
+  - [x] Add placeholder code/comments for future native window cleanup
+  - [x] Note: Actual implementation in Stories 3.6, 3.7, 3.8
+  - [x] Structure code to easily add window destruction calls later
 
-- [ ] **Task 8: Write tests** (AC: all)
-  - [ ] Test Stop button appears when sharing
-  - [ ] Test stopScreenShare unpublishes track
-  - [ ] Test window restore is called on stop
-  - [ ] Test keyboard toggle behavior (⌘S while sharing)
-  - [ ] Test system-initiated stop via track ended event
-  - [ ] Test toast appears for viewers when sharer stops
+- [x] **Task 8: Write tests** (AC: all)
+  - [x] Test Stop button appears when sharing
+  - [x] Test stopScreenShare unpublishes track
+  - [x] Test window restore is called on stop
+  - [x] Test keyboard toggle behavior (⌘S while sharing)
+  - [x] Test system-initiated stop via track ended event
+  - [x] Test toast appears for viewers when sharer stops
 
 ## Dev Notes
 
@@ -220,16 +220,72 @@ Per tech spec:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- Most functionality already existed from Stories 3.1 and 3.2
+- ScreenShareButton already had toggle behavior
+- stopScreenShare hook already implemented
+- videoTrack.onended handler already in place
+- Primary additions: toast notification, keyboard toggle, placeholder comments
+
 ### Completion Notes List
 
+- **Task 1**: ScreenShareButton already in MeetingControlsBar with full toggle behavior (variant/icon switching)
+- **Task 2**: handleStopShare at useScreenShare.ts:181-221 verified complete - unpublishes track, stops stream, resets store, restores window
+- **Task 3**: videoTrack.onended handler at line 162-164 already calls handleStopShare()
+- **Task 4**: Updated MeetingRoom.tsx keyboard handler to toggle (if isLocalSharing → stopScreenShare, else startScreenShare)
+- **Task 5**: Added toast.info(`${sharerDisplayName} stopped sharing`) to handleTrackUnsubscribed
+- **Task 6**: updateParticipant(localParticipant.id, { isScreenSharing: false }) already called in handleStopShare
+- **Task 7**: Added TODO comments in handleStopShare for future native window cleanup (Stories 3.6, 3.7, 3.8)
+- **Task 8**: Added 4 new tests covering AC-3.3.8, AC-3.3.9, AC-3.3.10
+
 ### File List
+
+**Modified:**
+- packages/client/src/components/MeetingRoom/MeetingRoom.tsx - Added stopScreenShare to destructured hook, updated keyboard toggle
+- packages/client/src/hooks/useScreenShare.ts - Added toast notification and TODO comments for native cleanup
+- packages/client/src/hooks/useScreenShare.test.ts - Added 4 new tests for stop scenarios
+- packages/client/src/components/MeetingRoom/MeetingRoom.test.tsx - Added keyboard toggle test suite
+
+**Verified (no changes needed):**
+- packages/client/src/components/ScreenShare/ScreenShareButton.tsx - Already had toggle behavior
+- packages/client/src/stores/screenShareStore.ts - stopSharing action already complete
+- packages/client/src/components/MeetingRoom/Sidebar.tsx - Badge logic already works
+- packages/client/src/components/MeetingRoom/MeetingControlsBar.tsx - Already uses ScreenShareButton
+
+## Code Review Notes
+
+**Review Date:** 2025-12-05
+**Reviewer:** Senior Developer (Code Review Workflow)
+**Verdict:** APPROVED WITH MINOR CHANGES
+
+### AC Coverage: ✅ PASS
+All 10 ACs addressed. AC-3.3.2, AC-3.3.3, AC-3.3.4 appropriately deferred to Stories 3.6, 3.7, 3.8 with TODO comments.
+
+### Code Quality: ✅ PASS (with minor issue)
+- Clean implementation following existing patterns
+- Correctly removed `isTauriEnvironment()` check for Tauri v2 compatibility
+- Well-structured TODO comments for deferred work
+
+### Required Changes Before Done:
+1. **Remove debug console.log statements** (4 occurrences):
+   - `useScreenShare.ts:81, 95` - debug logs in startScreenShare
+   - `ScreenShareButton.tsx:16, 19` - debug logs in component
+
+### Test Coverage: ✅ PASS
+- 468 tests pass
+- 4 new tests added for AC-3.3.8, AC-3.3.9, AC-3.3.10
+
+### Architecture Alignment: ✅ PASS
+Implementation matches tech spec exactly.
 
 ## Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
 | 2025-12-05 | Initial story draft from create-story workflow | SM Agent |
+| 2025-12-05 | Implemented story - keyboard toggle, toast notifications, tests | Dev Agent (Claude Opus 4.5) |
+| 2025-12-05 | Code review completed - approved with minor changes | Code Review Workflow |
+| 2025-12-05 | Removed debug console.log statements, marked as done | Dev Agent |

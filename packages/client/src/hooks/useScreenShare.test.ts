@@ -47,13 +47,6 @@ describe('useScreenShare', () => {
       localParticipant: { id: 'local-user-123', name: 'Test User', role: 'host', color: '#ff0000', isLocal: true },
     })
 
-    // Mock __TAURI__ global to simulate Tauri environment
-    Object.defineProperty(window, '__TAURI__', {
-      value: {},
-      writable: true,
-      configurable: true,
-    })
-
     // Mock getDisplayMedia
     Object.defineProperty(navigator, 'mediaDevices', {
       value: {
@@ -352,6 +345,129 @@ describe('useScreenShare', () => {
       expect(state.isSharing).toBe(false)
       expect(state.sharerName).toBeNull()
     })
+
+    it('should show toast notification when remote sharer stops (AC-3.3.8)', async () => {
+      const { toast } = await import('sonner')
+      const mockRoom = createMockRoom()
+      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackUnsubscribed') {
+          trackUnsubscribedHandler = handler
+        }
+      })
+
+      // Set up initial state with remote sharer
+      useScreenShareStore.setState({
+        isSharing: true,
+        sharerId: 'remote-user-123',
+        sharerName: 'Alice',
+        isLocalSharing: false,
+      })
+
+      renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Simulate remote screen share track unsubscription
+      const mockRemoteTrack = {
+        source: 'screen_share',
+        kind: 'video',
+        id: 'remote-screen-track-123',
+      }
+
+      await act(async () => {
+        trackUnsubscribedHandler?.(mockRemoteTrack, {}, { identity: 'remote-user-123', name: 'Alice' })
+      })
+
+      // Should show toast notification for viewers
+      expect(toast.info).toHaveBeenCalledWith('Alice stopped sharing')
+    })
+
+    it('should use participant identity if name is not available (AC-3.3.8)', async () => {
+      const { toast } = await import('sonner')
+      const mockRoom = createMockRoom()
+      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackUnsubscribed') {
+          trackUnsubscribedHandler = handler
+        }
+      })
+
+      renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Simulate remote screen share track unsubscription with no name
+      const mockRemoteTrack = {
+        source: 'screen_share',
+        kind: 'video',
+        id: 'remote-screen-track-123',
+      }
+
+      await act(async () => {
+        trackUnsubscribedHandler?.(mockRemoteTrack, {}, { identity: 'user-id-456', name: '' })
+      })
+
+      // Should fall back to identity
+      expect(toast.info).toHaveBeenCalledWith('user-id-456 stopped sharing')
+    })
+  })
+
+  describe('system-initiated stop (AC-3.3.10)', () => {
+    it('should handle track ended event from browser stop button', async () => {
+      const mockRoom = createMockRoom()
+
+      // Mock platform as Windows
+      mockInvoke.mockImplementation((cmd: string) => {
+        if (cmd === 'get_platform') return Promise.resolve('windows')
+        if (cmd === 'minimize_main_window') return Promise.resolve()
+        if (cmd === 'restore_main_window') return Promise.resolve()
+        return Promise.resolve()
+      })
+
+      // Create a mock track with onended that we can trigger
+      let onEndedCallback: (() => void) | null = null
+      const mockTrack = {
+        id: 'video-track-123',
+        get onended() { return onEndedCallback },
+        set onended(callback: (() => void) | null) { onEndedCallback = callback },
+        stop: vi.fn(),
+      }
+      const mockStream = {
+        getVideoTracks: () => [mockTrack],
+        getTracks: () => [mockTrack],
+      }
+      vi.mocked(navigator.mediaDevices.getDisplayMedia).mockResolvedValueOnce(
+        mockStream as unknown as MediaStream
+      )
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Start screen share
+      await act(async () => {
+        await result.current.startScreenShare()
+      })
+
+      // Verify sharing started
+      expect(useScreenShareStore.getState().isLocalSharing).toBe(true)
+
+      // Simulate system-initiated stop (browser "Stop sharing" button)
+      await act(async () => {
+        onEndedCallback?.()
+      })
+
+      // State should be reset
+      const state = useScreenShareStore.getState()
+      expect(state.isSharing).toBe(false)
+      expect(state.isLocalSharing).toBe(false)
+
+      // Window should be restored
+      expect(mockInvoke).toHaveBeenCalledWith('restore_main_window')
+    })
   })
 
   describe('canShare state', () => {
@@ -391,6 +507,124 @@ describe('useScreenShare', () => {
       // After successful share, canShare remains true (allows stopping)
       // The button uses isLocalSharing to determine state
       expect(typeof result.current.canShare).toBe('boolean')
+    })
+
+    it('should set canShare to false when remote participant starts sharing (AC-3.4.1)', async () => {
+      const mockRoom = createMockRoom()
+      let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackSubscribed') {
+          trackSubscribedHandler = handler
+        }
+      })
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Initially canShare is true
+      expect(result.current.canShare).toBe(true)
+
+      // Simulate remote screen share track subscription
+      const mockRemoteTrack = {
+        source: 'screen_share',
+        kind: 'video',
+        id: 'remote-screen-track-123',
+      }
+
+      await act(async () => {
+        trackSubscribedHandler?.(mockRemoteTrack, {}, { identity: 'remote-user', name: 'Alice' })
+      })
+
+      // canShare should now be false
+      expect(result.current.canShare).toBe(false)
+    })
+
+    it('should set canShare to true when remote participant stops sharing (AC-3.4.3)', async () => {
+      const mockRoom = createMockRoom()
+      let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackSubscribed') {
+          trackSubscribedHandler = handler
+        }
+        if (event === 'trackUnsubscribed') {
+          trackUnsubscribedHandler = handler
+        }
+      })
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Simulate remote screen share start
+      const mockRemoteTrack = {
+        source: 'screen_share',
+        kind: 'video',
+        id: 'remote-screen-track-123',
+      }
+
+      await act(async () => {
+        trackSubscribedHandler?.(mockRemoteTrack, {}, { identity: 'remote-user', name: 'Alice' })
+      })
+
+      // canShare should be false while remote is sharing
+      expect(result.current.canShare).toBe(false)
+
+      // Simulate remote screen share stop
+      await act(async () => {
+        trackUnsubscribedHandler?.(mockRemoteTrack, {}, { identity: 'remote-user', name: 'Alice' })
+      })
+
+      // canShare should be true again
+      expect(result.current.canShare).toBe(true)
+    })
+
+    it('should handle rapid share/stop cycles without race conditions (AC-3.4.3)', async () => {
+      const mockRoom = createMockRoom()
+      let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackSubscribed') {
+          trackSubscribedHandler = handler
+        }
+        if (event === 'trackUnsubscribed') {
+          trackUnsubscribedHandler = handler
+        }
+      })
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      const mockRemoteTrack = {
+        source: 'screen_share',
+        kind: 'video',
+        id: 'remote-screen-track-123',
+      }
+      const mockParticipant = { identity: 'remote-user', name: 'Alice' }
+
+      // Rapid start/stop cycles
+      await act(async () => {
+        trackSubscribedHandler?.(mockRemoteTrack, {}, mockParticipant)
+        trackUnsubscribedHandler?.(mockRemoteTrack, {}, mockParticipant)
+        trackSubscribedHandler?.(mockRemoteTrack, {}, mockParticipant)
+        trackUnsubscribedHandler?.(mockRemoteTrack, {}, mockParticipant)
+      })
+
+      // After all events, canShare should be true (last event was unsubscribed)
+      expect(result.current.canShare).toBe(true)
+
+      // Another rapid cycle ending with subscribe
+      await act(async () => {
+        trackSubscribedHandler?.(mockRemoteTrack, {}, mockParticipant)
+      })
+
+      // Should be false now
+      expect(result.current.canShare).toBe(false)
     })
   })
 })

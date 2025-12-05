@@ -72,6 +72,7 @@ export function MeetingRoom() {
     sharerName,
     remoteScreenTrack,
     startScreenShare,
+    stopScreenShare,
   } = useScreenShare({ room })
 
   // Get resetVolumes from volumeStore for cleanup on leave
@@ -182,15 +183,19 @@ export function MeetingRoom() {
         e.preventDefault()
         setShowInviteModal(true)
       }
-      // Cmd+S or Ctrl+S for screen share (AC-3.1.6)
+      // Cmd+S or Ctrl+S for screen share toggle (AC-3.1.6, AC-3.3.9)
       if ((e.metaKey || e.ctrlKey) && e.key === 's') {
         e.preventDefault()
-        startScreenShare()
+        if (isLocalSharing) {
+          stopScreenShare()
+        } else {
+          startScreenShare()
+        }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [toggleSidebar, handleLeave, startScreenShare])
+  }, [toggleSidebar, handleLeave, startScreenShare, stopScreenShare, isLocalSharing])
 
   // Responsive sidebar collapse
   useEffect(() => {

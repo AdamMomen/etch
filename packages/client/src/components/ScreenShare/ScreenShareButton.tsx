@@ -1,6 +1,6 @@
 import { MonitorUp, MonitorOff } from 'lucide-react'
 import { Room } from 'livekit-client'
-import { Button } from '@/components/ui/button'
+import { TooltipButton } from '@/components/ui/tooltip-button'
 import { useScreenShare } from '@/hooks/useScreenShare'
 import { cn } from '@/lib/utils'
 
@@ -10,7 +10,7 @@ interface ScreenShareButtonProps {
 }
 
 export function ScreenShareButton({ room, className }: ScreenShareButtonProps) {
-  const { isLocalSharing, canShare, startScreenShare, stopScreenShare } =
+  const { isLocalSharing, canShare, sharerName, startScreenShare, stopScreenShare } =
     useScreenShare({ room })
 
   const handleClick = async () => {
@@ -21,12 +21,21 @@ export function ScreenShareButton({ room, className }: ScreenShareButtonProps) {
     }
   }
 
+  const isDisabled = !canShare && !isLocalSharing
+
+  // Build disabled tooltip message (AC-3.4.2)
+  const disabledTooltip = sharerName
+    ? `${sharerName} is sharing. Ask them to stop first.`
+    : undefined
+
   return (
-    <Button
+    <TooltipButton
       variant={isLocalSharing ? 'default' : 'outline'}
       size="icon"
       onClick={handleClick}
-      disabled={!canShare && !isLocalSharing}
+      disabled={isDisabled}
+      disabledTooltip={disabledTooltip}
+      tooltipSide="top"
       className={cn(
         'h-12 w-12 rounded-full',
         isLocalSharing && 'bg-primary text-primary-foreground',
@@ -39,6 +48,6 @@ export function ScreenShareButton({ room, className }: ScreenShareButtonProps) {
       ) : (
         <MonitorUp className="h-5 w-5" />
       )}
-    </Button>
+    </TooltipButton>
   )
 }
