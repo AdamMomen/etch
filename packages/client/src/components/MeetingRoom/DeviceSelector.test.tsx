@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { DeviceSelector, Device } from './DeviceSelector'
+import { DeviceSelector, type Device } from './DeviceSelector'
 
 describe('DeviceSelector', () => {
   const mockDevices: Device[] = [

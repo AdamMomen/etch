@@ -77,6 +77,7 @@ describe('useScreenShare', () => {
       expect(result.current.canShare).toBe(true)
       expect(result.current.sharerName).toBeNull()
       expect(result.current.screenTrack).toBeNull()
+      expect(result.current.remoteScreenTrack).toBeNull()
     })
 
     it('should return functions for starting and stopping share', () => {
@@ -269,6 +270,87 @@ describe('useScreenShare', () => {
       const state = useScreenShareStore.getState()
       expect(state.isSharing).toBe(false)
       expect(state.isLocalSharing).toBe(false)
+    })
+  })
+
+  describe('remote screen share events', () => {
+    it('should set remoteScreenTrack on TrackSubscribed event for screen share', async () => {
+      const mockRoom = createMockRoom()
+      let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      // Capture the event handler when on() is called
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackSubscribed') {
+          trackSubscribedHandler = handler
+        }
+      })
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Initially no remote track
+      expect(result.current.remoteScreenTrack).toBeNull()
+
+      // Simulate remote screen share track subscription
+      const mockRemoteTrack = {
+        source: 'screen_share',
+        kind: 'video',
+        id: 'remote-screen-track-123',
+      }
+      const mockPublication = {}
+      const mockParticipant = {
+        identity: 'remote-user-123',
+        name: 'Remote User',
+      }
+
+      await act(async () => {
+        trackSubscribedHandler?.(mockRemoteTrack, mockPublication, mockParticipant)
+      })
+
+      // Store should be updated with remote sharer info
+      const state = useScreenShareStore.getState()
+      expect(state.isSharing).toBe(true)
+      expect(state.sharerName).toBe('Remote User')
+    })
+
+    it('should clear remoteScreenTrack on TrackUnsubscribed event', async () => {
+      const mockRoom = createMockRoom()
+      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackUnsubscribed') {
+          trackUnsubscribedHandler = handler
+        }
+      })
+
+      // Set up initial state with remote sharer
+      useScreenShareStore.setState({
+        isSharing: true,
+        sharerId: 'remote-user-123',
+        sharerName: 'Remote User',
+        isLocalSharing: false,
+      })
+
+      renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Simulate remote screen share track unsubscription
+      const mockRemoteTrack = {
+        source: 'screen_share',
+        kind: 'video',
+        id: 'remote-screen-track-123',
+      }
+
+      await act(async () => {
+        trackUnsubscribedHandler?.(mockRemoteTrack, {}, { identity: 'remote-user-123', name: 'Remote User' })
+      })
+
+      // Store should be cleared
+      const state = useScreenShareStore.getState()
+      expect(state.isSharing).toBe(false)
+      expect(state.sharerName).toBeNull()
     })
   })
 

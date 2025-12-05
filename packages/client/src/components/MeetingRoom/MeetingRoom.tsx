@@ -18,6 +18,7 @@ import { ParticipantGrid } from './ParticipantGrid'
 import { ParticipantBubbles } from './ParticipantBubbles'
 import { LeaveConfirmDialog } from './LeaveConfirmDialog'
 import { InviteModal } from './InviteModal'
+import { ScreenShareViewer } from '@/components/ScreenShare'
 import { generateInviteLink, copyToClipboard } from '@/lib/invite'
 import { cn } from '@/lib/utils'
 
@@ -65,7 +66,13 @@ export function MeetingRoom() {
   useDeviceDisconnection({ room, audioDevices, videoDevices })
 
   // Screen share state and controls
-  const { isSharing: isScreenSharing, startScreenShare } = useScreenShare({ room })
+  const {
+    isSharing: isScreenSharing,
+    isLocalSharing,
+    sharerName,
+    remoteScreenTrack,
+    startScreenShare,
+  } = useScreenShare({ room })
 
   // Get resetVolumes from volumeStore for cleanup on leave
   const resetVolumes = useVolumeStore((state) => state.resetVolumes)
@@ -300,19 +307,50 @@ export function MeetingRoom() {
 
         {/* Center Content */}
         <main className="relative flex flex-1 flex-col bg-background/50">
-          {isScreenSharing ? (
-            // Screen sharing layout with floating bubbles
+          {isScreenSharing && !isLocalSharing ? (
+            // Viewing remote screen share - display ScreenShareViewer with floating bubbles
             <>
-              {/* Screen share content placeholder */}
-              <div className="flex flex-1 items-center justify-center">
+              {/* Remote screen share viewer (AC-3.2.1, AC-3.2.2, AC-3.2.4) */}
+              <ScreenShareViewer
+                track={remoteScreenTrack}
+                sharerName={sharerName}
+                className="flex-1"
+              />
+
+              {/* Floating participant bubbles in corner (AC-3.2.3) */}
+              <ParticipantBubbles
+                room={room}
+                remoteParticipants={remoteParticipants}
+                className="absolute bottom-20 right-4"
+              />
+
+              {/* Local Video Preview - positioned above bubbles */}
+              {localParticipant && (
+                <LocalVideoPreview
+                  videoTrack={videoTrack}
+                  isVideoOff={isVideoOff}
+                  participantName={localParticipant.name}
+                  participantColor={localParticipant.color}
+                  className="absolute bottom-4 right-4 h-24 w-32"
+                />
+              )}
+            </>
+          ) : isScreenSharing && isLocalSharing ? (
+            // Local user is sharing - show placeholder (actual screen visible on desktop)
+            <>
+              {/* Local share placeholder - user sees their actual screen */}
+              <div className="flex flex-1 items-center justify-center bg-background p-4">
                 <div
                   className={cn(
-                    'flex h-48 w-80 items-center justify-center rounded-lg border-2 border-dashed',
+                    'flex flex-col items-center justify-center gap-4 rounded-lg border-2 border-dashed p-8',
                     'border-muted-foreground/25 bg-muted/10'
                   )}
                 >
                   <span className="text-sm text-muted-foreground">
-                    Screen share content
+                    You are sharing your screen
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    Others can see your shared content
                   </span>
                 </div>
               </div>
@@ -321,17 +359,17 @@ export function MeetingRoom() {
               <ParticipantBubbles
                 room={room}
                 remoteParticipants={remoteParticipants}
-                className="absolute right-4 top-4"
+                className="absolute bottom-20 right-4"
               />
 
-              {/* Local Video Preview - positioned in bottom right corner */}
+              {/* Local Video Preview */}
               {localParticipant && (
                 <LocalVideoPreview
                   videoTrack={videoTrack}
                   isVideoOff={isVideoOff}
                   participantName={localParticipant.name}
                   participantColor={localParticipant.color}
-                  className="absolute bottom-4 right-4 h-36 w-48"
+                  className="absolute bottom-4 right-4 h-24 w-32"
                 />
               )}
             </>

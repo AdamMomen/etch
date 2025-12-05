@@ -15,6 +15,7 @@ const createMockScreenShare = (overrides = {}) => ({
   canShare: true,
   sharerName: null,
   screenTrack: null,
+  remoteScreenTrack: null,
   startScreenShare: vi.fn(),
   stopScreenShare: vi.fn(),
   ...overrides,

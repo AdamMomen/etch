@@ -396,7 +396,7 @@ describe('useVideo', () => {
         { deviceId: 'default', kind: 'videoinput', label: 'Default' },
       ])
 
-      renderHook(() => useVideo({ room: roomWithSwitch as Room }))
+      renderHook(() => useVideo({ room: roomWithSwitch as unknown as Room }))
 
       // Trigger devicechange
       await act(async () => {
@@ -458,7 +458,7 @@ describe('useVideo', () => {
         { deviceId: 'external-camera', kind: 'videoinput', label: 'External Camera' },
       ])
 
-      renderHook(() => useVideo({ room: roomWithSwitch as Room }))
+      renderHook(() => useVideo({ room: roomWithSwitch as unknown as Room }))
 
       // Trigger devicechange
       await act(async () => {

@@ -7,6 +7,7 @@ import {
   LocalVideoTrack,
   RemoteTrackPublication,
   RemoteParticipant,
+  RemoteVideoTrack,
 } from 'livekit-client'
 import { toast } from 'sonner'
 import { invoke } from '@tauri-apps/api/core'
@@ -23,6 +24,7 @@ export interface UseScreenShareReturn {
   canShare: boolean
   sharerName: string | null
   screenTrack: LocalVideoTrack | null
+  remoteScreenTrack: RemoteVideoTrack | null
   startScreenShare: () => Promise<void>
   stopScreenShare: () => Promise<void>
 }
@@ -81,6 +83,7 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
   const { localParticipant, updateParticipant } = useRoomStore()
 
   const [screenTrack, setScreenTrack] = useState<LocalVideoTrack | null>(null)
+  const [remoteScreenTrack, setRemoteScreenTrack] = useState<RemoteVideoTrack | null>(null)
   const [canShare, setCanShare] = useState(true)
   const streamRef = useRef<MediaStream | null>(null)
 
@@ -226,7 +229,8 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
       _publication: RemoteTrackPublication,
       participant: RemoteParticipant
     ) => {
-      if (track.source === Track.Source.ScreenShare) {
+      if (track.source === Track.Source.ScreenShare && track.kind === Track.Kind.Video) {
+        setRemoteScreenTrack(track as RemoteVideoTrack)
         setRemoteSharer(participant.identity, participant.name || participant.identity)
         updateParticipant(participant.identity, { isScreenSharing: true })
       }
@@ -239,6 +243,7 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
       participant: RemoteParticipant
     ) => {
       if (track.source === Track.Source.ScreenShare) {
+        setRemoteScreenTrack(null)
         setRemoteSharer(null, null)
         updateParticipant(participant.identity, { isScreenSharing: false })
       }
@@ -289,6 +294,7 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
     canShare,
     sharerName,
     screenTrack,
+    remoteScreenTrack,
     startScreenShare,
     stopScreenShare,
   }

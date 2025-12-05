@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Video, Users, ArrowRight, Loader2, Bug } from 'lucide-react'
+import { Video, Users, ArrowRight, Loader2, Bug, Settings } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,6 +8,7 @@ import { useSettingsStore } from '@/stores/settingsStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { createRoom } from '@/lib/api'
 import { parseRoomId } from '@/utils/roomId'
+import { SettingsModal } from '@/components/Settings'
 
 // DEV_BYPASS: Set to true to show dev bypass button (TODO: Remove before production)
 const DEV_MODE = import.meta.env.DEV
@@ -16,8 +17,14 @@ export function HomeScreen() {
   const navigate = useNavigate()
   const [roomCode, setRoomCode] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const { displayName, setDisplayName } = useSettingsStore()
-  const { setCurrentRoom, setLocalParticipant, setRemoteParticipants, setConnectionState } = useRoomStore()
+  const {
+    setCurrentRoom,
+    setLocalParticipant,
+    setRemoteParticipants,
+    setConnectionState,
+  } = useRoomStore()
 
   /**
    * DEV_BYPASS: Skip API call and LiveKit, go directly to MeetingRoom with mock data.
@@ -133,7 +140,18 @@ export function HomeScreen() {
   const isJoinDisabled = !roomCode.trim()
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center p-8">
+    <div className="relative flex min-h-screen flex-col items-center justify-center p-8">
+      {/* Settings Button - Top Right */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="absolute right-4 top-4"
+        onClick={() => setSettingsOpen(true)}
+        aria-label="Open settings"
+      >
+        <Settings className="h-5 w-5" />
+      </Button>
+
       <div className="flex flex-col items-center gap-8 text-center">
         {/* Logo and Title */}
         <div className="flex items-center gap-3">
@@ -227,6 +245,9 @@ export function HomeScreen() {
           </div>
         )}
       </div>
+
+      {/* Settings Modal */}
+      <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
     </div>
   )
 }

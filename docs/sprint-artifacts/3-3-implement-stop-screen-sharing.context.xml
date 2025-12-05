@@ -1,0 +1,282 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3</storyId>
+    <title>Implement Stop Screen Sharing</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-3-implement-stop-screen-sharing.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>sharer</asA>
+    <iWant>to stop sharing my screen at any time</iWant>
+    <soThat>I can regain privacy when done presenting</soThat>
+    <tasks>
+      <task id="1" ac="3.3.1, 3.3.6">Add Stop Sharing button to MeetingControlsBar
+        <subtask>Update MeetingControlsBar.tsx to conditionally show "Stop Sharing" when isLocalSharing</subtask>
+        <subtask>Wire button to stopScreenShare() from useScreenShare hook</subtask>
+        <subtask>Add appropriate styling for active sharing state (filled vs outline)</subtask>
+      </task>
+      <task id="2" ac="3.3.1, 3.3.5, 3.3.10">Enhance stopScreenShare in useScreenShare hook
+        <subtask>Verify stopScreenShare() unpublishes track via room.localParticipant.unpublishTrack()</subtask>
+        <subtask>Verify media stream tracks are stopped (streamRef.current.getTracks().forEach(track => track.stop()))</subtask>
+        <subtask>Verify store state is reset via stopSharingStore()</subtask>
+        <subtask>Verify restoreMainWindow() is called after stop</subtask>
+        <subtask>Verify canShare state is reset to true</subtask>
+      </task>
+      <task id="3" ac="3.3.10">Handle track ended event (system stop)
+        <subtask>Verify existing videoTrack.onended handler in useScreenShare.ts calls handleStopShare()</subtask>
+        <subtask>Test that clicking browser's "Stop sharing" button triggers cleanup</subtask>
+        <subtask>Ensure all state is properly reset on system-initiated stop</subtask>
+      </task>
+      <task id="4" ac="3.3.9">Update keyboard shortcut to toggle
+        <subtask>Update MeetingRoom.tsx keyboard handler for Cmd+S/Ctrl+S</subtask>
+        <subtask>If isLocalSharing call stopScreenShare()</subtask>
+        <subtask>If not sharing call startScreenShare() (existing behavior)</subtask>
+      </task>
+      <task id="5" ac="3.3.8">Add toast notification for viewers
+        <subtask>In useScreenShare.ts TrackUnsubscribed handler, show toast "{name} stopped sharing"</subtask>
+        <subtask>Toast should only appear for remote participants (not the sharer themselves)</subtask>
+        <subtask>Verify layout returns to grid after share stops</subtask>
+      </task>
+      <task id="6" ac="3.3.7">Remove sharing badge from sidebar
+        <subtask>Verify updateParticipant(localParticipant.id, { isScreenSharing: false }) is called on stop</subtask>
+        <subtask>Verify sidebar badge logic in Sidebar.tsx hides when isScreenSharing: false</subtask>
+      </task>
+      <task id="7" ac="3.3.2, 3.3.3, 3.3.4">Placeholder for native window cleanup
+        <subtask>Add placeholder code/comments for future native window cleanup</subtask>
+        <subtask>Note: Actual implementation in Stories 3.6, 3.7, 3.8</subtask>
+        <subtask>Structure code to easily add window destruction calls later</subtask>
+      </task>
+      <task id="8" ac="all">Write tests
+        <subtask>Test Stop button appears when sharing</subtask>
+        <subtask>Test stopScreenShare unpublishes track</subtask>
+        <subtask>Test window restore is called on stop</subtask>
+        <subtask>Test keyboard toggle behavior (Cmd+S while sharing)</subtask>
+        <subtask>Test system-initiated stop via track ended event</subtask>
+        <subtask>Test toast appears for viewers when sharer stops</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.3.1">Stop Sharing Button Stops Capture: Click "Stop Sharing" on the floating control bar (or meeting controls if no floating bar yet), screen capture stops immediately, LiveKit track is unpublished</criterion>
+    <criterion id="AC-3.3.2">Floating Control Bar Dismissed: When I stop sharing, the floating control bar window is destroyed (Note: Floating bar created in Story 3.7 - placeholder)</criterion>
+    <criterion id="AC-3.3.3">Share Border Indicator Dismissed: When I stop sharing, the share border window is destroyed (Note: Share border created in Story 3.8 - placeholder)</criterion>
+    <criterion id="AC-3.3.4">Annotation Overlay Dismissed: When I stop sharing, the annotation overlay window is destroyed (Note: Overlay created in Story 3.6 - placeholder)</criterion>
+    <criterion id="AC-3.3.5">Main Window Restores: When I stop sharing, the main window is restored (unminimized) and returns to its previous position and size</criterion>
+    <criterion id="AC-3.3.6">Button Returns to Default State: When I stop sharing, the "Share Screen" button returns to outline style (not sharing state) and button text shows "Share Screen"</criterion>
+    <criterion id="AC-3.3.7">Sharing Badge Removed: When I stop sharing, the "Sharing" badge is removed from my participant entry in sidebar</criterion>
+    <criterion id="AC-3.3.8">Viewers Notified: When I stop sharing, viewers see toast "{name} stopped sharing", shared screen disappears, layout returns from floating bubbles to video grid</criterion>
+    <criterion id="AC-3.3.9">Keyboard Shortcut Toggle: When pressing Cmd+S (macOS) or Ctrl+S (Windows/Linux) while sharing, sharing stops (toggle behavior)</criterion>
+    <criterion id="AC-3.3.10">System Stop Detected: When browser/OS stops the capture (user clicked "Stop sharing" in system UI), the app detects this via track ended event and all cleanup happens</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification: Screen Sharing</title>
+        <section>Story 3.3: Stop Screen Sharing</section>
+        <snippet>AC-3.3.1 through AC-3.3.10 define stop sharing behavior. "Stop Sharing" on floating bar stops capture, floating bar/border/overlay dismissed, main window restores, button resets, badge removed, viewers notified, keyboard toggle, system stop detected.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification: Screen Sharing</title>
+        <section>Screen Share Stop Flow</section>
+        <snippet>User clicks "Stop Share" -> Stop Capture, Unpublish Track -> Destroy Native Windows (floating bar, border, overlay) -> Restore Main Window -> Update Store State, Notify Participants</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>ADR-003: Hybrid Rendering</section>
+        <snippet>When sharing, main window MINIMIZES and three native elements appear: floating control bar, share border, annotation overlay. "Stop Share" dismisses native windows and restores main window.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>useScreenShare Hook Pattern</section>
+        <snippet>stopScreenShare: () => void action to stop sharing. Uses room.localParticipant.unpublishTrack() for cleanup.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/3-2-display-shared-screen-for-viewers.md</path>
+        <title>Story 3.2: Display Shared Screen for Viewers</title>
+        <section>Dev Agent Record</section>
+        <snippet>stopScreenShare already partially implemented at useScreenShare.ts:181-215. Unpublishes track, stops stream, calls restoreMainWindow. TrackUnsubscribed handler exists at :240-249.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification</title>
+        <section>useScreenShare Hook Interface</section>
+        <snippet>Interface includes: stopScreenShare: () => void for stopping sharing. Store has stopSharing() action that resets isSharing, isLocalSharing, sharerId, sharerName.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic 3 Technical Specification</title>
+        <section>Tauri Commands (Rust)</section>
+        <snippet>restore_main_window() command restores minimized window. destroy_floating_window(label) destroys named windows. These are called during stop flow.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>packages/client/src/hooks/useScreenShare.ts</path>
+        <kind>hook</kind>
+        <symbol>handleStopShare</symbol>
+        <lines>181-215</lines>
+        <reason>CORE: Existing stopScreenShare implementation - unpublishes track, stops stream, updates store, restores window. This is the main function to verify and enhance.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/hooks/useScreenShare.ts</path>
+        <kind>hook</kind>
+        <symbol>handleTrackUnsubscribed</symbol>
+        <lines>240-249</lines>
+        <reason>Remote screen share stop handler - need to add toast notification "{name} stopped sharing" for viewers here.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/hooks/useScreenShare.ts</path>
+        <kind>hook</kind>
+        <symbol>videoTrack.onended</symbol>
+        <lines>162-164</lines>
+        <reason>System stop detection - existing handler calls handleStopShare() when browser "Stop sharing" button clicked.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/stores/screenShareStore.ts</path>
+        <kind>store</kind>
+        <symbol>stopSharing</symbol>
+        <lines>38-46</lines>
+        <reason>Store action that resets all screen share state. Called from handleStopShare in useScreenShare.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/ScreenShare/ScreenShareButton.tsx</path>
+        <kind>component</kind>
+        <symbol>ScreenShareButton</symbol>
+        <lines>1-45</lines>
+        <reason>Toggle button - already has isLocalSharing state to switch between MonitorUp/MonitorOff icons. Verify styling changes correctly.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/MeetingRoom.tsx</path>
+        <kind>component</kind>
+        <symbol>handleKeyDown for Cmd+S</symbol>
+        <lines>185-189</lines>
+        <reason>Keyboard shortcut - currently only calls startScreenShare(). Need to add toggle logic: if isLocalSharing call stopScreenShare().</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/Sidebar.tsx</path>
+        <kind>component</kind>
+        <symbol>ParticipantListItem sharing badge</symbol>
+        <lines>139-144</lines>
+        <reason>Sharing badge display - shows when participant.isScreenSharing is true. Verify badge hides when isScreenSharing: false.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/MeetingControlsBar.tsx</path>
+        <kind>component</kind>
+        <symbol>MeetingControlsBar</symbol>
+        <lines>1-56</lines>
+        <reason>Control bar that includes ScreenShareButton. Button already handles toggle via useScreenShare hook.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/hooks/useScreenShare.ts</path>
+        <kind>helper</kind>
+        <symbol>restoreMainWindow</symbol>
+        <lines>65-72</lines>
+        <reason>Tauri command wrapper to restore minimized window. Called at end of handleStopShare.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package>livekit-client</package>
+        <version>^2.16.0</version>
+        <usage>room.localParticipant.unpublishTrack(), Track.Source.ScreenShare, RoomEvent.TrackUnsubscribed</usage>
+      </node>
+      <node>
+        <package>sonner</package>
+        <version>^2.0.7</version>
+        <usage>toast() for "{name} stopped sharing" notification to viewers</usage>
+      </node>
+      <node>
+        <package>zustand</package>
+        <version>^5.0.9</version>
+        <usage>useScreenShareStore with stopSharing action</usage>
+      </node>
+      <node>
+        <package>@tauri-apps/api</package>
+        <version>^2.9.1</version>
+        <usage>invoke('restore_main_window') for window restoration</usage>
+      </node>
+      <node>
+        <package>lucide-react</package>
+        <version>^0.555.0</version>
+        <usage>MonitorUp, MonitorOff icons for share button toggle</usage>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint category="pattern">Use room.localParticipant.unpublishTrack() for track cleanup per tech spec</constraint>
+    <constraint category="pattern">Listen to track ended event for system-initiated stops</constraint>
+    <constraint category="pattern">Update Zustand store state via stopSharingStore() action</constraint>
+    <constraint category="pattern">Call restoreMainWindow() via Tauri invoke after cleanup</constraint>
+    <constraint category="deferred">Native window cleanup (floating bar, border, overlay) deferred to Stories 3.6, 3.7, 3.8</constraint>
+    <constraint category="testing">Use sonner toast for notifications - already imported in useScreenShare</constraint>
+    <constraint category="testing">Co-locate tests with source files (*.test.ts pattern)</constraint>
+    <constraint category="ui">ScreenShareButton uses variant='default' when sharing, variant='outline' when not</constraint>
+    <constraint category="ui">MonitorOff icon when sharing, MonitorUp icon when not sharing</constraint>
+    <constraint category="architecture">Keyboard shortcut Cmd+S/Ctrl+S should toggle (start OR stop depending on state)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>stopScreenShare</name>
+      <kind>function</kind>
+      <signature>stopScreenShare: () => Promise&lt;void&gt;</signature>
+      <path>packages/client/src/hooks/useScreenShare.ts</path>
+    </interface>
+    <interface>
+      <name>stopSharing (store action)</name>
+      <kind>function</kind>
+      <signature>stopSharing: () => void</signature>
+      <path>packages/client/src/stores/screenShareStore.ts</path>
+    </interface>
+    <interface>
+      <name>restore_main_window</name>
+      <kind>tauri-command</kind>
+      <signature>async fn restore_main_window() -> Result&lt;(), String&gt;</signature>
+      <path>packages/client/src-tauri/src/lib.rs</path>
+    </interface>
+    <interface>
+      <name>room.localParticipant.unpublishTrack</name>
+      <kind>livekit-api</kind>
+      <signature>unpublishTrack(track: LocalTrack): Promise&lt;LocalTrackPublication&gt;</signature>
+      <path>livekit-client (external)</path>
+    </interface>
+    <interface>
+      <name>RoomEvent.TrackUnsubscribed</name>
+      <kind>livekit-event</kind>
+      <signature>TrackUnsubscribed: (track: Track, publication: RemoteTrackPublication, participant: RemoteParticipant) => void</signature>
+      <path>livekit-client (external)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Tests use Vitest with React Testing Library. Co-located with source files as *.test.ts(x). Mock Tauri invoke commands using vi.mock. Mock LiveKit room and track objects. Test state changes through Zustand store actions. Use userEvent for button clicks and keyboard events.</standards>
+    <locations>
+      <location>packages/client/src/hooks/useScreenShare.test.ts</location>
+      <location>packages/client/src/components/ScreenShare/ScreenShareButton.test.tsx</location>
+      <location>packages/client/src/stores/screenShareStore.test.ts</location>
+      <location>packages/client/src/components/MeetingRoom/MeetingRoom.test.tsx</location>
+    </locations>
+    <ideas>
+      <idea ac="3.3.1">Test that clicking ScreenShareButton when isLocalSharing=true calls stopScreenShare()</idea>
+      <idea ac="3.3.1">Test that stopScreenShare unpublishes track via room.localParticipant.unpublishTrack</idea>
+      <idea ac="3.3.5">Test that restoreMainWindow is called when stopScreenShare completes</idea>
+      <idea ac="3.3.6">Test that ScreenShareButton shows MonitorUp icon and outline variant after stop</idea>
+      <idea ac="3.3.7">Test that isScreenSharing: false is set on localParticipant after stop</idea>
+      <idea ac="3.3.8">Test that toast("{name} stopped sharing") appears in TrackUnsubscribed handler</idea>
+      <idea ac="3.3.9">Test keyboard shortcut Cmd+S when isLocalSharing=true calls stopScreenShare</idea>
+      <idea ac="3.3.10">Test that videoTrack.onended triggers handleStopShare and cleanup</idea>
+      <idea ac="3.3.10">Test store state resets (isSharing, isLocalSharing, sharerId all false/null) on stop</idea>
+    </ideas>
+  </tests>
+</story-context>

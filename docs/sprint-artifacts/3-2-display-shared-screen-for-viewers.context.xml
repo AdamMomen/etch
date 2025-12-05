@@ -1,0 +1,223 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>2</storyId>
+    <title>Display Shared Screen for Viewers</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-2-display-shared-screen-for-viewers.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>meeting participant</asA>
+    <iWant>to see the shared screen clearly in the meeting</iWant>
+    <soThat>I can follow along with what the sharer is presenting</soThat>
+    <tasks>
+      <task id="1" name="Create ScreenShareViewer component" acs="3.2.1, 3.2.2, 3.2.4">
+        <subtask>Create packages/client/src/components/ScreenShare/ScreenShareViewer.tsx</subtask>
+        <subtask>Subscribe to remote screen share track from LiveKit room</subtask>
+        <subtask>Use VideoTrack component from livekit-react for rendering</subtask>
+        <subtask>Apply object-fit: contain for aspect ratio preservation</subtask>
+        <subtask>Apply min 16px padding on all sides</subtask>
+        <subtask>Display "{name} is sharing" indicator</subtask>
+        <subtask>Export from barrel file</subtask>
+      </task>
+      <task id="2" name="Enhance useScreenShare hook for viewer subscription" acs="3.2.1, 3.2.5">
+        <subtask>Update packages/client/src/hooks/useScreenShare.ts</subtask>
+        <subtask>Add remoteScreenTrack state to track subscribed screen share</subtask>
+        <subtask>Listen for RoomEvent.TrackSubscribed for screen share source</subtask>
+        <subtask>Listen for RoomEvent.TrackUnsubscribed for cleanup</subtask>
+        <subtask>Return remoteScreenTrack and sharerName for viewer display</subtask>
+      </task>
+      <task id="3" name="Update MeetingRoom layout for screen share mode" acs="3.2.1, 3.2.3, 3.2.4">
+        <subtask>Update packages/client/src/components/MeetingRoom/MeetingRoom.tsx</subtask>
+        <subtask>Conditionally render ScreenShareViewer when isSharing and NOT isLocalSharing</subtask>
+        <subtask>Switch participant layout from grid to floating bubbles</subtask>
+        <subtask>Use existing ParticipantBubbles component for bubble layout</subtask>
+        <subtask>Ensure smooth transition between layouts</subtask>
+      </task>
+      <task id="4" name="Style shared screen container" acs="3.2.1, 3.2.2">
+        <subtask>Add dark background for letterbox/pillarbox effect</subtask>
+        <subtask>Ensure responsive sizing with aspect ratio preservation</subtask>
+        <subtask>Add transition animations for layout changes</subtask>
+        <subtask>Test with various aspect ratios (16:9, 4:3, ultrawide)</subtask>
+      </task>
+      <task id="5" name="Add sharer indicator overlay" acs="3.2.4">
+        <subtask>Create indicator component showing "{name} is sharing"</subtask>
+        <subtask>Position in top-left corner to not obscure content</subtask>
+        <subtask>Style with semi-transparent background</subtask>
+        <subtask>Include sharing icon (MonitorUp or similar)</subtask>
+      </task>
+      <task id="6" name="Write tests" acs="all">
+        <subtask>Test ScreenShareViewer renders when remote track present</subtask>
+        <subtask>Test padding/aspect ratio CSS classes</subtask>
+        <subtask>Test sharer name display</subtask>
+        <subtask>Test layout switch to bubbles during share</subtask>
+        <subtask>Test cleanup when share stops</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="3.2.1" title="Shared Screen Fills Content Area with Aspect Ratio">
+      <given>Another participant is sharing their screen</given>
+      <when>The screen share track is received</when>
+      <then>The shared screen displays in the main content area</then>
+      <and>Screen content fills available space while maintaining aspect ratio</and>
+      <and>Letterbox/pillarbox with dark background (--background) if aspect doesn't match</and>
+      <and>object-fit: contain is used for CSS rendering</and>
+    </ac>
+    <ac id="3.2.2" title="Minimum 16px Padding on All Sides">
+      <given>The shared screen is displayed</given>
+      <when>The content area has any size</when>
+      <then>There is at least 16px padding between screen content and container edges</then>
+      <and>Padding is applied consistently on all four sides</and>
+    </ac>
+    <ac id="3.2.3" title="Participant Videos Switch to Floating Bubbles">
+      <given>Screen sharing has started</given>
+      <when>Viewing the meeting room</when>
+      <then>Participant videos switch to Around-style floating bubbles</then>
+      <and>Bubbles are small circular avatars (32-40px)</and>
+      <and>Bubbles are stacked in a corner (bottom-right default)</and>
+      <and>Bubbles don't obscure shared screen content</and>
+    </ac>
+    <ac id="3.2.4" title="Sharer Name Displayed">
+      <given>Someone is sharing their screen</given>
+      <when>Viewing the shared screen</when>
+      <then>"{name} is sharing" is displayed</then>
+      <and>The indicator is positioned where it doesn't block content (e.g., top-left corner)</and>
+    </ac>
+    <ac id="3.2.5" title="Quality Adapts to Network Conditions">
+      <given>A screen share is active</given>
+      <when>Network conditions change</when>
+      <then>Video quality adapts automatically</then>
+      <and>Quality prefers resolution over framerate for screen content</and>
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-3.md" title="Epic 3 Technical Specification" section="Story 3.2: Display Shared Screen for Viewers" snippet="AC-3.2.1: Shared screen fills content area with aspect ratio. AC-3.2.2: 16px minimum padding. AC-3.2.3: Participant videos switch to floating bubbles. AC-3.2.4: Sharer name displayed. AC-3.2.5: Quality adapts to network."/>
+      <doc path="docs/architecture.md" title="Architecture" section="Novel Pattern: Decoupled Annotation Layer" snippet="Viewer's Client (WebView) receives shared screen via VideoTrack from LiveKit Room. Canvas overlay on video element. ParticipantBubbles show Around-style floating heads during screen share."/>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="4.1 Chosen Design Approach - Focus Mode" snippet="Participant avatars stack in corner (Around-style). Maximum canvas space for content. Shared screen content fills 95% width."/>
+      <doc path="docs/epics.md" title="Epics" section="Story 3.2" snippet="Display shared screen for viewers with aspect ratio preservation, floating bubbles layout, and sharer indicator."/>
+    </docs>
+    <code>
+      <file path="packages/client/src/hooks/useScreenShare.ts" kind="hook" symbol="useScreenShare" lines="1-296" reason="Primary hook for screen share logic. Already has setRemoteSharer, handles TrackSubscribed/TrackUnsubscribed events. Needs remoteScreenTrack state addition for Story 3.2."/>
+      <file path="packages/client/src/stores/screenShareStore.ts" kind="store" symbol="useScreenShareStore" lines="1-56" reason="Central state for screen sharing. Contains isSharing, sharerId, sharerName, isLocalSharing. Already implemented - reuse for viewer state."/>
+      <file path="packages/client/src/components/MeetingRoom/MeetingRoom.tsx" kind="component" symbol="MeetingRoom" lines="1-409" reason="Main meeting room layout. Has placeholder at lines 303-337 for screen share content. Conditionally renders ParticipantBubbles. Needs integration of ScreenShareViewer."/>
+      <file path="packages/client/src/components/MeetingRoom/ParticipantBubbles.tsx" kind="component" symbol="ParticipantBubbles" lines="1-92" reason="Already implemented Around-style floating bubbles. Reuse for viewer layout during screen share. Currently positioned at 'absolute right-4 top-4'."/>
+      <file path="packages/client/src/components/MeetingRoom/ParticipantBubble.tsx" kind="component" symbol="ParticipantBubble" lines="1-126" reason="Individual bubble component with video/avatar display, speaking indicator, size variants (sm/md/lg). Reuse as-is."/>
+      <file path="packages/client/src/components/ScreenShare/index.ts" kind="barrel" symbol="exports" lines="1-2" reason="Barrel file for ScreenShare components. Currently exports ScreenShareButton. Add ScreenShareViewer export."/>
+      <file path="packages/client/src/components/ScreenShare/ScreenShareButton.tsx" kind="component" symbol="ScreenShareButton" reason="Reference for component patterns and styling conventions used in ScreenShare components."/>
+    </code>
+    <dependencies>
+      <node>
+        <package name="livekit-client" version="^2.16.0" purpose="LiveKit SDK - Track, RoomEvent, RemoteTrackPublication, RemoteVideoTrack"/>
+        <package name="lucide-react" version="^0.555.0" purpose="Icons - MonitorUp for sharing indicator"/>
+        <package name="react" version="^19.2.0" purpose="React hooks and components"/>
+        <package name="sonner" version="^2.0.7" purpose="Toast notifications"/>
+        <package name="tailwind-merge" version="^3.4.0" purpose="cn utility for className merging"/>
+        <package name="zustand" version="^5.0.9" purpose="State management for screen share store"/>
+        <package name="@tauri-apps/api" version="^2.9.1" purpose="Tauri commands for window management"/>
+      </node>
+      <devDependencies>
+        <package name="vitest" version="^2.0.0" purpose="Testing framework"/>
+        <package name="@testing-library/react" version="^16.3.0" purpose="React component testing"/>
+        <package name="@testing-library/jest-dom" version="^6.9.1" purpose="Jest DOM matchers"/>
+      </devDependencies>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">Use existing component patterns from ParticipantBubble and ScreenShareButton for consistency</constraint>
+    <constraint type="styling">Use Tailwind CSS with cn() utility for class merging</constraint>
+    <constraint type="styling">Dark background uses --background CSS variable</constraint>
+    <constraint type="styling">16px minimum padding using p-4 Tailwind class</constraint>
+    <constraint type="state">Use zustand store (screenShareStore) for screen share state</constraint>
+    <constraint type="hooks">Extend useScreenShare hook - do not create new hooks</constraint>
+    <constraint type="livekit">Use Track.Source.ScreenShare for track identification</constraint>
+    <constraint type="livekit">Quality adaptation handled automatically by LiveKit simulcast</constraint>
+    <constraint type="testing">Co-locate tests with components (*.test.tsx pattern)</constraint>
+    <constraint type="exports">Export new components from barrel files (index.ts)</constraint>
+    <constraint type="reuse">ParticipantBubbles component already exists - reuse for floating bubbles layout</constraint>
+    <constraint type="reuse">screenShareStore already tracks sharerName - use for indicator display</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="UseScreenShareReturn" kind="typescript-interface" path="packages/client/src/hooks/useScreenShare.ts">
+      <signature>
+interface UseScreenShareReturn {
+  isSharing: boolean
+  isLocalSharing: boolean
+  canShare: boolean
+  sharerName: string | null
+  screenTrack: LocalVideoTrack | null
+  remoteScreenTrack: RemoteVideoTrack | null // NEW for Story 3.2
+  startScreenShare: () => Promise&lt;void&gt;
+  stopScreenShare: () => Promise&lt;void&gt;
+}
+      </signature>
+    </interface>
+    <interface name="ScreenShareViewerProps" kind="component-props" path="packages/client/src/components/ScreenShare/ScreenShareViewer.tsx">
+      <signature>
+interface ScreenShareViewerProps {
+  track: RemoteVideoTrack | null
+  sharerName: string | null
+  className?: string
+}
+      </signature>
+    </interface>
+    <interface name="LiveKit TrackSubscribed Event" kind="event" path="livekit-client">
+      <signature>
+room.on(RoomEvent.TrackSubscribed, (track: Track, publication: RemoteTrackPublication, participant: RemoteParticipant) =&gt; {
+  if (track.source === Track.Source.ScreenShare) {
+    // Handle screen share track subscription
+  }
+})
+      </signature>
+    </interface>
+    <interface name="VideoTrack Component" kind="react-component" path="@livekit/components-react">
+      <note>Per tech spec, use VideoTrack from @livekit/components-react for rendering. However, current codebase uses native video element with track.attach(). Follow existing patterns in ParticipantBubble.tsx and RemoteParticipantVideo.tsx.</note>
+      <signature>
+// Option A: Using livekit components-react (if installed)
+&lt;VideoTrack trackRef={{ publication: track.publication }} className="..." /&gt;
+
+// Option B: Following existing pattern (recommended for consistency)
+useEffect(() =&gt; {
+  if (track) {
+    track.attach(videoRef.current)
+  }
+  return () =&gt; track?.detach(videoRef.current)
+}, [track])
+      </signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Vitest with React Testing Library. Tests are co-located with source files using *.test.ts(x) pattern. Mock Tauri invoke, LiveKit room, and media APIs. Use renderHook for hook tests, render for component tests. Follow existing test patterns in useScreenShare.test.ts and ParticipantBubble.test.tsx.
+    </standards>
+    <locations>
+      <location>packages/client/src/components/ScreenShare/ScreenShareViewer.test.tsx</location>
+      <location>packages/client/src/hooks/useScreenShare.test.ts (extend existing)</location>
+      <location>packages/client/src/components/MeetingRoom/MeetingRoom.test.tsx (extend existing)</location>
+    </locations>
+    <ideas>
+      <idea acId="3.2.1">Test ScreenShareViewer renders video element when track provided</idea>
+      <idea acId="3.2.1">Test video element has object-contain class for aspect ratio</idea>
+      <idea acId="3.2.2">Test container has p-4 class for 16px padding</idea>
+      <idea acId="3.2.2">Test bg-background class applied for letterbox effect</idea>
+      <idea acId="3.2.3">Test MeetingRoom renders ParticipantBubbles when isSharing and not isLocalSharing</idea>
+      <idea acId="3.2.3">Test MeetingRoom renders ParticipantGrid when not sharing</idea>
+      <idea acId="3.2.4">Test sharer name displayed in indicator</idea>
+      <idea acId="3.2.4">Test indicator positioned in top-left corner</idea>
+      <idea acId="3.2.4">Test MonitorUp icon rendered</idea>
+      <idea acId="3.2.5">Test remoteScreenTrack state updates on TrackSubscribed event</idea>
+      <idea acId="3.2.5">Test remoteScreenTrack clears on TrackUnsubscribed event</idea>
+      <idea acId="cleanup">Test ScreenShareViewer returns null when track is null</idea>
+      <idea acId="cleanup">Test track.detach called on unmount</idea>
+    </ideas>
+  </tests>
+</story-context>

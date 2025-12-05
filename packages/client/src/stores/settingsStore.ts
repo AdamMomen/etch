@@ -10,6 +10,7 @@ interface SettingsState {
   isVideoOff: boolean
   preferredMicrophoneId: string | null
   preferredCameraId: string | null
+  theme: 'dark' | 'light'
   setDisplayName: (name: string) => void
   setApiBaseUrl: (url: string) => void
   setInviteDomain: (domain: string | null) => void
@@ -19,19 +20,26 @@ interface SettingsState {
   setVideoOff: (videoOff: boolean) => void
   setPreferredMicrophone: (id: string | null) => void
   setPreferredCamera: (id: string | null) => void
+  setTheme: (theme: 'dark' | 'light') => void
+  clearPreferences: () => void
+}
+
+const defaultSettings = {
+  displayName: '',
+  apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  inviteDomain: null as string | null,
+  sidebarCollapsed: false,
+  isMuted: true, // Users start muted by default per UX spec
+  isVideoOff: true, // Users start with video off by default per UX spec
+  preferredMicrophoneId: null as string | null,
+  preferredCameraId: null as string | null,
+  theme: 'dark' as const,
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      displayName: '',
-      apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
-      inviteDomain: null, // Uses current origin by default
-      sidebarCollapsed: false,
-      isMuted: true, // Users start muted by default per UX spec
-      isVideoOff: true, // Users start with video off by default per UX spec
-      preferredMicrophoneId: null,
-      preferredCameraId: null,
+      ...defaultSettings,
       setDisplayName: (name) => set({ displayName: name }),
       setApiBaseUrl: (url) => set({ apiBaseUrl: url }),
       setInviteDomain: (domain) => set({ inviteDomain: domain }),
@@ -41,6 +49,8 @@ export const useSettingsStore = create<SettingsState>()(
       setVideoOff: (videoOff) => set({ isVideoOff: videoOff }),
       setPreferredMicrophone: (id) => set({ preferredMicrophoneId: id }),
       setPreferredCamera: (id) => set({ preferredCameraId: id }),
+      setTheme: (theme) => set({ theme }),
+      clearPreferences: () => set(defaultSettings),
     }),
     { name: 'nameless-settings' }
   )

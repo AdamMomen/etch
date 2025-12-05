@@ -1,0 +1,262 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>14</storyId>
+    <title>Implement User Preferences Storage</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-14-implement-user-preferences-storage.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>my preferences saved locally</iWant>
+    <soThat>I don't have to reconfigure settings every time I use the app</soThat>
+    <tasks>
+      <task id="1" title="Enhance settingsStore with Zustand persist middleware" ac="2.14.1-2.14.4">
+        <subtask>Add `persist` middleware from `zustand/middleware` to settingsStore</subtask>
+        <subtask>Configure localStorage as storage backend</subtask>
+        <subtask>Ensure existing `inviteDomain` setting is included in persistence</subtask>
+        <subtask>Add `theme` field with default 'dark'</subtask>
+        <subtask>Add `clearPreferences()` action to reset all settings</subtask>
+      </task>
+      <task id="2" title="Implement display name persistence" ac="2.14.1">
+        <subtask>Verify `displayName` is already in settingsStore (from previous stories)</subtask>
+        <subtask>Ensure JoinDialog pre-fills from settingsStore.displayName</subtask>
+        <subtask>Update displayName in store after successful join</subtask>
+      </task>
+      <task id="3" title="Implement device preference persistence" ac="2.14.2">
+        <subtask>Add `setPreferredMicrophone(deviceId)` action if not present</subtask>
+        <subtask>Add `setPreferredCamera(deviceId)` action if not present</subtask>
+        <subtask>Update device selection components to save preference on change</subtask>
+        <subtask>On meeting join, apply preferred devices if available</subtask>
+        <subtask>Handle unavailable device gracefully (fallback + toast notification)</subtask>
+      </task>
+      <task id="4" title="Verify sidebar state persistence" ac="2.14.3">
+        <subtask>Confirm `sidebarCollapsed` is in settingsStore and persisted</subtask>
+        <subtask>Verify MeetingRoom reads sidebar state from store on mount</subtask>
+      </task>
+      <task id="5" title="Implement theme preference and toggle" ac="2.14.4">
+        <subtask>Add theme state to settingsStore ('dark' | 'light')</subtask>
+        <subtask>Create theme toggle component (Sun/Moon icons)</subtask>
+        <subtask>Apply theme class to document root on change</subtask>
+        <subtask>Initialize theme from store on app load (in App.tsx or main.tsx)</subtask>
+      </task>
+      <task id="6" title="Create Settings panel/modal" ac="2.14.5">
+        <subtask>Create `packages/client/src/components/Settings/SettingsModal.tsx`</subtask>
+        <subtask>Include display name input field</subtask>
+        <subtask>Include theme toggle</subtask>
+        <subtask>Include "Clear all preferences" button with confirmation</subtask>
+        <subtask>Add settings button (gear icon) to HomeScreen</subtask>
+      </task>
+      <task id="7" title="Implement clear preferences functionality" ac="2.14.6">
+        <subtask>Add `clearPreferences()` action to settingsStore</subtask>
+        <subtask>Reset all fields to defaults</subtask>
+        <subtask>Clear localStorage entry</subtask>
+        <subtask>Show toast confirmation after clear</subtask>
+      </task>
+      <task id="8" title="Write tests" ac="all">
+        <subtask>Test settingsStore persistence (mock localStorage)</subtask>
+        <subtask>Test clearPreferences resets all values</subtask>
+        <subtask>Test theme toggle changes document class</subtask>
+        <subtask>Test SettingsModal renders all fields</subtask>
+        <subtask>Test device preference application on join</subtask>
+        <subtask>Test fallback behavior when preferred device unavailable</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.14.1" title="Display Name Persistence">
+      <given>I've joined a meeting with display name "Alice"</given>
+      <when>I launch the app again and go to join a meeting</when>
+      <then>The display name field is pre-filled with "Alice"</then>
+    </criterion>
+    <criterion id="AC-2.14.2" title="Device Preferences Persistence">
+      <given>I've selected a specific microphone and camera in a meeting</given>
+      <when>I join another meeting later</when>
+      <then>My preferred microphone is automatically selected</then>
+      <then>My preferred camera is automatically selected</then>
+      <then>If a preferred device is unavailable, fallback to default with notification</then>
+    </criterion>
+    <criterion id="AC-2.14.3" title="Sidebar State Persistence">
+      <given>I've collapsed the sidebar during a meeting</given>
+      <when>I join another meeting</when>
+      <then>The sidebar remains in collapsed state</then>
+    </criterion>
+    <criterion id="AC-2.14.4" title="Theme Preference Persistence">
+      <given>I've set the theme to light mode</given>
+      <when>I launch the app again</when>
+      <then>The app uses light mode</then>
+      <then>Theme toggle is accessible from home screen or settings</then>
+    </criterion>
+    <criterion id="AC-2.14.5" title="Settings Menu Access">
+      <given>I'm on the home screen</given>
+      <when>I click the settings icon/button</when>
+      <then>I see a settings panel/modal with: display name field, theme toggle (dark/light), "Clear all preferences" button, device preferences summary (optional)</then>
+    </criterion>
+    <criterion id="AC-2.14.6" title="Clear Preferences">
+      <given>I'm in the settings menu</given>
+      <when>I click "Clear all preferences" and confirm</when>
+      <then>All stored preferences are reset to defaults</then>
+      <then>I see a confirmation toast</then>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Desktop Application">
+        <snippet>FR56: Application stores user preferences locally. FR58: Users can access recent rooms from the application. Settings stored locally (preferences, recent rooms). No cloud account required.</snippet>
+      </doc>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="User Experience Principles">
+        <snippet>Dark mode default (matches developer environments). Light mode available. High contrast for annotation tools (must be visible on any background).</snippet>
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Technical Specification" section="AC-2.14: User Preferences">
+        <snippet>Display name persisted across sessions. Device preferences persisted. Sidebar state persisted. Preferences clearable from settings. settingsStore: Zustand store with localStorage persist.</snippet>
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Technical Specification" section="Data Models - SettingsState">
+        <snippet>SettingsState interface: displayName, preferredMicrophoneId, preferredCameraId, sidebarCollapsed, theme ('dark'|'light'), recentRooms. Actions: setDisplayName, setPreferredMicrophone, setPreferredCamera, toggleSidebar, setTheme, addRecentRoom.</snippet>
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="State Locations">
+        <snippet>User settings: settingsStore + localStorage (Persisted locally). State Management: Zustand 5.0.8 - Lightweight (~1KB), simple real-time patterns, slice subscriptions.</snippet>
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Zustand Store Pattern">
+        <snippet>Typed store with actions using create from 'zustand'. Pattern: useStore = create((set) => ({ state, actions: set({ newState }) })). Supports persist middleware for localStorage.</snippet>
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="Color System - Theme Strategy">
+        <snippet>Dark mode default with light mode option. Theme tokens: --background, --text-primary, --accent. CSS variables for theming. Toggle with prefers-reduced-motion support.</snippet>
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="UX Patterns - Confirmation">
+        <snippet>Clear all annotations: Toast with Undo (5 seconds). Prefer undo over confirmation when possible. Toast system: bottom-right, stack vertically, max 3 visible.</snippet>
+      </doc>
+      <doc path="docs/epics.md" title="Epics" section="Story 2.14">
+        <snippet>User wants preferences saved locally to avoid reconfiguring settings every time. Prerequisites: Stories 2.10 (Device Selection), 2.5 (Meeting Room Layout - sidebar), 2.13 (inviteDomain).</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file path="packages/client/src/stores/settingsStore.ts" kind="store" symbol="useSettingsStore" lines="1-48" reason="PRIMARY: Main store to modify - already has persist middleware, displayName, sidebarCollapsed, preferredMicrophoneId, preferredCameraId. Missing: theme field, clearPreferences action.">
+        <existing-fields>displayName, apiBaseUrl, inviteDomain, sidebarCollapsed, isMuted, isVideoOff, preferredMicrophoneId, preferredCameraId</existing-fields>
+        <existing-actions>setDisplayName, setApiBaseUrl, setInviteDomain, toggleSidebar, setSidebarCollapsed, setMuted, setVideoOff, setPreferredMicrophone, setPreferredCamera</existing-actions>
+        <storage-key>nameless-settings</storage-key>
+      </file>
+      <file path="packages/client/src/stores/settingsStore.test.ts" kind="test" symbol="settingsStore tests" reason="Test file for settingsStore - add tests for persistence, theme, clearPreferences"/>
+      <file path="packages/client/src/App.tsx" kind="component" symbol="App" lines="1-21" reason="Root component - add theme initialization useEffect, apply theme class to document.documentElement"/>
+      <file path="packages/client/src/components/HomeScreen/HomeScreen.tsx" kind="component" symbol="HomeScreen" lines="1-233" reason="Add settings button (gear icon) to open SettingsModal"/>
+      <file path="packages/client/src/components/JoinRoom/JoinRoom.tsx" kind="component" symbol="JoinRoom" lines="1-176" reason="Already pre-fills displayName from settingsStore (line 20), saves on join (line 63) - verify persistence works"/>
+      <file path="packages/client/src/components/MeetingRoom/MeetingRoom.tsx" kind="component" symbol="MeetingRoom" lines="28,186-199" reason="Uses sidebarCollapsed from settingsStore, handles responsive collapse - verify persistence works"/>
+      <file path="packages/client/src/components/MeetingRoom/DeviceSelector.tsx" kind="component" symbol="DeviceSelector" lines="1-104" reason="Device selection UI - verify it saves preferences to settingsStore on selection"/>
+      <file path="packages/client/src/components/ui/dialog.tsx" kind="ui" symbol="Dialog" reason="shadcn/ui Dialog component - use for SettingsModal"/>
+      <file path="packages/client/src/components/ui/input.tsx" kind="ui" symbol="Input" reason="shadcn/ui Input component - use for display name field in settings"/>
+      <file path="packages/client/src/components/ui/button.tsx" kind="ui" symbol="Button" reason="shadcn/ui Button component - use for clear preferences button"/>
+    </code>
+    <dependencies>
+      <ecosystem name="node" manifest="packages/client/package.json">
+        <dep name="zustand" version="^5.0.9" relevance="PRIMARY - state management with persist middleware for localStorage"/>
+        <dep name="react" version="^19.2.0" relevance="UI framework"/>
+        <dep name="react-dom" version="^19.2.0" relevance="DOM rendering"/>
+        <dep name="react-router-dom" version="^7.9.6" relevance="Routing for HomeScreen"/>
+        <dep name="sonner" version="^2.0.7" relevance="Toast notifications for clear preferences confirmation"/>
+        <dep name="lucide-react" version="^0.555.0" relevance="Icons - Settings (gear), Sun, Moon for theme toggle"/>
+        <dep name="@radix-ui/react-dialog" version="^1.1.15" relevance="Dialog primitive for SettingsModal"/>
+        <dep name="tailwindcss" version="^4.1.17" relevance="Styling - dark/light theme classes"/>
+        <dep name="class-variance-authority" version="^0.7.1" relevance="Component variants"/>
+        <dep name="clsx" version="^2.1.1" relevance="Conditional class names"/>
+        <dep name="tailwind-merge" version="^3.4.0" relevance="Merge Tailwind classes"/>
+      </ecosystem>
+      <devDeps>
+        <dep name="vitest" version="^2.0.0" relevance="Testing framework"/>
+        <dep name="@testing-library/react" version="^16.3.0" relevance="React component testing"/>
+        <dep name="@testing-library/jest-dom" version="^6.9.1" relevance="DOM assertions"/>
+        <dep name="@testing-library/user-event" version="^14.6.1" relevance="User interaction simulation"/>
+      </devDeps>
+      <note>No new dependencies needed - all required packages already installed. Zustand persist middleware is included in zustand package.</note>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="Architecture" type="pattern">Use Zustand persist middleware with localStorage backend, storage key 'nameless-settings'</constraint>
+    <constraint source="Architecture" type="pattern">Typed store with actions using create from 'zustand' and persist from 'zustand/middleware'</constraint>
+    <constraint source="UX Spec" type="visual">Dark mode is default. Theme toggle uses Sun/Moon icons from Lucide</constraint>
+    <constraint source="UX Spec" type="behavior">Clear preferences should show toast confirmation (sonner), prefer undo over modal confirmation</constraint>
+    <constraint source="UX Spec" type="accessibility">WCAG 2.1 AA compliance - color contrast, keyboard navigation, aria labels</constraint>
+    <constraint source="Dev Notes" type="pattern">Follow existing modal pattern from InviteModal.tsx and LeaveConfirmDialog.tsx</constraint>
+    <constraint source="Dev Notes" type="testing">Maintain test count: Client 386 tests - add tests for new functionality</constraint>
+    <constraint source="Code" type="existing">settingsStore already uses persist middleware - extend, don't restructure</constraint>
+    <constraint source="Code" type="existing">Toast notifications use sonner (already configured in App.tsx)</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="SettingsState (Extended)" kind="TypeScript interface" path="packages/client/src/stores/settingsStore.ts">
+      <signature>
+interface SettingsState {
+  // Existing fields
+  displayName: string
+  apiBaseUrl: string
+  inviteDomain: string | null
+  sidebarCollapsed: boolean
+  isMuted: boolean
+  isVideoOff: boolean
+  preferredMicrophoneId: string | null
+  preferredCameraId: string | null
+  // NEW: Add for this story
+  theme: 'dark' | 'light'
+  // Actions
+  setDisplayName: (name: string) => void
+  setTheme: (theme: 'dark' | 'light') => void
+  clearPreferences: () => void
+  // ... existing actions
+}
+      </signature>
+    </interface>
+    <interface name="SettingsModal Props" kind="React component props" path="packages/client/src/components/Settings/SettingsModal.tsx">
+      <signature>
+interface SettingsModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+      </signature>
+    </interface>
+    <interface name="Theme Application" kind="DOM manipulation" path="packages/client/src/App.tsx">
+      <signature>
+// Apply theme class to document root
+document.documentElement.classList.remove('dark', 'light')
+document.documentElement.classList.add(theme)
+      </signature>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      Vitest with @testing-library/react for component tests. Tests co-located with source files (*.test.ts or *.test.tsx).
+      Pattern: describe() blocks with it() assertions. Use beforeEach() to reset store state.
+      Store tests: useStore.getState() to read, useStore.setState() to reset, direct action calls to test.
+      Component tests: render() from @testing-library/react, screen queries, userEvent for interactions.
+      Mock localStorage in tests for persistence testing. Use expect().toBe(), expect().toBeNull(), expect().toHaveBeenCalled().
+      Current count: 386 client tests - maintain or increase coverage.
+    </standards>
+    <locations>
+      <location glob="packages/client/src/stores/*.test.ts">Store tests</location>
+      <location glob="packages/client/src/components/**/*.test.tsx">Component tests</location>
+      <location glob="packages/client/src/hooks/*.test.ts">Hook tests</location>
+      <location glob="packages/client/src/lib/*.test.ts">Utility tests</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.14.1" test="settingsStore persistence test: set displayName, verify localStorage contains value under 'nameless-settings' key"/>
+      <idea ac="AC-2.14.1" test="JoinRoom test: verify displayName pre-fills from settingsStore on mount"/>
+      <idea ac="AC-2.14.2" test="settingsStore test: setPreferredMicrophone persists to localStorage"/>
+      <idea ac="AC-2.14.2" test="settingsStore test: setPreferredCamera persists to localStorage"/>
+      <idea ac="AC-2.14.3" test="settingsStore test: toggleSidebar persists sidebarCollapsed state"/>
+      <idea ac="AC-2.14.3" test="MeetingRoom test: reads sidebarCollapsed from store on mount"/>
+      <idea ac="AC-2.14.4" test="settingsStore test: setTheme('light') updates theme state"/>
+      <idea ac="AC-2.14.4" test="settingsStore test: theme defaults to 'dark'"/>
+      <idea ac="AC-2.14.4" test="App test: theme from store applies class to document.documentElement"/>
+      <idea ac="AC-2.14.5" test="SettingsModal test: renders display name input with current value"/>
+      <idea ac="AC-2.14.5" test="SettingsModal test: renders theme toggle"/>
+      <idea ac="AC-2.14.5" test="SettingsModal test: renders clear preferences button"/>
+      <idea ac="AC-2.14.5" test="HomeScreen test: renders settings button (gear icon)"/>
+      <idea ac="AC-2.14.5" test="HomeScreen test: clicking settings button opens SettingsModal"/>
+      <idea ac="AC-2.14.6" test="settingsStore test: clearPreferences resets all values to defaults"/>
+      <idea ac="AC-2.14.6" test="settingsStore test: clearPreferences clears localStorage entry"/>
+      <idea ac="AC-2.14.6" test="SettingsModal test: clicking clear preferences shows confirmation toast"/>
+    </ideas>
+  </tests>
+</story-context>

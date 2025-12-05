@@ -349,7 +349,7 @@ describe('useAudio', () => {
         { deviceId: 'default', kind: 'audioinput', label: 'Default' },
       ])
 
-      renderHook(() => useAudio({ room: roomWithSwitch as Room }))
+      renderHook(() => useAudio({ room: roomWithSwitch as unknown as Room }))
 
       // Trigger devicechange
       await act(async () => {
@@ -411,7 +411,7 @@ describe('useAudio', () => {
         { deviceId: 'external-mic', kind: 'audioinput', label: 'External Mic' },
       ])
 
-      renderHook(() => useAudio({ room: roomWithSwitch as Room }))
+      renderHook(() => useAudio({ room: roomWithSwitch as unknown as Room }))
 
       // Trigger devicechange
       await act(async () => {

@@ -65,9 +65,9 @@ development_status:
 
   # Epic 3: Screen Sharing (10 stories)
   epic-3: contexted
-  3-1-implement-screen-share-initiation-hybrid-capture: review
-  3-2-display-shared-screen-for-viewers: backlog
-  3-3-implement-stop-screen-sharing: backlog
+  3-1-implement-screen-share-initiation-hybrid-capture: done
+  3-2-display-shared-screen-for-viewers: done
+  3-3-implement-stop-screen-sharing: ready-for-dev
   3-4-enforce-single-active-screen-share: backlog
   3-5-implement-screen-share-quality-optimization: backlog
   3-6-create-sharers-transparent-overlay-window: backlog
