@@ -1149,7 +1149,11 @@ thresholds: {
   - Button becomes enabled again
   - I can now initiate screen share
 
-**And** if I'm the host, I have option to take over (post-MVP consideration)
+**Post-MVP Enhancement - Host Screen Share Takeover:**
+- Host can stop another participant's screen share
+- Host can "take over" (stop current share and start their own)
+- Current sharer receives notification that host took over
+- Related to FR5 (host can remove participants) - similar privilege pattern
 
 **Prerequisites:** Story 3.3
 
