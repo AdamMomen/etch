@@ -1,0 +1,345 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<story-context>
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.10</storyId>
+    <title>Implement Core Media Engine (All Platforms)</title>
+    <status>in-progress</status>
+    <generatedAt>2025-12-06</generatedAt>
+    <generator>BMAD Story Context Workflow (Regenerated)</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-10-implement-rust-screen-capture-sidecar-macos-linux.md</sourceStoryPath>
+    <revision>
+      <date>2025-12-06</date>
+      <reason>Original context described xcap/scrap sidecar (4-5 FPS). Regenerated for Core-centric architecture using Hopp's LiveKit fork with DesktopCapturer (60fps).</reason>
+    </revision>
+  </metadata>
+
+  <story>
+    <asA>desktop user on any platform</asA>
+    <iWant>screen sharing powered by a native Core media engine</iWant>
+    <soThat>I get 60fps capture with low-latency annotation rendering</soThat>
+
+    <tasks>
+      <phase n="1" title="Core Package Foundation">
+        <task id="1" status="done" ac="3.10.1">Create Core Rust package structure</task>
+        <task id="2" status="partial" ac="3.10.1">Implement socket server (protocol defined, server stubbed)</task>
+        <task id="3" status="done" ac="3.10.1">Implement winit event loop</task>
+      </phase>
+      <phase n="2" title="Screen Capture">
+        <task id="4" status="done" ac="3.10.2,3.10.3">Implement screen capture with DesktopCapturer</task>
+        <task id="5" status="done" ac="3.10.2">Implement LiveKit room connection</task>
+        <task id="6" status="pending" ac="3.10.4">Implement platform permission handling</task>
+      </phase>
+      <phase n="3" title="Frame Relay and Integration">
+        <task id="7" status="pending" ac="3.10.5">Implement frame relay to WebView</task>
+        <task id="8" status="pending" ac="3.10.1,3.10.6">Update Tauri to spawn Core</task>
+        <task id="9" status="pending" ac="3.10.5">Create TypeScript socket client</task>
+      </phase>
+      <phase n="4" title="Testing">
+        <task id="10" status="pending" ac="all">Write tests and verify</task>
+      </phase>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.10.1" title="Core Binary Launches with App">
+      <given>I launch the NAMELESS desktop app</given>
+      <when>The app initializes</when>
+      <then>
+        - Core binary is spawned as a child process
+        - Socket connection is established between Tauri and Core
+        - Core is ready to receive commands
+      </then>
+    </criterion>
+
+    <criterion id="AC-3.10.2" title="Core Provides Native Screen Capture">
+      <given>Core is running</given>
+      <when>I initiate screen share</when>
+      <then>
+        - Core uses LiveKit DesktopCapturer (Hopp's fork) for native capture
+        - Screen/window picker is displayed via native dialog
+        - 60fps capture is achieved on all platforms
+        - Frames are published directly to LiveKit (no WebView relay)
+      </then>
+    </criterion>
+
+    <criterion id="AC-3.10.3" title="Capture Quality Meets Requirements">
+      <given>I'm sharing via Core</given>
+      <when>Viewers see my shared screen</when>
+      <then>
+        - 1080p resolution (minimum)
+        - 60fps capture rate
+        - 4-6 Mbps bitrate target
+        - Text remains sharp and readable
+      </then>
+    </criterion>
+
+    <criterion id="AC-3.10.4" title="Platform Permission Handling">
+      <given>I'm on macOS</given>
+      <when>I start screen sharing for the first time</when>
+      <then>
+        - Screen recording permission is requested if not granted
+        - Permission status is communicated to WebView for UI feedback
+      </then>
+    </criterion>
+
+    <criterion id="AC-3.10.5" title="Frame Relay to WebView">
+      <given>Core is receiving video from other participants</given>
+      <when>Frames arrive via LiveKit</when>
+      <then>
+        - Core relays frames to WebView via socket
+        - WebView renders frames in video display component
+      </then>
+    </criterion>
+
+    <criterion id="AC-3.10.6" title="Core Lifecycle Management">
+      <given>The app is running</given>
+      <when>The app closes or crashes</when>
+      <then>
+        - Core process is gracefully terminated
+        - Socket is cleaned up
+      </then>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="ADR-008: Core-Centric Media Architecture">
+        Defines Core-centric architecture using Hopp's LiveKit fork. Core owns all media: screen capture, audio, camera, LiveKit connection, DataTracks. WebView becomes pure UI shell.
+      </doc>
+      <doc path="docs/sprint-change-proposal-2025-12-06.md" title="Sprint Change Proposal" section="Full Proposal">
+        Documents the pivot from xcap sidecar (4-5 FPS) to Core-centric architecture with DesktopCapturer (60fps). Contains socket protocol definition.
+      </doc>
+      <doc path="docs/research-technical-hopp-2025-12-05.md" title="Hopp Technical Research" section="All">
+        Analysis of Hopp's architecture patterns: winit EventLoop, UserEvent enum, Application struct, DesktopCapturer usage.
+      </doc>
+    </docs>
+
+    <code>
+      <file path="packages/core/Cargo.toml" kind="manifest" reason="Core package dependencies including Hopp's LiveKit fork">
+        <dependency name="livekit" source="local: ../../rust-sdks-patches/livekit" features="native-tls" />
+        <dependency name="winit" version="0.30" />
+        <dependency name="wgpu" version="24" />
+        <dependency name="tokio" version="1" features="full" />
+        <dependency name="parking_lot" version="0.12" />
+      </file>
+
+      <file path="packages/core/src/lib.rs" kind="library" reason="Core library with UserEvent enum and Application struct">
+        <symbol name="UserEvent" lines="38-200" reason="Central command vocabulary - 30+ event variants" />
+        <symbol name="Application" lines="270-350" reason="Component container holding capturer, room_service, annotation_store" />
+        <symbol name="handle_user_event" lines="400-900" reason="Event dispatcher routing commands to handlers" />
+      </file>
+
+      <file path="packages/core/src/main.rs" kind="entry" reason="Core binary entry point with winit event loop">
+        <symbol name="AppHandler" lines="16-91" reason="Implements ApplicationHandler for winit" />
+        <symbol name="main" lines="93-147" reason="Creates EventLoop, spawns tokio runtime, runs event loop" />
+      </file>
+
+      <file path="packages/core/src/capture/mod.rs" kind="module" reason="Screen capture using LiveKit DesktopCapturer">
+        <symbol name="Capturer" lines="52-60" reason="Holds capture state, video_source, stream control" />
+        <symbol name="enumerate_sources" lines="85-132" reason="Lists available screens and windows" />
+        <symbol name="start_capture" lines="135-174" reason="Spawns capture thread with DesktopCapturer" />
+        <symbol name="run_capture_loop" lines="222-415" reason="ARGB to NV12 conversion, frame publishing to LiveKit" />
+        <pattern name="buffer-per-frame">Currently creates new NV12Buffer per frame. Should optimize to reuse buffer like Hopp example.</pattern>
+      </file>
+
+      <file path="packages/core/src/room/mod.rs" kind="module" reason="LiveKit room connection and track publishing">
+        <symbol name="RoomService" lines="30-40" reason="Holds Room, ScreenShareTrack, event proxy" />
+        <symbol name="connect" lines="45-85" reason="Connects to LiveKit server, spawns event handler task" />
+        <symbol name="publish_screen_share" lines="165-220" reason="Creates NativeVideoSource, publishes LocalVideoTrack" />
+        <symbol name="send_data" lines="250-270" reason="Sends data via DataTrack for annotations" />
+      </file>
+
+      <file path="packages/core/src/socket/mod.rs" kind="module" reason="Socket IPC protocol between Core and Tauri">
+        <symbol name="IncomingMessage" lines="20-70" reason="Commands from WebView: JoinRoom, StartScreenShare, etc." />
+        <symbol name="OutgoingMessage" lines="75-130" reason="Events to WebView: RoomConnected, VideoFrame, etc." />
+        <symbol name="CoreSocket" lines="140-200" reason="Unix socket server (stubbed, needs implementation)" />
+      </file>
+
+      <file path="packages/core/src/annotation/mod.rs" kind="module" reason="Stroke storage for annotations">
+        <symbol name="Stroke" lines="12-19" reason="Single stroke with id, participant_id, tool, color, points" />
+        <symbol name="AnnotationStore" lines="51-55" reason="HashMap storage with render order tracking" />
+      </file>
+
+      <file path="packages/core/tests/annotation_tests.rs" kind="test" reason="Unit tests for annotation store">
+        <tests count="5">test_stroke_lifecycle, test_clear_all, test_delete_by_participant, test_stroke_render_order, test_highlighter_tool</tests>
+      </file>
+
+      <file path="rust-sdks-patches/" kind="dependency" reason="Local copy of Hopp's LiveKit fork with DesktopCapturer">
+        <note>Contains DesktopCapturer API not in upstream livekit-rust-sdks</note>
+        <example path="rust-sdks-patches/examples/screensharing/src/main.rs" reason="Reference for buffer reuse pattern with Arc Mutex VideoFrame" />
+      </file>
+
+      <file path="packages/client/src-tauri/src/screen_share.rs" kind="module" reason="Existing Tauri commands for platform detection">
+        <symbol name="get_platform" lines="5-23" reason="Returns windows/macos/linux string" />
+        <symbol name="minimize_main_window" lines="25-27" reason="Minimizes window during screen share" />
+        <symbol name="restore_main_window" lines="30-34" reason="Restores window after screen share" />
+      </file>
+
+      <file path="packages/client/src/hooks/useScreenShare.ts" kind="hook" reason="React hook to update for Core integration">
+        <lines>93-99</lines>
+        <current>Shows "coming soon" toast for macOS/Linux - needs replacement with Core commands</current>
+      </file>
+    </code>
+
+    <dependencies>
+      <rust>
+        <crate name="livekit" source="path: ../../rust-sdks-patches/livekit" features="native-tls">LiveKit with DesktopCapturer (Hopp fork)</crate>
+        <crate name="winit" version="0.30">Event loop and window management</crate>
+        <crate name="wgpu" version="24">GPU rendering for annotation overlay</crate>
+        <crate name="tokio" version="1" features="full">Async runtime</crate>
+        <crate name="parking_lot" version="0.12">Fast mutexes</crate>
+        <crate name="serde" version="1" features="derive">Serialization</crate>
+        <crate name="serde_json" version="1">JSON for socket protocol</crate>
+        <crate name="tracing" version="0.1">Logging</crate>
+        <crate name="tracing-subscriber" version="0.3">Log formatting</crate>
+        <crate name="thiserror" version="2">Error types</crate>
+        <crate name="anyhow" version="1">Error handling</crate>
+      </rust>
+      <typescript>
+        <package name="@tauri-apps/api" purpose="Tauri IPC from React" />
+        <package name="livekit-client" purpose="LiveKit client (may be reduced if Core handles all media)" />
+      </typescript>
+    </dependencies>
+  </artifacts>
+
+  <interfaces>
+    <interface name="Socket Protocol" kind="IPC">
+      <description>JSON messages over Unix socket (or named pipe on Windows) between Core and Tauri WebView</description>
+
+      <incoming name="IncomingMessage" direction="WebView to Core">
+        <message name="JoinRoom">{ room_url, token }</message>
+        <message name="LeaveRoom">{}</message>
+        <message name="GetAvailableContent">{}</message>
+        <message name="StartScreenShare">{ source_id, source_type, config: { width, height, framerate } }</message>
+        <message name="StopScreenShare">{}</message>
+        <message name="SendData">{ data: Vec u8, reliable: bool }</message>
+        <message name="StrokeStart">{ stroke_id, tool, color, point }</message>
+        <message name="StrokeUpdate">{ stroke_id, points }</message>
+        <message name="StrokeComplete">{ stroke_id }</message>
+      </incoming>
+
+      <outgoing name="OutgoingMessage" direction="Core to WebView">
+        <message name="Ready">{ version }</message>
+        <message name="RoomConnected">{ room_name, local_participant_id }</message>
+        <message name="RoomDisconnected">{}</message>
+        <message name="AvailableContent">{ screens: [], windows: [] }</message>
+        <message name="ScreenShareStarted">{ source_id }</message>
+        <message name="ScreenShareStopped">{}</message>
+        <message name="VideoFrame">{ participant_id, data: base64, width, height, timestamp }</message>
+        <message name="ParticipantJoined">{ id, name, role }</message>
+        <message name="ParticipantLeft">{ id }</message>
+        <message name="DataReceived">{ participant_id, data }</message>
+        <message name="Error">{ code, message }</message>
+      </outgoing>
+    </interface>
+
+    <interface name="UserEvent" kind="internal enum">
+      <description>Central command vocabulary for winit event loop. All commands flow through this enum.</description>
+      <path>packages/core/src/lib.rs:38-200</path>
+      <categories>
+        <category name="Screen Capture">GetAvailableContent, StartScreenShare, StopScreenShare, ScreenShareStateChanged, AvailableContentReady</category>
+        <category name="Annotations">StrokeStart, StrokeUpdate, StrokeComplete, StrokeDelete, ClearAllAnnotations</category>
+        <category name="Cursors">CursorMoved, CursorLeft</category>
+        <category name="LiveKit">JoinRoom, LeaveRoom, RoomConnected, RoomDisconnected, ParticipantConnected, ParticipantDisconnected, DataReceived</category>
+        <category name="Frame Relay">VideoFrameReceived, SendVideoFrame</category>
+        <category name="Socket">SocketConnected, SocketDisconnected, SocketMessage</category>
+        <category name="Lifecycle">Error, Terminate</category>
+      </categories>
+    </interface>
+
+    <interface name="Capturer API" kind="struct">
+      <path>packages/core/src/capture/mod.rs</path>
+      <methods>
+        <method name="new() -> Self">Create new capturer</method>
+        <method name="set_event_loop_proxy(proxy)">Set proxy for sending events</method>
+        <method name="set_video_source(source)">Set NativeVideoSource for publishing</method>
+        <method name="enumerate_sources() -> (Vec ScreenInfo, Vec WindowInfo)">List available screens/windows</method>
+        <method name="start_capture(source_id, source_type, config) -> Result">Start capturing specified source</method>
+        <method name="stop_capture()">Stop current capture</method>
+        <method name="is_capturing() -> bool">Check if currently capturing</method>
+      </methods>
+    </interface>
+
+    <interface name="RoomService API" kind="struct">
+      <path>packages/core/src/room/mod.rs</path>
+      <methods>
+        <method name="connect(url, token, proxy) -> Result Self">Connect to LiveKit room</method>
+        <method name="disconnect()">Disconnect from room</method>
+        <method name="publish_screen_share(width, height) -> Result NativeVideoSource">Create and publish screen share track</method>
+        <method name="unpublish_screen_share()">Stop screen share track</method>
+        <method name="send_data(data, reliable)">Send data via DataTrack</method>
+        <method name="local_identity() -> Option String">Get local participant ID</method>
+        <method name="remote_participants() -> Vec (id, name)">List remote participants</method>
+      </methods>
+    </interface>
+  </interfaces>
+
+  <constraints>
+    <constraint source="ADR-008">Core-centric architecture: Core owns all media, WebView is UI shell only</constraint>
+    <constraint source="ADR-008">Must use Hopp's LiveKit fork for DesktopCapturer API</constraint>
+    <constraint source="AC-3.10.3">60fps capture rate, 1080p minimum, 4-6 Mbps bitrate</constraint>
+    <constraint source="Hopp pattern">Use winit EventLoop as central message bus</constraint>
+    <constraint source="Hopp pattern">UserEvent enum as command vocabulary</constraint>
+    <constraint source="Performance">Frame relay latency must be under 50ms</constraint>
+    <constraint source="Memory">Should reuse NV12Buffer per frame instead of allocating new (current implementation allocates per frame)</constraint>
+  </constraints>
+
+  <tests>
+    <standards>
+      - Rust tests via `cargo test` in packages/core
+      - TypeScript tests via Vitest in packages/client
+      - Integration tests for socket protocol
+      - Performance benchmarks for capture and frame relay
+    </standards>
+
+    <locations>
+      <location>packages/core/tests/*.rs</location>
+      <location>packages/client/src/**/*.test.ts</location>
+    </locations>
+
+    <ideas>
+      <test ac="AC-3.10.1">Integration: Tauri spawns Core, socket connects within 1s</test>
+      <test ac="AC-3.10.1">Unit: Socket protocol message parsing for all IncomingMessage variants</test>
+      <test ac="AC-3.10.2">Integration: enumerate_sources returns at least 1 screen</test>
+      <test ac="AC-3.10.2">Integration: start_capture begins publishing frames to LiveKit</test>
+      <test ac="AC-3.10.3">Performance: Capture rate >= 45fps (within ~25% of 60fps target)</test>
+      <test ac="AC-3.10.4">Unit: macOS permission check returns correct status</test>
+      <test ac="AC-3.10.5">Integration: Frame relay end-to-end latency < 50ms</test>
+      <test ac="AC-3.10.6">Integration: Core terminates gracefully when Tauri sends Terminate</test>
+      <test existing="true">5 annotation store tests (test_stroke_lifecycle, test_clear_all, etc.)</test>
+    </ideas>
+  </tests>
+
+  <knownIssues>
+    <issue id="memory-allocation" severity="medium" status="open">
+      <description>Current capture implementation creates new NV12Buffer per frame instead of reusing</description>
+      <location>packages/core/src/capture/mod.rs:run_capture_loop</location>
+      <impact>Higher memory allocation rate, potential GC pressure</impact>
+      <fix>Follow Hopp pattern: wrap VideoFrame in Arc Mutex, mutate buffer in-place, pass reference to capture_frame</fix>
+      <reference>rust-sdks-patches/examples/screensharing/src/main.rs lines 67-86</reference>
+    </issue>
+  </knownIssues>
+
+  <nextSteps>
+    <step priority="1">Fix memory allocation issue in capture (use Arc Mutex VideoFrame pattern)</step>
+    <step priority="2">Implement frame relay to WebView (Task 7)</step>
+    <step priority="3">Update Tauri to spawn Core binary (Task 8)</step>
+    <step priority="4">Create TypeScript socket client (Task 9)</step>
+    <step priority="5">Write integration tests (Task 10)</step>
+  </nextSteps>
+
+  <references>
+    <internal>
+      <ref path="docs/architecture.md#ADR-008">Core-centric architecture decision</ref>
+      <ref path="docs/sprint-change-proposal-2025-12-06.md">Full pivot proposal with socket protocol</ref>
+      <ref path="docs/research-technical-hopp-2025-12-05.md">Hopp architecture analysis</ref>
+    </internal>
+    <external>
+      <ref url="https://github.com/gethopp/hopp">Hopp reference implementation</ref>
+      <ref url="https://github.com/gethopp/rust-sdks">Hopp LiveKit fork with DesktopCapturer</ref>
+      <ref url="https://docs.rs/winit/latest/winit/">winit documentation</ref>
+      <ref url="https://wgpu.rs/">wgpu documentation</ref>
+    </external>
+  </references>
+</story-context>
