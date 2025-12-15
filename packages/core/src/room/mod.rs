@@ -8,7 +8,6 @@
 
 use std::sync::Arc;
 
-use base64::Engine;
 use livekit::options::{TrackPublishOptions, VideoCodec, VideoEncoding};
 use livekit::prelude::*;
 use livekit::publication::LocalTrackPublication;
@@ -74,15 +73,7 @@ impl RoomService {
     pub fn connect(&self, token: String) -> Result<(), String> {
         eprintln!("[DEBUG] RoomService::connect - starting");
         eprintln!("[DEBUG] Token length: {} chars", token.len());
-
-        // Decode and print token claims for debugging (JWT is base64)
-        if let Some(payload) = token.split('.').nth(1) {
-            if let Ok(decoded) = base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, payload) {
-                if let Ok(claims) = String::from_utf8(decoded) {
-                    eprintln!("[DEBUG] Token claims: {}", claims);
-                }
-            }
-        }
+        eprintln!("[DEBUG] Token preview: {}...{}", &token[..50.min(token.len())], &token[token.len().saturating_sub(20)..]);
 
         let server_url = self.server_url.clone();
         let event_proxy = self.event_proxy.clone();
@@ -111,8 +102,7 @@ impl RoomService {
             match tokio::time::timeout(std::time::Duration::from_secs(45), connect_future).await {
                 Ok(Ok((room, room_events))) => {
                     let room_name = room.name().to_string();
-                    let room_sid = room.sid();
-                    eprintln!("[DEBUG] SUCCESS: Connected to room: {} (sid: {})", room_name, room_sid);
+                    eprintln!("[DEBUG] SUCCESS: Connected to room: {}", room_name);
 
                     // Store room
                     *room_holder.lock() = Some(room);
