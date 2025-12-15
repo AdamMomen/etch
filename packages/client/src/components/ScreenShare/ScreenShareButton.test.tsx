@@ -2,22 +2,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ScreenShareButton } from './ScreenShareButton'
-import { useScreenShare } from '@/hooks/useScreenShare'
 
-// Mock the useScreenShare hook
-vi.mock('@/hooks/useScreenShare', () => ({
-  useScreenShare: vi.fn(),
-}))
-
-const createMockScreenShare = (overrides = {}) => ({
-  isSharing: false,
+// Default props for testing
+const createDefaultProps = (overrides = {}) => ({
   isLocalSharing: false,
   canShare: true,
-  sharerName: null,
-  screenTrack: null,
-  remoteScreenTrack: null,
-  startScreenShare: vi.fn(),
-  stopScreenShare: vi.fn(),
+  sharerName: null as string | null,
+  onStartShare: vi.fn(),
+  onStopShare: vi.fn(),
   ...overrides,
 })
 
@@ -28,9 +20,9 @@ describe('ScreenShareButton', () => {
 
   describe('rendering', () => {
     it('should render with outline variant when not sharing', () => {
-      vi.mocked(useScreenShare).mockReturnValue(createMockScreenShare())
+      const props = createDefaultProps()
 
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       const button = screen.getByRole('button', { name: /share screen/i })
       expect(button).toBeInTheDocument()
@@ -38,11 +30,9 @@ describe('ScreenShareButton', () => {
     })
 
     it('should render with default variant when sharing', () => {
-      vi.mocked(useScreenShare).mockReturnValue(
-        createMockScreenShare({ isLocalSharing: true })
-      )
+      const props = createDefaultProps({ isLocalSharing: true })
 
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       const button = screen.getByRole('button', { name: /stop sharing/i })
       expect(button).toBeInTheDocument()
@@ -50,31 +40,27 @@ describe('ScreenShareButton', () => {
     })
 
     it('should be disabled when canShare is false and not sharing', () => {
-      vi.mocked(useScreenShare).mockReturnValue(
-        createMockScreenShare({ canShare: false })
-      )
+      const props = createDefaultProps({ canShare: false })
 
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       const button = screen.getByRole('button', { name: /share screen/i })
       expect(button).toBeDisabled()
     })
 
     it('should not be disabled when sharing (even if canShare is false)', () => {
-      vi.mocked(useScreenShare).mockReturnValue(
-        createMockScreenShare({ isLocalSharing: true, canShare: false })
-      )
+      const props = createDefaultProps({ isLocalSharing: true, canShare: false })
 
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       const button = screen.getByRole('button', { name: /stop sharing/i })
       expect(button).not.toBeDisabled()
     })
 
     it('should apply custom className', () => {
-      vi.mocked(useScreenShare).mockReturnValue(createMockScreenShare())
+      const props = createDefaultProps()
 
-      render(<ScreenShareButton room={null} className="custom-class" />)
+      render(<ScreenShareButton {...props} className="custom-class" />)
 
       const button = screen.getByRole('button')
       expect(button).toHaveClass('custom-class')
@@ -82,73 +68,65 @@ describe('ScreenShareButton', () => {
   })
 
   describe('interactions', () => {
-    it('should call startScreenShare when clicked and not sharing', async () => {
-      const mockStartScreenShare = vi.fn()
-      vi.mocked(useScreenShare).mockReturnValue(
-        createMockScreenShare({ startScreenShare: mockStartScreenShare })
-      )
+    it('should call onStartShare when clicked and not sharing', async () => {
+      const mockStartShare = vi.fn()
+      const props = createDefaultProps({ onStartShare: mockStartShare })
 
       const user = userEvent.setup()
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       const button = screen.getByRole('button', { name: /share screen/i })
       await user.click(button)
 
-      expect(mockStartScreenShare).toHaveBeenCalledTimes(1)
+      expect(mockStartShare).toHaveBeenCalledTimes(1)
     })
 
-    it('should call stopScreenShare when clicked and sharing', async () => {
-      const mockStopScreenShare = vi.fn()
-      vi.mocked(useScreenShare).mockReturnValue(
-        createMockScreenShare({
-          isLocalSharing: true,
-          stopScreenShare: mockStopScreenShare,
-        })
-      )
+    it('should call onStopShare when clicked and sharing', async () => {
+      const mockStopShare = vi.fn()
+      const props = createDefaultProps({
+        isLocalSharing: true,
+        onStopShare: mockStopShare,
+      })
 
       const user = userEvent.setup()
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       const button = screen.getByRole('button', { name: /stop sharing/i })
       await user.click(button)
 
-      expect(mockStopScreenShare).toHaveBeenCalledTimes(1)
+      expect(mockStopShare).toHaveBeenCalledTimes(1)
     })
 
     it('should not call any function when disabled', async () => {
-      const mockStartScreenShare = vi.fn()
-      vi.mocked(useScreenShare).mockReturnValue(
-        createMockScreenShare({
-          canShare: false,
-          startScreenShare: mockStartScreenShare,
-        })
-      )
+      const mockStartShare = vi.fn()
+      const props = createDefaultProps({
+        canShare: false,
+        onStartShare: mockStartShare,
+      })
 
       const user = userEvent.setup()
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       const button = screen.getByRole('button', { name: /share screen/i })
       await user.click(button)
 
-      expect(mockStartScreenShare).not.toHaveBeenCalled()
+      expect(mockStartShare).not.toHaveBeenCalled()
     })
   })
 
   describe('accessibility', () => {
     it('should have correct aria-label when not sharing', () => {
-      vi.mocked(useScreenShare).mockReturnValue(createMockScreenShare())
+      const props = createDefaultProps()
 
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       expect(screen.getByLabelText('Share screen')).toBeInTheDocument()
     })
 
     it('should have correct aria-label when sharing', () => {
-      vi.mocked(useScreenShare).mockReturnValue(
-        createMockScreenShare({ isLocalSharing: true })
-      )
+      const props = createDefaultProps({ isLocalSharing: true })
 
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       expect(screen.getByLabelText('Stop sharing')).toBeInTheDocument()
     })
@@ -156,14 +134,12 @@ describe('ScreenShareButton', () => {
 
   describe('tooltip (AC-3.4.2)', () => {
     it('should render with tooltip wrapper when disabled and sharer name exists', () => {
-      vi.mocked(useScreenShare).mockReturnValue(
-        createMockScreenShare({
-          canShare: false,
-          sharerName: 'Alice',
-        })
-      )
+      const props = createDefaultProps({
+        canShare: false,
+        sharerName: 'Alice',
+      })
 
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       // Button should be disabled
       const button = screen.getByRole('button', { name: /share screen/i })
@@ -175,15 +151,13 @@ describe('ScreenShareButton', () => {
     })
 
     it('should show tooltip content on hover when disabled', async () => {
-      vi.mocked(useScreenShare).mockReturnValue(
-        createMockScreenShare({
-          canShare: false,
-          sharerName: 'Alice',
-        })
-      )
+      const props = createDefaultProps({
+        canShare: false,
+        sharerName: 'Alice',
+      })
 
       const user = userEvent.setup()
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       const button = screen.getByRole('button', { name: /share screen/i })
 
@@ -200,14 +174,12 @@ describe('ScreenShareButton', () => {
     })
 
     it('should not have tooltip wrapper when button is enabled', () => {
-      vi.mocked(useScreenShare).mockReturnValue(
-        createMockScreenShare({
-          canShare: true,
-          sharerName: null,
-        })
-      )
+      const props = createDefaultProps({
+        canShare: true,
+        sharerName: null,
+      })
 
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       const button = screen.getByRole('button', { name: /share screen/i })
 
@@ -217,15 +189,13 @@ describe('ScreenShareButton', () => {
     })
 
     it('should not have tooltip wrapper when user is sharing themselves', () => {
-      vi.mocked(useScreenShare).mockReturnValue(
-        createMockScreenShare({
-          isLocalSharing: true,
-          canShare: false,
-          sharerName: null,
-        })
-      )
+      const props = createDefaultProps({
+        isLocalSharing: true,
+        canShare: false,
+        sharerName: null,
+      })
 
-      render(<ScreenShareButton room={null} />)
+      render(<ScreenShareButton {...props} />)
 
       const button = screen.getByRole('button', { name: /stop sharing/i })
 

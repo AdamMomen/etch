@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Interface</title>
+    <style>
+      .container {
+        display: flex;
+        gap: 20px;
+        padding: 20px;
+        max-width: calc(100vw - 20px);
+      }
+
+      .connection {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: calc(50vw - 20px);
+      }
+
+      .token-input {
+        width: 85%;
+        padding: 8px;
+        margin-bottom: 5px;
+      }
+
+      .actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+      }
+
+      .editor {
+        width: 100%;
+        height: 200px;
+        margin-bottom: 10px;
+      }
+
+      .logs {
+        width: 100%;
+        height: 300px;
+        border: 1px solid #ccc;
+        overflow-y: auto;
+        padding: 10px;
+        font-family: monospace;
+      }
+
+      button {
+        padding: 8px 16px;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Connection 1 -->
+      <div class="connection">
+        <input
+          type="text"
+          id="token1"
+          class="token-input"
+          placeholder="JWT token for connection 1"
+        />
+        <button onclick="saveToken(1)">Save token</button>
+
+        <div class="actions">
+          <button onclick="fillTemplate(1, 'call_request')">
+            Initiate Call
+          </button>
+          <button onclick="fillTemplate(1, 'call_accept')">Answer Call</button>
+          <button onclick="fillTemplate(1, 'call_reject')">Call Reject</button>
+        </div>
+
+        <textarea
+          id="editor1"
+          class="editor"
+          placeholder="JSON text editor of payload"
+        ></textarea>
+        <button onclick="sendPayload(1)">Send Payload</button>
+
+        <div id="logs1" class="logs">
+          Logs incoming from 1 websocket connection
+        </div>
+      </div>
+
+      <!-- Connection 2 -->
+      <div class="connection">
+        <input
+          type="text"
+          id="token2"
+          class="token-input"
+          placeholder="JWT token for connection 2"
+        />
+        <button onclick="saveToken(2)">Save token</button>
+
+        <div class="actions">
+          <button onclick="fillTemplate(2, 'call_request')">
+            Initiate Call
+          </button>
+          <button onclick="fillTemplate(2, 'call_accept')">Answer Call</button>
+          <button onclick="fillTemplate(2, 'call_reject')">Call Reject</button>
+        </div>
+
+        <textarea
+          id="editor2"
+          class="editor"
+          placeholder="JSON text editor of payload"
+        ></textarea>
+        <button onclick="sendPayload(2)">Send Payload</button>
+
+        <div id="logs2" class="logs">
+          Logs incoming from 2 websocket connection
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const connections = {
+        1: null,
+        2: null,
+      };
+
+      const messageTemplates = {
+        call_request: {
+          type: "call_request",
+          payload: {
+            callee_id: "019382b1-a085-7802-a69d-208aecaf2067",
+          },
+        },
+        call_reject: {
+          type: "call_reject",
+          payload: {
+            caller_id: "01938217-5c65-70d2-9c38-bbfff8d3efe8",
+          },
+        },
+        call_accept: {
+          type: "call_accept",
+          payload: {
+            caller_id: "019382b1-a085-7802-a69d-208aecaf2067",
+          },
+        },
+      };
+
+      function saveToken(connId) {
+        const token = document.getElementById(`token${connId}`).value;
+        if (!token) {
+          alert("Please enter a JWT token");
+          return;
+        }
+
+        // Close existing connection if any
+        if (connections[connId]) {
+          connections[connId].close();
+        }
+
+        // Establish new WebSocket connection
+        const ws = new WebSocket(
+          `wss://localhost:1926/api/auth/websocket?token=${token}`
+        );
+
+        ws.onopen = () => {
+          logMessage(connId, "System", "Connected to WebSocket server");
+        };
+
+        ws.onmessage = (event) => {
+          logMessage(connId, "Received", event.data);
+        };
+
+        ws.onerror = (error) => {
+          logMessage(connId, "Error", "WebSocket error occurred");
+        };
+
+        ws.onclose = () => {
+          logMessage(connId, "System", "Disconnected from WebSocket server");
+          connections[connId] = null;
+        };
+
+        connections[connId] = ws;
+      }
+
+      function fillTemplate(connId, actionType) {
+        const editor = document.getElementById(`editor${connId}`);
+        const template = messageTemplates[actionType];
+        editor.value = JSON.stringify(template, null, 2);
+      }
+
+      function sendPayload(connId) {
+        if (!connections[connId]) {
+          alert("Please establish connection first");
+          return;
+        }
+
+        const editor = document.getElementById(`editor${connId}`);
+        try {
+          const payload = JSON.parse(editor.value);
+          connections[connId].send(JSON.stringify(payload));
+          logMessage(connId, "Sent", editor.value);
+        } catch (error) {
+          alert("Invalid JSON payload");
+        }
+      }
+
+      function logMessage(connId, direction, message) {
+        const logs = document.getElementById(`logs${connId}`);
+        const timestamp = new Date().toISOString();
+        let formattedMessage = message;
+
+        try {
+          // Try to parse and prettify JSON messages
+          formattedMessage = JSON.stringify(JSON.parse(message), null, 2);
+        } catch {
+          // If not JSON, use as is
+        }
+
+        logs.innerHTML += `<div>[${timestamp}] ${direction}:\n${formattedMessage}\n</div>`;
+        logs.scrollTop = logs.scrollHeight;
+      }
+    </script>
+  </body>
+</html>

@@ -1399,6 +1399,95 @@ Per Implementation Readiness assessment, Windows transparent overlay behavior ne
 
 ---
 
+### Story 3.11: Associate Screen Share Participant with Main Identity in UI
+
+**As a** meeting participant,
+**I want** the screen share to appear as coming from the actual sharer (not a separate participant),
+**So that** the participant list shows the correct number of people and I can see who is sharing.
+
+**Acceptance Criteria:**
+
+**Given** a participant starts screen sharing on macOS/Linux (using Core sidecar)
+**When** the Core connects to LiveKit with a separate identity (e.g., `user-123-screen`)
+**Then** the UI does NOT show this as a separate participant in the participant list
+
+**And** the screen share track is associated with the main participant:
+  - Main participant shows "Sharing" badge/indicator
+  - Screen share video displays with sharer's name attribution
+  - Participant count remains accurate (doesn't double-count)
+
+**And** the association uses participant metadata:
+  - Screen share token includes `metadata: { parentIdentity: "<main-user-id>", isScreenShare: true }`
+  - Client filters participants where `metadata.isScreenShare === true` from participant list
+  - Client looks up `parentIdentity` to associate screen track with real participant
+
+**And** when screen sharing stops:
+  - The `-screen` participant disconnects automatically (Core leaves room)
+  - Main participant's "Sharing" badge is removed
+  - No orphaned participants remain in list
+
+**And** the viewer experience is seamless:
+  - Viewers see one participant entry with screen share indicator
+  - Screen share video element shows sharer's display name
+  - Stopping screen share notification shows real participant name
+
+**Prerequisites:** Story 3.1, Story 3.10
+
+**Technical Notes:**
+- Server: Generate screen share token with metadata containing `parentIdentity` and `isScreenShare: true`
+- Client: Filter `participants.filter(p => !p.metadata?.isScreenShare)` for participant list
+- Client: Find screen share participant via `participants.find(p => p.metadata?.parentIdentity === mainId)`
+- Update `MeetingRoom.tsx` participant rendering logic
+- Update `useScreenShare.ts` to read screen share track from associated participant
+- LiveKit metadata is set via access token claims, not client-side
+
+**FRs Addressed:** FR15, FR16 (screen share UX)
+
+---
+
+### Story 3.12: Source Picker Thumbnail Previews
+
+**As a** user starting screen share on macOS/Linux,
+**I want** to see thumbnail previews of each screen and window in the source picker,
+**So that** I can visually identify which source to share without guessing from names alone.
+
+**Acceptance Criteria:**
+
+**Given** I click to start screen sharing on macOS/Linux
+**When** the source picker dialog appears
+**Then** each screen/window shows a thumbnail preview image (not just an icon)
+
+**And** thumbnails are captured during source enumeration:
+  - Thumbnail size: ~320x180 pixels
+  - Format: JPEG encoded as base64 string
+  - Each source shows its actual current content
+
+**And** the UI handles missing thumbnails gracefully:
+  - Show icon placeholder if thumbnail capture fails
+  - Show loading state while thumbnails are being captured
+
+**And** enumeration performance is acceptable:
+  - Total enumeration time < 2 seconds for typical source counts
+  - Thumbnails may load progressively if needed
+
+**Prerequisites:** Story 3.1, Story 3.10
+
+**Technical Notes:**
+- Core (Rust):
+  - Add `thumbnail: Option<String>` to `ScreenInfo` and `WindowInfo` structs
+  - Capture single frame from each source during `enumerate_sources()`
+  - Scale to 320x180, JPEG encode, base64 encode
+  - May need `image` crate for JPEG encoding
+  - Challenge: DesktopCapturer uses async callbacks, need synchronous capture pattern
+- Client (TypeScript):
+  - Update `ScreenInfo`/`WindowInfo` types in `lib/core.ts`
+  - Update `SourcePickerDialog` to display thumbnail images
+  - Show placeholder icon when thumbnail is null/undefined
+
+**FRs Addressed:** FR15 (screen share UX)
+
+---
+
 ## Epic 4: Real-Time Annotations
 
 **Goal:** Enable users to draw on shared screens in real-time with sub-200ms latency - THE CORE VALUE PROPOSITION of NAMELESS. This is the "pointing finger" moment.

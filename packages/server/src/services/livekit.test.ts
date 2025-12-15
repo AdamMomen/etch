@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { generateToken, getLiveKitConfig, getLiveKitUrl } from './livekit'
+import { generateToken, generateScreenShareToken, getLiveKitConfig, getLiveKitUrl } from './livekit'
 import { TOKEN_EXPIRY_SECONDS } from '@nameless/shared'
 
 // We need to test the actual token generation to verify structure
@@ -214,6 +214,126 @@ describe('livekit service', () => {
 
         expect(metadata.role).toBe(role)
       }
+    })
+  })
+
+  describe('generateScreenShareToken', () => {
+    it('should generate a valid JWT token for screen share', async () => {
+      const token = await generateScreenShareToken(
+        'abc-def-ghj',
+        'participant-uuid-123',
+        'BMad'
+      )
+
+      // Token should be a non-empty string
+      expect(token).toBeDefined()
+      expect(typeof token).toBe('string')
+      expect(token.length).toBeGreaterThan(0)
+
+      // JWT format: header.payload.signature
+      const parts = token.split('.')
+      expect(parts.length).toBe(3)
+    })
+
+    it('should use separate identity for screen share (AC-3.11.3)', async () => {
+      const participantId = 'participant-uuid-123'
+
+      const token = await generateScreenShareToken(
+        'abc-def-ghj',
+        participantId,
+        'BMad'
+      )
+
+      const payload = JSON.parse(
+        Buffer.from(token.split('.')[1], 'base64').toString()
+      )
+
+      // Identity should be suffixed with -screenshare
+      expect(payload.sub).toBe(`${participantId}-screenshare`)
+    })
+
+    it('should include name with (Screen) suffix', async () => {
+      const name = 'BMad'
+
+      const token = await generateScreenShareToken(
+        'abc-def-ghj',
+        'participant-uuid-123',
+        name
+      )
+
+      const payload = JSON.parse(
+        Buffer.from(token.split('.')[1], 'base64').toString()
+      )
+
+      expect(payload.name).toBe(`${name} (Screen)`)
+    })
+
+    it('should include isScreenShare: true in metadata (AC-3.11.3)', async () => {
+      const token = await generateScreenShareToken(
+        'abc-def-ghj',
+        'participant-uuid-123',
+        'BMad'
+      )
+
+      const payload = JSON.parse(
+        Buffer.from(token.split('.')[1], 'base64').toString()
+      )
+
+      const metadata = JSON.parse(payload.metadata)
+      expect(metadata.isScreenShare).toBe(true)
+    })
+
+    it('should include parentId pointing to main participant (AC-3.11.3)', async () => {
+      const participantId = 'participant-uuid-123'
+
+      const token = await generateScreenShareToken(
+        'abc-def-ghj',
+        participantId,
+        'BMad'
+      )
+
+      const payload = JSON.parse(
+        Buffer.from(token.split('.')[1], 'base64').toString()
+      )
+
+      const metadata = JSON.parse(payload.metadata)
+      expect(metadata.parentId).toBe(participantId)
+    })
+
+    it('should have role "screenshare" in metadata', async () => {
+      const token = await generateScreenShareToken(
+        'abc-def-ghj',
+        'participant-uuid-123',
+        'BMad'
+      )
+
+      const payload = JSON.parse(
+        Buffer.from(token.split('.')[1], 'base64').toString()
+      )
+
+      const metadata = JSON.parse(payload.metadata)
+      expect(metadata.role).toBe('screenshare')
+    })
+
+    it('should have restricted room grants (publish only, no subscribe)', async () => {
+      const roomId = 'abc-def-ghj'
+
+      const token = await generateScreenShareToken(
+        roomId,
+        'participant-uuid-123',
+        'BMad'
+      )
+
+      const payload = JSON.parse(
+        Buffer.from(token.split('.')[1], 'base64').toString()
+      )
+
+      expect(payload.video).toBeDefined()
+      expect(payload.video.room).toBe(roomId)
+      expect(payload.video.roomJoin).toBe(true)
+      expect(payload.video.canPublish).toBe(true)
+      expect(payload.video.canSubscribe).toBe(false) // Screen share doesn't need to subscribe
+      expect(payload.video.canPublishData).toBe(false)
     })
   })
 })

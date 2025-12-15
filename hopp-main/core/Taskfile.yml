@@ -1,0 +1,55 @@
+version: "3"
+
+vars:
+  DEFAULT_TARGET:
+    sh: rustc -vV | awk '/host:/ {print $2}'
+  OS:
+    sh: |
+      if [[ $(rustc -vV | awk '/host:/ {print $2}') == *windows* ]]; then
+        echo "win"
+      else
+        echo "mac"
+      fi
+  ARCH:
+    sh: |
+      if [[ $(rustc -vV | awk '/host:/ {print $2}') == *aarch64* ]]; then
+        echo "arm64"
+      else
+        echo "x64"
+      fi
+
+tasks:
+  dev:
+    desc: Run the core process.
+    cmds:
+      - |
+        cargo run --bin hopp_core
+    env:
+      HOPP_CORE_BIN_DEFAULT: "1"
+
+  build_dev:
+    desc: Build the core process.
+    cmds:
+      - |
+        cargo build --target {{.DEFAULT_TARGET}}
+
+  release:
+    desc: Builds release core process, it takes two argument vars, OS (mac | win) and AARCH (arm64 | x64)
+    vars:
+      TARGET_ARCH:
+        sh: |
+          if [[ "{{.ARCH}}" == "arm64" ]]; then
+            echo "aarch64"
+          elif [[ "{{.ARCH}}" == "x64" ]]; then
+            echo "x86_64"
+          fi
+      TARGET_OS:
+        sh: |
+          if [[ "{{.OS}}" == "mac" ]]; then
+            echo "apple-darwin"
+          elif [[ "{{.OS}}" == "win" ]]; then
+            echo "pc-windows-msvc"
+          fi
+    cmds:
+      - |
+        cargo build --release --target {{.TARGET_ARCH}}-{{.TARGET_OS}}

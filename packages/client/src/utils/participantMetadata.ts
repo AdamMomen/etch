@@ -8,6 +8,10 @@ import { PARTICIPANT_COLORS } from '@nameless/shared'
 export interface ParticipantMetadata {
   role: Role
   color: string
+  /** True if this participant is a screen share connection (not a real user) */
+  isScreenShare?: boolean
+  /** If isScreenShare is true, this is the identity of the main participant */
+  parentId?: string
 }
 
 /**
@@ -42,7 +46,11 @@ export function parseParticipantMetadata(metadata: string): ParticipantMetadata 
       ? parsed.color
       : DEFAULT_METADATA.color
 
-    return { role, color }
+    // Extract screen share fields if present
+    const isScreenShare = parsed.isScreenShare === true
+    const parentId = typeof parsed.parentId === 'string' ? parsed.parentId : undefined
+
+    return { role, color, isScreenShare, parentId }
   } catch {
     return DEFAULT_METADATA
   }

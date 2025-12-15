@@ -66,6 +66,7 @@ export function JoinRoom() {
       setCurrentRoom({
         roomId,
         token: response.token,
+        screenShareToken: response.screenShareToken,
         livekitUrl: response.livekitUrl,
       })
 

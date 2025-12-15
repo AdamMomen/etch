@@ -1,0 +1,70 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "build": {
+    "beforeDevCommand": "yarn dev",
+    "beforeBuildCommand": "yarn build && rm -rf ./dist/assets/*.js.map",
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420"
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "category": "DeveloperTool",
+    "macOS": {
+      "entitlements": "entitlements.plist"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    },
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
+    "externalBin": ["../../core/target/debug/hopp_core"],
+    "resources": {
+      "../../core/resources/*": "resources/core/",
+      "resources/sounds/*": "resources/sounds/"
+    },
+    "createUpdaterArtifacts": true
+  },
+  "productName": "hopp",
+  "mainBinaryName": "hopp",
+  "version": "0.0.51",
+  "identifier": "com.hopp.app",
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkwQkQ0NjlDQ0Q0QkM4QTQKUldTa3lFdk5uRWE5a003RnhYVXV6OFZYc05UWFVBenRYTnhON2N5Zy8rVUYyd1JXRDNURVBGQ3MK",
+      "endpoints": ["https://github.com/gethopp/hopp-releases/releases/latest/download/latest.json"]
+    },
+    "deep-link": {
+      "desktop": {
+        "schemes": ["hopp"]
+      }
+    }
+  },
+  "app": {
+    "security": {
+      "csp": null
+    },
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "hopp-windowbar",
+        "width": 400,
+        "height": 500,
+        "resizable": false,
+        "visible": false,
+        "hiddenTitle": true,
+        "decorations": false,
+        "focus": false,
+        "fullscreen": false,
+        "transparent": true,
+        "skipTaskbar": true,
+        "alwaysOnTop": true,
+        "useHttpsScheme": true,
+        "dragDropEnabled": false,
+        "additionalBrowserArgs": "--disable-features=msWebOOUI,msPdfOOUI,msSmartScreenProtection --autoplay-policy=no-user-gesture-required"
+      }
+    ]
+  }
+}

@@ -12,6 +12,7 @@ release/
 
 # Tauri build artifacts
 packages/client/src-tauri/target/
+packages/client/src-tauri/binaries/
 *.dmg
 *.msi
 *.app
@@ -54,4 +55,6 @@ coverage/
 *.tmp
 *.temp
 
+# Shared Rust target directory (see .cargo/config.toml)
+target/
 packages/core/target/

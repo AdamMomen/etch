@@ -707,6 +707,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "core-foundation"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b2a6cd9ae233e7f62ba4e9353e81a88df7fc8a5987b8d445b4d90c879bd156f6"
+dependencies = [
+ "core-foundation-sys",
+ "libc",
+]
+
+[[package]]
 name = "core-foundation-sys"
 version = "0.8.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -719,8 +729,21 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c07782be35f9e1140080c6b96f0d44b739e2278479f64e02fdab4e32dfd8b081"
 dependencies = [
  "bitflags 1.3.2",
- "core-foundation",
- "core-graphics-types",
+ "core-foundation 0.9.4",
+ "core-graphics-types 0.1.3",
+ "foreign-types 0.5.0",
+ "libc",
+]
+
+[[package]]
+name = "core-graphics"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa95a34622365fa5bbf40b20b75dba8dfa8c94c734aea8ac9a5ca38af14316f1"
+dependencies = [
+ "bitflags 2.10.0",
+ "core-foundation 0.10.1",
+ "core-graphics-types 0.2.0",
  "foreign-types 0.5.0",
  "libc",
 ]
@@ -732,7 +755,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "45390e6114f68f718cc7a830514a96f903cccd70d02a8f6d9f643ac4ba45afaf"
 dependencies = [
  "bitflags 1.3.2",
- "core-foundation",
+ "core-foundation 0.9.4",
+ "libc",
+]
+
+[[package]]
+name = "core-graphics-types"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d44a101f213f6c4cdc1853d4b78aef6db6bdfa3468798cc1d9912f4735013eb"
+dependencies = [
+ "bitflags 2.10.0",
+ "core-foundation 0.10.1",
  "libc",
 ]
 
@@ -1793,6 +1827,7 @@ dependencies = [
 [[package]]
 name = "libwebrtc"
 version = "0.3.12"
+source = "git+https://github.com/gethopp/rust-sdks?branch=patches#5b1d38ab207f8869e961334e152816a95b070600"
 dependencies = [
  "cxx",
  "jni",
@@ -1848,6 +1883,7 @@ checksum = "11d3d7f243d5c5a8b9bb5d6dd2b1602c0cb0b9db1621bafc7ed66e35ff9fe092"
 [[package]]
 name = "livekit"
 version = "0.7.14"
+source = "git+https://github.com/gethopp/rust-sdks?branch=patches#5b1d38ab207f8869e961334e152816a95b070600"
 dependencies = [
  "bmrng",
  "bytes",
@@ -1872,6 +1908,7 @@ dependencies = [
 [[package]]
 name = "livekit-api"
 version = "0.4.4"
+source = "git+https://github.com/gethopp/rust-sdks?branch=patches#5b1d38ab207f8869e961334e152816a95b070600"
 dependencies = [
  "async-tungstenite",
  "base64 0.21.7",
@@ -1899,6 +1936,7 @@ dependencies = [
 [[package]]
 name = "livekit-protocol"
 version = "0.4.0"
+source = "git+https://github.com/gethopp/rust-sdks?branch=patches#5b1d38ab207f8869e961334e152816a95b070600"
 dependencies = [
  "futures-util",
  "livekit-runtime",
@@ -1915,6 +1953,7 @@ dependencies = [
 [[package]]
 name = "livekit-runtime"
 version = "0.4.0"
+source = "git+https://github.com/gethopp/rust-sdks?branch=patches#5b1d38ab207f8869e961334e152816a95b070600"
 dependencies = [
  "tokio",
  "tokio-stream",
@@ -1988,7 +2027,7 @@ checksum = "7ecfd3296f8c56b7c1f6fbac3c71cefa9d78ce009850c45000015f206dc7fa21"
 dependencies = [
  "bitflags 2.10.0",
  "block",
- "core-graphics-types",
+ "core-graphics-types 0.1.3",
  "foreign-types 0.5.0",
  "log",
  "objc",
@@ -2056,6 +2095,7 @@ dependencies = [
  "anyhow",
  "ashpd",
  "base64 0.22.1",
+ "core-graphics 0.24.0",
  "livekit",
  "objc2 0.5.2",
  "objc2-core-graphics",
@@ -3196,7 +3236,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "897b2245f0b511c87893af39b033e5ca9cce68824c4d7e7630b5a1d339658d02"
 dependencies = [
  "bitflags 2.10.0",
- "core-foundation",
+ "core-foundation 0.9.4",
  "core-foundation-sys",
  "libc",
  "security-framework-sys",
@@ -3485,7 +3525,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba3a3adc5c275d719af8cb4272ea1c4a6d668a777f37e115f6d11ddbc1c8e0e7"
 dependencies = [
  "bitflags 1.3.2",
- "core-foundation",
+ "core-foundation 0.9.4",
  "system-configuration-sys",
 ]
 
@@ -4176,6 +4216,7 @@ dependencies = [
 [[package]]
 name = "webrtc-sys"
 version = "0.3.9"
+source = "git+https://github.com/gethopp/rust-sdks?branch=patches#5b1d38ab207f8869e961334e152816a95b070600"
 dependencies = [
  "cc",
  "cxx",
@@ -4188,6 +4229,7 @@ dependencies = [
 [[package]]
 name = "webrtc-sys-build"
 version = "0.3.7"
+source = "git+https://github.com/gethopp/rust-sdks?branch=patches#5b1d38ab207f8869e961334e152816a95b070600"
 dependencies = [
  "anyhow",
  "fs2",
@@ -4262,7 +4304,7 @@ dependencies = [
  "block",
  "bytemuck",
  "cfg_aliases 0.1.1",
- "core-graphics-types",
+ "core-graphics-types 0.1.3",
  "glow",
  "glutin_wgl_sys",
  "gpu-alloc",
@@ -4770,8 +4812,8 @@ dependencies = [
  "calloop",
  "cfg_aliases 0.2.1",
  "concurrent-queue",
- "core-foundation",
- "core-graphics",
+ "core-foundation 0.9.4",
+ "core-graphics 0.23.2",
  "cursor-icon",
  "dpi",
  "js-sys",

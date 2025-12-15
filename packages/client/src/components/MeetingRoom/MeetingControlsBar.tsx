@@ -9,12 +9,23 @@ interface MeetingControlsBarProps {
   room: Room | null
   onLeave: () => void
   onInvite?: () => void
+  // Screen share state and handlers
+  isLocalSharing: boolean
+  canShare: boolean
+  sharerName: string | null
+  onStartScreenShare: () => void
+  onStopScreenShare: () => void
 }
 
 export function MeetingControlsBar({
   room,
   onLeave,
   onInvite,
+  isLocalSharing,
+  canShare,
+  sharerName,
+  onStartScreenShare,
+  onStopScreenShare,
 }: MeetingControlsBarProps) {
   return (
     <footer className="flex h-16 shrink-0 items-center justify-center gap-3 border-t bg-background px-4">
@@ -25,7 +36,13 @@ export function MeetingControlsBar({
       <CameraButton room={room} />
 
       {/* Screen Share */}
-      <ScreenShareButton room={room} />
+      <ScreenShareButton
+        isLocalSharing={isLocalSharing}
+        canShare={canShare}
+        sharerName={sharerName}
+        onStartShare={onStartScreenShare}
+        onStopShare={onStopScreenShare}
+      />
 
       {/* Invite Participants */}
       {onInvite && (

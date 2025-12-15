@@ -1,0 +1,25 @@
+<div>
+  <img class="avatar" src="{{ .User.AvatarURL }}" />
+  <h2>Welcome {{.User.FirstName}}</h2>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<script>
+  function eraseCookie(name) {
+      document.cookie = name + '=; Max-Age=-99999999;';
+  }
+
+  function logout() {
+      eraseCookie('session');
+      window.location.href = '/logout';
+  }
+
+  // Check if we should redirect to the app
+  const shouldRedirect = {{.ShouldRedirect}};
+  if (shouldRedirect) {
+      // Small delay to ensure the page loads first
+      setTimeout(() => {
+          window.location.href = '/authenticate-app';
+      }, 500);
+  }
+</script>

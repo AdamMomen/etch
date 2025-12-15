@@ -74,6 +74,46 @@ export async function generateToken(
 }
 
 /**
+ * Generates a LiveKit JWT token for screen share (separate identity).
+ *
+ * This token has a different identity (participantId-screenshare) so it can
+ * connect separately from the main participant connection. This allows the
+ * native Core process to publish screen share while WebView handles other tracks.
+ *
+ * @param roomId - The room ID to grant access to
+ * @param participantId - The unique identifier for the main participant
+ * @param name - The display name of the participant
+ * @returns A promise that resolves to the JWT token string
+ */
+export async function generateScreenShareToken(
+  roomId: string,
+  participantId: string,
+  name: string
+): Promise<string> {
+  const { apiKey, apiSecret } = getLiveKitConfig()
+
+  // Create token with separate identity for screen share
+  const screenShareIdentity = `${participantId}-screenshare`
+  const token = new AccessToken(apiKey, apiSecret, {
+    identity: screenShareIdentity,
+    name: `${name} (Screen)`,
+    metadata: JSON.stringify({ role: 'screenshare', parentId: participantId, isScreenShare: true }),
+    ttl: TOKEN_EXPIRY_SECONDS,
+  })
+
+  // Add room grants - only publish screen share, subscribe to nothing
+  token.addGrant({
+    room: roomId,
+    roomJoin: true,
+    canPublish: true,
+    canSubscribe: false, // Screen share connection doesn't need to subscribe
+    canPublishData: false,
+  })
+
+  return await token.toJwt()
+}
+
+/**
  * Gets the LiveKit WebSocket URL.
  *
  * @returns The LiveKit URL from environment or default

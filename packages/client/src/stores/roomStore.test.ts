@@ -23,6 +23,7 @@ describe('roomStore', () => {
         roomId: 'test-room',
         token: 'test-token',
         livekitUrl: 'wss://livekit.example.com',
+        screenShareToken: 'test-screen-share-token',
       }
 
       act(() => {
@@ -36,7 +37,7 @@ describe('roomStore', () => {
       // Set up some state
       act(() => {
         useRoomStore.setState({
-          currentRoom: { roomId: 'test', token: 'token', livekitUrl: 'wss://lk.com' },
+          currentRoom: { roomId: 'test', token: 'token', livekitUrl: 'wss://lk.com', screenShareToken: 'screen-token' },
           isConnected: true,
           localParticipant: { id: '1', name: 'Test', role: 'host', color: '#f97316', isLocal: true },
           remoteParticipants: [{ id: '2', name: 'Other', role: 'annotator', color: '#06b6d4', isLocal: false }],

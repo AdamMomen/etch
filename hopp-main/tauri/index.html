@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hopp - Remote pairing app</title>
+  </head>
+
+  <body>
+    <div id="root" class="main-app"></div>
+    <script type="module" src="/src/windows/main-window/main.tsx"></script>
+  </body>
+
+  <script>
+    /**
+     * Inject OS class that will help style
+     * differently based on the OS
+     */
+     const flag = "%VITE_OS%"
+     if(["windows", "macos"].includes(flag)){
+      const element = document.getElementById("root");
+      element.classList.add(flag);
+     }
+  </script>
+</html>

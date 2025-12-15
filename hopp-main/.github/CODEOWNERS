@@ -1,0 +1,14 @@
+# File specific owners
+*.ts @konsalex
+*.go @konsalex
+*.js @konsalex
+*.rs @iparaskev
+
+
+
+# Package specific owners
+tauri/src-tauri/ @iparaskev
+core/ @iparaskev
+web-app/ @konsalex
+backend/ @konsalex
+tauri/src/ @konsalex

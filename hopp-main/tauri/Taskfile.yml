@@ -1,0 +1,107 @@
+version: "3"
+
+vars:
+  OS: "mac"
+  ARCH: "arm64"
+
+includes:
+  core:
+    taskfile: ../core/Taskfile.yml
+    dir: ../core
+
+env:
+  VITE_BOTTOM_ARROW:
+    sh: |
+      if [[ $(rustc -vV | awk '/host:/ {print $2}') == *windows* ]]; then
+        echo "true"
+      else
+        echo "false"
+      fi
+  VITE_OS:
+    sh: |
+      if [[ $(rustc -vV | awk '/host:/ {print $2}') == *windows* ]]; then
+        echo "windows"
+      elif [[ $(rustc -vV | awk '/host:/ {print $2}') == *linux* ]]; then
+        echo "linux"
+      else
+        echo "macos"
+      fi
+
+tasks:
+  dev:
+    desc: Start the Tauri development server.
+    cmds:
+      - task: core:build_dev
+      - |
+        yarn tauri dev
+    dotenv: [".env.dev"]
+    env:
+      RUST_LOG: trace
+      RUST_BACKTRACE: full
+
+  start-replica-app:
+    desc: Update the port in configuration files and starts a new tauri app
+    summary: |
+      Changing directly tauri.conf.json will cause tauri process to refresh
+      and end up looking for another port. To fix this one process will use the root tauri
+      and the other a tmp created file.
+    dotenv: [".env.dev"]
+    env:
+      HOPP_SUFFIX: "_repl"
+      VITE_PORT: 1421
+    cmds:
+      - |
+        # Create repl hopp_core binary
+        ARGS=""
+        TEMP_FILE=$(mktemp /tmp/tauri.conf.json.XXXXXX)
+        if [[ "{{.VITE_OS}}" == "windows" ]]; then
+          TEMP_FILE=$(cygpath -w $TEMP_FILE)
+          mkdir -p src-tauri/target-dev/debug
+          cp src-tauri/target/debug/hopp_core.exe src-tauri/target-dev/debug/hopp_core_repl.exe
+          ARGS="--no-watch -- --target-dir target-dev"
+        else
+          cp src-tauri/target/debug/hopp_core src-tauri/target/debug/hopp_core_repl
+        fi
+        # Copy the contents of tauri.conf.json to the temporary file
+        cp src-tauri/tauri.conf.json "$TEMP_FILE"
+        if [[ "{{.VITE_OS}}" == "linux" || "{{.VITE_OS}}" == "windows" ]]; then
+          SED_INPLACE="sed -i"
+        else
+          SED_INPLACE="sed -i ''"
+        fi
+        $SED_INPLACE 's#"devPath": "http://localhost:[0-9]*"#"devPath": "http://localhost:"#' "$TEMP_FILE"
+        $SED_INPLACE 's/"productName": "hopp"/"productName": "hopp_repl"/' "$TEMP_FILE"
+        $SED_INPLACE 's/"beforeDevCommand": "yarn dev"/"beforeDevCommand": "yarn dev:replica"/' "$TEMP_FILE"
+        # Run the Tauri development server using the temporary configuration file
+        RUST_LOG=info yarn tauri dev -c "$TEMP_FILE" $ARGS
+
+  generate-openapi-types:
+    desc: Generate type-safe code from the OpenAPI specification.
+    cmds:
+      - yarn generate-openapi-types
+
+  release:
+    desc: Bundle app, it takes two argument vars, OS (mac | win) and AARCH (arm64 | x64)
+    vars:
+      TARGET_ARCH:
+        sh: |
+          if [[ "{{.ARCH}}" == "arm64" ]]; then
+            echo "aarch64"
+          elif [[ "{{.ARCH}}" == "x64" ]]; then
+            echo "x86_64"
+          fi
+      TARGET_OS:
+        sh: |
+          if [[ "{{.OS}}" == "mac" ]]; then
+            echo "apple-darwin"
+          elif [[ "{{.OS}}" == "win" ]]; then
+            echo "pc-windows-msvc"
+          fi
+    dotenv: [".env"]
+    cmds:
+      - task: core:release
+        vars:
+          OS: "{{.OS}}"
+          ARCH: "{{.ARCH}}"
+      - |
+        yarn tauri build --target {{.TARGET_ARCH}}-{{.TARGET_OS}} --config src-tauri/tauri.conf.rel.json

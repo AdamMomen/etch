@@ -1,0 +1,19 @@
+meta {
+  name: Test JWT
+  type: http
+  seq: 3
+}
+
+get {
+  url: https://localhost:1926/api/jwt-debug?email=michael@dundermifflin.com
+  body: none
+  auth: none
+}
+
+params:query {
+  email: michael@dundermifflin.com
+}
+
+docs {
+  This endpoint generates JWT to be used for debug purposes
+}

@@ -1,0 +1,36 @@
+version: "3"
+
+includes:
+  core:
+    taskfile: ./core
+    dir: ./core
+  livekit:
+    taskfile: ./livekit-local-server
+    dir: ./livekit-local-server
+  app:
+    taskfile: ./tauri
+    dir: ./tauri
+  backend:
+    taskfile: ./backend
+    dir: ./backend
+  webapp:
+    taskfile: ./web-app
+    dir: ./web-app
+
+dotenv: ["./packaging/.env", "./tauri/.env"]
+
+tasks:
+  dev-reload:
+    desc: Run all development server in parallel with webapp
+    summary: |
+      Cannot run inside the backend directory because we cannot have --parallel
+      between different task files for different levels
+    cmds:
+      - task --parallel backend:dev webapp:watch-dev webapp:watch-dev-built
+    env:
+      ENV_STACK: local
+
+  dev-server:
+    desc: Run livekit server and go server together
+    cmds:
+      - task --parallel livekit:start-server backend:dev

@@ -2,9 +2,13 @@
 //!
 //! Handles connection to LiveKit server, track publishing/subscribing,
 //! and DataTrack messaging for annotations and chat.
+//!
+//! Uses runtime.block_on() pattern (like Hopp) to ensure WebRTC operations
+//! are properly driven by a dedicated tokio runtime.
 
 use std::sync::Arc;
 
+use base64::Engine;
 use livekit::options::{TrackPublishOptions, VideoCodec, VideoEncoding};
 use livekit::prelude::*;
 use livekit::publication::LocalTrackPublication;
@@ -24,72 +28,292 @@ pub struct ScreenShareTrack {
     publication: LocalTrackPublication,
 }
 
-/// LiveKit room service
+/// LiveKit room service with dedicated tokio runtime
+///
+/// Following Hopp's pattern: uses runtime.block_on() for synchronous API
+/// to ensure WebRTC async operations are properly driven.
 pub struct RoomService {
+    /// Dedicated async runtime (kept alive for the lifetime of RoomService)
+    runtime: Arc<tokio::runtime::Runtime>,
+    /// LiveKit server URL
+    server_url: String,
+    /// Event proxy for winit event loop
     event_proxy: EventLoopProxy<UserEvent>,
+    /// Connected room (if any)
     room: Arc<Mutex<Option<Room>>>,
+    /// Screen share track (if any)
     screen_share_track: Arc<Mutex<Option<ScreenShareTrack>>>,
-    /// Channel sender for stopping the event handler task
-    _shutdown_tx: Option<mpsc::Sender<()>>,
 }
 
 impl RoomService {
-    /// Connect to a LiveKit room
-    pub async fn connect(
-        server_url: &str,
-        token: &str,
+    /// Create a new RoomService with its own tokio runtime
+    pub fn new(
+        server_url: String,
         event_proxy: EventLoopProxy<UserEvent>,
-    ) -> anyhow::Result<Self> {
-        tracing::info!("Connecting to LiveKit room: {}", server_url);
+    ) -> std::io::Result<Self> {
+        eprintln!("[DEBUG] RoomService::new - creating runtime");
 
-        // Connect to LiveKit room
-        let (room, mut room_events) =
-            Room::connect(server_url, token, RoomOptions::default()).await?;
+        // Create dedicated tokio runtime (like Hopp)
+        let runtime = tokio::runtime::Builder::new_multi_thread()
+            .enable_all()
+            .thread_name("livekit-runtime")
+            .build()?;
 
-        let room_name = room.name().to_string();
-        let room_sid = room.sid().await;
-        tracing::info!(
-            "Connected to LiveKit room: {} ({})",
-            room_name,
-            String::from(room_sid)
-        );
+        eprintln!("[DEBUG] RoomService::new - runtime created");
 
-        // Clone for the event handler
-        let event_proxy_clone = event_proxy.clone();
+        Ok(Self {
+            runtime: Arc::new(runtime),
+            server_url,
+            event_proxy,
+            room: Arc::new(Mutex::new(None)),
+            screen_share_track: Arc::new(Mutex::new(None)),
+        })
+    }
 
-        // Create shutdown channel
-        let (shutdown_tx, mut shutdown_rx) = mpsc::channel::<()>(1);
+    /// Connect to the LiveKit room (blocking)
+    pub fn connect(&self, token: String) -> Result<(), String> {
+        eprintln!("[DEBUG] RoomService::connect - starting");
+        eprintln!("[DEBUG] Token length: {} chars", token.len());
 
-        // Spawn event handler task
-        tokio::spawn(async move {
-            loop {
-                tokio::select! {
-                    Some(event) = room_events.recv() => {
-                        Self::handle_room_event(event, &event_proxy_clone);
-                    }
-                    _ = shutdown_rx.recv() => {
-                        tracing::info!("Room event handler shutting down");
-                        break;
-                    }
+        // Decode and print token claims for debugging (JWT is base64)
+        if let Some(payload) = token.split('.').nth(1) {
+            if let Ok(decoded) = base64::Engine::decode(&base64::engine::general_purpose::URL_SAFE_NO_PAD, payload) {
+                if let Ok(claims) = String::from_utf8(decoded) {
+                    eprintln!("[DEBUG] Token claims: {}", claims);
+                }
+            }
+        }
+
+        let server_url = self.server_url.clone();
+        let event_proxy = self.event_proxy.clone();
+        let room_holder = self.room.clone();
+
+        // Use runtime.block_on() to drive the async operation
+        // This ensures the WebRTC connection is properly polled
+        eprintln!("[DEBUG] RoomService::connect - calling runtime.block_on()");
+
+        let result = self.runtime.block_on(async move {
+            eprintln!("[DEBUG] Inside block_on - calling Room::connect to {}", server_url);
+
+            // Close existing room if any
+            {
+                let mut room_guard = room_holder.lock();
+                if let Some(room) = room_guard.take() {
+                    eprintln!("[DEBUG] Closing existing room");
+                    let _ = room.close().await;
+                }
+            }
+
+            // Connect with timeout - increased to 45s for cloud connections
+            eprintln!("[DEBUG] Starting Room::connect with 45s timeout...");
+            let connect_future = Room::connect(&server_url, &token, RoomOptions::default());
+
+            match tokio::time::timeout(std::time::Duration::from_secs(45), connect_future).await {
+                Ok(Ok((room, room_events))) => {
+                    let room_name = room.name().to_string();
+                    let room_sid = room.sid();
+                    eprintln!("[DEBUG] SUCCESS: Connected to room: {} (sid: {})", room_name, room_sid);
+
+                    // Store room
+                    *room_holder.lock() = Some(room);
+                    eprintln!("[DEBUG] Room stored in holder");
+
+                    // Notify winit event loop
+                    let _ = event_proxy.send_event(UserEvent::RoomConnected { room_name });
+
+                    // Return the event receiver for spawning the handler
+                    Ok(room_events)
+                }
+                Ok(Err(e)) => {
+                    eprintln!("[DEBUG] Room::connect FAILED: {:?}", e);
+                    eprintln!("[DEBUG] Error details: {}", e);
+                    Err(e.to_string())
+                }
+                Err(_) => {
+                    eprintln!("[DEBUG] Room::connect TIMED OUT after 45s");
+                    eprintln!("[DEBUG] This usually indicates WebSocket or ICE connectivity issues");
+                    Err("Connection timed out after 45s".to_string())
                 }
             }
         });
 
-        // Send connected event
-        let _ = event_proxy.send_event(UserEvent::RoomConnected {
-            room_name: room_name.clone(),
-        });
+        // If connection succeeded, spawn event handler on the runtime
+        match result {
+            Ok(room_events) => {
+                eprintln!("[DEBUG] Connection succeeded, spawning event handler");
+                let event_proxy = self.event_proxy.clone();
+                self.runtime.spawn(handle_room_events(room_events, event_proxy));
+                eprintln!("[DEBUG] Event handler spawned");
+                Ok(())
+            }
+            Err(e) => Err(e),
+        }
+    }
 
-        Ok(Self {
-            event_proxy,
-            room: Arc::new(Mutex::new(Some(room))),
-            screen_share_track: Arc::new(Mutex::new(None)),
-            _shutdown_tx: Some(shutdown_tx),
+    /// Disconnect from the room
+    pub fn disconnect(&self) {
+        tracing::info!("RoomService::disconnect");
+
+        // Take room out of mutex before spawning async task
+        let room_to_close = self.room.lock().take();
+        let event_proxy = self.event_proxy.clone();
+
+        if let Some(room) = room_to_close {
+            // Fire and forget - spawn the disconnect operation
+            self.runtime.spawn(async move {
+                let _ = room.close().await;
+                tracing::info!("Room disconnected");
+                let _ = event_proxy.send_event(UserEvent::RoomDisconnected);
+            });
+        }
+    }
+
+    /// Publish screen share track (blocking), returns the video source
+    pub fn publish_screen_share(&self, width: u32, height: u32) -> Result<NativeVideoSource, String> {
+        tracing::info!("RoomService::publish_screen_share {}x{}", width, height);
+
+        let room_holder = self.room.clone();
+        let screen_share_holder = self.screen_share_track.clone();
+        let event_proxy = self.event_proxy.clone();
+
+        self.runtime.block_on(async move {
+            let room_guard = room_holder.lock();
+
+            if let Some(room) = room_guard.as_ref() {
+                tracing::info!("Publishing screen share track {}x{}", width, height);
+
+                // Create video source
+                let video_source = NativeVideoSource::new(VideoResolution { width, height });
+
+                // Create video track
+                let track = LocalVideoTrack::create_video_track(
+                    "screen_share",
+                    RtcVideoSource::Native(video_source.clone()),
+                );
+
+                // Publish the track
+                match room
+                    .local_participant()
+                    .publish_track(
+                        LocalTrack::Video(track),
+                        TrackPublishOptions {
+                            source: TrackSource::Screenshare,
+                            video_codec: VideoCodec::VP9,
+                            video_encoding: Some(VideoEncoding {
+                                max_bitrate: 4_000_000,
+                                max_framerate: 30.0,
+                            }),
+                            simulcast: false,
+                            ..Default::default()
+                        },
+                    )
+                    .await
+                {
+                    Ok(publication) => {
+                        tracing::info!("Screen share track published: {}", publication.sid());
+
+                        // Store track info
+                        let screen_share = ScreenShareTrack {
+                            video_source: video_source.clone(),
+                            publication,
+                        };
+                        *screen_share_holder.lock() = Some(screen_share);
+
+                        let _ = event_proxy.send_event(UserEvent::ScreenSharePublished);
+                        Ok(video_source)
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to publish screen share: {}", e);
+                        Err(e.to_string())
+                    }
+                }
+            } else {
+                Err("Not connected to room".to_string())
+            }
         })
     }
 
-    /// Handle LiveKit room events
-    fn handle_room_event(event: RoomEvent, event_proxy: &EventLoopProxy<UserEvent>) {
+    /// Get the video source for the current screen share (if any)
+    pub fn get_screen_share_source(&self) -> Option<NativeVideoSource> {
+        self.screen_share_track
+            .lock()
+            .as_ref()
+            .map(|t| t.video_source.clone())
+    }
+
+    /// Unpublish screen share track
+    pub fn unpublish_screen_share(&self) -> Result<(), String> {
+        tracing::info!("RoomService::unpublish_screen_share");
+
+        let room_holder = self.room.clone();
+        let screen_share_holder = self.screen_share_track.clone();
+
+        self.runtime.block_on(async move {
+            let track_info = screen_share_holder.lock().take();
+
+            if let Some(track) = track_info {
+                let room_guard = room_holder.lock();
+                if let Some(room) = room_guard.as_ref() {
+                    let _ = room
+                        .local_participant()
+                        .unpublish_track(&track.publication.sid())
+                        .await;
+                    tracing::info!("Screen share track unpublished");
+                }
+            }
+            Ok(())
+        })
+    }
+
+    /// Send data via DataTrack (blocking)
+    pub fn send_data(&self, data: Vec<u8>, reliable: bool) {
+        let room_holder = self.room.clone();
+
+        // Use block_on to ensure data is sent (Room doesn't implement Clone)
+        self.runtime.block_on(async move {
+            let room_guard = room_holder.lock();
+            if let Some(room) = room_guard.as_ref() {
+                let _ = room
+                    .local_participant()
+                    .publish_data(DataPacket {
+                        payload: data.into(),
+                        reliable,
+                        ..Default::default()
+                    })
+                    .await;
+            }
+        });
+    }
+
+    /// Set microphone muted state (placeholder)
+    pub fn set_microphone_muted(&self, muted: bool) {
+        tracing::debug!("Set microphone muted: {} (track management TBD)", muted);
+    }
+
+    /// Set camera enabled state (placeholder)
+    pub fn set_camera_enabled(&self, enabled: bool) {
+        tracing::debug!("Set camera enabled: {} (track management TBD)", enabled);
+    }
+
+    /// Set audio input device (placeholder)
+    pub fn set_audio_input_device(&self, device_id: &str) {
+        tracing::debug!("Set audio input device: {} (TBD)", device_id);
+    }
+
+    /// Set video input device (placeholder)
+    pub fn set_video_input_device(&self, device_id: &str) {
+        tracing::debug!("Set video input device: {} (TBD)", device_id);
+    }
+}
+
+/// Handle LiveKit room events
+async fn handle_room_events(
+    mut events: mpsc::UnboundedReceiver<RoomEvent>,
+    event_proxy: EventLoopProxy<UserEvent>,
+) {
+    eprintln!("[DEBUG] Room event handler started");
+
+    while let Some(event) = events.recv().await {
         match event {
             RoomEvent::ParticipantConnected(participant) => {
                 tracing::info!("Participant connected: {}", participant.identity());
@@ -98,7 +322,7 @@ impl RoomService {
                         id: participant.identity().to_string(),
                         name: participant.name().to_string(),
                         is_local: false,
-                        role: crate::ParticipantRole::Participant, // Default role
+                        role: crate::ParticipantRole::Participant,
                     },
                 ));
             }
@@ -113,36 +337,13 @@ impl RoomService {
                     },
                 ));
             }
-            RoomEvent::TrackSubscribed {
-                track,
-                publication: _,
-                participant,
-            } => {
-                tracing::info!(
-                    "Track subscribed: {} from {}",
-                    track.sid(),
-                    participant.identity()
-                );
-                // Handle subscribed tracks (remote screen shares, cameras, etc.)
+            RoomEvent::TrackSubscribed { track, participant, .. } => {
+                tracing::info!("Track subscribed: {} from {}", track.sid(), participant.identity());
             }
-            RoomEvent::TrackUnsubscribed {
-                track,
-                publication: _,
-                participant,
-            } => {
-                tracing::info!(
-                    "Track unsubscribed: {} from {}",
-                    track.sid(),
-                    participant.identity()
-                );
+            RoomEvent::TrackUnsubscribed { track, participant, .. } => {
+                tracing::info!("Track unsubscribed: {} from {}", track.sid(), participant.identity());
             }
-            RoomEvent::DataReceived {
-                payload,
-                topic: _,
-                kind,
-                participant,
-            } => {
-                // Handle incoming data (annotations, chat, etc.)
+            RoomEvent::DataReceived { payload, kind, participant, .. } => {
                 if let Some(p) = participant {
                     tracing::debug!(
                         "Data received from {}: {} bytes, reliable: {}",
@@ -171,184 +372,5 @@ impl RoomService {
             }
         }
     }
-
-    /// Disconnect from the room
-    pub async fn disconnect(&self) {
-        tracing::info!("Disconnecting from LiveKit room");
-        if let Some(room) = self.room.lock().take() {
-            let _ = room.close().await;
-        }
-    }
-
-    /// Create and publish a screen share track, returning the NativeVideoSource for capture
-    pub async fn publish_screen_share(
-        &self,
-        width: u32,
-        height: u32,
-    ) -> anyhow::Result<NativeVideoSource> {
-        let room_guard = self.room.lock();
-        let room = room_guard
-            .as_ref()
-            .ok_or_else(|| anyhow::anyhow!("Not connected to room"))?;
-
-        tracing::info!(
-            "Publishing screen share track at {}x{}",
-            width,
-            height
-        );
-
-        // Create video source
-        let video_source = NativeVideoSource::new(VideoResolution { width, height });
-
-        // Create video track
-        let track = LocalVideoTrack::create_video_track(
-            "screen_share",
-            RtcVideoSource::Native(video_source.clone()),
-        );
-
-        // Publish the track
-        let publication = room
-            .local_participant()
-            .publish_track(
-                LocalTrack::Video(track),
-                TrackPublishOptions {
-                    source: TrackSource::Screenshare,
-                    video_codec: VideoCodec::VP9,
-                    video_encoding: Some(VideoEncoding {
-                        max_bitrate: 4_000_000, // 4 Mbps
-                        max_framerate: 30.0,
-                    }),
-                    simulcast: false,
-                    ..Default::default()
-                },
-            )
-            .await?;
-
-        tracing::info!("Screen share track published: {}", publication.sid());
-
-        // Store track info
-        let screen_share = ScreenShareTrack {
-            video_source: video_source.clone(),
-            publication,
-        };
-        *self.screen_share_track.lock() = Some(screen_share);
-
-        // Notify WebView
-        let _ = self.event_proxy.send_event(UserEvent::ScreenSharePublished);
-
-        Ok(video_source)
-    }
-
-    /// Get the video source for the current screen share (if any)
-    pub fn get_screen_share_source(&self) -> Option<NativeVideoSource> {
-        self.screen_share_track
-            .lock()
-            .as_ref()
-            .map(|t| t.video_source.clone())
-    }
-
-    /// Unpublish screen share track
-    pub async fn unpublish_screen_share(&self) -> anyhow::Result<()> {
-        let track_info = self.screen_share_track.lock().take();
-        if let Some(track) = track_info {
-            let room_guard = self.room.lock();
-            if let Some(room) = room_guard.as_ref() {
-                room.local_participant()
-                    .unpublish_track(&track.publication.sid())
-                    .await?;
-                tracing::info!("Screen share track unpublished");
-            }
-        }
-        Ok(())
-    }
-
-    /// Set microphone muted state
-    /// Note: This requires manually publishing/unpublishing the audio track
-    /// For now, we log the intent - full implementation needs track management
-    pub fn set_microphone_muted(&self, muted: bool) {
-        tracing::debug!("Set microphone muted: {} (track management TBD)", muted);
-        // TODO: Implement track-based muting when audio track is published
-    }
-
-    /// Set camera enabled state
-    /// Note: This requires manually publishing/unpublishing the video track
-    pub fn set_camera_enabled(&self, enabled: bool) {
-        tracing::debug!("Set camera enabled: {} (track management TBD)", enabled);
-        // TODO: Implement track-based camera control when camera track is published
-    }
-
-    /// Set audio input device
-    pub fn set_audio_input_device(&self, device_id: &str) {
-        tracing::debug!("Set audio input device: {} (TBD)", device_id);
-        // TODO: Implement when audio devices are supported
-    }
-
-    /// Set video input device
-    pub fn set_video_input_device(&self, device_id: &str) {
-        tracing::debug!("Set video input device: {} (TBD)", device_id);
-        // TODO: Implement when video devices are supported
-    }
-
-    /// Send data via DataTrack
-    pub async fn send_data(&self, data: Vec<u8>, reliable: bool) -> anyhow::Result<()> {
-        let room_guard = self.room.lock();
-        if let Some(room) = room_guard.as_ref() {
-            room.local_participant()
-                .publish_data(DataPacket {
-                    payload: data.into(),
-                    reliable,
-                    ..Default::default()
-                })
-                .await?;
-            tracing::debug!("Data sent");
-        }
-        Ok(())
-    }
-
-    /// Send data to specific participants
-    pub async fn send_data_to(
-        &self,
-        data: Vec<u8>,
-        participant_ids: Vec<String>,
-        reliable: bool,
-    ) -> anyhow::Result<()> {
-        let room_guard = self.room.lock();
-        if let Some(room) = room_guard.as_ref() {
-            let identities: Vec<ParticipantIdentity> = participant_ids
-                .into_iter()
-                .map(ParticipantIdentity::from)
-                .collect();
-            room.local_participant()
-                .publish_data(DataPacket {
-                    payload: data.into(),
-                    reliable,
-                    destination_identities: identities,
-                    ..Default::default()
-                })
-                .await?;
-        }
-        Ok(())
-    }
-
-    /// Get local participant identity
-    pub fn local_identity(&self) -> Option<String> {
-        self.room
-            .lock()
-            .as_ref()
-            .map(|r| r.local_participant().identity().to_string())
-    }
-
-    /// Get list of remote participants
-    pub fn remote_participants(&self) -> Vec<(String, String)> {
-        self.room
-            .lock()
-            .as_ref()
-            .map(|r| {
-                r.remote_participants()
-                    .iter()
-                    .map(|(_, p)| (p.identity().to_string(), p.name().to_string()))
-                    .collect()
-            })
-            .unwrap_or_default()
-    }
+    tracing::info!("Room event handler exited");
 }

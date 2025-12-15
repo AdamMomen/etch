@@ -1,0 +1,23 @@
+version: "3"
+
+vars:
+  ROOM_NAME: '{{.ROOM_NAME| default "test_room"}}'
+
+tasks:
+  start-server:
+    desc: Starts livekit local server
+    cmds:
+      - |
+        livekit-server --dev --logging.level info
+  generate-user-token:
+    desc: Generates token for specified token
+    cmds:
+      - |
+        # Generate a random user identity (e.g., a random string)
+        USER_IDENTITY=$(uuidgen)
+        echo "Generated Identity: $USER_IDENTITY"
+        # Use the generated identity to create a token
+        TOKEN=$(lk token create --api-key devkey --api-secret secret --join --room {{.ROOM_NAME}} --identity "$USER_IDENTITY" --valid-for 24h | grep 'Access token:' | awk '{print $NF}')
+        echo $TOKEN | pbcopy
+        echo "Token is: $TOKEN"
+        echo "Access token has been copied to clipboard 📋"

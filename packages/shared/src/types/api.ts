@@ -16,6 +16,8 @@ export interface CreateRoomResponse {
   roomId: string
   /** JWT token for authenticating with LiveKit */
   token: string
+  /** JWT token for screen share (separate identity for native Core) */
+  screenShareToken: string
   /** WebSocket URL for LiveKit connection */
   livekitUrl: string
 }
@@ -36,6 +38,8 @@ export interface JoinRoomRequest {
 export interface JoinRoomResponse {
   /** JWT token for authenticating with LiveKit */
   token: string
+  /** JWT token for screen share (separate identity for native Core) */
+  screenShareToken: string
   /** WebSocket URL for LiveKit connection */
   livekitUrl: string
 }

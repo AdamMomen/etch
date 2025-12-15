@@ -1,0 +1,79 @@
+---
+title: Frequently Asked Questions
+description: Common questions and answers about using Hopp.
+---
+
+import { Aside } from '@astrojs/starlight/components';
+
+Here are answers to the most commonly asked questions about Hopp. If you don't find what you're looking for, feel free to ask in our community discussions or create an issue on GitHub.
+
+## General Questions
+
+### Is Hopp free?
+
+Hopp is proudly open-source under the AGPL-3.0 license. You are welcome to self-host it.
+We also offer a paid, hosted version for your convenience, which helps us cover infrastructure costs
+and supports the project's continued development.
+
+### What OS does Hopp support?
+
+Hopp currently supports **MacOS** and **Windows**. Because we are a team of two
+we are planning to support the latest Ubuntu LTS version in the future, and leave other Linux distributions
+for the community to support.
+
+<Aside>
+We have started working on Linux support, but it's not yet available, and frankly a bit of a pain to support.
+You can read more about the challenges in [the platform support](/quick-start/local-development/supported-platforms/#linux-support) section.
+</Aside>
+
+## Technical Questions
+
+### What are the system requirements?
+
+We are not 100% sure, but we have tested even with Lenovo ThinkCentre M720q and it worked well.
+
+### Can I use Hopp with slow internet?
+
+Yes, Hopp includes several optimizations for slower connections. You can read more around our WebRTC optimizations [in our post](https://gethopp.app/blog/latency-exploration).
+
+## Privacy and Security
+
+### Is my data secure?
+
+Yes, Hopp takes security seriously:
+
+- **End-to-end encryption**: All communication is encrypted by LiveKit
+- **Trusted services**: Our cloud offering is hosted on Render and uses Supabase as our database
+- **Self-hosting option**: Complete control over your data
+
+### What data does Hopp collect?
+
+**Default hosted version:**
+
+- Basic usage analytics (PostHog)
+- Error reports to improve stability (Sentry)
+
+**Self-hosted version:**
+
+You control all data collection, and of course this depends on how you will self-host it.
+[This is work in progress](/open-source/self-hosting/) and we will update this section as we get more experience with self-hosting.
+
+### Can I self-host Hopp?
+
+This is our goal! We are [actively working on it](/open-source/self-hosting/).
+
+## Features and Usage
+
+### How many people can join a room?
+
+The limit we have at the time being is 10 people. If you need more, please let us know!
+
+## Getting Help
+
+### Where can I get support?
+
+- **Documentation**: Start with these docs
+- **GitHub Issues**: Report bugs and request features
+- **Community Discussions**: Ask questions and get help in [GitHub Discussions](https://github.com/gethopp/hopp/discussions)
+- **Discord**: Real-time community support in [Discord](https://discord.gg/TKRpS3aMn9)
+- **Email**: For security issues or private matters at `costa (at) gethopp.app`

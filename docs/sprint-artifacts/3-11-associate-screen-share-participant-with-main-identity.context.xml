@@ -1,0 +1,253 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>11</storyId>
+    <title>Associate Screen Share Participant with Main Identity in UI</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-12-14</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-11-associate-screen-share-participant-with-main-identity.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>meeting participant</asA>
+    <iWant>the screen share to appear as coming from the actual sharer (not a separate participant)</iWant>
+    <soThat>the participant list shows the correct number of people and I can see who is sharing</soThat>
+    <tasks>
+      <task id="1" ac="3.11.3">Update server to include metadata in screen share token
+        <subtask>Modify `generateScreenShareToken()` in `livekit.ts`</subtask>
+        <subtask>Add `isScreenShare: true` to existing metadata (already has `parentId`)</subtask>
+        <subtask>NOTE: Server already uses `parentId` not `parentIdentity` - stay consistent</subtask>
+      </task>
+      <task id="2" ac="3.11.1">Filter screen share participants from participant list
+        <subtask>Update `useLiveKit.ts` to check metadata when adding remote participants</subtask>
+        <subtask>Skip adding participants where `metadata.isScreenShare === true`</subtask>
+        <subtask>Ensure screen share tracks are still processed via TrackSubscribed events</subtask>
+      </task>
+      <task id="3" ac="3.11.2">Associate screen share track with main participant
+        <subtask>In `useScreenShare.ts`, when remote screen share is detected</subtask>
+        <subtask>Parse metadata.parentId to find which main participant is sharing</subtask>
+        <subtask>Update main participant's `isScreenSharing` state</subtask>
+      </task>
+      <task id="4" ac="3.11.2">Verify "Sharing" badge displays correctly
+        <subtask>Badge already exists in Sidebar.tsx (line 139-144)</subtask>
+        <subtask>Verify badge appears when remote participant shares</subtask>
+        <subtask>Verify badge disappears when sharing stops</subtask>
+      </task>
+      <task id="5" ac="3.11.4">Handle clean disconnect
+        <subtask>Verify Core disconnects from LiveKit when screen share stops</subtask>
+        <subtask>Ensure toast for participant leave doesn't show for `-screenshare` identity</subtask>
+        <subtask>No orphaned participants in list</subtask>
+      </task>
+      <task id="6" ac="all">Write tests
+        <subtask>Test metadata includes isScreenShare in screen share token</subtask>
+        <subtask>Test participant list filtering excludes screen share participants</subtask>
+        <subtask>Test "Sharing" badge appears/disappears correctly</subtask>
+        <subtask>Test stop notification uses real participant name</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.11.1">Screen Share Participant Hidden from List
+      - Given a participant starts screen sharing on macOS/Linux (using Core sidecar)
+      - When the Core connects to LiveKit with a separate identity (e.g., `user-123-screenshare`)
+      - Then the UI does NOT show this as a separate participant in the participant list
+    </criterion>
+    <criterion id="AC-3.11.2">Screen Share Track Associated with Main Participant
+      - Given a screen share is active from a `-screenshare` identity
+      - When the UI renders the participant list and screen share
+      - Then the main participant shows a "Sharing" badge/indicator
+      - And the screen share video displays with the sharer's real name
+      - And the participant count remains accurate (doesn't double-count)
+    </criterion>
+    <criterion id="AC-3.11.3">Metadata-Based Association
+      - Given the server generates a screen share token
+      - When the token is created
+      - Then metadata includes `{ parentId: "&lt;main-user-id&gt;", isScreenShare: true }`
+      - And the client can filter/associate participants using this metadata
+    </criterion>
+    <criterion id="AC-3.11.4">Clean Disconnect on Share Stop
+      - Given a screen share is active
+      - When the sharer stops sharing
+      - Then the `-screenshare` participant disconnects automatically
+      - And the main participant's "Sharing" badge is removed
+      - And no orphaned participants remain in the list
+    </criterion>
+    <criterion id="AC-3.11.5">Seamless Viewer Experience
+      - Given I am viewing a screen share
+      - When I look at the participant list
+      - Then I see one entry for the sharer (not two)
+      - And the screen share shows the sharer's display name
+      - And stop notifications use the real participant name
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture Decision Records</title>
+        <section>ADR-007/ADR-008: Screen Capture Strategy</section>
+        <snippet>Hybrid Screen Capture: Windows uses getDisplayMedia (same connection), macOS/Linux use Rust sidecar (separate connection). LiveKit enforces unique identity per room - same identity kicks previous connection.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-3.md</path>
+        <title>Epic Technical Specification: Screen Sharing</title>
+        <section>Component Architecture</section>
+        <snippet>Screen share requires separate identity for Core sidecar connection. Native capture via LiveKit DesktopCapturer. WebView handles audio/video, Core handles screen capture.</snippet>
+      </doc>
+      <doc>
+        <path>https://docs.livekit.io/home/server/managing-participants/</path>
+        <title>LiveKit Docs: Managing Participants</title>
+        <section>Participant Metadata</section>
+        <snippet>Metadata can be set via access token claims. Participants can read each other's metadata via participant.metadata property.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>packages/server/src/services/livekit.ts</path>
+        <kind>service</kind>
+        <symbol>generateScreenShareToken</symbol>
+        <lines>88-114</lines>
+        <reason>Already generates screen share token with separate identity. Currently has metadata: { role: 'screenshare', parentId: participantId }. Need to add isScreenShare: true to metadata.</reason>
+        <existingCode>
+metadata: JSON.stringify({ role: 'screenshare', parentId: participantId })
+        </existingCode>
+      </file>
+      <file>
+        <path>packages/client/src/hooks/useLiveKit.ts</path>
+        <kind>hook</kind>
+        <symbol>handleParticipantConnected, handleParticipantDisconnected</symbol>
+        <lines>N/A</lines>
+        <reason>Need to check metadata when participant connects and skip adding to remoteParticipants if isScreenShare is true. Still need to process their tracks.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/hooks/useScreenShare.ts</path>
+        <kind>hook</kind>
+        <symbol>handleTrackSubscribed</symbol>
+        <lines>387-418</lines>
+        <reason>Already handles remote screen share events. Need to parse participant metadata to find parentId and update the correct main participant's isScreenSharing state.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/components/MeetingRoom/MeetingRoom.tsx</path>
+        <kind>component</kind>
+        <symbol>participants (useMemo)</symbol>
+        <lines>94-109</lines>
+        <reason>Combines local and remote participants for display. If filtering is done in useLiveKit, no changes needed here. Otherwise, filter here.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/components/MeetingRoom/Sidebar.tsx</path>
+        <kind>component</kind>
+        <symbol>ParticipantListItem</symbol>
+        <lines>99-168</lines>
+        <reason>Already displays "Sharing" badge when participant.isScreenSharing is true (lines 139-144). No changes needed - just verify it works.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/stores/roomStore.ts</path>
+        <kind>store</kind>
+        <symbol>addRemoteParticipant, removeRemoteParticipant</symbol>
+        <lines>74-88</lines>
+        <reason>May need to filter out screen share participants here, or in useLiveKit before calling addRemoteParticipant.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <ecosystem name="typescript/node">
+        <package name="livekit-server-sdk" version="^2.0.0" purpose="Server-side token generation with metadata" />
+        <package name="livekit-client" version="^2.16.0" purpose="Client-side participant metadata access via participant.metadata" />
+        <package name="vitest" version="^2.0.0" purpose="Unit testing" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">LiveKit enforces unique identity per room. Screen share uses separate identity: `${participantId}-screenshare`</constraint>
+    <constraint type="architecture">Core sidecar connects separately from WebView - cannot share same connection</constraint>
+    <constraint type="pattern">Use metadata-based filtering, not identity suffix matching (more robust)</constraint>
+    <constraint type="testing">Tests co-located with source files. vitest + React Testing Library. Mock LiveKit room and participants.</constraint>
+    <constraint type="ux">"Sharing" badge already exists in Sidebar - reuse existing pattern</constraint>
+    <constraint type="naming">Server uses `parentId` not `parentIdentity` - maintain consistency</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Screen Share Token Metadata (Server)</name>
+      <kind>JSON object</kind>
+      <signature>
+{
+  role: 'screenshare',
+  parentId: string,       // Main participant's UUID
+  isScreenShare: true     // NEW: Flag for filtering
+}
+      </signature>
+      <path>packages/server/src/services/livekit.ts:100</path>
+    </interface>
+    <interface>
+      <name>RemoteParticipant.metadata (LiveKit)</name>
+      <kind>string (JSON)</kind>
+      <signature>
+// Access via:
+const meta = JSON.parse(participant.metadata || '{}')
+if (meta.isScreenShare) {
+  // This is a screen share participant - don't add to list
+  const mainParticipantId = meta.parentId
+}
+      </signature>
+      <path>livekit-client</path>
+    </interface>
+    <interface>
+      <name>Participant (shared types)</name>
+      <kind>TypeScript interface</kind>
+      <signature>
+interface Participant {
+  id: string
+  name: string
+  role: Role
+  color: string
+  isLocal: boolean
+  isScreenSharing: boolean  // Used for "Sharing" badge
+  hasVideo: boolean
+  hasAudio: boolean
+  isSpeaking: boolean
+}
+      </signature>
+      <path>packages/shared/src/types/participant.ts</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Tests use vitest with React Testing Library. Test files co-located with source (.test.ts suffix). Mock LiveKit room, participants, and events. Use `describe/it/expect` pattern.
+    </standards>
+    <locations>
+      <location>packages/server/src/services/livekit.test.ts</location>
+      <location>packages/client/src/hooks/useLiveKit.test.ts</location>
+      <location>packages/client/src/hooks/useScreenShare.test.ts</location>
+      <location>packages/client/src/components/MeetingRoom/Sidebar.test.tsx</location>
+    </locations>
+    <ideas>
+      <idea ac="3.11.3">Test generateScreenShareToken includes isScreenShare: true in metadata</idea>
+      <idea ac="3.11.1">Test participant with isScreenShare metadata is not added to remoteParticipants</idea>
+      <idea ac="3.11.2">Test main participant's isScreenSharing is set to true when screen share starts</idea>
+      <idea ac="3.11.2">Test "Sharing" badge appears for main participant when remote share active</idea>
+      <idea ac="3.11.4">Test toast doesn't show for -screenshare participant disconnect</idea>
+      <idea ac="3.11.5">Test participant count excludes screen share participants</idea>
+    </ideas>
+  </tests>
+
+  <implementationNotes>
+    <note title="Key Insight: Server Already Has Most of the Metadata">
+      The `generateScreenShareToken` function already sets `parentId: participantId` in metadata.
+      Just need to add `isScreenShare: true` to enable client-side filtering.
+    </note>
+    <note title="Filtering Location Options">
+      Option A: Filter in useLiveKit when ParticipantConnected fires (preferred - centralized)
+      Option B: Filter in roomStore.addRemoteParticipant
+      Option C: Filter in MeetingRoom.tsx useMemo (least preferred - late filtering)
+    </note>
+    <note title="Track Handling Must Continue">
+      Even though we filter out screen share participants from the list, we MUST still process
+      their TrackSubscribed events to receive the screen share video track.
+    </note>
+  </implementationNotes>
+</story-context>

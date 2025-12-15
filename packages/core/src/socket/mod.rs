@@ -11,8 +11,8 @@ use tokio::sync::mpsc;
 use winit::event_loop::EventLoopProxy;
 
 use crate::{
-    AnnotationTool, CaptureConfig, Color, ConnectionState, FrameFormat, ParticipantData, Point,
-    ScreenInfo, SourceType, UserEvent, WindowInfo,
+    AnnotationTool, CaptureConfig, Color, ConnectionState, FrameFormat, ParticipantData,
+    PermissionState, Point, ScreenInfo, SourceType, UserEvent, WindowInfo,
 };
 
 /// Messages from WebView to Core
@@ -69,6 +69,10 @@ pub enum IncomingMessage {
         device_id: String,
     },
 
+    // Permissions
+    CheckPermissions,
+    RequestScreenRecordingPermission,
+
     // Lifecycle
     Ping,
     Shutdown,
@@ -111,6 +115,11 @@ pub enum OutgoingMessage {
         format: FrameFormat,
         #[serde(with = "base64_serde")]
         frame_data: Vec<u8>,
+    },
+
+    // Permissions
+    PermissionState {
+        state: PermissionState,
     },
 
     // Responses
@@ -455,6 +464,10 @@ impl CoreSocket {
             }
             IncomingMessage::SetVideoInputDevice { device_id } => {
                 UserEvent::SetVideoInputDevice(device_id)
+            }
+            IncomingMessage::CheckPermissions => UserEvent::CheckPermissions,
+            IncomingMessage::RequestScreenRecordingPermission => {
+                UserEvent::RequestScreenRecordingPermission
             }
             IncomingMessage::Ping => {
                 // Respond with pong - but we need the sender

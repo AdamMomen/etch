@@ -70,6 +70,7 @@ describe('MeetingRoom', () => {
           roomId: 'test-room-123',
           token: 'test-token',
           livekitUrl: 'wss://livekit.example.com',
+          screenShareToken: 'test-screen-share-token',
         },
         isConnecting: false,
         isConnected: true,

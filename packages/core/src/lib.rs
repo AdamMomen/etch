@@ -19,11 +19,13 @@ use winit::event_loop::EventLoopProxy;
 pub mod annotation;
 pub mod capture;
 pub mod graphics;
+pub mod permissions;
 pub mod room;
 pub mod socket;
 
 // Re-export key types
 pub use annotation::{AnnotationStore, Stroke};
+pub use permissions::{PermissionState, PermissionStatus};
 pub use socket::{CoreSocket, IncomingMessage, OutgoingMessage};
 
 /// All possible events that can be dispatched through the event loop.
@@ -213,6 +215,18 @@ pub enum UserEvent {
         code: String,
         message: String,
     },
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PERMISSIONS
+    // ═══════════════════════════════════════════════════════════════════════
+    /// Check current permission status
+    CheckPermissions,
+
+    /// Request screen recording permission
+    RequestScreenRecordingPermission,
+
+    /// Permission state changed (response to CheckPermissions or RequestScreenRecordingPermission)
+    PermissionStateChanged(PermissionState),
 
     // ═══════════════════════════════════════════════════════════════════════
     // LIFECYCLE
@@ -408,7 +422,8 @@ pub struct Application {
     // LIVEKIT
     // ═══════════════════════════════════════════════════════════════════════
     /// LiveKit room service (handles connection, tracks, DataTracks)
-    room_service: Option<room::RoomService>,
+    /// Arc<Mutex> allows storing from async spawn context
+    room_service: Arc<Mutex<Option<room::RoomService>>>,
 
     // ═══════════════════════════════════════════════════════════════════════
     // GRAPHICS (Overlay Rendering)
@@ -428,8 +443,8 @@ pub struct Application {
     // ═══════════════════════════════════════════════════════════════════════
     // SOCKET (Communication with Tauri/WebView)
     // ═══════════════════════════════════════════════════════════════════════
-    /// Socket server for Tauri communication
-    socket: Option<CoreSocket>,
+    /// Socket server for Tauri communication (shared with AppHandler)
+    socket: Arc<Mutex<Option<CoreSocket>>>,
 
     // ═══════════════════════════════════════════════════════════════════════
     // STATE
@@ -454,19 +469,22 @@ pub struct Application {
 }
 
 impl Application {
-    /// Create a new Application instance
-    pub fn new(event_loop_proxy: EventLoopProxy<UserEvent>) -> Self {
+    /// Create a new Application instance with a shared socket reference
+    pub fn new(
+        event_loop_proxy: EventLoopProxy<UserEvent>,
+        socket: Arc<Mutex<Option<CoreSocket>>>,
+    ) -> Self {
         let screen_capturer = Arc::new(Mutex::new(capture::Capturer::new()));
 
         Self {
             event_loop_proxy,
             screen_capturer,
             _capturer_events_task: None,
-            room_service: None,
+            room_service: Arc::new(Mutex::new(None)),
             _graphics_context: None,
             annotation_store: AnnotationStore::new(),
             remote_cursors: HashMap::new(),
-            socket: None,
+            socket,
             is_sharing: false,
             shared_source_id: None,
             local_participant: None,
@@ -476,10 +494,10 @@ impl Application {
         }
     }
 
-    /// Initialize the socket server
+    /// Initialize the socket server (stores in the shared socket reference)
     pub async fn init_socket(&mut self, socket_path: &str) -> anyhow::Result<()> {
         let socket = CoreSocket::new(socket_path, self.event_loop_proxy.clone()).await?;
-        self.socket = Some(socket);
+        *self.socket.lock() = Some(socket);
         Ok(())
     }
 
@@ -638,25 +656,25 @@ impl Application {
             // AUDIO/VIDEO CONTROLS
             // ═══════════════════════════════════════════════════════════════
             UserEvent::SetMicrophoneMuted(muted) => {
-                if let Some(room) = &self.room_service {
+                if let Some(room) = &*self.room_service.lock() {
                     room.set_microphone_muted(muted);
                 }
             }
 
             UserEvent::SetCameraEnabled(enabled) => {
-                if let Some(room) = &self.room_service {
+                if let Some(room) = &*self.room_service.lock() {
                     room.set_camera_enabled(enabled);
                 }
             }
 
             UserEvent::SetAudioInputDevice(device_id) => {
-                if let Some(room) = &self.room_service {
+                if let Some(room) = &*self.room_service.lock() {
                     room.set_audio_input_device(&device_id);
                 }
             }
 
             UserEvent::SetVideoInputDevice(device_id) => {
-                if let Some(room) = &self.room_service {
+                if let Some(room) = &*self.room_service.lock() {
                     room.set_video_input_device(&device_id);
                 }
             }
@@ -710,8 +728,14 @@ impl Application {
             // ROOM EVENTS (internal notifications)
             // ═══════════════════════════════════════════════════════════════
             UserEvent::RoomConnected { room_name } => {
-                tracing::info!("Room connected: {}", room_name);
-                // Notify WebView via socket if connected
+                eprintln!("[DEBUG] RoomConnected event received: {}", room_name);
+                self.connection_state = ConnectionState::Connected;
+                // Send Connected state to WebView via socket
+                if let Some(socket) = &*self.socket.lock() {
+                    socket.send(OutgoingMessage::ConnectionStateChanged {
+                        state: ConnectionState::Connected,
+                    });
+                }
             }
 
             UserEvent::RoomDisconnected => {
@@ -727,6 +751,21 @@ impl Application {
             UserEvent::ScreenShareUnpublished => {
                 tracing::info!("Screen share track unpublished");
                 // Notify WebView that screen share ended
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // PERMISSION EVENTS
+            // ═══════════════════════════════════════════════════════════════
+            UserEvent::CheckPermissions => {
+                self.handle_check_permissions();
+            }
+
+            UserEvent::RequestScreenRecordingPermission => {
+                self.handle_request_screen_recording_permission();
+            }
+
+            UserEvent::PermissionStateChanged(state) => {
+                self.send_permission_state(&state);
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -773,32 +812,70 @@ impl Application {
     }
 
     fn handle_start_screen_share(&mut self, msg: ScreenShareMessage) {
-        let capturer = self.screen_capturer.clone();
-        let proxy = self.event_loop_proxy.clone();
         let source_id = msg.source_id.clone();
+        let width = msg.config.width;
+        let height = msg.config.height;
 
-        tokio::spawn(async move {
-            let mut capturer = capturer.lock();
+        // Publish screen share track to LiveKit if connected (sync call)
+        let video_source = if let Some(ref room) = *self.room_service.lock() {
+            match room.publish_screen_share(width, height) {
+                Ok(source) => {
+                    tracing::info!("Screen share track published to LiveKit");
+                    Some(source)
+                }
+                Err(e) => {
+                    tracing::error!("Failed to publish screen share track: {}", e);
+                    let _ = self.event_loop_proxy.send_event(UserEvent::Error {
+                        code: "publish_failed".to_string(),
+                        message: e,
+                    });
+                    return;
+                }
+            }
+        } else {
+            tracing::warn!("No room connection - screen share will only capture locally");
+            None
+        };
+
+        // Set the video source on the capturer if we have one
+        {
+            let mut capturer = self.screen_capturer.lock();
+            if let Some(source) = video_source {
+                capturer.set_video_source(source);
+            }
+
+            // Start capture
             match capturer.start_capture(&msg.source_id, msg.source_type, &msg.config) {
                 Ok(()) => {
-                    let _ = proxy.send_event(UserEvent::ScreenShareStateChanged {
+                    tracing::info!("Screen capture started for source: {}", msg.source_id);
+                    let _ = self.event_loop_proxy.send_event(UserEvent::ScreenShareStateChanged {
                         is_sharing: true,
                         source_id: Some(source_id),
                     });
                 }
                 Err(e) => {
-                    let _ = proxy.send_event(UserEvent::Error {
+                    tracing::error!("Failed to start capture: {}", e);
+                    let _ = self.event_loop_proxy.send_event(UserEvent::Error {
                         code: "capture_failed".to_string(),
                         message: e.to_string(),
                     });
                 }
             }
-        });
+        }
     }
 
     fn handle_stop_screen_share(&mut self) {
-        let mut capturer = self.screen_capturer.lock();
-        capturer.stop_capture();
+        // Stop capture first
+        self.screen_capturer.lock().stop_capture();
+
+        // Unpublish the track from LiveKit (sync call)
+        if let Some(ref room) = *self.room_service.lock() {
+            if let Err(e) = room.unpublish_screen_share() {
+                tracing::warn!("Failed to unpublish screen share: {}", e);
+            } else {
+                tracing::info!("Screen share track unpublished");
+            }
+        }
 
         let _ = self.event_loop_proxy.send_event(UserEvent::ScreenShareStateChanged {
             is_sharing: false,
@@ -812,30 +889,55 @@ impl Application {
 
     fn handle_join_room(&mut self, server_url: String, token: String) {
         let proxy = self.event_loop_proxy.clone();
+        let room_service_holder = self.room_service.clone();
 
         let _ = proxy.send_event(UserEvent::ConnectionStateChanged(ConnectionState::Connecting));
 
-        tokio::spawn(async move {
-            match room::RoomService::connect(&server_url, &token, proxy.clone()).await {
-                Ok(_room_service) => {
-                    // RoomService will send ParticipantConnected events
-                    let _ = proxy.send_event(UserEvent::ConnectionStateChanged(ConnectionState::Connected));
+        // Spawn a thread for the blocking connection (don't block winit event loop)
+        std::thread::spawn(move || {
+            eprintln!("[DEBUG] handle_join_room thread started");
+            eprintln!("[DEBUG] Creating RoomService for {}", server_url);
+
+            match room::RoomService::new(server_url.clone(), proxy.clone()) {
+                Ok(room_service) => {
+                    eprintln!("[DEBUG] RoomService created, calling connect() (blocking)");
+                    // Blocking call - waits for connection result
+                    match room_service.connect(token) {
+                        Ok(()) => {
+                            eprintln!("[DEBUG] connect() succeeded, storing RoomService");
+                            *room_service_holder.lock() = Some(room_service);
+                            let _ = proxy.send_event(UserEvent::ConnectionStateChanged(ConnectionState::Connected));
+                            eprintln!("[DEBUG] Connected state sent to frontend");
+                        }
+                        Err(e) => {
+                            eprintln!("[DEBUG] connect() failed: {}", e);
+                            let _ = proxy.send_event(UserEvent::Error {
+                                code: "room_join_failed".to_string(),
+                                message: e,
+                            });
+                            let _ = proxy.send_event(UserEvent::ConnectionStateChanged(ConnectionState::Disconnected));
+                        }
+                    }
                 }
                 Err(e) => {
+                    eprintln!("[DEBUG] Failed to create RoomService: {}", e);
                     let _ = proxy.send_event(UserEvent::Error {
-                        code: "room_join_failed".to_string(),
+                        code: "room_service_failed".to_string(),
                         message: e.to_string(),
                     });
                     let _ = proxy.send_event(UserEvent::ConnectionStateChanged(ConnectionState::Disconnected));
                 }
             }
+            eprintln!("[DEBUG] handle_join_room thread finished");
         });
     }
 
     fn handle_leave_room(&mut self) {
-        if let Some(room) = self.room_service.take() {
+        // Disconnect from room (sync call - RoomService handles async internally)
+        if let Some(room) = self.room_service.lock().take() {
             room.disconnect();
         }
+
         self.participants.clear();
         self.remote_cursors.clear();
         self.connection_state = ConnectionState::Disconnected;
@@ -896,13 +998,13 @@ impl Application {
         // Stop screen capture
         self.screen_capturer.lock().stop_capture();
 
-        // Disconnect from room
-        if let Some(room) = self.room_service.take() {
+        // Disconnect from room (sync call - RoomService handles async internally)
+        if let Some(room) = self.room_service.lock().take() {
             room.disconnect();
         }
 
         // Close socket
-        if let Some(socket) = self.socket.take() {
+        if let Some(socket) = self.socket.lock().take() {
             socket.shutdown();
         }
 
@@ -914,13 +1016,13 @@ impl Application {
     // ═══════════════════════════════════════════════════════════════════════════
 
     fn send_available_content(&self, screens: Vec<ScreenInfo>, windows: Vec<WindowInfo>) {
-        if let Some(socket) = &self.socket {
+        if let Some(socket) = &*self.socket.lock() {
             socket.send(OutgoingMessage::AvailableContent { screens, windows });
         }
     }
 
     fn send_screen_share_state(&self) {
-        if let Some(socket) = &self.socket {
+        if let Some(socket) = &*self.socket.lock() {
             if self.is_sharing {
                 socket.send(OutgoingMessage::ScreenShareStarted {
                     sharer_id: self
@@ -936,7 +1038,7 @@ impl Application {
     }
 
     fn send_participant_joined(&self, data: &ParticipantData) {
-        if let Some(socket) = &self.socket {
+        if let Some(socket) = &*self.socket.lock() {
             socket.send(OutgoingMessage::ParticipantJoined {
                 participant: data.clone(),
             });
@@ -944,7 +1046,7 @@ impl Application {
     }
 
     fn send_participant_left(&self, participant_id: &str) {
-        if let Some(socket) = &self.socket {
+        if let Some(socket) = &*self.socket.lock() {
             socket.send(OutgoingMessage::ParticipantLeft {
                 participant_id: participant_id.to_string(),
             });
@@ -952,7 +1054,7 @@ impl Application {
     }
 
     fn send_connection_state(&self) {
-        if let Some(socket) = &self.socket {
+        if let Some(socket) = &*self.socket.lock() {
             socket.send(OutgoingMessage::ConnectionStateChanged {
                 state: self.connection_state,
             });
@@ -968,7 +1070,7 @@ impl Application {
         height: u32,
         format: FrameFormat,
     ) {
-        if let Some(socket) = &self.socket {
+        if let Some(socket) = &*self.socket.lock() {
             socket.send(OutgoingMessage::VideoFrame {
                 participant_id: participant_id.to_string(),
                 track_id: track_id.to_string(),
@@ -985,10 +1087,41 @@ impl Application {
     }
 
     fn send_error(&self, code: &str, message: &str) {
-        if let Some(socket) = &self.socket {
+        if let Some(socket) = &*self.socket.lock() {
             socket.send(OutgoingMessage::Error {
                 code: code.to_string(),
                 message: message.to_string(),
+            });
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // PERMISSION HANDLERS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    fn handle_check_permissions(&self) {
+        let state = permissions::get_permission_state();
+        let _ = self
+            .event_loop_proxy
+            .send_event(UserEvent::PermissionStateChanged(state));
+    }
+
+    fn handle_request_screen_recording_permission(&self) {
+        let proxy = self.event_loop_proxy.clone();
+
+        // Request permission (may block briefly for system dialog)
+        tokio::spawn(async move {
+            let _status = permissions::request_screen_recording();
+            // Get full state after request
+            let state = permissions::get_permission_state();
+            let _ = proxy.send_event(UserEvent::PermissionStateChanged(state));
+        });
+    }
+
+    fn send_permission_state(&self, state: &PermissionState) {
+        if let Some(socket) = &*self.socket.lock() {
+            socket.send(OutgoingMessage::PermissionState {
+                state: state.clone(),
             });
         }
     }

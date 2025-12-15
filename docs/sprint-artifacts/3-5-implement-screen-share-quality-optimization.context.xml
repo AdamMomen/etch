@@ -1,0 +1,89 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>5</storyId>
+    <title>Implement Screen Share Quality Optimization</title>
+    <status>done</status>
+    <generatedAt>2025-12-14</generatedAt>
+    <completedAt>2025-12-14</completedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-5-implement-screen-share-quality-optimization.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>viewer</asA>
+    <iWant>the shared screen to display at appropriate quality optimized for text clarity</iWant>
+    <soThat>I can read code, documentation, and UI elements clearly during screen shares</soThat>
+    <tasks>
+      <task id="1" ac="3.5.3" status="done">Verify VP9 codec for screen share
+        <subtask status="done">Verified `videoCodec: 'vp9'` is set in publish options at useScreenShare.ts:110</subtask>
+        <subtask status="done">VP9 automatically uses SVC (L3T3_KEY) for adaptive quality - no simulcast layers needed</subtask>
+        <subtask status="done">Tests verify VP9 codec is configured</subtask>
+      </task>
+      <task id="2" ac="3.5.4" status="done">Set contentHint to 'text' on video track
+        <subtask status="done">Set `videoTrack.contentHint = 'text'` on the MediaStreamTrack before publishing</subtask>
+        <subtask status="done">This tells the encoder to prioritize sharpness over smooth motion (keeps text edges crisp)</subtask>
+        <subtask status="done">Applied to Windows WebView path in startWindowsScreenShare function</subtask>
+      </task>
+      <task id="3" ac="3.5.2" status="done">Set degradationPreference to maintain-resolution
+        <subtask status="done">Added `degradationPreference: 'maintain-resolution'` to TrackPublishOptions</subtask>
+        <subtask status="done">This tells encoder to drop framerate before reducing resolution when bandwidth constrained</subtask>
+        <subtask status="done">Text at 15fps is readable; text at 480p is not</subtask>
+      </task>
+      <task id="4" ac="all" status="done">Write tests
+        <subtask status="done">Test VP9 codec is configured in publish options</subtask>
+        <subtask status="done">Test contentHint is set to 'text' on MediaStreamTrack</subtask>
+        <subtask status="done">Test degradationPreference is 'maintain-resolution'</subtask>
+        <subtask status="done">Test all encoding options combined</subtask>
+      </task>
+    </tasks>
+    <note>AC-3.5.5 (Source Picker Thumbnails) extracted to Story 3.12</note>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.5.1" status="done">Text Readability in Shared Content
+      - Given someone is sharing their screen
+      - When I view the shared content
+      - Then text is readable (not blurry from over-compression)
+      - And UI elements are clearly distinguishable
+      - And code in IDEs is legible
+    </criterion>
+    <criterion id="AC-3.5.2" status="done">Quality Prefers Clarity Over Framerate
+      - Given someone is sharing their screen
+      - When network conditions are constrained
+      - Then the encoder prioritizes maintaining text clarity over high framerate
+      - And framerate may drop to 15fps before quality degrades
+      - And text remains readable even on poor networks
+    </criterion>
+    <criterion id="AC-3.5.3" status="done">VP9 Codec Used for Screen Content
+      - Given a screen share is active
+      - When the video track is published to LiveKit
+      - Then the codec is VP9 (optimal for text/screen content)
+      - And VP9's built-in SVC (L3T3_KEY) provides adaptive quality layers automatically
+    </criterion>
+    <criterion id="AC-3.5.4" status="done">Content Hint Set to 'text'
+      - Given a screen share track is being published
+      - When the track is configured
+      - Then `contentHint: 'text'` is set on the video track
+      - And the encoder prioritizes sharpness over smooth motion
+    </criterion>
+  </acceptanceCriteria>
+
+  <implementation>
+    <completionSummary>
+      Story 3.5 completed with all 4 acceptance criteria met. VP9 codec was already configured (verified). Added contentHint: 'text' to MediaStreamTrack before publishing. Added degradationPreference: 'maintain-resolution' to TrackPublishOptions. Added 4 new tests covering all quality optimization settings. Source picker thumbnails (AC-3.5.5) extracted to separate Story 3.12.
+    </completionSummary>
+    <filesModified>
+      <file path="packages/client/src/hooks/useScreenShare.ts" changes="Added contentHint: 'text' at line 100, degradationPreference at line 113" />
+      <file path="packages/client/src/hooks/useScreenShare.test.ts" changes="Added 4 tests for quality optimization (lines 631-796)" />
+    </filesModified>
+    <testResults>
+      531 tests passing (4 new tests added for this story)
+    </testResults>
+    <keyLearnings>
+      - VP9 with SVC automatically provides adaptive quality - no simulcast layers needed
+      - contentHint: 'text' tells encoder to prioritize sharpness over smooth motion
+      - degradationPreference: 'maintain-resolution' drops framerate before resolution
+    </keyLearnings>
+  </implementation>
+</story-context>

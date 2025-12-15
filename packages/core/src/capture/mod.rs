@@ -241,19 +241,30 @@ fn run_capture_loop(
     let failures = Arc::new(Mutex::new(0u64));
     let should_stop = Arc::new(Mutex::new(false));
 
+    // FPS counter state
+    let frame_count = Arc::new(Mutex::new(0u64));
+    let last_fps_log = Arc::new(Mutex::new(std::time::Instant::now()));
+
     // Create reusable VideoFrame with I420Buffer (Hopp pattern)
     // This avoids allocating a new buffer for each frame
+    // Note: We'll resize on first frame if dimensions don't match
     let video_frame = Arc::new(StdMutex::new(VideoFrame {
         rotation: VideoRotation::VideoRotation0,
         buffer: I420Buffer::new(target_width, target_height),
         timestamp_us: 0,
     }));
 
+    // Track current buffer dimensions to detect when resize is needed
+    let buffer_dims = Arc::new(StdMutex::new((target_width, target_height)));
+
     // Clone for callback
     let video_source_cb = video_source.clone();
     let video_frame_cb = video_frame.clone();
+    let buffer_dims_cb = buffer_dims.clone();
     let failures_cb = failures.clone();
     let should_stop_cb = should_stop.clone();
+    let frame_count_cb = frame_count.clone();
+    let last_fps_log_cb = last_fps_log.clone();
 
     // Create capture callback
     let callback = move |result: CaptureResult, frame: DesktopFrame| {
@@ -306,6 +317,26 @@ fn run_capture_loop(
         // Lock the reusable frame buffer and convert ABGR to I420 in-place
         // This follows the Hopp pattern for zero-allocation frame capture
         let mut framebuffer = video_frame_cb.lock().unwrap();
+
+        // Check if we need to resize the buffer (first frame or resolution change)
+        // Note: frame_width/height are i32 from libwebrtc, convert to u32
+        let frame_w = frame_width as u32;
+        let frame_h = frame_height as u32;
+        {
+            let mut dims = buffer_dims_cb.lock().unwrap();
+            if dims.0 != frame_w || dims.1 != frame_h {
+                tracing::info!(
+                    "Resizing buffer from {}x{} to {}x{}",
+                    dims.0,
+                    dims.1,
+                    frame_w,
+                    frame_h
+                );
+                framebuffer.buffer = I420Buffer::new(frame_w, frame_h);
+                *dims = (frame_w, frame_h);
+            }
+        }
+
         let buffer = &mut framebuffer.buffer;
 
         // Get mutable access to Y, U, V planes
@@ -336,6 +367,20 @@ fn run_capture_loop(
         // Publish frame to LiveKit (pass reference, not ownership)
         if let Some(source) = video_source_cb.lock().as_ref() {
             source.capture_frame(&*framebuffer);
+        }
+
+        // FPS counter - log every second
+        {
+            let mut count = frame_count_cb.lock();
+            *count += 1;
+            let mut last_log = last_fps_log_cb.lock();
+            let elapsed = last_log.elapsed();
+            if elapsed >= std::time::Duration::from_secs(1) {
+                let fps = *count as f64 / elapsed.as_secs_f64();
+                tracing::info!("Screen capture FPS: {:.1}", fps);
+                *count = 0;
+                *last_log = std::time::Instant::now();
+            }
         }
     };
 

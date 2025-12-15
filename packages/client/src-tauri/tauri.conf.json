@@ -6,8 +6,8 @@
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "pnpm dev:web",
-    "beforeBuildCommand": "pnpm build:web"
+    "beforeDevCommand": "cd ../core && cargo build && mkdir -p ../client/src-tauri/binaries && TARGET=$(rustc -vV | grep host | cut -d' ' -f2) && cp ../../target/debug/nameless-core ../client/src-tauri/binaries/nameless-core-$TARGET && cd ../client && pnpm dev:web",
+    "beforeBuildCommand": "cd ../core && cargo build --release && mkdir -p ../client/src-tauri/binaries && TARGET=$(rustc -vV | grep host | cut -d' ' -f2) && ln -sf ../../../../target/release/nameless-core ../client/src-tauri/binaries/nameless-core-$TARGET && cd ../client && pnpm build:web"
   },
   "app": {
     "windows": [
@@ -32,6 +32,12 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "externalBin": [
+      "binaries/nameless-core"
+    ],
+    "macOS": {
+      "infoPlist": "Info.plist"
+    }
   }
 }

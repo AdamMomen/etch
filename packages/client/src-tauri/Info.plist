@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>NAMELESS</string>
+    <key>CFBundleDisplayName</key>
+    <string>NAMELESS</string>
+    <key>NSCameraUsageDescription</key>
+    <string>NAMELESS needs camera access for video calls</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>NAMELESS needs microphone access for audio calls</string>
+    <key>NSCameraUseContinuityCameraDeviceType</key>
+    <true/>
+</dict>
+</plist>

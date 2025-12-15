@@ -4,8 +4,10 @@
 //! It owns all media: screen capture, LiveKit connection, annotations overlay.
 
 use std::env;
+use std::sync::Arc;
 
-use nameless_core::{Application, UserEvent};
+use nameless_core::{Application, CoreSocket, UserEvent};
+use parking_lot::Mutex;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use winit::application::ApplicationHandler;
 use winit::event::WindowEvent;
@@ -18,6 +20,7 @@ struct AppHandler {
     socket_path: String,
     event_loop_proxy: EventLoopProxy<UserEvent>,
     initialized: bool,
+    socket: Arc<Mutex<Option<CoreSocket>>>,
 }
 
 impl AppHandler {
@@ -27,6 +30,7 @@ impl AppHandler {
             socket_path,
             event_loop_proxy,
             initialized: false,
+            socket: Arc::new(Mutex::new(None)),
         }
     }
 }
@@ -34,23 +38,31 @@ impl AppHandler {
 impl ApplicationHandler<UserEvent> for AppHandler {
     fn resumed(&mut self, _event_loop: &ActiveEventLoop) {
         if !self.initialized {
-            // Create application on first resume
+            // Create application on first resume, sharing the socket Arc
             let proxy = self.event_loop_proxy.clone();
-            let app = Application::new(proxy.clone());
+            let app = Application::new(proxy.clone(), self.socket.clone());
 
-            // Initialize socket in background
+            // Initialize socket server
             let socket_path = self.socket_path.clone();
-            let proxy_clone = proxy.clone();
+            let socket_holder = self.socket.clone();
+
             tokio::spawn(async move {
                 // Small delay to ensure event loop is running
                 tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
 
-                // Create a temporary mutable reference for socket init
-                // In practice, we'd need to restructure this - for now, log the intent
-                tracing::info!("Socket initialization requested for path: {}", socket_path);
-
-                // Send connected event when ready
-                let _ = proxy_clone.send_event(UserEvent::SocketConnected);
+                match CoreSocket::new(&socket_path, proxy.clone()).await {
+                    Ok(socket) => {
+                        tracing::info!("Socket server started on: {}", socket_path);
+                        *socket_holder.lock() = Some(socket);
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to start socket server: {}", e);
+                        let _ = proxy.send_event(UserEvent::Error {
+                            code: "socket_init_failed".to_string(),
+                            message: e.to_string(),
+                        });
+                    }
+                }
             });
 
             self.app = Some(app);

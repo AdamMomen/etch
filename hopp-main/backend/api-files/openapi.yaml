@@ -1,0 +1,1073 @@
+openapi: 3.0.3
+info:
+  title: Hopp API
+  description: API specification for Hopp backend services
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+components:
+  schemas:
+    BaseUser:
+      type: object
+      required:
+        - id
+        - first_name
+        - last_name
+        - email
+        - team_name
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        first_name:
+          type: string
+        last_name:
+          type: string
+        email:
+          type: string
+          format: email
+        team_name:
+          type: string
+        avatar_url:
+          type: string
+          nullable: true
+        is_admin:
+          type: boolean
+          default: false
+        is_active:
+          type: boolean
+          description: Whether the user is currently active (connected via websocket)
+        team_id:
+          type: integer
+          format: uint
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    PrivateUser:
+      allOf:
+        - $ref: "#/components/schemas/BaseUser"
+        - type: object
+          properties:
+            social_metadata:
+              type: object
+              additionalProperties: true
+              nullable: true
+            metadata:
+              type: object
+              additionalProperties: true
+              nullable: true
+            is_pro:
+              type: boolean
+              description: Whether the user has an active paid subscription
+            is_trial:
+              type: boolean
+              description: Whether the user is currently in trial period
+            trial_ends_at:
+              type: string
+              format: date-time
+              nullable: true
+              description: When the trial period ends (null if not in trial or has active subscription)
+
+      type: object
+    Room:
+      required:
+        - id
+        - name
+        - user_id
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        user_id:
+          type: string
+
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+
+    SubscriptionResponse:
+      type: object
+      required:
+        - status
+        - manual_upgrade
+        - is_admin
+      properties:
+        status:
+          type: string
+          enum: [active, canceled, past_due, trialing, incomplete]
+          description: Current subscription status
+        manual_upgrade:
+          type: boolean
+          description: Whether the team has been manually upgraded
+        current_period_end:
+          type: string
+          format: date-time
+          nullable: true
+          description: End date of current billing period (null for manual upgrades or trialing)
+        cancel_at_period_end:
+          type: boolean
+          nullable: true
+          description: Whether subscription will cancel at period end (null for manual upgrades or trialing)
+        is_admin:
+          type: boolean
+          description: Whether the current user is a team admin
+
+    CreateCheckoutSessionRequest:
+      type: object
+      required:
+        - tier
+      properties:
+        tier:
+          type: string
+          enum: [paid]
+          description: Subscription tier to create checkout session for
+        price_id:
+          type: string
+          description: Optional Stripe price ID (uses environment default if not provided)
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+paths:
+  /api/health:
+    get:
+      summary: Health check endpoint
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "OK"
+
+  /api/metrics:
+    get:
+      summary: Prometheus metrics endpoint
+      responses:
+        "200":
+          description: Metrics in Prometheus format
+
+  /api/auth/social/:provider:
+    get:
+      summary: Initiate social login with specified provider
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, slack]
+      responses:
+        "302":
+          description: Redirect to provider's login page
+
+  /api/auth/social/:provider/callback:
+    get:
+      summary: Social login callback endpoint
+      parameters:
+        - name: provider
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [google, slack]
+      responses:
+        "200":
+          description: Successful authentication
+        "401":
+          description: Authentication failed
+
+  /api/sign-up:
+    post:
+      summary: Manual sign up endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - first_name
+                - last_name
+                - email
+                - password
+              properties:
+                first_name:
+                  type: string
+                  description: User's first name
+                last_name:
+                  type: string
+                  description: User's last name
+                email:
+                  type: string
+                  format: email
+                  description: User's email address
+                password:
+                  type: string
+                  format: password
+                  description: User's password
+                team_name:
+                  type: string
+                  description: Name of the team (required unless team_invite_uuid is provided)
+                team_invite_uuid:
+                  type: string
+                  format: uuid
+                  description: UUID for team invitation (if joining an existing team)
+      responses:
+        "200":
+          description: Successfully signed up
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: JWT authentication token
+                  user:
+                    $ref: "#/components/schemas/PrivateUser"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: User with this email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/forgot-password:
+    post:
+      summary: Request password reset email
+      description: Sends a password reset link to the specified email address if it exists in the system. Always returns success to avoid user enumeration.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: User's email address
+      responses:
+        "200":
+          description: Success message (always returned regardless of whether email exists)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "If the email you specified exists in our system, we've sent a password reset link to it."
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/reset-password/{token}:
+    patch:
+      summary: Reset password using token
+      description: Resets the user's password using a valid password reset token
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Password reset token received via email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password
+              properties:
+                password:
+                  type: string
+                  format: password
+                  description: New password
+      responses:
+        "200":
+          description: Password reset successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Your password has been changed. You can now use it to log in."
+        "400":
+          description: Invalid input, missing token, invalid/expired token, or token already used
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/authenticate-app:
+    get:
+      summary: Create JWT token for desktop app
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Successfully authenticated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/user:
+    get:
+      summary: Get current user details
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: User details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivateUser"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/teammates:
+    get:
+      summary: Get current user's teammates
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: List of teammates retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BaseUser"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/websocket:
+    get:
+      summary: WebSocket connection endpoint
+      security:
+        - BearerAuth: []
+      responses:
+        "101":
+          description: Switching protocols to WebSocket
+        "401":
+          description: Unauthorized
+
+  /api/auth/update-user-name:
+    put:
+      summary: Update user's first and last name
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - first_name
+                - last_name
+              properties:
+                first_name:
+                  type: string
+                  description: User's first name
+                last_name:
+                  type: string
+                  description: User's last name
+      responses:
+        "200":
+          description: Name updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivateUser"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/get-invite-uuid:
+    get:
+      summary: Get or create a team invitation UUID
+      description: Returns a UUID that can be used to invite users to the team. If the existing invitation has expired, a new one is created.
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Team invitation UUID retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invite_uuid:
+                    type: string
+                    format: uuid
+                    description: UUID for team invitation
+                  team_name:
+                    type: string
+                    description: Name of the team
+        "400":
+          description: User is not part of any team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/send-team-invites:
+    post:
+      summary: Send team invitation emails
+      description: Sends invitation emails to a list of email addresses to join the user's team
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - invitees
+              properties:
+                invitees:
+                  type: array
+                  items:
+                    type: string
+                    format: email
+                  description: List of email addresses to invite
+      responses:
+        "200":
+          description: Invitations sent successfully
+        "400":
+          description: Invalid request or user is not part of any team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/metadata/onboarding-form:
+    post:
+      summary: Update onboarding form status
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Onboarding form status updated successfully
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/invitation-details/{uuid}:
+    get:
+      summary: Get team details for an invitation
+      description: Returns information about the team associated with an invitation UUID
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Team details retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  name:
+                    type: string
+                    description: Name of the team the user is invited to join
+                  team_id:
+                    type: integer
+                    format: uint
+                    description: ID of the team the user is invited to join
+        "400":
+          description: Invalid invitation UUID
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Invitation not found or has expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/room:
+    post:
+      summary: Create a new room
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the room
+      responses:
+        "200":
+          description: LiveKit tokens retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+                required:
+                  - id
+                  - name
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/rooms:
+    get:
+      summary: Get all rooms for the user
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Rooms for user retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Room"
+
+  /api/auth/room/{id}:
+    get:
+      summary: Get LiveKit tokens for joining the team's selected room
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the room to retrieve
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: LiveKit tokens retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audioToken:
+                    type: string
+                  videoToken:
+                    type: string
+                  cameraToken:
+                    type: string
+                  participant:
+                    type: string
+                required:
+                  - audioToken
+                  - videoToken
+                  - cameraToken
+                  - participant
+
+    put:
+      summary: Update room details
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the room to update
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: Name of the room
+      responses:
+        "200":
+          description: Room updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Room"
+                required:
+                  - id
+                  - name
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+    delete:
+      summary: Get LiveKit tokens for joining the team's selected room
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The ID of the room to delete
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: User successfully deleted (no content)
+
+  /api/auth/room/anonymous:
+    get:
+      summary: Get a link that will have an encoded token that will be used
+      description: Get a link that will have an encoded token that will be used
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: room_id
+          in: query
+          required: true
+          description: The ID of the room to generate an anonymous link for
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Link with encoded token retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  redirect_url:
+                    type: string
+                    description: Redirect URL with encoded token
+
+  /api/auth/livekit/server-url:
+    get:
+      summary: Get the LiveKit server url
+      description: Get the LiveKit server url
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: LiveKit server url
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    description: LiveKit server url
+
+  /api/auth/change-team/{uuid}:
+    post:
+      summary: Change user's team using invitation UUID
+      description: Allows a logged-in user to change teams using an invitation UUID. The user must have no teammates to perform this operation.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the team invitation
+      responses:
+        "200":
+          description: Successfully changed team
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successfully changed team"
+                  team_name:
+                    type: string
+                    description: Name of the new team
+                  team_id:
+                    type: integer
+                    format: uint
+                    description: ID of the new team
+        "204":
+          description: User was already in this team - noop
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Invitation not found or has expired
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Cannot change teams - user has teammates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/subscribe-linux-waitlist:
+    post:
+      summary: Subscribe to Linux waiting list
+      description: Subscribes the authenticated user to the Linux waiting list and unsubscribes from marketing emails
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Successfully subscribed to Linux waiting list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Successfully subscribed to Linux waiting list"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/teammates/{userId}:
+    delete:
+      summary: Remove a teammate from your team
+      description: Removes a user from the team and automatically creates a new solo team for them. The removed user becomes an admin of their new team and can continue using Hopp. Admins cannot remove themselves.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the user to remove from the team
+      responses:
+        "204":
+          description: Teammate removed successfully
+        "400":
+          description: Bad request - missing userId, cannot remove yourself, or cannot remove last admin
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden - user is not an admin or target user is not in your team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/billing/subscription:
+    get:
+      summary: Get current subscription status
+      description: Returns the subscription status for the current user's team
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Subscription status retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subscription:
+                    $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/billing/create-checkout-session:
+    post:
+      summary: Create Stripe checkout session
+      description: Creates a Stripe checkout session for team subscription
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCheckoutSessionRequest"
+      responses:
+        "200":
+          description: Checkout session created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - checkout_url
+                  - session_id
+                properties:
+                  checkout_url:
+                    type: string
+                    description: URL to redirect user to Stripe checkout
+                  session_id:
+                    type: string
+                    description: Stripe checkout session ID
+        "400":
+          description: Bad request - invalid input or team already has active subscription
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden - only team admins can manage subscriptions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/auth/billing/create-portal-session:
+    post:
+      summary: Create Stripe billing portal session
+      description: Creates a Stripe billing portal session for subscription management
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Portal session created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - portal_url
+                properties:
+                  portal_url:
+                    type: string
+                    description: URL to redirect user to Stripe billing portal
+        "400":
+          description: Bad request - user must be part of a team
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden - only team admins can access billing portal
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: No subscription found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"

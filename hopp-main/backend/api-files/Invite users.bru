@@ -1,0 +1,22 @@
+meta {
+  name: Invite users
+  type: http
+  seq: 11
+}
+
+post {
+  url: https://localhost:1926/api/auth/send-team-invites
+  body: json
+  auth: none
+}
+
+headers {
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImtvbnNhbGV4ZWVAZ21haWwuY29tIiwiZXhwIjoxNzY3MTg5NzQ0fQ.qIvEcVY00s9xqzlMAD8811lnR6rShveAbYLtEat_uiU
+}
+
+body:json {
+  {
+    "invitees": ["michael@dundermifflin.com"]
+  }
+
+}

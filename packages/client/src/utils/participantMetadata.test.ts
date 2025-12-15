@@ -125,4 +125,76 @@ describe('parseParticipantMetadata', () => {
       expect(result.color).toBe(PARTICIPANT_COLORS[0])
     })
   })
+
+  describe('screen share metadata parsing (Story 3.11)', () => {
+    it('parses isScreenShare: true correctly (AC-3.11.3)', () => {
+      const metadata = JSON.stringify({
+        role: 'screenshare',
+        parentId: 'main-user-123',
+        isScreenShare: true,
+      })
+      const result = parseParticipantMetadata(metadata)
+
+      expect(result.isScreenShare).toBe(true)
+    })
+
+    it('parses parentId correctly (AC-3.11.3)', () => {
+      const metadata = JSON.stringify({
+        role: 'screenshare',
+        parentId: 'main-user-123',
+        isScreenShare: true,
+      })
+      const result = parseParticipantMetadata(metadata)
+
+      expect(result.parentId).toBe('main-user-123')
+    })
+
+    it('returns isScreenShare as false when not present', () => {
+      const metadata = JSON.stringify({ role: 'host', color: '#f97316' })
+      const result = parseParticipantMetadata(metadata)
+
+      expect(result.isScreenShare).toBe(false)
+    })
+
+    it('returns isScreenShare as false for non-boolean values', () => {
+      const metadata = JSON.stringify({
+        role: 'screenshare',
+        isScreenShare: 'true', // String, not boolean
+      })
+      const result = parseParticipantMetadata(metadata)
+
+      expect(result.isScreenShare).toBe(false)
+    })
+
+    it('returns undefined parentId when not present', () => {
+      const metadata = JSON.stringify({ role: 'host', color: '#f97316' })
+      const result = parseParticipantMetadata(metadata)
+
+      expect(result.parentId).toBeUndefined()
+    })
+
+    it('returns undefined parentId for non-string values', () => {
+      const metadata = JSON.stringify({
+        role: 'screenshare',
+        parentId: 123, // Number, not string
+        isScreenShare: true,
+      })
+      const result = parseParticipantMetadata(metadata)
+
+      expect(result.parentId).toBeUndefined()
+    })
+
+    it('parses complete screen share metadata correctly', () => {
+      const metadata = JSON.stringify({
+        role: 'screenshare',
+        parentId: 'user-abc-123',
+        isScreenShare: true,
+      })
+      const result = parseParticipantMetadata(metadata)
+
+      expect(result.role).toBe('annotator') // 'screenshare' is not a valid role, falls back to default
+      expect(result.isScreenShare).toBe(true)
+      expect(result.parentId).toBe('user-abc-123')
+    })
+  })
 })

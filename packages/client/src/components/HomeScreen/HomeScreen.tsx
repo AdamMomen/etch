@@ -45,6 +45,7 @@ export function HomeScreen() {
     setCurrentRoom({
       roomId: mockRoomId,
       token: '', // Empty token prevents useLiveKit from attempting connection
+      screenShareToken: '', // Empty for dev mode
       livekitUrl: '', // Empty URL prevents useLiveKit from attempting connection
     })
 
@@ -109,6 +110,7 @@ export function HomeScreen() {
       setCurrentRoom({
         roomId: response.roomId,
         token: response.token,
+        screenShareToken: response.screenShareToken,
         livekitUrl: response.livekitUrl,
       })
       navigate(`/room/${response.roomId}`)

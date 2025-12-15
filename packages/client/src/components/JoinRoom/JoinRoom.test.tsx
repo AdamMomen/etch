@@ -209,6 +209,7 @@ describe('JoinRoom', () => {
       vi.mocked(api.joinRoom).mockResolvedValue({
         token: 'test-token',
         livekitUrl: 'wss://livekit.example.com',
+        screenShareToken: 'test-screen-share-token',
       })
 
       renderJoinRoom('test-room-id')
@@ -226,6 +227,7 @@ describe('JoinRoom', () => {
       vi.mocked(api.joinRoom).mockResolvedValue({
         token: 'test-token',
         livekitUrl: 'wss://livekit.example.com',
+        screenShareToken: 'test-screen-share-token',
       })
 
       renderJoinRoom()
@@ -248,6 +250,7 @@ describe('JoinRoom', () => {
       vi.mocked(api.joinRoom).mockResolvedValue({
         token: 'my-jwt-token',
         livekitUrl: 'wss://livekit.example.com',
+        screenShareToken: 'test-screen-share-token',
       })
 
       renderJoinRoom('room-123')
@@ -270,6 +273,7 @@ describe('JoinRoom', () => {
       vi.mocked(api.joinRoom).mockResolvedValue({
         token: 'test-token',
         livekitUrl: 'wss://livekit.example.com',
+        screenShareToken: 'test-screen-share-token',
       })
 
       renderJoinRoom()
@@ -343,6 +347,7 @@ describe('JoinRoom', () => {
       vi.mocked(api.joinRoom).mockResolvedValue({
         token: 'test-token',
         livekitUrl: 'wss://livekit.example.com',
+        screenShareToken: 'test-screen-share-token',
       })
 
       renderJoinRoom('test-room')

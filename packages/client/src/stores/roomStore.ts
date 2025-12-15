@@ -4,6 +4,8 @@ import type { Participant } from '@nameless/shared'
 export interface RoomInfo {
   roomId: string
   token: string
+  /** Separate token for screen share (different identity to avoid WebView disconnection) */
+  screenShareToken: string
   livekitUrl: string
 }
 

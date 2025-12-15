@@ -1,23 +1,29 @@
 import { MonitorUp, MonitorOff } from 'lucide-react'
-import { Room } from 'livekit-client'
 import { TooltipButton } from '@/components/ui/tooltip-button'
-import { useScreenShare } from '@/hooks/useScreenShare'
 import { cn } from '@/lib/utils'
 
 interface ScreenShareButtonProps {
-  room: Room | null
+  isLocalSharing: boolean
+  canShare: boolean
+  sharerName: string | null
+  onStartShare: () => void
+  onStopShare: () => void
   className?: string
 }
 
-export function ScreenShareButton({ room, className }: ScreenShareButtonProps) {
-  const { isLocalSharing, canShare, sharerName, startScreenShare, stopScreenShare } =
-    useScreenShare({ room })
-
-  const handleClick = async () => {
+export function ScreenShareButton({
+  isLocalSharing,
+  canShare,
+  sharerName,
+  onStartShare,
+  onStopShare,
+  className,
+}: ScreenShareButtonProps) {
+  const handleClick = () => {
     if (isLocalSharing) {
-      await stopScreenShare()
+      onStopShare()
     } else {
-      await startScreenShare()
+      onStartShare()
     }
   }
 

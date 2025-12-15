@@ -2,7 +2,7 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { createRoom, getRoom, addParticipant } from '../services/roomStore'
-import { generateToken, getLiveKitUrl } from '../services/livekit'
+import { generateToken, generateScreenShareToken, getLiveKitUrl } from '../services/livekit'
 import { log } from '../middleware/logger'
 import type {
   CreateRoomResponse,
@@ -62,14 +62,17 @@ roomsRouter.post(
         throw new Error('Host participant not found after room creation')
       }
 
-      // Generate LiveKit token for the host
-      const token = await generateToken(
-        room.id,
-        hostId,
-        hostName,
-        'host',
-        hostParticipant.color
-      )
+      // Generate LiveKit tokens for the host
+      const [token, screenShareToken] = await Promise.all([
+        generateToken(
+          room.id,
+          hostId,
+          hostName,
+          'host',
+          hostParticipant.color
+        ),
+        generateScreenShareToken(room.id, hostId, hostName),
+      ])
 
       // Get LiveKit URL
       const livekitUrl = getLiveKitUrl()
@@ -85,6 +88,7 @@ roomsRouter.post(
       const response: CreateRoomResponse = {
         roomId: room.id,
         token,
+        screenShareToken,
         livekitUrl,
       }
 
@@ -175,14 +179,17 @@ roomsRouter.post(
         throw new Error('Failed to add participant to room')
       }
 
-      // Generate LiveKit token for the participant
-      const token = await generateToken(
-        roomId,
-        participantId,
-        participantName,
-        participant.role,
-        participant.color
-      )
+      // Generate LiveKit tokens for the participant
+      const [token, screenShareToken] = await Promise.all([
+        generateToken(
+          roomId,
+          participantId,
+          participantName,
+          participant.role,
+          participant.color
+        ),
+        generateScreenShareToken(roomId, participantId, participantName),
+      ])
 
       // Get LiveKit URL
       const livekitUrl = getLiveKitUrl()
@@ -197,6 +204,7 @@ roomsRouter.post(
 
       const response: JoinRoomResponse = {
         token,
+        screenShareToken,
         livekitUrl,
       }
 

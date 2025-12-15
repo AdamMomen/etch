@@ -191,6 +191,7 @@ describe('HomeScreen', () => {
         roomId: 'new-room-123',
         token: 'test-token',
         livekitUrl: 'wss://livekit.example.com',
+        screenShareToken: 'test-screen-share-token',
       })
 
       renderHomeScreen()
@@ -208,6 +209,7 @@ describe('HomeScreen', () => {
         roomId: 'new-room-123',
         token: 'test-token',
         livekitUrl: 'wss://livekit.example.com',
+        screenShareToken: 'test-screen-share-token',
       })
 
       renderHomeScreen()
@@ -227,6 +229,7 @@ describe('HomeScreen', () => {
         roomId: 'new-room-123',
         token: 'test-token',
         livekitUrl: 'wss://livekit.example.com',
+        screenShareToken: 'test-screen-share-token',
       })
 
       renderHomeScreen()

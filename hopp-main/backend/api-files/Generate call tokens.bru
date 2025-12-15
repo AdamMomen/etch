@@ -1,0 +1,15 @@
+meta {
+  name: Generate call tokens
+  type: http
+  seq: 6
+}
+
+get {
+  url: https://localhost:1926/api/call-token?email=michael@dundermifflin.com
+  body: none
+  auth: none
+}
+
+params:query {
+  email: michael@dundermifflin.com
+}

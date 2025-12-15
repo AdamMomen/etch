@@ -1,0 +1,41 @@
+version: "3"
+
+tasks:
+  build-dev:
+    desc: Builds the web app for development
+    cmds:
+      - yarn build
+    env:
+      VITE_API_BASE_URL: localhost:1926
+
+  watch-dev:
+    desc: Watches the web app for development
+    cmds:
+      - yarn watch-dev
+
+  watch-dev-built:
+    desc: Watches the web app for development
+    cmds:
+      - |
+        # Ensure directories exist
+        mkdir -p ./static/react/assets ../backend/web
+        # Start watching the entire assets directory
+        fswatch -o ./static/react/assets 2>/dev/null | while read f; do
+            echo "📝 Changes detected in web app, copying to backend..."
+            cp -f "./static/react/assets/index.html" ../backend/web/web-app.html
+            echo "✓ Copied web app to backend"
+        done
+
+  build-prod:
+    desc: Builds the web app for production
+    cmds:
+      - yarn build
+    env:
+      VITE_API_BASE_URL: pair.gethopp.app
+
+  inject-to-backend:
+    desc: Injects the web app into the backend
+    vars:
+      SUFFIX: '{{.SUFFIX| default ""}}'
+    cmds:
+      - cp -r ./static/react/assets/index.html ../backend/web/web-app{{.SUFFIX}}.html

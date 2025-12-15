@@ -8,7 +8,15 @@
       "Bash(pnpm test:client:*)",
       "Bash(pnpm build:web:*)",
       "Bash(pnpm build:client:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(pnpm build:shared:*)",
+      "Bash(cargo check:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.gethopp.app)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(cargo test:*)"
     ],
     "deny": [],
     "ask": []

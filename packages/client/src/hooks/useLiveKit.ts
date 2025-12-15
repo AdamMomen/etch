@@ -91,6 +91,14 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
 
     const handleParticipantConnected = (participant: RemoteParticipant) => {
       if (cancelled) return
+
+      // Check if this is a screen share participant (should not be shown in participant list)
+      const metadata = parseParticipantMetadata(participant.metadata || '')
+      if (metadata.isScreenShare) {
+        // Don't add screen share participants to the list - their tracks will still be processed
+        return
+      }
+
       const converted = convertLKParticipant(participant, false)
       addRemoteParticipant(converted)
       toast.info(`${converted.name} joined`)
@@ -98,6 +106,14 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
 
     const handleParticipantDisconnected = (participant: RemoteParticipant) => {
       if (cancelled) return
+
+      // Check if this is a screen share participant (don't show toast for them)
+      const metadata = parseParticipantMetadata(participant.metadata || '')
+      if (metadata.isScreenShare) {
+        // Screen share participants were never added, so just ignore disconnect
+        return
+      }
+
       const name = participant.name || participant.identity
       removeRemoteParticipant(participant.identity)
       toast.info(`${name} left`)
@@ -210,8 +226,13 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
         const localParticipant = convertLKParticipant(room.localParticipant, true)
         setLocalParticipant(localParticipant)
 
-        // Add existing remote participants
+        // Add existing remote participants (excluding screen share participants)
         room.remoteParticipants.forEach((participant) => {
+          const metadata = parseParticipantMetadata(participant.metadata || '')
+          if (metadata.isScreenShare) {
+            // Don't add screen share participants to the list
+            return
+          }
           const converted = convertLKParticipant(participant, false)
           addRemoteParticipant(converted)
         })

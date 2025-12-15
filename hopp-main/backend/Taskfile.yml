@@ -1,0 +1,79 @@
+version: "3"
+
+includes:
+  web-app:
+    taskfile: ../web-app/Taskfile.yml
+    dir: ../web-app
+
+tasks:
+  create-certs:
+    desc: Create SSL certificates for local development
+    cmds:
+      - mkdir -p certs
+      - mkcert -install
+      - mkcert -key-file certs/localhost-key.pem -cert-file certs/localhost.pem localhost
+
+  add-mock-data:
+    desc: Add mock data to the database
+    cmds:
+      - PGPASSWORD=password psql -U hopp -d hopp -h localhost -p 5432 -f sql/mock_data.sql
+
+  dev:
+    desc: Start the development server
+    cmds:
+      - task: web-app:build-dev
+      - task: web-app:inject-to-backend
+        vars:
+          SUFFIX: "-debug"
+      - go run *.go
+    env:
+      ENV_STACK: local
+
+  compose-up:
+    desc: Start the development databases and related services (local Go server for faster dev)
+    cmds:
+      - docker compose -f docker-files/docker-compose.yml up -d
+
+  build:
+    cmds:
+      - GOOS=linux GOARCH=amd64 go build -o bin/server ./main.go
+    generates:
+      - bin/server
+
+  build-docker:
+    desc: Build the Docker image
+    deps: [build]
+    cmds:
+      - docker build --platform linux/amd64 -t hopp-backend .
+
+  run-image:
+    desc: Run the Docker image locally
+    cmds:
+      - docker run -p 1926:1926 --env-file env-files/.env.local --network host --name hopp-backend hopp-backend
+
+  fullstack-up:
+    desc: Build and run the fullstack setup with Redis and backend
+    cmds:
+      # - task: build-image
+      - docker compose -f docker-files/fullstack-compose.yml up -d
+    env:
+      ENV_STACK: local
+
+  install-reload-tools:
+    desc: Install required development tools (maybe you will need to install manually)
+    cmds:
+      - go install github.com/cosmtrek/air@latest
+
+  go:
+    env:
+      ENV_STACK: local
+    desc: Run the Go server with hot reload using Air
+    cmds:
+      - air
+
+  user-token:
+    desc: Generate a JWT user token for API testing (use EMAIL=user@example.com to override default)
+    vars:
+      EMAIL: '{{.EMAIL| default "michael@dundermifflin.com"}}'
+    cmds:
+      - curl --request GET --url https://localhost:1926/api/jwt-debug\?email\={{.EMAIL}}

@@ -18,7 +18,7 @@ import { ParticipantGrid } from './ParticipantGrid'
 import { ParticipantBubbles } from './ParticipantBubbles'
 import { LeaveConfirmDialog } from './LeaveConfirmDialog'
 import { InviteModal } from './InviteModal'
-import { ScreenShareViewer } from '@/components/ScreenShare'
+import { ScreenShareViewer, SourcePickerDialog } from '@/components/ScreenShare'
 import { generateInviteLink, copyToClipboard } from '@/lib/invite'
 import { cn } from '@/lib/utils'
 
@@ -69,11 +69,20 @@ export function MeetingRoom() {
   const {
     isSharing: isScreenSharing,
     isLocalSharing,
+    canShare,
     sharerName,
     remoteScreenTrack,
     startScreenShare,
     stopScreenShare,
-  } = useScreenShare({ room })
+    sourcePicker,
+    onSourcePickerClose,
+    onSourceSelect,
+  } = useScreenShare({
+    room,
+    livekitUrl: currentRoom?.livekitUrl,
+    token: currentRoom?.token,
+    screenShareToken: currentRoom?.screenShareToken,
+  })
 
   // Get resetVolumes from volumeStore for cleanup on leave
   const resetVolumes = useVolumeStore((state) => state.resetVolumes)
@@ -431,6 +440,11 @@ export function MeetingRoom() {
         room={room}
         onLeave={handleLeave}
         onInvite={handleInvite}
+        isLocalSharing={isLocalSharing}
+        canShare={canShare}
+        sharerName={sharerName}
+        onStartScreenShare={startScreenShare}
+        onStopScreenShare={stopScreenShare}
       />
 
       {/* Host Leave Confirmation Dialog */}
@@ -445,6 +459,16 @@ export function MeetingRoom() {
         open={showInviteModal}
         onOpenChange={setShowInviteModal}
         roomId={roomId || currentRoom?.roomId || ''}
+      />
+
+      {/* Source Picker Dialog for native screen share (macOS/Linux) */}
+      <SourcePickerDialog
+        open={sourcePicker.isOpen}
+        onOpenChange={(open) => !open && onSourcePickerClose()}
+        screens={sourcePicker.screens}
+        windows={sourcePicker.windows}
+        isLoading={sourcePicker.isLoading}
+        onSelect={onSourceSelect}
       />
     </div>
   )

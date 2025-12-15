@@ -1,0 +1,10 @@
+{
+  "printWidth": 120,
+  "bracketSpacing": true,
+  "experimentalTernaries": true,
+  "overrides": [
+    {
+      "files": "*.{js,ts,jsx,tsx,css,html,json,yaml,yml}"
+    }
+  ]
+}

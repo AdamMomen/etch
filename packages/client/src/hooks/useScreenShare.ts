@@ -13,9 +13,23 @@ import { toast } from 'sonner'
 import { invoke } from '@tauri-apps/api/core'
 import { useScreenShareStore } from '@/stores/screenShareStore'
 import { useRoomStore } from '@/stores/roomStore'
+import { getSidecarClient } from '@/lib/sidecar'
+import { getCoreClient, type ScreenInfo, type WindowInfo } from '@/lib/core'
+import { parseParticipantMetadata } from '@/utils/participantMetadata'
 
 export interface UseScreenShareOptions {
   room: Room | null
+  livekitUrl?: string | null
+  token?: string | null
+  /** Separate token for screen share with different identity (prevents WebView disconnection) */
+  screenShareToken?: string | null
+}
+
+export interface SourcePickerState {
+  isOpen: boolean
+  isLoading: boolean
+  screens: ScreenInfo[]
+  windows: WindowInfo[]
 }
 
 export interface UseScreenShareReturn {
@@ -27,6 +41,10 @@ export interface UseScreenShareReturn {
   remoteScreenTrack: RemoteVideoTrack | null
   startScreenShare: () => Promise<void>
   stopScreenShare: () => Promise<void>
+  // Source picker state for native capture (macOS/Linux)
+  sourcePicker: SourcePickerState
+  onSourcePickerClose: () => void
+  onSourceSelect: (sourceId: string, sourceType: 'screen' | 'window') => Promise<void>
 }
 
 // Platform type from Tauri command
@@ -60,7 +78,133 @@ const restoreMainWindow = async (): Promise<void> => {
   }
 }
 
-export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareReturn {
+// Start screen share using Windows WebView getDisplayMedia
+const startWindowsScreenShare = async (room: Room): Promise<{ track: LocalVideoTrack; stream: MediaStream }> => {
+  const stream = await navigator.mediaDevices.getDisplayMedia({
+    video: {
+      width: { ideal: 1920 },
+      height: { ideal: 1080 },
+      frameRate: { ideal: 30, max: 60 },
+    },
+    audio: false,
+  })
+
+  const videoTrack = stream.getVideoTracks()[0]
+
+  if (!videoTrack) {
+    stream.getTracks().forEach((t) => t.stop())
+    throw new Error('No video track available')
+  }
+
+  // Set content hint to 'text' for text-optimized encoding (AC-3.5.4)
+  // This tells the encoder to prioritize sharpness over smooth motion
+  videoTrack.contentHint = 'text'
+
+  // Publish track to LiveKit with screen share settings
+  const publication = await room.localParticipant.publishTrack(videoTrack, {
+    name: 'screen',
+    source: Track.Source.ScreenShare,
+    videoEncoding: {
+      maxBitrate: 6_000_000,
+      maxFramerate: 30,
+    },
+    videoCodec: 'vp9',
+    // Prioritize resolution over framerate when bandwidth constrained (AC-3.5.2)
+    // Text at 15fps is readable; text at 480p is not
+    degradationPreference: 'maintain-resolution',
+  })
+
+  if (!publication.track) {
+    stream.getTracks().forEach((t) => t.stop())
+    throw new Error('Failed to publish track')
+  }
+
+  return { track: publication.track as LocalVideoTrack, stream }
+}
+
+// Initialize native screen share - returns available sources
+const initNativeScreenShare = async (): Promise<{ screens: ScreenInfo[]; windows: WindowInfo[] }> => {
+  const sidecar = getSidecarClient()
+
+  // Start sidecar if not running
+  if (!sidecar.isRunning()) {
+    try {
+      await sidecar.start()
+    } catch (error) {
+      throw new Error(`Failed to start screen capture: ${error}`)
+    }
+  }
+
+  // Check permission on macOS
+  const platform = await getPlatform()
+  if (platform === 'macos') {
+    const permission = await sidecar.checkPermission()
+    if (!permission.granted) {
+      const requested = await sidecar.requestPermission()
+      if (!requested.granted) {
+        throw new Error('Screen recording permission denied. Please enable in System Preferences > Privacy > Screen Recording')
+      }
+    }
+  }
+
+  // Enumerate sources
+  const sources = await sidecar.enumerateSources()
+
+  if (sources.screens.length === 0 && sources.windows.length === 0) {
+    throw new Error('No screens or windows available for capture')
+  }
+
+  return sources
+}
+
+// Start capture with the selected source
+const startNativeCapture = async (
+  sourceId: string,
+  sourceType: 'screen' | 'window',
+  livekitUrl: string,
+  token: string
+): Promise<void> => {
+  const sidecar = getSidecarClient()
+  const core = getCoreClient()
+
+  // Have Core join the LiveKit room first (so it can publish the screen share track)
+  // We need to wait for the room to actually connect before starting capture
+  await new Promise<void>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      unsubscribe()
+      reject(new Error('Timeout waiting for room connection'))
+    }, 10000) // 10 second timeout
+
+    const unsubscribe = core.onMessage((message) => {
+      if (message.type === 'connection_state_changed' && message.state === 'connected') {
+        clearTimeout(timeout)
+        unsubscribe()
+        resolve()
+      } else if (message.type === 'error') {
+        clearTimeout(timeout)
+        unsubscribe()
+        reject(new Error(message.message))
+      }
+    })
+
+    // Send join room command
+    core.joinRoom(livekitUrl, token).catch((err) => {
+      clearTimeout(timeout)
+      unsubscribe()
+      reject(err)
+    })
+  })
+
+  // Start capture - Core will publish the track to LiveKit via RoomService
+  await sidecar.startCapture(sourceId, sourceType, {
+    width: 1920,
+    height: 1080,
+    framerate: 30,
+    bitrate: 6_000_000,
+  })
+}
+
+export function useScreenShare({ room, livekitUrl, screenShareToken }: UseScreenShareOptions): UseScreenShareReturn {
   const {
     isSharing,
     isLocalSharing,
@@ -76,6 +220,52 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
   const [canShare, setCanShare] = useState(true)
   const streamRef = useRef<MediaStream | null>(null)
 
+  // Source picker state for native capture (macOS/Linux)
+  const [sourcePicker, setSourcePicker] = useState<SourcePickerState>({
+    isOpen: false,
+    isLoading: false,
+    screens: [],
+    windows: [],
+  })
+
+  // Close source picker
+  const onSourcePickerClose = useCallback(() => {
+    setSourcePicker((prev) => ({ ...prev, isOpen: false }))
+    setCanShare(true)
+  }, [])
+
+  // Handle source selection from picker
+  const onSourceSelect = useCallback(async (sourceId: string, sourceType: 'screen' | 'window') => {
+    if (!room || !livekitUrl || !screenShareToken) {
+      toast.error('Not connected to room')
+      return
+    }
+
+    try {
+      // Close picker
+      setSourcePicker((prev) => ({ ...prev, isOpen: false }))
+
+      // Start capture with selected source - use screenShareToken for Core connection
+      // to avoid disconnecting the WebView's LiveKit connection (different identity)
+      await startNativeCapture(sourceId, sourceType, livekitUrl, screenShareToken)
+
+      // Update store state
+      startSharing('screen', sourceId)
+
+      // Update local participant's sharing state
+      if (localParticipant?.id) {
+        updateParticipant(localParticipant.id, { isScreenSharing: true })
+      }
+
+      // Minimize main window after successful publish
+      await minimizeMainWindow()
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to start screen share')
+      console.error('Screen share error:', error)
+      setCanShare(true)
+    }
+  }, [room, livekitUrl, screenShareToken, startSharing, localParticipant?.id, updateParticipant])
+
   // Start screen share
   const startScreenShare = useCallback(async () => {
     if (!room) {
@@ -89,67 +279,58 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
       return
     }
 
-    // Platform detection
-    const platform = await getPlatform()
-    if (platform !== 'windows') {
-      toast.info('Screen sharing on macOS/Linux coming soon', {
-        description: 'Native capture requires Story 3.10',
-      })
-      return
-    }
-
     try {
       setCanShare(false)
 
-      // Request screen share using getDisplayMedia
-      const stream = await navigator.mediaDevices.getDisplayMedia({
-        video: {
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          frameRate: { ideal: 30, max: 60 },
-        },
-        audio: false,
-      })
+      // Platform detection
+      const platform = await getPlatform()
 
-      streamRef.current = stream
-      const videoTrack = stream.getVideoTracks()[0]
+      if (platform === 'windows') {
+        // Windows: use WebView getDisplayMedia
+        const { track, stream } = await startWindowsScreenShare(room)
+        streamRef.current = stream
+        setScreenTrack(track)
 
-      if (!videoTrack) {
-        toast.error('No video track available')
-        setCanShare(true)
-        return
-      }
+        // Update store state
+        startSharing('screen', stream.getVideoTracks()[0].id)
 
-      // Publish track to LiveKit with screen share settings
-      const publication = await room.localParticipant.publishTrack(videoTrack, {
-        name: 'screen',
-        source: Track.Source.ScreenShare,
-        videoEncoding: {
-          maxBitrate: 6_000_000,
-          maxFramerate: 30,
-        },
-        videoCodec: 'vp9',
-      })
+        // Update local participant's sharing state
+        if (localParticipant?.id) {
+          updateParticipant(localParticipant.id, { isScreenSharing: true })
+        }
 
-      // Track the published track
-      if (publication.track) {
-        setScreenTrack(publication.track as LocalVideoTrack)
-      }
+        // Minimize main window after successful publish (AC-3.1.3)
+        await minimizeMainWindow()
 
-      // Update store state
-      startSharing('screen', videoTrack.id)
+        // Listen for track ended (browser "Stop sharing" button)
+        stream.getVideoTracks()[0].onended = () => {
+          handleStopShare()
+        }
+      } else {
+        // macOS/Linux: use native sidecar with source picker
+        // Requires screenShareToken (separate identity to avoid disconnecting WebView)
+        if (!livekitUrl || !screenShareToken) {
+          throw new Error('LiveKit connection info not available for native screen share')
+        }
 
-      // Update local participant's sharing state
-      if (localParticipant?.id) {
-        updateParticipant(localParticipant.id, { isScreenSharing: true })
-      }
+        // Show loading state in picker
+        setSourcePicker({ isOpen: true, isLoading: true, screens: [], windows: [] })
 
-      // Minimize main window after successful publish (AC-3.1.3)
-      await minimizeMainWindow()
+        try {
+          // Initialize and enumerate sources
+          const sources = await initNativeScreenShare()
 
-      // Listen for track ended (browser "Stop sharing" button)
-      videoTrack.onended = () => {
-        handleStopShare()
+          // Show picker with sources
+          setSourcePicker({
+            isOpen: true,
+            isLoading: false,
+            screens: sources.screens,
+            windows: sources.windows,
+          })
+        } catch (error) {
+          setSourcePicker({ isOpen: false, isLoading: false, screens: [], windows: [] })
+          throw error
+        }
       }
     } catch (error) {
       // User cancelled the picker - this is expected, do nothing (AC-3.1.5)
@@ -158,13 +339,13 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
           // User cancelled - silently fail per AC-3.1.5
           console.log('Screen share cancelled by user')
         } else {
-          toast.error('Failed to start screen share')
+          toast.error(error.message || 'Failed to start screen share')
           console.error('Screen share error:', error)
         }
       }
       setCanShare(true)
     }
-  }, [room, isSharing, isLocalSharing, sharerName, startSharing, localParticipant?.id, updateParticipant])
+  }, [room, isSharing, isLocalSharing, sharerName, startSharing, localParticipant?.id, updateParticipant, livekitUrl, screenShareToken])
 
   // Internal handler for stopping share
   const handleStopShare = useCallback(async () => {
@@ -177,10 +358,24 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
         await room.localParticipant.unpublishTrack(screenPub.track)
       }
 
-      // Stop the media stream
+      // Stop the media stream (Windows)
       if (streamRef.current) {
         streamRef.current.getTracks().forEach((track) => track.stop())
         streamRef.current = null
+      }
+
+      // Stop sidecar capture (macOS/Linux)
+      const platform = await getPlatform()
+      if (platform !== 'windows') {
+        const sidecar = getSidecarClient()
+        if (sidecar.isRunning()) {
+          await sidecar.stopCapture()
+          // Leave the LiveKit room before stopping Core to ensure clean disconnect
+          // This prevents the -screenshare participant from lingering
+          const core = getCoreClient()
+          await core.leaveRoom()
+          await sidecar.stop()
+        }
       }
 
       // Update store state
@@ -226,8 +421,24 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
     ) => {
       if (track.source === Track.Source.ScreenShare && track.kind === Track.Kind.Video) {
         setRemoteScreenTrack(track as RemoteVideoTrack)
-        setRemoteSharer(participant.identity, participant.name || participant.identity)
-        updateParticipant(participant.identity, { isScreenSharing: true })
+
+        // Parse metadata to find the main participant (parentId)
+        const metadata = parseParticipantMetadata(participant.metadata || '')
+
+        if (metadata.isScreenShare && metadata.parentId) {
+          // This is a screen share from the sidecar - associate with main participant
+          // Find the main participant's name from the room
+          const mainParticipant = room.remoteParticipants.get(metadata.parentId)
+          const mainParticipantName = mainParticipant?.name || metadata.parentId
+
+          setRemoteSharer(metadata.parentId, mainParticipantName)
+          updateParticipant(metadata.parentId, { isScreenSharing: true })
+        } else {
+          // This is a direct screen share (Windows getDisplayMedia) - use participant directly
+          setRemoteSharer(participant.identity, participant.name || participant.identity)
+          updateParticipant(participant.identity, { isScreenSharing: true })
+        }
+
         // Disable local share button when remote participant starts sharing (AC-3.4.1)
         setCanShare(false)
       }
@@ -240,13 +451,29 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
       participant: RemoteParticipant
     ) => {
       if (track.source === Track.Source.ScreenShare) {
+        // Parse metadata to find the main participant
+        const metadata = parseParticipantMetadata(participant.metadata || '')
+
+        let sharerDisplayName: string
+        let sharerParticipantId: string
+
+        if (metadata.isScreenShare && metadata.parentId) {
+          // Screen share from sidecar - find main participant's name
+          const mainParticipant = room.remoteParticipants.get(metadata.parentId)
+          sharerDisplayName = mainParticipant?.name || metadata.parentId
+          sharerParticipantId = metadata.parentId
+        } else {
+          // Direct screen share (Windows)
+          sharerDisplayName = participant.name || participant.identity
+          sharerParticipantId = participant.identity
+        }
+
         // Notify viewers that the sharer stopped (AC-3.3.8)
-        const sharerDisplayName = participant.name || participant.identity
         toast.info(`${sharerDisplayName} stopped sharing`)
 
         setRemoteScreenTrack(null)
         setRemoteSharer(null, null)
-        updateParticipant(participant.identity, { isScreenSharing: false })
+        updateParticipant(sharerParticipantId, { isScreenSharing: false })
         // Re-enable local share button when remote participant stops sharing (AC-3.4.3)
         setCanShare(true)
       }
@@ -300,5 +527,9 @@ export function useScreenShare({ room }: UseScreenShareOptions): UseScreenShareR
     remoteScreenTrack,
     startScreenShare,
     stopScreenShare,
+    // Source picker state for native capture (macOS/Linux)
+    sourcePicker,
+    onSourcePickerClose,
+    onSourceSelect,
   }
 }

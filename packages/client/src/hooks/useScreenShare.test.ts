@@ -116,13 +116,14 @@ describe('useScreenShare', () => {
       expect(toast.error).toHaveBeenCalledWith('Other User is already sharing')
     })
 
-    it('should show info message on non-Windows platforms', async () => {
+    it('should show error when LiveKit credentials missing on non-Windows platforms', async () => {
       const { toast } = await import('sonner')
       const mockRoom = createMockRoom()
 
       // Mock platform as macOS
       mockInvoke.mockResolvedValueOnce('macos')
 
+      // Without passing livekitUrl and token, should error
       const { result } = renderHook(() =>
         useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
       )
@@ -131,9 +132,8 @@ describe('useScreenShare', () => {
         await result.current.startScreenShare()
       })
 
-      expect(toast.info).toHaveBeenCalledWith(
-        'Screen sharing on macOS/Linux coming soon',
-        expect.objectContaining({ description: expect.any(String) })
+      expect(toast.error).toHaveBeenCalledWith(
+        'LiveKit connection info not available for native screen share'
       )
     })
 
@@ -625,6 +625,335 @@ describe('useScreenShare', () => {
 
       // Should be false now
       expect(result.current.canShare).toBe(false)
+    })
+  })
+
+  describe('screen share participant association (Story 3.11)', () => {
+    it('should associate screen share with main participant using parentId metadata (AC-3.11.2)', async () => {
+      const mockRoom = createMockRoom()
+      let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      // Add remoteParticipants Map to mock room
+      const mockMainParticipant = {
+        identity: 'main-user-123',
+        name: 'Alice',
+      }
+      const mockRemoteParticipants = new Map([['main-user-123', mockMainParticipant]])
+      Object.assign(mockRoom, { remoteParticipants: mockRemoteParticipants })
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackSubscribed') {
+          trackSubscribedHandler = handler
+        }
+      })
+
+      renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Simulate screen share from sidecar participant (has isScreenShare metadata)
+      const mockScreenShareTrack = {
+        source: 'screen_share',
+        kind: 'video',
+        id: 'screen-track-123',
+      }
+      const mockScreenShareParticipant = {
+        identity: 'main-user-123-screenshare',
+        name: 'Alice (Screen)',
+        metadata: JSON.stringify({
+          role: 'screenshare',
+          parentId: 'main-user-123',
+          isScreenShare: true,
+        }),
+      }
+
+      await act(async () => {
+        trackSubscribedHandler?.(mockScreenShareTrack, {}, mockScreenShareParticipant)
+      })
+
+      // Store should use main participant's info, not screen share participant
+      const state = useScreenShareStore.getState()
+      expect(state.sharerId).toBe('main-user-123') // parentId, not screenshare identity
+      expect(state.sharerName).toBe('Alice') // Main participant name, not "Alice (Screen)"
+    })
+
+    it('should update main participant isScreenSharing state, not screen share participant (AC-3.11.2)', async () => {
+      const mockRoom = createMockRoom()
+      let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      const mockMainParticipant = { identity: 'main-user-123', name: 'Alice' }
+      const mockRemoteParticipants = new Map([['main-user-123', mockMainParticipant]])
+      Object.assign(mockRoom, { remoteParticipants: mockRemoteParticipants })
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackSubscribed') {
+          trackSubscribedHandler = handler
+        }
+      })
+
+      // Set up main participant in room store
+      useRoomStore.setState({
+        localParticipant: { id: 'local-user', name: 'Bob', role: 'host', color: '#ff0000', isLocal: true },
+        remoteParticipants: [{ id: 'main-user-123', name: 'Alice', role: 'annotator', color: '#00ff00', isLocal: false, isScreenSharing: false }],
+      })
+
+      renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Simulate screen share from sidecar
+      const mockScreenShareTrack = { source: 'screen_share', kind: 'video', id: 'screen-track-123' }
+      const mockScreenShareParticipant = {
+        identity: 'main-user-123-screenshare',
+        name: 'Alice (Screen)',
+        metadata: JSON.stringify({ role: 'screenshare', parentId: 'main-user-123', isScreenShare: true }),
+      }
+
+      await act(async () => {
+        trackSubscribedHandler?.(mockScreenShareTrack, {}, mockScreenShareParticipant)
+      })
+
+      // Main participant should have isScreenSharing: true
+      const roomState = useRoomStore.getState()
+      const mainParticipant = roomState.remoteParticipants.find(p => p.id === 'main-user-123')
+      expect(mainParticipant?.isScreenSharing).toBe(true)
+    })
+
+    it('should use main participant name in stop notification (AC-3.11.5)', async () => {
+      const { toast } = await import('sonner')
+      const mockRoom = createMockRoom()
+      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      const mockMainParticipant = { identity: 'main-user-123', name: 'Alice' }
+      const mockRemoteParticipants = new Map([['main-user-123', mockMainParticipant]])
+      Object.assign(mockRoom, { remoteParticipants: mockRemoteParticipants })
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackUnsubscribed') {
+          trackUnsubscribedHandler = handler
+        }
+      })
+
+      renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Simulate screen share stop from sidecar
+      const mockScreenShareTrack = { source: 'screen_share', kind: 'video', id: 'screen-track-123' }
+      const mockScreenShareParticipant = {
+        identity: 'main-user-123-screenshare',
+        name: 'Alice (Screen)',
+        metadata: JSON.stringify({ role: 'screenshare', parentId: 'main-user-123', isScreenShare: true }),
+      }
+
+      await act(async () => {
+        trackUnsubscribedHandler?.(mockScreenShareTrack, {}, mockScreenShareParticipant)
+      })
+
+      // Toast should show main participant's name, not "Alice (Screen)"
+      expect(toast.info).toHaveBeenCalledWith('Alice stopped sharing')
+    })
+
+    it('should handle direct screen share (Windows) without metadata', async () => {
+      const mockRoom = createMockRoom()
+      let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      const mockRemoteParticipants = new Map()
+      Object.assign(mockRoom, { remoteParticipants: mockRemoteParticipants })
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackSubscribed') {
+          trackSubscribedHandler = handler
+        }
+      })
+
+      renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Simulate direct screen share (no isScreenShare metadata - Windows/getDisplayMedia)
+      const mockScreenShareTrack = { source: 'screen_share', kind: 'video', id: 'screen-track-123' }
+      const mockParticipant = {
+        identity: 'remote-user-456',
+        name: 'Bob',
+        metadata: JSON.stringify({ role: 'annotator', color: '#00ff00' }), // No isScreenShare
+      }
+
+      await act(async () => {
+        trackSubscribedHandler?.(mockScreenShareTrack, {}, mockParticipant)
+      })
+
+      // Should use participant directly
+      const state = useScreenShareStore.getState()
+      expect(state.sharerId).toBe('remote-user-456')
+      expect(state.sharerName).toBe('Bob')
+    })
+  })
+
+  describe('screen share quality optimization', () => {
+    it('should set contentHint to "text" on video track (AC-3.5.4)', async () => {
+      const mockRoom = createMockRoom()
+
+      // Mock platform as Windows
+      mockInvoke.mockImplementation((cmd: string) => {
+        if (cmd === 'get_platform') return Promise.resolve('windows')
+        if (cmd === 'minimize_main_window') return Promise.resolve()
+        return Promise.resolve()
+      })
+
+      // Create a mock track that captures contentHint assignment
+      let capturedContentHint: string | undefined
+      const mockTrack = {
+        id: 'video-track-123',
+        onended: null,
+        stop: vi.fn(),
+        get contentHint(): string | undefined { return capturedContentHint },
+        set contentHint(value: string) { capturedContentHint = value },
+      }
+      const mockStream = {
+        getVideoTracks: () => [mockTrack],
+        getTracks: () => [mockTrack],
+      }
+      vi.mocked(navigator.mediaDevices.getDisplayMedia).mockResolvedValueOnce(
+        mockStream as unknown as MediaStream
+      )
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      await act(async () => {
+        await result.current.startScreenShare()
+      })
+
+      // contentHint should be set to 'text' for text-optimized encoding
+      expect(capturedContentHint).toBe('text')
+    })
+
+    it('should publish track with VP9 codec (AC-3.5.3)', async () => {
+      const mockRoom = createMockRoom()
+
+      mockInvoke.mockImplementation((cmd: string) => {
+        if (cmd === 'get_platform') return Promise.resolve('windows')
+        if (cmd === 'minimize_main_window') return Promise.resolve()
+        return Promise.resolve()
+      })
+
+      const mockTrack = {
+        id: 'video-track-123',
+        onended: null,
+        stop: vi.fn(),
+        contentHint: '',
+      }
+      const mockStream = {
+        getVideoTracks: () => [mockTrack],
+        getTracks: () => [mockTrack],
+      }
+      vi.mocked(navigator.mediaDevices.getDisplayMedia).mockResolvedValueOnce(
+        mockStream as unknown as MediaStream
+      )
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      await act(async () => {
+        await result.current.startScreenShare()
+      })
+
+      // Verify publishTrack was called with VP9 codec
+      expect(mockRoom.localParticipant.publishTrack).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          videoCodec: 'vp9',
+        })
+      )
+    })
+
+    it('should publish track with degradationPreference "maintain-resolution" (AC-3.5.2)', async () => {
+      const mockRoom = createMockRoom()
+
+      mockInvoke.mockImplementation((cmd: string) => {
+        if (cmd === 'get_platform') return Promise.resolve('windows')
+        if (cmd === 'minimize_main_window') return Promise.resolve()
+        return Promise.resolve()
+      })
+
+      const mockTrack = {
+        id: 'video-track-123',
+        onended: null,
+        stop: vi.fn(),
+        contentHint: '',
+      }
+      const mockStream = {
+        getVideoTracks: () => [mockTrack],
+        getTracks: () => [mockTrack],
+      }
+      vi.mocked(navigator.mediaDevices.getDisplayMedia).mockResolvedValueOnce(
+        mockStream as unknown as MediaStream
+      )
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      await act(async () => {
+        await result.current.startScreenShare()
+      })
+
+      // Verify publishTrack was called with degradationPreference
+      expect(mockRoom.localParticipant.publishTrack).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          degradationPreference: 'maintain-resolution',
+        })
+      )
+    })
+
+    it('should publish track with correct encoding settings (AC-3.5.1)', async () => {
+      const mockRoom = createMockRoom()
+
+      mockInvoke.mockImplementation((cmd: string) => {
+        if (cmd === 'get_platform') return Promise.resolve('windows')
+        if (cmd === 'minimize_main_window') return Promise.resolve()
+        return Promise.resolve()
+      })
+
+      const mockTrack = {
+        id: 'video-track-123',
+        onended: null,
+        stop: vi.fn(),
+        contentHint: '',
+      }
+      const mockStream = {
+        getVideoTracks: () => [mockTrack],
+        getTracks: () => [mockTrack],
+      }
+      vi.mocked(navigator.mediaDevices.getDisplayMedia).mockResolvedValueOnce(
+        mockStream as unknown as MediaStream
+      )
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      await act(async () => {
+        await result.current.startScreenShare()
+      })
+
+      // Verify publishTrack was called with all quality optimization options
+      expect(mockRoom.localParticipant.publishTrack).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({
+          name: 'screen',
+          videoCodec: 'vp9',
+          degradationPreference: 'maintain-resolution',
+          videoEncoding: expect.objectContaining({
+            maxBitrate: 6_000_000,
+            maxFramerate: 30,
+          }),
+        })
+      )
     })
   })
 })
