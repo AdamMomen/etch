@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import '@testing-library/jest-dom/vitest'
 import { SourcePickerDialog } from '@/components/ScreenShare/SourcePickerDialog'
 import type { ScreenInfo } from '@/lib/core'
 
 // Sample base64 JPEG thumbnail (1x1 pixel red image for testing)
-const SAMPLE_THUMBNAIL = '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAB//2Q=='
+const SAMPLE_THUMBNAIL =
+  '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCwAB//2Q=='
 
 // Create mock data helpers
 const createMockScreen = (overrides: Partial<ScreenInfo> = {}): ScreenInfo => ({
@@ -74,7 +76,10 @@ describe('SourcePickerDialog', () => {
       // Find the image element
       const img = screen.getByRole('img', { name: 'Display 1' })
       expect(img).toBeInTheDocument()
-      expect(img).toHaveAttribute('src', `data:image/jpeg;base64,${SAMPLE_THUMBNAIL}`)
+      expect(img).toHaveAttribute(
+        'src',
+        `data:image/jpeg;base64,${SAMPLE_THUMBNAIL}`
+      )
     })
 
     it('should display icon placeholder when thumbnail is not available', () => {
@@ -100,8 +105,16 @@ describe('SourcePickerDialog', () => {
     it('should handle mixed sources - some with thumbnails, some without', () => {
       const props = createDefaultProps({
         screens: [
-          createMockScreen({ id: 'screen:1', name: 'Display 1', thumbnail: SAMPLE_THUMBNAIL }),
-          createMockScreen({ id: 'screen:2', name: 'Display 2', thumbnail: undefined }),
+          createMockScreen({
+            id: 'screen:1',
+            name: 'Display 1',
+            thumbnail: SAMPLE_THUMBNAIL,
+          }),
+          createMockScreen({
+            id: 'screen:2',
+            name: 'Display 2',
+            thumbnail: undefined,
+          }),
         ],
       })
 
@@ -112,7 +125,9 @@ describe('SourcePickerDialog', () => {
 
       // Second screen should have icon (no img for it)
       const buttons = screen.getAllByRole('button')
-      const display2Button = buttons.find(b => b.textContent?.includes('Display 2'))
+      const display2Button = buttons.find((b) =>
+        b.textContent?.includes('Display 2')
+      )
       expect(display2Button).toBeInTheDocument()
 
       // There should be exactly one image (for Display 1)
