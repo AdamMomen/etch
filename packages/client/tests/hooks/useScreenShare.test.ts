@@ -788,6 +788,180 @@ describe('useScreenShare', () => {
       expect(state.sharerId).toBe('remote-user-456')
       expect(state.sharerName).toBe('Bob')
     })
+
+    it('should NOT treat own sidecar screen share as remote (fix for host stop issue)', async () => {
+      const mockRoom = createMockRoom()
+      let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      // Set up local participant
+      const localParticipantId = 'local-user-123'
+      Object.assign(mockRoom, {
+        localParticipant: {
+          ...mockRoom.localParticipant,
+          identity: localParticipantId,
+        },
+        remoteParticipants: new Map(),
+      })
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackSubscribed') {
+          trackSubscribedHandler = handler
+        }
+      })
+
+      // Set up initial state where local user started sharing
+      useScreenShareStore.setState({
+        isSharing: true,
+        isLocalSharing: true,
+        sharerId: null,
+        sharerName: null,
+        sharedSource: 'screen',
+        sharedSourceId: 'screen:123',
+      })
+
+      renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Simulate OWN sidecar screen share track being subscribed
+      // (This happens because Core connects as separate participant)
+      const mockScreenShareTrack = { source: 'screen_share', kind: 'video', id: 'screen-track-123' }
+      const mockOwnSidecarParticipant = {
+        identity: `${localParticipantId}-screenshare`,
+        name: 'Test User (Screen)',
+        metadata: JSON.stringify({
+          role: 'screenshare',
+          parentId: localParticipantId, // Points to local user
+          isScreenShare: true,
+        }),
+      }
+
+      await act(async () => {
+        trackSubscribedHandler?.(mockScreenShareTrack, {}, mockOwnSidecarParticipant)
+      })
+
+      // isLocalSharing should STILL be true (not overwritten by setRemoteSharer)
+      const state = useScreenShareStore.getState()
+      expect(state.isLocalSharing).toBe(true)
+      // sharerId should NOT be set (we're the sharer, not a remote)
+      expect(state.sharerId).toBeNull()
+      expect(state.sharerName).toBeNull()
+    })
+
+    it('should NOT show toast when own sidecar screen share stops', async () => {
+      const { toast } = await import('sonner')
+      const mockRoom = createMockRoom()
+      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      // Set up local participant
+      const localParticipantId = 'local-user-123'
+      Object.assign(mockRoom, {
+        localParticipant: {
+          ...mockRoom.localParticipant,
+          identity: localParticipantId,
+        },
+        remoteParticipants: new Map(),
+      })
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackUnsubscribed') {
+          trackUnsubscribedHandler = handler
+        }
+      })
+
+      // Set up initial state where local user is sharing
+      useScreenShareStore.setState({
+        isSharing: true,
+        isLocalSharing: true,
+        sharerId: null,
+        sharerName: null,
+        sharedSource: 'screen',
+        sharedSourceId: 'screen:123',
+      })
+
+      renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Clear any previous toast calls
+      vi.mocked(toast.info).mockClear()
+
+      // Simulate OWN sidecar screen share track being unsubscribed
+      const mockScreenShareTrack = { source: 'screen_share', kind: 'video', id: 'screen-track-123' }
+      const mockOwnSidecarParticipant = {
+        identity: `${localParticipantId}-screenshare`,
+        name: 'Test User (Screen)',
+        metadata: JSON.stringify({
+          role: 'screenshare',
+          parentId: localParticipantId,
+          isScreenShare: true,
+        }),
+      }
+
+      await act(async () => {
+        trackUnsubscribedHandler?.(mockScreenShareTrack, {}, mockOwnSidecarParticipant)
+      })
+
+      // Should NOT show "stopped sharing" toast for own screen share
+      expect(toast.info).not.toHaveBeenCalled()
+
+      // isLocalSharing should remain true (cleanup handled by handleStopShare, not this handler)
+      const state = useScreenShareStore.getState()
+      expect(state.isLocalSharing).toBe(true)
+    })
+
+    it('should NOT disable canShare when own sidecar screen share is subscribed', async () => {
+      const mockRoom = createMockRoom()
+      let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+
+      const localParticipantId = 'local-user-123'
+      Object.assign(mockRoom, {
+        localParticipant: {
+          ...mockRoom.localParticipant,
+          identity: localParticipantId,
+        },
+        remoteParticipants: new Map(),
+      })
+
+      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackSubscribed') {
+          trackSubscribedHandler = handler
+        }
+      })
+
+      // Set up state where local user started sharing (canShare already false from startScreenShare)
+      useScreenShareStore.setState({
+        isSharing: true,
+        isLocalSharing: true,
+      })
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // canShare starts as true in the hook state
+      expect(result.current.canShare).toBe(true)
+
+      // Simulate OWN sidecar screen share track subscription
+      const mockScreenShareTrack = { source: 'screen_share', kind: 'video', id: 'screen-track-123' }
+      const mockOwnSidecarParticipant = {
+        identity: `${localParticipantId}-screenshare`,
+        name: 'Test User (Screen)',
+        metadata: JSON.stringify({
+          role: 'screenshare',
+          parentId: localParticipantId,
+          isScreenShare: true,
+        }),
+      }
+
+      await act(async () => {
+        trackSubscribedHandler?.(mockScreenShareTrack, {}, mockOwnSidecarParticipant)
+      })
+
+      // canShare should remain true (not disabled by own screen share)
+      // This allows the stop button to work
+      expect(result.current.canShare).toBe(true)
+    })
   })
 
   describe('screen share quality optimization', () => {

@@ -14,7 +14,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { useScreenShareStore } from '@/stores/screenShareStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { getSidecarClient } from '@/lib/sidecar'
-import { getCoreClient, type ScreenInfo, type WindowInfo } from '@/lib/core'
+import { getCoreClient, type ScreenInfo } from '@/lib/core'
 import { parseParticipantMetadata } from '@/utils/participantMetadata'
 
 export interface UseScreenShareOptions {
@@ -29,7 +29,7 @@ export interface SourcePickerState {
   isOpen: boolean
   isLoading: boolean
   screens: ScreenInfo[]
-  windows: WindowInfo[]
+  // Window capture not supported - only screens are available
 }
 
 export interface UseScreenShareReturn {
@@ -127,10 +127,9 @@ const startWindowsScreenShare = async (
   return { track: publication.track as LocalVideoTrack, stream }
 }
 
-// Initialize native screen share - returns available sources
+// Initialize native screen share - returns available sources (screens only)
 const initNativeScreenShare = async (): Promise<{
   screens: ScreenInfo[]
-  windows: WindowInfo[]
 }> => {
   const sidecar = getSidecarClient()
 
@@ -250,12 +249,11 @@ export function useScreenShare({
   const [canShare, setCanShare] = useState(true)
   const streamRef = useRef<MediaStream | null>(null)
 
-  // Source picker state for native capture (macOS/Linux)
+  // Source picker state for native capture (macOS/Linux) - screens only
   const [sourcePicker, setSourcePicker] = useState<SourcePickerState>({
     isOpen: false,
     isLoading: false,
     screens: [],
-    windows: [],
   })
 
   // Close source picker
@@ -369,11 +367,10 @@ export function useScreenShare({
           isOpen: true,
           isLoading: true,
           screens: [],
-          windows: [],
         })
 
         try {
-          // Initialize and enumerate sources
+          // Initialize and enumerate sources (screens only)
           const sources = await initNativeScreenShare()
 
           // Show picker with sources
@@ -381,14 +378,12 @@ export function useScreenShare({
             isOpen: true,
             isLoading: false,
             screens: sources.screens,
-            windows: sources.windows,
           })
         } catch (error) {
           setSourcePicker({
             isOpen: false,
             isLoading: false,
             screens: [],
-            windows: [],
           })
           throw error
         }
@@ -508,8 +503,18 @@ export function useScreenShare({
         const metadata = parseParticipantMetadata(participant.metadata || '')
 
         if (metadata.isScreenShare && metadata.parentId) {
-          // This is a screen share from the sidecar - associate with main participant
-          // Find the main participant's name from the room
+          // Check if this is OUR screen share from our sidecar/Core process
+          const isOwnScreenShare =
+            metadata.parentId === room.localParticipant?.identity
+
+          if (isOwnScreenShare) {
+            // This is our own screen share - don't treat as remote
+            // State is already correct from startSharing() call
+            // Just keep the track reference but don't update sharing state
+            return
+          }
+
+          // This is a screen share from another user's sidecar - associate with main participant
           const mainParticipant = room.remoteParticipants.get(metadata.parentId)
           const mainParticipantName = mainParticipant?.name || metadata.parentId
 
@@ -539,28 +544,42 @@ export function useScreenShare({
         // Parse metadata to find the main participant
         const metadata = parseParticipantMetadata(participant.metadata || '')
 
-        let sharerDisplayName: string
-        let sharerParticipantId: string
-
         if (metadata.isScreenShare && metadata.parentId) {
-          // Screen share from sidecar - find main participant's name
+          // Check if this is OUR screen share from our sidecar/Core process
+          const isOwnScreenShare =
+            metadata.parentId === room.localParticipant?.identity
+
+          if (isOwnScreenShare) {
+            // This is our own screen share stopping - handled by handleStopShare()
+            // Don't show toast or update remote sharer state
+            return
+          }
+
+          // Screen share from another user's sidecar - find main participant's name
           const mainParticipant = room.remoteParticipants.get(metadata.parentId)
-          sharerDisplayName = mainParticipant?.name || metadata.parentId
-          sharerParticipantId = metadata.parentId
+          const sharerDisplayName = mainParticipant?.name || metadata.parentId
+
+          // Notify viewers that the sharer stopped (AC-3.3.8)
+          toast.info(`${sharerDisplayName} stopped sharing`)
+
+          setRemoteScreenTrack(null)
+          setRemoteSharer(null, null)
+          updateParticipant(metadata.parentId, { isScreenSharing: false })
+          // Re-enable local share button when remote participant stops sharing (AC-3.4.3)
+          setCanShare(true)
         } else {
-          // Direct screen share (Windows)
-          sharerDisplayName = participant.name || participant.identity
-          sharerParticipantId = participant.identity
+          // Direct screen share (Windows) from remote participant
+          const sharerDisplayName = participant.name || participant.identity
+
+          // Notify viewers that the sharer stopped (AC-3.3.8)
+          toast.info(`${sharerDisplayName} stopped sharing`)
+
+          setRemoteScreenTrack(null)
+          setRemoteSharer(null, null)
+          updateParticipant(participant.identity, { isScreenSharing: false })
+          // Re-enable local share button when remote participant stops sharing (AC-3.4.3)
+          setCanShare(true)
         }
-
-        // Notify viewers that the sharer stopped (AC-3.3.8)
-        toast.info(`${sharerDisplayName} stopped sharing`)
-
-        setRemoteScreenTrack(null)
-        setRemoteSharer(null, null)
-        updateParticipant(sharerParticipantId, { isScreenSharing: false })
-        // Re-enable local share button when remote participant stops sharing (AC-3.4.3)
-        setCanShare(true)
       }
     }
 
