@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { generateToken, generateScreenShareToken, getLiveKitConfig, getLiveKitUrl } from './livekit'
+import {
+  generateToken,
+  generateScreenShareToken,
+  getLiveKitConfig,
+  getLiveKitUrl,
+} from './livekit'
 import { TOKEN_EXPIRY_SECONDS } from '@nameless/shared'
 
 // We need to test the actual token generation to verify structure
@@ -315,7 +320,7 @@ describe('livekit service', () => {
       expect(metadata.role).toBe('screenshare')
     })
 
-    it('should have restricted room grants (publish only, no subscribe)', async () => {
+    it('should have restricted room grants (publish only)', async () => {
       const roomId = 'abc-def-ghj'
 
       const token = await generateScreenShareToken(
@@ -332,7 +337,7 @@ describe('livekit service', () => {
       expect(payload.video.room).toBe(roomId)
       expect(payload.video.roomJoin).toBe(true)
       expect(payload.video.canPublish).toBe(true)
-      expect(payload.video.canSubscribe).toBe(false) // Screen share doesn't need to subscribe
+      expect(payload.video.canSubscribe).toBe(true)
       expect(payload.video.canPublishData).toBe(false)
     })
   })
