@@ -101,12 +101,15 @@ export async function generateScreenShareToken(
     ttl: TOKEN_EXPIRY_SECONDS,
   })
 
-  // Add room grants - only publish screen share, subscribe to nothing
+  // Add room grants - allow subscribing to establish WebRTC peer connection
+  // Note: canSubscribe must be true for the LiveKit Rust SDK to establish
+  // the WebRTC connection. With canSubscribe: false, subscriber_primary: false
+  // is set, which requires publishing a track before WebRTC connects.
   token.addGrant({
     room: roomId,
     roomJoin: true,
     canPublish: true,
-    canSubscribe: false, // Screen share connection doesn't need to subscribe
+    canSubscribe: true, // Required for WebRTC connection establishment
     canPublishData: false,
   })
 
