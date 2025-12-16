@@ -101,11 +101,11 @@ export function useLiveKit({
       if (cancelled) return
 
       // Check if this is a screen share participant (should not be shown in participant list)
-      // const metadata = parseParticipantMetadata(participant.metadata || '')
-      // if (metadata.isScreenShare) {
-      //   // Don't add screen share participants to the list - their tracks will still be processed
-      //   return
-      // }
+      const metadata = parseParticipantMetadata(participant.metadata || '')
+      if (metadata.isScreenShare) {
+        // Don't add screen share participants to the list - their tracks will still be processed
+        return
+      }
 
       const converted = convertLKParticipant(participant, false)
       addRemoteParticipant(converted)
@@ -116,11 +116,11 @@ export function useLiveKit({
       if (cancelled) return
 
       // Check if this is a screen share participant (don't show toast for them)
-      // const metadata = parseParticipantMetadata(participant.metadata || '')
-      // if (metadata.isScreenShare) {
-      //   // Screen share participants were never added, so just ignore disconnect
-      //   return
-      // }
+      const metadata = parseParticipantMetadata(participant.metadata || '')
+      if (metadata.isScreenShare) {
+        // Screen share participants were never added, so just ignore disconnect
+        return
+      }
 
       const name = participant.name || participant.identity
       removeRemoteParticipant(participant.identity)
@@ -254,11 +254,11 @@ export function useLiveKit({
 
         // Add existing remote participants (excluding screen share participants)
         room.remoteParticipants.forEach((participant) => {
-          // const metadata = parseParticipantMetadata(participant.metadata || '')
-          // if (metadata.isScreenShare) {
-          //   // Don't add screen share participants to the list
-          //   return
-          // }
+          const metadata = parseParticipantMetadata(participant.metadata || '')
+          if (metadata.isScreenShare) {
+            // Don't add screen share participants to the list
+            return
+          }
           const converted = convertLKParticipant(participant, false)
           addRemoteParticipant(converted)
         })
