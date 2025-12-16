@@ -10,86 +10,13 @@ import { createRoom } from '@/lib/api'
 import { parseRoomId } from '@/utils/roomId'
 import { SettingsModal } from '@/components/Settings'
 
-// DEV_BYPASS: Set to true to show dev bypass button (TODO: Remove before production)
-const DEV_MODE = import.meta.env.DEV
-
 export function HomeScreen() {
   const navigate = useNavigate()
   const [roomCode, setRoomCode] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { displayName, setDisplayName } = useSettingsStore()
-  const {
-    setCurrentRoom,
-    setLocalParticipant,
-    setRemoteParticipants,
-    setConnectionState,
-  } = useRoomStore()
-
-  /**
-   * DEV_BYPASS: Skip API call and LiveKit, go directly to MeetingRoom with mock data.
-   * This allows testing the UI without a running server or LiveKit instance.
-   * TODO: Remove this function before production release.
-   */
-  const handleDevBypass = () => {
-    const mockRoomId = 'dev-test-room'
-    const mockName = displayName || 'Dev User'
-
-    // Set display name if not already set
-    if (!displayName) {
-      setDisplayName(mockName)
-    }
-
-    // Set up mock room data with empty token/url so useLiveKit doesn't try to connect
-    // The useLiveKit hook returns early if token or livekitUrl is null/empty
-    setCurrentRoom({
-      roomId: mockRoomId,
-      token: '', // Empty token prevents useLiveKit from attempting connection
-      screenShareToken: '', // Empty for dev mode
-      livekitUrl: '', // Empty URL prevents useLiveKit from attempting connection
-    })
-
-    // Set local participant
-    setLocalParticipant({
-      id: 'local-dev-user',
-      name: mockName,
-      role: 'host',
-      color: '#f97316',
-      isLocal: true,
-    })
-
-    // Add some mock remote participants to test the grid
-    setRemoteParticipants([
-      {
-        id: 'remote-user-1',
-        name: 'Alice',
-        role: 'annotator',
-        color: '#06b6d4',
-        isLocal: false,
-        isSpeaking: false,
-        hasVideo: true,
-      },
-      {
-        id: 'remote-user-2',
-        name: 'Bob',
-        role: 'viewer',
-        color: '#8b5cf6',
-        isLocal: false,
-        isSpeaking: true,
-        hasVideo: false,
-      },
-    ])
-
-    // Set connection state to connected (bypass LiveKit connection)
-    setConnectionState({
-      isConnecting: false,
-      isConnected: true,
-      error: null,
-    })
-
-    toast.success('Dev bypass: Entering mock meeting room')
-    navigate(`/room/${mockRoomId}`)
-  }
+  const { setCurrentRoom } = useRoomStore()
 
   const handleStartMeeting = async () => {
     // If no display name, prompt for it
@@ -230,22 +157,6 @@ export function HomeScreen() {
             Annotations
           </div>
         </div>
-
-        {/* DEV_BYPASS: Dev-only button to test UI without server/LiveKit */}
-        {DEV_MODE && (
-          <div className="mt-8 border-t border-dashed border-yellow-500/50 pt-6">
-            <p className="mb-2 text-xs text-yellow-500">Development Only</p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 border-yellow-500/50 text-yellow-500 hover:bg-yellow-500/10"
-              onClick={handleDevBypass}
-            >
-              <Bug className="h-4 w-4" />
-              Bypass
-            </Button>
-          </div>
-        )}
       </div>
 
       {/* Settings Modal */}

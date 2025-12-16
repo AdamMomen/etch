@@ -13,17 +13,16 @@ import type {
   CoreClient,
   CoreMessage,
   ScreenInfo,
-  WindowInfo,
   PermissionState,
   CaptureConfig,
 } from './core'
 
 // Re-export types for backward compatibility
-export type { ScreenInfo, WindowInfo, CaptureConfig }
+export type { ScreenInfo, CaptureConfig }
 
+// Note: Window capture not supported - only screens are enumerated
 export interface SourcesResponse {
   screens: ScreenInfo[]
-  windows: WindowInfo[]
 }
 
 export interface PermissionStatus {
@@ -93,12 +92,11 @@ export class SidecarClient {
   private handleMessage(message: CoreMessage): void {
     switch (message.type) {
       case 'available_content':
-        // Resolve pending sources request
+        // Resolve pending sources request (window capture not supported)
         if (this.pendingSourcesRequest) {
           clearTimeout(this.pendingSourcesRequest.timeout)
           this.pendingSourcesRequest.resolve({
             screens: message.screens,
-            windows: message.windows,
           })
           this.pendingSourcesRequest = null
         }

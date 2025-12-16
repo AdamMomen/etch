@@ -13,7 +13,6 @@ import type {
   CoreClient,
   CoreMessage,
   ScreenInfo,
-  WindowInfo,
   ParticipantData,
   ConnectionState,
   PermissionState,
@@ -34,7 +33,7 @@ export interface UseCoreReturn {
   isConnected: boolean
   connectionState: ConnectionState
   permissionState: PermissionState | null
-  availableSources: { screens: ScreenInfo[]; windows: WindowInfo[] } | null
+  availableSources: { screens: ScreenInfo[] } | null // Window capture not supported
   participants: Map<string, ParticipantData>
   isScreenSharing: boolean
   screenSharerId: string | null
@@ -61,7 +60,7 @@ export function useCore(options: UseCoreOptions = {}): UseCoreReturn {
   const [isRunning, setIsRunning] = useState(false)
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected')
   const [permissionState, setPermissionState] = useState<PermissionState | null>(null)
-  const [availableSources, setAvailableSources] = useState<{ screens: ScreenInfo[]; windows: WindowInfo[] } | null>(null)
+  const [availableSources, setAvailableSources] = useState<{ screens: ScreenInfo[] } | null>(null)
   const [participants, setParticipants] = useState<Map<string, ParticipantData>>(new Map())
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [screenSharerId, setScreenSharerId] = useState<string | null>(null)
@@ -76,7 +75,6 @@ export function useCore(options: UseCoreOptions = {}): UseCoreReturn {
       case 'available_content':
         setAvailableSources({
           screens: message.screens,
-          windows: message.windows,
         })
         break
 

@@ -57,9 +57,9 @@ pub enum UserEvent {
     },
 
     /// Available content enumerated (response to GetAvailableContent)
+    /// Note: Window capture is not supported - only screen capture is available.
     AvailableContentReady {
         screens: Vec<ScreenInfo>,
-        windows: Vec<WindowInfo>,
     },
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -280,16 +280,14 @@ pub struct ScreenInfo {
     pub width: u32,
     pub height: u32,
     pub is_primary: bool,
+    /// Base64-encoded JPEG thumbnail (~320x180 pixels)
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub thumbnail: Option<String>,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct WindowInfo {
-    pub id: String,
-    pub title: String,
-    pub app_name: String,
-    pub width: u32,
-    pub height: u32,
-}
+// Note: WindowInfo was removed - only screen capture is supported.
+// Window capture requires platform-specific APIs (CGWindowListCopyWindowInfo on macOS)
+// which are not yet implemented. See Story 3.12 for details.
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -534,8 +532,8 @@ impl Application {
                 self.send_screen_share_state();
             }
 
-            UserEvent::AvailableContentReady { screens, windows } => {
-                self.send_available_content(screens, windows);
+            UserEvent::AvailableContentReady { screens } => {
+                self.send_available_content(screens);
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -805,9 +803,9 @@ impl Application {
 
         tokio::spawn(async move {
             let capturer = capturer.lock();
-            let (screens, windows) = capturer.enumerate_sources();
+            let screens = capturer.enumerate_sources();
 
-            let _ = proxy.send_event(UserEvent::AvailableContentReady { screens, windows });
+            let _ = proxy.send_event(UserEvent::AvailableContentReady { screens });
         });
     }
 
@@ -1015,9 +1013,9 @@ impl Application {
     // SOCKET SENDERS
     // ═══════════════════════════════════════════════════════════════════════════
 
-    fn send_available_content(&self, screens: Vec<ScreenInfo>, windows: Vec<WindowInfo>) {
+    fn send_available_content(&self, screens: Vec<ScreenInfo>) {
         if let Some(socket) = &*self.socket.lock() {
-            socket.send(OutgoingMessage::AvailableContent { screens, windows });
+            socket.send(OutgoingMessage::AvailableContent { screens });
         }
     }
 

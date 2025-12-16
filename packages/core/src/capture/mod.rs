@@ -9,8 +9,10 @@
 //! - NativeVideoSource for publishing to LiveKit
 //! - Reusable VideoFrame wrapped in Arc<Mutex> to avoid per-frame allocation
 
+use std::io::Cursor;
 use std::sync::{mpsc, Arc, Mutex as StdMutex};
 
+use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use livekit::webrtc::{
     desktop_capturer::{CaptureResult, DesktopCapturer, DesktopFrame},
     native::yuv_helper,
@@ -20,13 +22,28 @@ use livekit::webrtc::{
 use parking_lot::Mutex;
 use winit::event_loop::EventLoopProxy;
 
-use crate::{CaptureConfig, ScreenInfo, SourceType, UserEvent, WindowInfo};
+use crate::{CaptureConfig, ScreenInfo, SourceType, UserEvent};
 
 /// Frame capture interval in milliseconds (~45fps)
 const FRAME_CAPTURE_INTERVAL_MS: u64 = 22;
 
 /// Maximum consecutive failures before giving up
 const MAX_FAILURES: u64 = 10;
+
+/// Target thumbnail width
+const THUMBNAIL_WIDTH: u32 = 320;
+
+/// Target thumbnail height
+const THUMBNAIL_HEIGHT: u32 = 180;
+
+/// JPEG quality for thumbnails (0-100)
+const THUMBNAIL_QUALITY: u8 = 75;
+
+/// Polling interval for thumbnail capture (ms)
+const THUMBNAIL_POLL_INTERVAL_MS: u64 = 16;
+
+/// Total timeout for all thumbnail captures (seconds)
+const THUMBNAIL_TOTAL_TIMEOUT_SECS: u64 = 10;
 
 /// Errors that can occur during screen capture
 #[derive(Debug, thiserror::Error)]
@@ -83,54 +100,118 @@ impl Capturer {
         self.video_source = Some(source);
     }
 
-    /// Enumerate available screens and windows
-    pub fn enumerate_sources(&self) -> (Vec<ScreenInfo>, Vec<WindowInfo>) {
+    /// Enumerate available screens with thumbnail previews
+    ///
+    /// Uses parallel thumbnail capture (like Hopp) for fast enumeration.
+    /// Note: Window capture is not supported - only screens are returned.
+    pub fn enumerate_sources(&self) -> Vec<ScreenInfo> {
         // Create a temporary capturer to enumerate sources
         let capturer = DesktopCapturer::new(|_, _| {}, false, false);
 
         if capturer.is_none() {
             tracing::error!("Failed to create DesktopCapturer for enumeration");
-            return (vec![], vec![]);
+            return vec![];
         }
 
         let capturer = capturer.unwrap();
         let sources = capturer.get_source_list();
+        let source_count = sources.len();
 
-        tracing::info!("enumerate_sources: found {} sources", sources.len());
+        tracing::info!("enumerate_sources: found {} sources (screens only)", source_count);
 
+        // Shared storage for thumbnail results: (source_id, index, thumbnail_base64)
+        let results: Arc<StdMutex<Vec<(u64, usize, String)>>> = Arc::new(StdMutex::new(Vec::new()));
+
+        // Collect source metadata and spawn parallel capture threads
         let mut screens = Vec::new();
-        let mut windows = Vec::new();
+        let mut handles = Vec::new();
 
         for source in sources {
             let id = source.id();
             let title = source.title();
 
-            // DesktopCapturer returns both screens and windows
-            // We differentiate based on whether it has a title
-            if title.is_empty() || title.starts_with("Display") {
-                screens.push(ScreenInfo {
-                    id: format!("screen:{}", id),
-                    name: if title.is_empty() {
-                        format!("Display {}", screens.len() + 1)
-                    } else {
-                        title
-                    },
-                    width: 1920, // TODO: Get actual dimensions
-                    height: 1080,
-                    is_primary: screens.is_empty(),
-                });
+            // All sources are treated as screens (window capture not supported)
+            let screen_idx = screens.len();
+            let name = if title.is_empty() {
+                format!("Display {}", screens.len() + 1)
             } else {
-                windows.push(WindowInfo {
-                    id: format!("window:{}", id),
-                    title: title.clone(),
-                    app_name: title, // TODO: Extract app name
-                    width: 1280,
-                    height: 720,
-                });
+                title.clone()
+            };
+            screens.push(ScreenInfo {
+                id: format!("screen:{}", id),
+                name: name.clone(),
+                width: 1920,
+                height: 1080,
+                is_primary: screens.is_empty(),
+                thumbnail: None,
+            });
+
+            // Spawn thread for parallel thumbnail capture
+            let results_clone = results.clone();
+            let (stop_tx, stop_rx) = std::sync::mpsc::channel::<()>();
+
+            let handle = std::thread::spawn(move || {
+                capture_thumbnail_thread(
+                    id,
+                    screen_idx,
+                    name,
+                    results_clone,
+                    stop_rx,
+                );
+            });
+
+            handles.push((handle, stop_tx));
+        }
+
+        // Wait for all thumbnails to be captured (or timeout)
+        let start_time = std::time::Instant::now();
+        let timeout = std::time::Duration::from_secs(THUMBNAIL_TOTAL_TIMEOUT_SECS);
+
+        loop {
+            {
+                let res = results.lock().unwrap();
+                if res.len() >= source_count {
+                    tracing::info!("All {} thumbnails captured", res.len());
+                    break;
+                }
+            }
+
+            if start_time.elapsed() > timeout {
+                tracing::warn!(
+                    "Thumbnail capture timeout after {:?}, got {}/{} thumbnails",
+                    start_time.elapsed(),
+                    results.lock().unwrap().len(),
+                    source_count
+                );
+                break;
+            }
+
+            std::thread::sleep(std::time::Duration::from_millis(33));
+        }
+
+        // Stop all capture threads
+        for (handle, stop_tx) in handles {
+            let _ = stop_tx.send(());
+            let _ = handle.join();
+        }
+
+        // Apply thumbnails to results
+        {
+            let res = results.lock().unwrap();
+            for (_, idx, thumbnail) in res.iter() {
+                if let Some(screen) = screens.get_mut(*idx) {
+                    screen.thumbnail = Some(thumbnail.clone());
+                }
             }
         }
 
-        (screens, windows)
+        tracing::info!(
+            "enumerate_sources: completed in {:?} with {} screens",
+            start_time.elapsed(),
+            screens.len()
+        );
+
+        screens
     }
 
     /// Start capturing the specified source
@@ -218,6 +299,188 @@ impl Drop for Capturer {
     fn drop(&mut self) {
         self.stop_capture();
     }
+}
+
+/// Capture thumbnail in a dedicated thread (Hopp-style parallel capture)
+///
+/// This function runs in its own thread and captures a thumbnail for a single screen.
+/// It creates its own DesktopCapturer, finds the source by ID, and captures a thumbnail.
+/// Results are written to the shared results vector.
+fn capture_thumbnail_thread(
+    source_id: u64,
+    idx: usize,
+    display_name: String,
+    results: Arc<StdMutex<Vec<(u64, usize, String)>>>,
+    stop_rx: mpsc::Receiver<()>,
+) {
+    tracing::debug!("Starting thumbnail capture thread for screen {} ({})", source_id, display_name);
+
+    // Check if we already have a result for this source (avoid duplicates)
+    {
+        let res = results.lock().unwrap();
+        for (id, _, _) in res.iter() {
+            if *id == source_id {
+                tracing::debug!("Thumbnail already captured for screen {}", source_id);
+                return;
+            }
+        }
+    }
+
+    // Shared state for the callback
+    let results_cb = results.clone();
+    let captured = Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let captured_cb = captured.clone();
+
+    // Create callback that processes frame and stores result
+    let callback = move |result: CaptureResult, frame: DesktopFrame| {
+        // Skip if already captured
+        if captured_cb.load(std::sync::atomic::Ordering::SeqCst) {
+            return;
+        }
+
+        match result {
+            CaptureResult::ErrorTemporary => {
+                // Temporary error - ignore, polling will retry
+                return;
+            }
+            CaptureResult::ErrorPermanent | CaptureResult::ErrorUserStopped => {
+                tracing::debug!("Thumbnail capture error for screen {}", source_id);
+                // Store empty result so main thread knows we're done
+                let mut res = results_cb.lock().unwrap();
+                res.push((source_id, idx, String::new()));
+                captured_cb.store(true, std::sync::atomic::Ordering::SeqCst);
+                return;
+            }
+            _ => {}
+        }
+
+        let width = frame.width();
+        let height = frame.height();
+        let stride = frame.stride();
+        let data = frame.data();
+
+        if width <= 0 || height <= 0 || data.is_empty() {
+            return;
+        }
+
+        // Remove padding and convert ARGB to RGB
+        let mut raw_rgb: Vec<u8> = Vec::with_capacity((width * height * 3) as usize);
+
+        for y in 0..height {
+            for x in 0..width {
+                let src_idx = (y * stride as i32 + x * 4) as usize;
+                if src_idx + 3 < data.len() {
+                    // ARGB -> RGB (skip alpha, reorder BGR to RGB)
+                    raw_rgb.push(data[src_idx + 2]); // R
+                    raw_rgb.push(data[src_idx + 1]); // G
+                    raw_rgb.push(data[src_idx]);     // B
+                }
+            }
+        }
+
+        // Scale and encode to JPEG
+        if let Some(thumbnail) = create_thumbnail_from_rgb(&raw_rgb, width as u32, height as u32) {
+            tracing::info!("Thumbnail captured for screen {} ({})", source_id, display_name);
+            let mut res = results_cb.lock().unwrap();
+            res.push((source_id, idx, thumbnail));
+            captured_cb.store(true, std::sync::atomic::Ordering::SeqCst);
+        }
+    };
+
+    // Create capturer for this thread
+    let capturer = DesktopCapturer::new(callback, false, false);
+    if capturer.is_none() {
+        tracing::error!("Failed to create DesktopCapturer for screen {}", source_id);
+        // Store empty result so main thread knows we're done
+        let mut res = results.lock().unwrap();
+        res.push((source_id, idx, String::new()));
+        return;
+    }
+    let mut capturer = capturer.unwrap();
+
+    // Find the source by ID in this thread's capturer
+    let sources = capturer.get_source_list();
+    let source = sources.iter().find(|s| s.id() == source_id);
+
+    if source.is_none() {
+        tracing::warn!("Screen {} not found in thread capturer", source_id);
+        // Store empty result so main thread knows we're done
+        let mut res = results.lock().unwrap();
+        res.push((source_id, idx, String::new()));
+        return;
+    }
+
+    // Start capture for this source
+    capturer.start_capture(source.unwrap().clone());
+
+    // Poll until captured or stopped
+    loop {
+        // Check for stop signal (non-blocking)
+        match stop_rx.recv_timeout(std::time::Duration::from_millis(THUMBNAIL_POLL_INTERVAL_MS)) {
+            Ok(()) => {
+                // Stop signal received
+                tracing::debug!("Stop signal received for screen {}", source_id);
+                break;
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                // Timeout - request another frame
+                capturer.capture_frame();
+            }
+            Err(mpsc::RecvTimeoutError::Disconnected) => {
+                // Channel closed
+                break;
+            }
+        }
+
+        // Check if we've captured the thumbnail
+        if captured.load(std::sync::atomic::Ordering::SeqCst) {
+            break;
+        }
+    }
+}
+
+/// Create a JPEG base64 thumbnail from RGB pixel data
+fn create_thumbnail_from_rgb(rgb_data: &[u8], width: u32, height: u32) -> Option<String> {
+    // Create image buffer from raw RGB data
+    let img: image::RgbImage = image::ImageBuffer::from_raw(width, height, rgb_data.to_vec())?;
+
+    // Calculate thumbnail dimensions maintaining aspect ratio
+    let (thumb_width, thumb_height) = {
+        let aspect = width as f32 / height as f32;
+        let target_aspect = THUMBNAIL_WIDTH as f32 / THUMBNAIL_HEIGHT as f32;
+
+        if aspect > target_aspect {
+            (THUMBNAIL_WIDTH, (THUMBNAIL_WIDTH as f32 / aspect) as u32)
+        } else {
+            ((THUMBNAIL_HEIGHT as f32 * aspect) as u32, THUMBNAIL_HEIGHT)
+        }
+    };
+
+    // Resize using fast algorithm
+    let resized = image::imageops::resize(
+        &img,
+        thumb_width,
+        thumb_height,
+        image::imageops::FilterType::Triangle,
+    );
+
+    // Encode to JPEG
+    let mut jpeg_buffer = Cursor::new(Vec::new());
+    let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_buffer, THUMBNAIL_QUALITY);
+
+    if let Err(e) = encoder.encode(
+        resized.as_raw(),
+        resized.width(),
+        resized.height(),
+        image::ExtendedColorType::Rgb8,
+    ) {
+        tracing::warn!("Failed to encode thumbnail: {}", e);
+        return None;
+    }
+
+    // Base64 encode
+    let jpeg_bytes = jpeg_buffer.into_inner();
+    Some(BASE64.encode(&jpeg_bytes))
 }
 
 /// Run the capture loop in a separate thread

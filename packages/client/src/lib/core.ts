@@ -22,15 +22,12 @@ export interface ScreenInfo {
   width: number
   height: number
   is_primary: boolean
+  /** Base64-encoded JPEG thumbnail (~320x180 pixels) */
+  thumbnail?: string
 }
 
-export interface WindowInfo {
-  id: string
-  title: string
-  app_name: string
-  width: number
-  height: number
-}
+// Note: WindowInfo was removed - only screen capture is supported.
+// Window capture requires platform-specific APIs not yet implemented.
 
 export interface ParticipantData {
   id: string
@@ -57,7 +54,7 @@ export interface CaptureConfig {
   bitrate: number
 }
 
-export type SourceType = 'screen' | 'window'
+export type SourceType = 'screen' // Window capture not supported
 
 export type FrameFormat = 'jpeg' | 'rgba' | 'nv12'
 
@@ -76,7 +73,7 @@ export interface VideoFrame {
 // ============================================================================
 
 export type CoreMessage =
-  | { type: 'available_content'; screens: ScreenInfo[]; windows: WindowInfo[] }
+  | { type: 'available_content'; screens: ScreenInfo[] }
   | { type: 'participant_joined'; participant: ParticipantData }
   | { type: 'participant_left'; participant_id: string }
   | { type: 'connection_state_changed'; state: ConnectionState }

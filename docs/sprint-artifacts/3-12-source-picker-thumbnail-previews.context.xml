@@ -1,0 +1,141 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>12</storyId>
+    <title>Source Picker Thumbnail Previews</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-16</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-12-source-picker-thumbnail-previews.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user starting screen share on macOS/Linux</asA>
+    <iWant>to see thumbnail previews of each screen and window in the source picker</iWant>
+    <soThat>I can visually identify which source to share without guessing from names alone</soThat>
+    <tasks>
+      <task id="1">Add thumbnail field to Rust structs (ScreenInfo, WindowInfo in lib.rs)</task>
+      <task id="2">Implement thumbnail capture in Core (add image crate, capture frames, scale to 320x180, JPEG+base64 encode)</task>
+      <task id="3">Update client TypeScript types (ScreenInfo, WindowInfo in core.ts)</task>
+      <task id="4">Update SourcePickerDialog to display thumbnails (show image or placeholder)</task>
+      <task id="5">Write tests (Rust enumeration, client display, placeholder fallback)</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.12.1" title="Thumbnails Displayed in Source Picker">
+      Given I click to start screen sharing on macOS/Linux
+      When the source picker dialog appears
+      Then each screen/window shows a thumbnail preview image (not just an icon)
+    </criterion>
+    <criterion id="AC-3.12.2" title="Thumbnail Capture During Enumeration">
+      Given the Core enumerates available sources
+      When thumbnails are captured
+      Then thumbnail size is ~320x180 pixels
+      And format is JPEG encoded as base64 string
+      And each source shows its actual current content
+    </criterion>
+    <criterion id="AC-3.12.3" title="Graceful Handling of Missing Thumbnails">
+      Given a thumbnail capture fails for a source
+      When the source picker displays that source
+      Then an icon placeholder is shown instead
+      And the user can still select and share that source
+    </criterion>
+    <criterion id="AC-3.12.4" title="Acceptable Enumeration Performance">
+      Given the user opens the source picker
+      When sources are enumerated with thumbnails
+      Then total enumeration time is less than 2 seconds for typical source counts
+      And thumbnails may load progressively if needed
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="ADR-008: Core-Centric Media Architecture">
+        Core owns all media using LiveKit DesktopCapturer (Hopp's fork). DesktopCapturer provides native screen capture at 60fps. The same capturer can be used for thumbnail capture during enumeration.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-3.md" title="Epic 3 Tech Spec" section="Story 3.1: Screen Share Initiation">
+        AC-3.1.2 mentions "Picker shows screens and windows with previews" - this story implements that preview functionality.
+      </doc>
+      <doc path="docs/sprint-artifacts/3-12-source-picker-thumbnail-previews.md" title="Story 3.12" section="Dev Notes">
+        Technical challenge: DesktopCapturer uses callback-based async pattern. Need to create capturer per source, start capture, wait for callback, capture frame, stop and move to next. Alternative: platform-specific APIs like CGWindowListCopyWindowInfo on macOS for faster capture.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="packages/core/src/lib.rs" kind="types" symbol="ScreenInfo, WindowInfo" lines="276-292" reason="Target structs for adding thumbnail: Option&lt;String&gt; field">
+        Current structs define id, name, width, height, is_primary (screen) and id, title, app_name, width, height (window). Need to add thumbnail field with serde skip_serializing_if for None.
+      </artifact>
+      <artifact path="packages/core/src/capture/mod.rs" kind="module" symbol="Capturer::enumerate_sources" lines="87-134" reason="Function that enumerates sources - must be modified to capture thumbnails">
+        Currently creates DesktopCapturer, gets source list, builds ScreenInfo/WindowInfo. Need to add thumbnail capture for each source using callback pattern or platform API.
+      </artifact>
+      <artifact path="packages/core/src/socket/mod.rs" kind="protocol" symbol="OutgoingMessage::AvailableContent" lines="86-89" reason="Socket message that sends sources to WebView - already includes ScreenInfo/WindowInfo">
+        No changes needed - will automatically serialize thumbnail field when added to structs.
+      </artifact>
+      <artifact path="packages/client/src/lib/core.ts" kind="types" symbol="ScreenInfo, WindowInfo" lines="19-33" reason="TypeScript types to update with optional thumbnail field">
+        Mirror types for Rust structs. Add thumbnail?: string to both interfaces.
+      </artifact>
+      <artifact path="packages/client/src/components/ScreenShare/SourcePickerDialog.tsx" kind="component" symbol="SourceCard" lines="156-193" reason="UI component to update for thumbnail display">
+        Currently renders icon placeholder. Update to show &lt;img&gt; when thumbnail exists, fallback to icon when missing.
+      </artifact>
+    </code>
+    <dependencies>
+      <rust>
+        <package name="livekit" version="git:gethopp/rust-sdks#patches" note="DesktopCapturer for capture"/>
+        <package name="image" version="0.25" note="REQUIRED: Add for JPEG encoding of thumbnails"/>
+        <package name="base64" version="0.22" note="Already present for frame encoding"/>
+      </rust>
+      <node>
+        <package name="react" version="^19.2.0"/>
+        <package name="lucide-react" version="^0.555.0" note="Icons for placeholder"/>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="performance">Total enumeration with thumbnails must complete in &lt;2 seconds for typical source counts (5-10 sources)</constraint>
+    <constraint type="encoding">Thumbnails must be JPEG format, base64 encoded, ~320x180 pixels</constraint>
+    <constraint type="backward-compat">thumbnail field must be Optional to avoid breaking existing code paths</constraint>
+    <constraint type="architecture">Use existing DesktopCapturer API - avoid platform-specific APIs in MVP (can optimize later)</constraint>
+    <constraint type="memory">Thumbnails should be small (~5-15KB each) to avoid memory pressure with many windows</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="ScreenInfo" kind="struct" path="packages/core/src/lib.rs">
+      <signature>pub struct ScreenInfo { id: String, name: String, width: u32, height: u32, is_primary: bool, thumbnail: Option&lt;String&gt; }</signature>
+    </interface>
+    <interface name="WindowInfo" kind="struct" path="packages/core/src/lib.rs">
+      <signature>pub struct WindowInfo { id: String, title: String, app_name: String, width: u32, height: u32, thumbnail: Option&lt;String&gt; }</signature>
+    </interface>
+    <interface name="Capturer::enumerate_sources" kind="function" path="packages/core/src/capture/mod.rs">
+      <signature>pub fn enumerate_sources(&amp;self) -> (Vec&lt;ScreenInfo&gt;, Vec&lt;WindowInfo&gt;)</signature>
+    </interface>
+    <interface name="DesktopCapturer::new" kind="constructor" path="livekit crate">
+      <signature>pub fn new(callback: impl FnMut(CaptureResult, DesktopFrame), capture_cursor: bool, capture_fullscreen: bool) -> Option&lt;Self&gt;</signature>
+      <note>Callback receives DesktopFrame with ABGR pixel data for thumbnail capture</note>
+    </interface>
+    <interface name="DesktopFrame" kind="struct" path="livekit crate">
+      <signature>Methods: width() -> i32, height() -> i32, stride() -> i32, data() -> &amp;[u8] (ABGR format)</signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Rust tests use #[cfg(test)] modules with assert! macros.
+      Client tests use Vitest with React Testing Library.
+      Co-locate tests with source files (*.test.ts pattern).
+      Mock external dependencies (DesktopCapturer for Rust, Core client for TS).
+    </standards>
+    <locations>
+      <location>packages/core/src/capture/mod.rs (add #[cfg(test)] module)</location>
+      <location>packages/client/src/components/ScreenShare/SourcePickerDialog.test.tsx</location>
+      <location>packages/client/src/lib/core.test.ts</location>
+    </locations>
+    <ideas>
+      <idea acRef="AC-3.12.2">Test enumerate_sources returns ScreenInfo/WindowInfo with thumbnail field populated (non-empty base64 string)</idea>
+      <idea acRef="AC-3.12.3">Test SourceCard renders placeholder icon when thumbnail is undefined/null</idea>
+      <idea acRef="AC-3.12.1">Test SourceCard renders &lt;img&gt; element with data:image/jpeg;base64 src when thumbnail provided</idea>
+      <idea acRef="AC-3.12.4">Performance test: enumerate 10 sources completes in &lt;2s (may need mocking)</idea>
+      <idea acRef="AC-3.12.2">Test thumbnail dimensions approximately 320x180 (decode base64, check image metadata)</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -229,3 +229,119 @@ fn test_point_with_pressure() {
     assert!((point.y - 0.75).abs() < 0.001);
     assert!((point.pressure - 0.5).abs() < 0.001);
 }
+
+// ============================================================================
+// Thumbnail tests (Story 3-12)
+// ============================================================================
+
+#[test]
+fn test_screen_info_thumbnail_field() {
+    use nameless_core::ScreenInfo;
+
+    // ScreenInfo with thumbnail
+    let screen_with_thumb = ScreenInfo {
+        id: "screen:1".to_string(),
+        name: "Display 1".to_string(),
+        width: 1920,
+        height: 1080,
+        is_primary: true,
+        thumbnail: Some("base64encodeddata".to_string()),
+    };
+
+    assert_eq!(screen_with_thumb.thumbnail, Some("base64encodeddata".to_string()));
+
+    // ScreenInfo without thumbnail
+    let screen_without_thumb = ScreenInfo {
+        id: "screen:2".to_string(),
+        name: "Display 2".to_string(),
+        width: 2560,
+        height: 1440,
+        is_primary: false,
+        thumbnail: None,
+    };
+
+    assert_eq!(screen_without_thumb.thumbnail, None);
+}
+
+// Note: WindowInfo tests removed - window capture is not supported
+
+#[test]
+fn test_screen_info_serialization_with_thumbnail() {
+    use nameless_core::ScreenInfo;
+
+    let screen = ScreenInfo {
+        id: "screen:1".to_string(),
+        name: "Display 1".to_string(),
+        width: 1920,
+        height: 1080,
+        is_primary: true,
+        thumbnail: Some("thumb_data".to_string()),
+    };
+
+    let json = serde_json::to_string(&screen).unwrap();
+
+    // Verify JSON contains thumbnail
+    assert!(json.contains("\"thumbnail\":\"thumb_data\""));
+    assert!(json.contains("\"id\":\"screen:1\""));
+    assert!(json.contains("\"name\":\"Display 1\""));
+}
+
+#[test]
+fn test_screen_info_serialization_without_thumbnail() {
+    use nameless_core::ScreenInfo;
+
+    let screen = ScreenInfo {
+        id: "screen:1".to_string(),
+        name: "Display 1".to_string(),
+        width: 1920,
+        height: 1080,
+        is_primary: true,
+        thumbnail: None,
+    };
+
+    let json = serde_json::to_string(&screen).unwrap();
+
+    // Verify JSON does NOT contain thumbnail (skip_serializing_if = "Option::is_none")
+    assert!(!json.contains("thumbnail"));
+    assert!(json.contains("\"id\":\"screen:1\""));
+}
+
+
+#[test]
+fn test_screen_info_deserialization_with_thumbnail() {
+    use nameless_core::ScreenInfo;
+
+    let json = r#"{
+        "id": "screen:1",
+        "name": "Display 1",
+        "width": 1920,
+        "height": 1080,
+        "is_primary": true,
+        "thumbnail": "deserialize_test"
+    }"#;
+
+    let screen: ScreenInfo = serde_json::from_str(json).unwrap();
+
+    assert_eq!(screen.id, "screen:1");
+    assert_eq!(screen.thumbnail, Some("deserialize_test".to_string()));
+}
+
+#[test]
+fn test_screen_info_deserialization_without_thumbnail() {
+    use nameless_core::ScreenInfo;
+
+    // JSON without thumbnail field - should default to None
+    let json = r#"{
+        "id": "screen:2",
+        "name": "Display 2",
+        "width": 2560,
+        "height": 1440,
+        "is_primary": false
+    }"#;
+
+    let screen: ScreenInfo = serde_json::from_str(json).unwrap();
+
+    assert_eq!(screen.id, "screen:2");
+    assert_eq!(screen.thumbnail, None);
+}
+

@@ -12,7 +12,7 @@ use winit::event_loop::EventLoopProxy;
 
 use crate::{
     AnnotationTool, CaptureConfig, Color, ConnectionState, FrameFormat, ParticipantData,
-    PermissionState, Point, ScreenInfo, SourceType, UserEvent, WindowInfo,
+    PermissionState, Point, ScreenInfo, SourceType, UserEvent,
 };
 
 /// Messages from WebView to Core
@@ -82,10 +82,9 @@ pub enum IncomingMessage {
 #[derive(Debug, Clone, serde::Serialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum OutgoingMessage {
-    // Screen sources
+    // Screen sources (window capture not supported)
     AvailableContent {
         screens: Vec<ScreenInfo>,
-        windows: Vec<WindowInfo>,
     },
 
     // Room state

@@ -6,7 +6,7 @@
 use nameless_core::socket::{IncomingMessage, OutgoingMessage};
 use nameless_core::{
     AnnotationTool, ConnectionState, FrameFormat, ParticipantData,
-    ParticipantRole, PermissionState, PermissionStatus, ScreenInfo, SourceType, WindowInfo,
+    ParticipantRole, PermissionState, PermissionStatus, ScreenInfo, SourceType,
 };
 
 // ============================================================================
@@ -244,6 +244,7 @@ fn test_parse_shutdown() {
 
 #[test]
 fn test_serialize_available_content() {
+    // Note: Window capture is not supported - only screens are enumerated
     let msg = OutgoingMessage::AvailableContent {
         screens: vec![ScreenInfo {
             id: "screen-0".to_string(),
@@ -251,20 +252,13 @@ fn test_serialize_available_content() {
             width: 1920,
             height: 1080,
             is_primary: true,
-        }],
-        windows: vec![WindowInfo {
-            id: "window-123".to_string(),
-            title: "VS Code".to_string(),
-            app_name: "Code".to_string(),
-            width: 1200,
-            height: 800,
+            thumbnail: None,
         }],
     };
 
     let json = serde_json::to_string(&msg).unwrap();
     assert!(json.contains("\"type\":\"available_content\""));
     assert!(json.contains("\"screens\""));
-    assert!(json.contains("\"windows\""));
     assert!(json.contains("\"is_primary\":true"));
 }
 

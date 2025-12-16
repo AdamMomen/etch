@@ -461,12 +461,11 @@ export function MeetingRoom() {
         roomId={roomId || currentRoom?.roomId || ''}
       />
 
-      {/* Source Picker Dialog for native screen share (macOS/Linux) */}
+      {/* Source Picker Dialog for native screen share (macOS/Linux) - screens only */}
       <SourcePickerDialog
         open={sourcePicker.isOpen}
         onOpenChange={(open) => !open && onSourcePickerClose()}
         screens={sourcePicker.screens}
-        windows={sourcePicker.windows}
         isLoading={sourcePicker.isLoading}
         onSelect={onSourceSelect}
       />
