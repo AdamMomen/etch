@@ -242,7 +242,7 @@ export function HomeScreen() {
               onClick={handleDevBypass}
             >
               <Bug className="h-4 w-4" />
-              Dev Bypass (Skip LiveKit)
+              Bypass
             </Button>
           </div>
         )}
