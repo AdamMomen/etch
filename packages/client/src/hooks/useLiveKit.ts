@@ -37,9 +37,14 @@ export interface UseLiveKitReturn {
   leaveRoom: () => Promise<void>
 }
 
-export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKitReturn {
+export function useLiveKit({
+  token,
+  livekitUrl,
+}: UseLiveKitOptions): UseLiveKitReturn {
   const roomRef = useRef<Room | null>(null)
-  const [connectionState, setConnectionState] = useState<ConnectionState>(ConnectionState.Disconnected)
+  const [connectionState, setConnectionState] = useState<ConnectionState>(
+    ConnectionState.Disconnected
+  )
   const [error, setError] = useState<string | null>(null)
   const retryCounterRef = useRef(0)
   const [retryTrigger, setRetryTrigger] = useState(0)
@@ -62,16 +67,19 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
   }
   const room = roomRef.current
 
-  const convertLKParticipant = useCallback((lkParticipant: LKParticipant, isLocal: boolean): Participant => {
-    const metadata = parseParticipantMetadata(lkParticipant.metadata || '')
-    return {
-      id: lkParticipant.identity,
-      name: lkParticipant.name || lkParticipant.identity,
-      role: metadata.role,
-      color: metadata.color,
-      isLocal,
-    }
-  }, [])
+  const convertLKParticipant = useCallback(
+    (lkParticipant: LKParticipant, isLocal: boolean): Participant => {
+      const metadata = parseParticipantMetadata(lkParticipant.metadata || '')
+      return {
+        id: lkParticipant.identity,
+        name: lkParticipant.name || lkParticipant.identity,
+        role: metadata.role,
+        color: metadata.color,
+        isLocal,
+      }
+    },
+    []
+  )
 
   // Effect for managing connection
   useEffect(() => {
@@ -93,11 +101,11 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
       if (cancelled) return
 
       // Check if this is a screen share participant (should not be shown in participant list)
-      const metadata = parseParticipantMetadata(participant.metadata || '')
-      if (metadata.isScreenShare) {
-        // Don't add screen share participants to the list - their tracks will still be processed
-        return
-      }
+      // const metadata = parseParticipantMetadata(participant.metadata || '')
+      // if (metadata.isScreenShare) {
+      //   // Don't add screen share participants to the list - their tracks will still be processed
+      //   return
+      // }
 
       const converted = convertLKParticipant(participant, false)
       addRemoteParticipant(converted)
@@ -108,11 +116,11 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
       if (cancelled) return
 
       // Check if this is a screen share participant (don't show toast for them)
-      const metadata = parseParticipantMetadata(participant.metadata || '')
-      if (metadata.isScreenShare) {
-        // Screen share participants were never added, so just ignore disconnect
-        return
-      }
+      // const metadata = parseParticipantMetadata(participant.metadata || '')
+      // if (metadata.isScreenShare) {
+      //   // Screen share participants were never added, so just ignore disconnect
+      //   return
+      // }
 
       const name = participant.name || participant.identity
       removeRemoteParticipant(participant.identity)
@@ -127,7 +135,10 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
     ) => {
       if (cancelled) return
 
-      if (track.kind === Track.Kind.Video && track.source === Track.Source.Camera) {
+      if (
+        track.kind === Track.Kind.Video &&
+        track.source === Track.Source.Camera
+      ) {
         updateParticipant(participant.identity, { hasVideo: true })
       }
     }
@@ -140,7 +151,10 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
     ) => {
       if (cancelled) return
 
-      if (track.kind === Track.Kind.Video && track.source === Track.Source.Camera) {
+      if (
+        track.kind === Track.Kind.Video &&
+        track.source === Track.Source.Camera
+      ) {
         updateParticipant(participant.identity, { hasVideo: false })
       }
     }
@@ -174,7 +188,9 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
       if (cancelled) return
 
       try {
-        const message = JSON.parse(new TextDecoder().decode(payload)) as RoleTransferMessage
+        const message = JSON.parse(
+          new TextDecoder().decode(payload)
+        ) as RoleTransferMessage
 
         if (message.type === 'role_transfer') {
           const localIdentity = room.localParticipant?.identity
@@ -191,7 +207,10 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
           }
 
           // Update the previous host's role for all participants (if they're still connected)
-          if (message.previousHostId && message.previousHostId !== localIdentity) {
+          if (
+            message.previousHostId &&
+            message.previousHostId !== localIdentity
+          ) {
             updateParticipant(message.previousHostId, { role: 'annotator' })
           }
 
@@ -215,7 +234,11 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
     // Async connection logic
     const connect = async () => {
       setError(null)
-      setStoreConnectionState({ isConnecting: true, isConnected: false, error: null })
+      setStoreConnectionState({
+        isConnecting: true,
+        isConnected: false,
+        error: null,
+      })
 
       try {
         await room.connect(livekitUrl, token)
@@ -223,25 +246,33 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
         if (cancelled) return
 
         // Set local participant after successful connection
-        const localParticipant = convertLKParticipant(room.localParticipant, true)
+        const localParticipant = convertLKParticipant(
+          room.localParticipant,
+          true
+        )
         setLocalParticipant(localParticipant)
 
         // Add existing remote participants (excluding screen share participants)
         room.remoteParticipants.forEach((participant) => {
-          const metadata = parseParticipantMetadata(participant.metadata || '')
-          if (metadata.isScreenShare) {
-            // Don't add screen share participants to the list
-            return
-          }
+          // const metadata = parseParticipantMetadata(participant.metadata || '')
+          // if (metadata.isScreenShare) {
+          //   // Don't add screen share participants to the list
+          //   return
+          // }
           const converted = convertLKParticipant(participant, false)
           addRemoteParticipant(converted)
         })
       } catch (err) {
         if (cancelled) return
 
-        const errorMessage = err instanceof Error ? err.message : 'Failed to connect to LiveKit'
+        const errorMessage =
+          err instanceof Error ? err.message : 'Failed to connect to LiveKit'
         setError(errorMessage)
-        setStoreConnectionState({ isConnecting: false, isConnected: false, error: errorMessage })
+        setStoreConnectionState({
+          isConnecting: false,
+          isConnected: false,
+          error: errorMessage,
+        })
         toast.error('Failed to connect', {
           description: 'Check your connection and try again',
         })
@@ -262,7 +293,7 @@ export function useLiveKit({ token, livekitUrl }: UseLiveKitOptions): UseLiveKit
       room.disconnect()
       clearParticipants()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, livekitUrl, retryTrigger])
 
   const retry = useCallback(() => {
