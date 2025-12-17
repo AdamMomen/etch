@@ -16,6 +16,7 @@ import { useRoomStore } from '@/stores/roomStore'
 import { getSidecarClient } from '@/lib/sidecar'
 import { getCoreClient, type ScreenInfo } from '@/lib/core'
 import { parseParticipantMetadata } from '@/utils/participantMetadata'
+import { useAnnotationOverlay, type OverlayBounds } from './useAnnotationOverlay'
 
 export interface UseScreenShareOptions {
   room: Room | null
@@ -46,7 +47,7 @@ export interface UseScreenShareReturn {
   onSourcePickerClose: () => void
   onSourceSelect: (
     sourceId: string,
-    sourceType: 'screen' | 'window'
+    sourceType: 'screen'
   ) => Promise<void>
 }
 
@@ -159,17 +160,18 @@ const initNativeScreenShare = async (): Promise<{
   // Enumerate sources
   const sources = await sidecar.enumerateSources()
 
-  if (sources.screens.length === 0 && sources.windows.length === 0) {
-    throw new Error('No screens or windows available for capture')
+  if (sources.screens.length === 0) {
+    throw new Error('No screens available for capture')
   }
 
   return sources
 }
 
 // Start capture with the selected source
+// Note: Only 'screen' type is supported - window capture is not yet implemented
 const startNativeCapture = async (
   sourceId: string,
-  sourceType: 'screen' | 'window',
+  sourceType: 'screen',
   livekitUrl: string,
   token: string
 ): Promise<void> => {
@@ -249,6 +251,9 @@ export function useScreenShare({
   const [canShare, setCanShare] = useState(true)
   const streamRef = useRef<MediaStream | null>(null)
 
+  // Annotation overlay for sharer (Story 3.6)
+  const { createOverlay, destroyOverlay } = useAnnotationOverlay()
+
   // Source picker state for native capture (macOS/Linux) - screens only
   const [sourcePicker, setSourcePicker] = useState<SourcePickerState>({
     isOpen: false,
@@ -263,8 +268,9 @@ export function useScreenShare({
   }, [])
 
   // Handle source selection from picker
+  // Note: Only 'screen' type is supported - window capture is not yet implemented
   const onSourceSelect = useCallback(
-    async (sourceId: string, sourceType: 'screen' | 'window') => {
+    async (sourceId: string, sourceType: 'screen') => {
       if (!room || !livekitUrl || !screenShareToken) {
         toast.error('Not connected to room')
         return
@@ -291,6 +297,25 @@ export function useScreenShare({
           updateParticipant(localParticipant.id, { isScreenSharing: true })
         }
 
+        // Create annotation overlay over the shared screen (Story 3.6)
+        // Use the selected screen's position and dimensions from the source picker
+        try {
+          // Find the selected screen to get its bounds
+          const selectedScreen = sourcePicker.screens.find(s => s.id === sourceId)
+
+          const overlayBounds: OverlayBounds = {
+            x: selectedScreen?.x ?? 0,
+            y: selectedScreen?.y ?? 0,
+            width: selectedScreen?.width ?? window.screen.width,
+            height: selectedScreen?.height ?? window.screen.height,
+          }
+          console.log('[ScreenShare] Creating overlay with bounds:', overlayBounds)
+          await createOverlay(overlayBounds)
+        } catch (overlayError) {
+          // Log but don't fail the share if overlay creation fails
+          console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
+        }
+
         // Minimize main window after successful publish
         await minimizeMainWindow()
       } catch (error) {
@@ -310,6 +335,8 @@ export function useScreenShare({
       startSharing,
       localParticipant?.id,
       updateParticipant,
+      createOverlay,
+      sourcePicker.screens,
     ]
   )
 
@@ -344,6 +371,19 @@ export function useScreenShare({
         // Update local participant's sharing state
         if (localParticipant?.id) {
           updateParticipant(localParticipant.id, { isScreenSharing: true })
+        }
+
+        // Create annotation overlay over the shared screen (Story 3.6)
+        try {
+          const overlayBounds: OverlayBounds = {
+            x: 0,
+            y: 0,
+            width: window.screen.width,
+            height: window.screen.height,
+          }
+          await createOverlay(overlayBounds)
+        } catch (overlayError) {
+          console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
         }
 
         // Minimize main window after successful publish (AC-3.1.3)
@@ -414,6 +454,7 @@ export function useScreenShare({
     updateParticipant,
     livekitUrl,
     screenShareToken,
+    createOverlay,
   ])
 
   // Internal handler for stopping share
@@ -462,11 +503,17 @@ export function useScreenShare({
         updateParticipant(localParticipant.id, { isScreenSharing: false })
       }
 
-      // TODO: Native window cleanup for sharer overlay windows (Stories 3.6, 3.7, 3.8)
+      // Destroy annotation overlay (Story 3.6)
+      try {
+        await destroyOverlay()
+      } catch (overlayError) {
+        console.warn('[ScreenShare] Failed to destroy annotation overlay:', overlayError)
+      }
+
+      // TODO: Native window cleanup for remaining sharer overlay windows (Stories 3.7, 3.8)
       // When implemented, destroy these windows here:
       // - Floating control bar (Story 3.7) - invoke('destroy_floating_window', { label: 'floating-controls' })
       // - Share border indicator (Story 3.8) - invoke('destroy_floating_window', { label: 'share-border' })
-      // - Annotation overlay (Story 3.6) - invoke('destroy_floating_window', { label: 'annotation-overlay' })
 
       // Restore main window
       await restoreMainWindow()
@@ -476,7 +523,7 @@ export function useScreenShare({
       setScreenTrack(null)
       setCanShare(true)
     }
-  }, [room, stopSharingStore, localParticipant?.id, updateParticipant])
+  }, [room, stopSharingStore, localParticipant?.id, updateParticipant, destroyOverlay])
 
   // Public stop method
   const stopScreenShare = useCallback(async () => {

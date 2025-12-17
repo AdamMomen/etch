@@ -81,16 +81,27 @@ impl ApplicationHandler<UserEvent> for AppHandler {
     fn window_event(
         &mut self,
         _event_loop: &ActiveEventLoop,
-        _window_id: WindowId,
+        window_id: WindowId,
         event: WindowEvent,
     ) {
-        // Handle window events for overlay window when implemented
+        // Only handle events for our overlay window
+        if let Some(app) = &self.app {
+            if app.overlay_window_id() != Some(window_id) {
+                return;
+            }
+        }
+
         match event {
             WindowEvent::CloseRequested => {
-                tracing::info!("Window close requested");
+                tracing::info!("Overlay window close requested");
             }
             WindowEvent::RedrawRequested => {
-                // Redraw overlay when graphics context is implemented
+                if let Some(app) = &self.app {
+                    app.render_overlay();
+                }
+            }
+            WindowEvent::Resized(size) => {
+                tracing::debug!("Overlay window resized to {:?}", size);
             }
             _ => {}
         }

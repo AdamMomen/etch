@@ -26,6 +26,12 @@ pub fn run() {
       screen_share::send_core_message,
       screen_share::is_core_running,
       screen_share::check_screen_permission,
+      // Annotation overlay commands (Story 3.6)
+      screen_share::create_annotation_overlay,
+      screen_share::destroy_annotation_overlay,
+      screen_share::update_overlay_bounds,
+      screen_share::is_overlay_active,
+      screen_share::get_window_bounds_by_title,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

@@ -27,6 +27,35 @@ use crate::{CaptureConfig, ScreenInfo, SourceType, UserEvent};
 /// Frame capture interval in milliseconds (~45fps)
 const FRAME_CAPTURE_INTERVAL_MS: u64 = 22;
 
+/// Get display dimensions and position by display ID
+/// Returns (x, y, width, height) or None if not found
+#[cfg(target_os = "macos")]
+fn get_display_bounds(display_id: u64) -> Option<(i32, i32, u32, u32)> {
+    use core_graphics::display::CGDisplay;
+
+    let display = CGDisplay::new(display_id as u32);
+    let bounds = display.bounds();
+
+    Some((
+        bounds.origin.x as i32,
+        bounds.origin.y as i32,
+        bounds.size.width as u32,
+        bounds.size.height as u32,
+    ))
+}
+
+#[cfg(target_os = "windows")]
+fn get_display_bounds(_display_id: u64) -> Option<(i32, i32, u32, u32)> {
+    // TODO: Implement using Windows EnumDisplayMonitors API
+    None
+}
+
+#[cfg(target_os = "linux")]
+fn get_display_bounds(_display_id: u64) -> Option<(i32, i32, u32, u32)> {
+    // TODO: Implement using X11/Wayland APIs
+    None
+}
+
 /// Maximum consecutive failures before giving up
 const MAX_FAILURES: u64 = 10;
 
@@ -137,11 +166,17 @@ impl Capturer {
             } else {
                 title.clone()
             };
+
+            // Get actual display bounds (position and size)
+            let (x, y, width, height) = get_display_bounds(id).unwrap_or((0, 0, 1920, 1080));
+
             screens.push(ScreenInfo {
                 id: format!("screen:{}", id),
                 name: name.clone(),
-                width: 1920,
-                height: 1080,
+                x,
+                y,
+                width,
+                height,
                 is_primary: screens.is_empty(),
                 thumbnail: None,
             });

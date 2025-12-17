@@ -409,3 +409,119 @@ interface AnnotationState {
 - Communication between main window and overlay via Tauri events
 
 ---
+
+## Story 4.12: Smart Picture-in-Picture Annotation Preview
+
+**As a** screen sharer,
+**I want** a floating preview window that shows annotations when I can't see the native overlay,
+**So that** I always know what others are drawing, regardless of my platform or focus state.
+
+**Acceptance Criteria:**
+
+**Given** I'm sharing my screen
+**When** annotations are drawn by participants
+**Then** a PiP preview appears **only when needed**:
+
+**And** PiP toast shows when annotation arrives AND:
+  - **Browser client:** Always (no native overlay available)
+  - **Desktop client:** Sharer is unfocused from shared content (different window/desktop/space)
+
+**And** PiP toast does NOT show when:
+  - **Desktop client, focused:** Native overlay is visible - no toast needed
+
+**And** PiP toast behavior (unified across all platforms):
+  - Fade in: 200ms ease-out when annotation arrives
+  - Visible duration: 4 seconds after last annotation activity
+  - Fade out: 300ms ease-in when hiding
+  - New annotation resets the hide timer
+  - Hovering pauses the hide timer (user is looking)
+  - Position: bottom-right corner (compact, non-intrusive)
+  - Size: 280x158 (16:9, compact)
+
+**And** the toast shows:
+  - Real-time capture of shared content + annotation overlaid
+  - Uses normalized [0,1] coordinate system
+  - Subtle accent border
+  - Colored indicator for who is annotating
+
+**And** browser implementation:
+  - Uses Document Picture-in-Picture API (Chrome 116+, Edge 116+)
+  - Fallback for unsupported browsers: toast overlay in viewport corner
+  - Lightweight, minimal screen real estate
+
+**And** desktop implementation:
+  - Tauri window with video capture composited with annotation canvas
+  - Same toast behavior as browser (unified UX)
+  - Detects focus state via Tauri window events + platform APIs
+
+**Prerequisites:** Story 4.7, 4.9, 4.11, 3.1
+
+**Technical Notes:**
+- Browser: `documentPictureInPicture.requestWindow()` API
+- Desktop: Tauri window with `alwaysOnTop: true`, `decorations: false`
+- Detect focus state:
+  - Desktop: Tauri window focus events + platform APIs for active window
+  - Browser: `document.hasFocus()` + visibility API
+- Capture shared content via same MediaStream used for sharing
+- Composite annotation canvas over video frame in render loop
+- Position persistence in settingsStore
+
+**FRs Addressed:** FR27, FR28 (universal annotation visibility)
+
+---
+
+## Story 4.13: [REMOVED]
+
+*This story was removed - browser tab DOM injection requires Chrome extension which is out of scope.*
+
+---
+
+## Story 4.14: Annotation Arrival Notification System
+
+**As a** screen sharer who has switched away from shared content,
+**I want** to be notified when someone draws an annotation,
+**So that** I know to check the PiP preview or return to my shared content.
+
+**Acceptance Criteria:**
+
+**Given** I'm sharing my screen but not focused on shared content
+**When** a participant draws an annotation
+**Then** I receive a non-intrusive notification
+
+**And** notification triggers:
+  - First annotation after switching away
+  - Subsequent annotations batched (debounce: 500ms)
+
+**And** notification methods:
+  - **PiP preview:** Subtle pulse/glow animation on border
+  - **Floating control bar:** Badge showing count (e.g., "3 new")
+  - **Audio cue:** Optional subtle sound (respects system settings)
+  - **System notification:** Only if app completely unfocused (OS-level)
+
+**And** "viewed" state resets when:
+  - Sharer returns focus to shared content, OR
+  - Sharer interacts with PiP preview (click/hover)
+  - Badge clears on view
+
+**And** user preferences (in settings):
+  - Toggle: "Notify me of new annotations" (default: on)
+  - Toggle: "Play sound for annotations" (default: off)
+
+**And** notification does NOT trigger when:
+  - Sharer is focused on shared content (they see native overlay)
+  - Sharer is actively drawing (they're engaged)
+
+**Prerequisites:** Story 4.7, 4.12
+
+**Technical Notes:**
+- Track annotation receipt timestamps in annotationStore
+- Add `lastViewedTimestamp` for calculating "new" count
+- Detect sharer focus state (same as Story 4.12)
+- PiP pulse: CSS animation triggered via state change
+- Floating bar badge: simple counter component
+- Audio: single "pop" sound file, played via Web Audio API
+- System notification: Notification API with permission request
+
+**FRs Addressed:** FR27 (annotation awareness for distracted sharers)
+
+---

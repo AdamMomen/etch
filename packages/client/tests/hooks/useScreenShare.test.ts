@@ -141,8 +141,14 @@ describe('useScreenShare', () => {
       const { toast } = await import('sonner')
       const mockRoom = createMockRoom()
 
-      // Mock platform as Windows
-      mockInvoke.mockResolvedValueOnce('windows')
+      // Mock all Tauri commands - Windows platform + overlay commands
+      mockInvoke.mockImplementation((cmd: string) => {
+        if (cmd === 'get_platform') return Promise.resolve('windows')
+        if (cmd === 'is_overlay_active') return Promise.resolve(false)
+        if (cmd === 'create_annotation_overlay') return Promise.resolve()
+        if (cmd === 'minimize_main_window') return Promise.resolve()
+        return Promise.resolve()
+      })
 
       // Mock getDisplayMedia rejection (user cancelled)
       const mockError = new Error('Permission denied')

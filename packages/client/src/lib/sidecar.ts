@@ -264,10 +264,11 @@ export class SidecarClient {
 
   /**
    * Start capturing from a source
+   * Note: Only 'screen' type is supported - window capture is not yet implemented
    */
   async startCapture(
     sourceId: string,
-    sourceType: 'screen' | 'window',
+    sourceType: 'screen',
     config?: Partial<CaptureConfig>
   ): Promise<void> {
     await this.core.startScreenShare(sourceId, sourceType, config)

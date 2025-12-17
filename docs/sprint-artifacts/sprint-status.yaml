@@ -70,7 +70,7 @@ development_status:
   3-3-implement-stop-screen-sharing: done
   3-4-enforce-single-active-screen-share: done
   3-5-implement-screen-share-quality-optimization: done
-  3-6-create-sharers-transparent-overlay-window: drafted
+  3-6-create-sharers-transparent-overlay-window: review
   3-7-create-sharers-floating-control-bar: backlog
   3-8-create-share-border-indicator: backlog
   3-9-implement-main-window-auto-minimize-and-restore: backlog
@@ -82,6 +82,7 @@ development_status:
   3-10-implement-rust-screen-capture-sidecar-macos-linux: done
   3-11-associate-screen-share-participant-with-main-identity: done
   3-12-source-picker-thumbnail-previews: done
+  spike-wgpu-overlay-architecture: in-progress
   epic-3-retrospective: optional
 
   # Epic 4: Real-Time Annotations (11 stories) - CORE VALUE

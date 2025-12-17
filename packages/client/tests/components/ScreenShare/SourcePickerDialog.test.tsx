@@ -13,6 +13,8 @@ const SAMPLE_THUMBNAIL =
 const createMockScreen = (overrides: Partial<ScreenInfo> = {}): ScreenInfo => ({
   id: 'screen:1',
   name: 'Display 1',
+  x: 0,
+  y: 0,
   width: 1920,
   height: 1080,
   is_primary: true,

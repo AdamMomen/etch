@@ -19,6 +19,10 @@ type UnlistenFn = () => void
 export interface ScreenInfo {
   id: string
   name: string
+  /** Display X position (for multi-monitor setups) */
+  x: number
+  /** Display Y position (for multi-monitor setups) */
+  y: number
   width: number
   height: number
   is_primary: boolean

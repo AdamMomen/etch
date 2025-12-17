@@ -6,7 +6,8 @@
       "Bash(lsof:*)",
       "Bash(curl:*)",
       "Bash(cargo check:*)",
-      "Bash(pnpm test:*)"
+      "Bash(pnpm test:*)",
+      "Bash(cargo build:*)"
     ]
   }
 }

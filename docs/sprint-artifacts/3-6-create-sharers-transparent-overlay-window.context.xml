@@ -1,0 +1,243 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>6</storyId>
+    <title>Create Sharer's Transparent Overlay Window</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-12-17</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-6-create-sharers-transparent-overlay-window.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>screen sharer</asA>
+    <iWant>to see annotations on my actual shared screen (not inside NAMELESS)</iWant>
+    <soThat>I can see what others are pointing at without switching windows</soThat>
+    <tasks>
+      <task id="1" ac="3.6.1, 3.6.6" status="pending">Create Tauri Rust commands for overlay window management
+        <subtask status="pending">Create `create_annotation_overlay` command in `screen_share.rs`</subtask>
+        <subtask status="pending">Configure window: transparent, no decorations, skip taskbar</subtask>
+        <subtask status="pending">Create `destroy_annotation_overlay` command</subtask>
+        <subtask status="pending">Handle error cases (window already exists, creation fails)</subtask>
+      </task>
+      <task id="2" ac="3.6.3, 3.6.4" status="pending">Configure platform-specific always-on-top and click-through
+        <subtask status="pending">macOS: Set `NSWindow.level` to floating, enable `ignoresMouseEvents`</subtask>
+        <subtask status="pending">Windows: Apply `WS_EX_TRANSPARENT`, `WS_EX_LAYERED`, `WS_EX_TOPMOST` styles</subtask>
+        <subtask status="pending">Linux: Configure appropriate X11/Wayland window properties</subtask>
+        <subtask status="pending">Verify click-through works on each platform</subtask>
+      </task>
+      <task id="3" ac="3.6.1, 3.6.2, 3.6.6" status="pending">Create TypeScript hook for overlay lifecycle
+        <subtask status="pending">Create `useAnnotationOverlay.ts` hook in `packages/client/src/hooks/`</subtask>
+        <subtask status="pending">Integrate with `useScreenShare` hook - create overlay when share starts</subtask>
+        <subtask status="pending">Calculate initial bounds from share source (screen or window)</subtask>
+        <subtask status="pending">Destroy overlay when share stops</subtask>
+      </task>
+      <task id="4" ac="3.6.5" status="pending">Implement window position tracking for window shares
+        <subtask status="pending">Create Tauri command to get window bounds by ID</subtask>
+        <subtask status="pending">Create `update_overlay_position` command</subtask>
+        <subtask status="pending">Set up polling at ~30fps for window move/resize</subtask>
+        <subtask status="pending">Update overlay position to track shared window</subtask>
+      </task>
+      <task id="5" ac="3.6.3, 3.6.4" status="pending">Windows platform validation (POC)
+        <subtask status="pending">Test transparent window renders correctly on Windows 10/11</subtask>
+        <subtask status="pending">Verify click-through with `WS_EX_TRANSPARENT` + `WS_EX_LAYERED`</subtask>
+        <subtask status="pending">Test multi-monitor scenarios</subtask>
+        <subtask status="pending">Test high-DPI scaling</subtask>
+        <subtask status="pending">Document findings, implement fallback if needed</subtask>
+      </task>
+      <task id="6" ac="all" status="pending">Write tests
+        <subtask status="pending">Unit tests for useAnnotationOverlay hook</subtask>
+        <subtask status="pending">Integration tests for Tauri command invocations</subtask>
+        <subtask status="pending">Tests for overlay lifecycle (create/destroy with share)</subtask>
+        <subtask status="pending">Tests for position tracking logic</subtask>
+      </task>
+    </tasks>
+    <note>This story creates the infrastructure for Epic 4 annotations. The overlay is a placeholder that will render annotations from annotationStore in future stories.</note>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.6.1" status="pending">Transparent Overlay Created on Share Start
+      - Given I start sharing my screen
+      - When the screen share is active
+      - Then a transparent overlay window is created by Tauri
+      - And the window is invisible (fully transparent background)
+    </criterion>
+    <criterion id="AC-3.6.2" status="pending">Overlay Positioned Over Shared Content
+      - Given I'm sharing my screen/window
+      - When the transparent overlay is created
+      - Then the overlay window is positioned exactly over my shared screen/window bounds
+      - And the overlay covers the entire shared area
+    </criterion>
+    <criterion id="AC-3.6.3" status="pending">Overlay is Always-on-Top
+      - Given the overlay window exists during screen share
+      - When other windows are opened or focused
+      - Then the overlay stays above the shared content
+      - And below system UI elements (menu bar, dock, taskbar)
+    </criterion>
+    <criterion id="AC-3.6.4" status="pending">Overlay is Click-Through
+      - Given the overlay window is visible during screen share
+      - When I click anywhere on the overlay (except when in drawing mode)
+      - Then the click passes through to the underlying application
+      - And I can interact with my shared content normally
+    </criterion>
+    <criterion id="AC-3.6.5" status="pending">Overlay Tracks Window Position (Window Share)
+      - Given I'm sharing a specific window (not entire screen)
+      - When I move or resize that window
+      - Then the overlay window updates position/size to match
+      - And tracking happens at reasonable frequency (30-60fps)
+    </criterion>
+    <criterion id="AC-3.6.6" status="pending">Overlay Destroyed on Share Stop
+      - Given the overlay window exists during screen share
+      - When I stop sharing (via floating bar or any method)
+      - Then the overlay window is destroyed/closed
+      - And no orphan windows remain
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md#ADR-003" relevance="high">ADR-003: Hybrid Rendering (WebView + Native Windows) - Defines transparent overlay window architecture, z-ordering, platform considerations</doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-3.md" relevance="high">Epic 3 Tech Spec - Screen sharing system architecture, FloatingWindowConfig interface, Tauri command signatures</doc>
+      <doc path="docs/epics/epic-3-screen-sharing.md" relevance="high">Epic 3 definition - Story 3.6 requirements, Windows validation requirements</doc>
+    </docs>
+    <code>
+      <file path="packages/client/src-tauri/src/screen_share.rs" relevance="high">
+        Existing Tauri commands for screen share: get_platform, minimize_main_window, restore_main_window, spawn_core, kill_core, send_core_message.
+        NEW commands to add: create_annotation_overlay, destroy_annotation_overlay, update_overlay_position, get_window_bounds
+      </file>
+      <file path="packages/client/src-tauri/src/lib.rs" relevance="high">
+        Tauri app setup - register new commands in invoke_handler
+      </file>
+      <file path="packages/client/src/hooks/useScreenShare.ts" relevance="high">
+        Screen share hook (644 lines) - Integration point for overlay lifecycle.
+        Key functions: startScreenShare, handleStopShare, onSourceSelect
+        handleStopShare already has TODO comment for overlay cleanup at line 465-469
+      </file>
+      <file path="packages/client/src/stores/screenShareStore.ts" relevance="medium">
+        Screen share state: isSharing, isLocalSharing, sharedSource, sharedSourceId
+        May need to add overlay-related state
+      </file>
+      <file path="packages/client/tests/hooks/useScreenShare.test.ts" relevance="high">
+        Existing test patterns: 1133 lines, 30+ tests
+        Follow mock patterns for Tauri invoke, Room events
+      </file>
+    </code>
+    <dependencies>
+      <dep name="tauri" version="2.0" usage="WebviewWindowBuilder for creating transparent overlay window" />
+      <dep name="tauri-plugin-shell" version="latest" usage="Already used for sidecar, not needed for overlay" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <architectural>
+      <constraint source="ADR-003">Window z-order: Floating Control Bar (topmost) > Annotation Overlay (click-through) > Share Border > Shared Content</constraint>
+      <constraint source="ADR-003">Overlay must be click-through by default (except when drawing mode is enabled in Epic 4)</constraint>
+      <constraint source="ADR-003">Overlay positioned over shared screen/window bounds - must track if sharing specific window</constraint>
+    </architectural>
+    <platform>
+      <constraint platform="macOS">NSWindow.level: .floating, NSWindow.ignoresMouseEvents: true</constraint>
+      <constraint platform="Windows">WS_EX_TRANSPARENT | WS_EX_LAYERED | WS_EX_TOPMOST extended window styles</constraint>
+      <constraint platform="Linux">X11 _NET_WM_WINDOW_TYPE_UTILITY or input shape manipulation</constraint>
+      <constraint platform="Windows">HIGH PRIORITY: Transparent window behavior needs early validation (POC) before full implementation</constraint>
+    </platform>
+    <performance>
+      <constraint>Window position tracking at 30-60fps for window shares (polling approach for cross-platform consistency)</constraint>
+    </performance>
+  </constraints>
+
+  <interfaces>
+    <interface name="FloatingWindowConfig" location="docs/sprint-artifacts/tech-spec-epic-3.md">
+      ```typescript
+      interface FloatingWindowConfig {
+        label: string;
+        title?: string;
+        width: number;
+        height: number;
+        x: number;
+        y: number;
+        transparent: boolean;
+        decorations: boolean;
+        alwaysOnTop: boolean;
+        skipTaskbar: boolean;
+        clickThrough?: boolean;
+      }
+      ```
+    </interface>
+    <interface name="TauriWindowBuilder" location="Tauri API">
+      ```rust
+      WebviewWindowBuilder::new(app, "annotation-overlay", WebviewUrl::App("overlay.html".into()))
+          .transparent(true)
+          .decorations(false)
+          .always_on_top(true)
+          .skip_taskbar(true)
+          .visible(false)
+      ```
+    </interface>
+    <interface name="useAnnotationOverlay" location="packages/client/src/hooks/ (NEW)">
+      ```typescript
+      interface UseAnnotationOverlayReturn {
+        createOverlay: (bounds: WindowBounds) => Promise<void>;
+        destroyOverlay: () => Promise<void>;
+        updatePosition: (bounds: WindowBounds) => Promise<void>;
+        isOverlayActive: boolean;
+      }
+
+      interface WindowBounds {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+      }
+      ```
+    </interface>
+    <interface name="useScreenShare integration" location="packages/client/src/hooks/useScreenShare.ts">
+      Integration points:
+      - Call createOverlay in onSourceSelect (line ~287) after startSharing()
+      - Call destroyOverlay in handleStopShare (line ~420) before restoreMainWindow()
+      - TODO comment already exists at line 465-469
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <standard>Vitest + React Testing Library for hook tests</standard>
+      <standard>Mock Tauri invoke with vi.mock('@tauri-apps/api/core')</standard>
+      <standard>Test file co-located at packages/client/tests/hooks/useAnnotationOverlay.test.ts</standard>
+      <standard>Follow existing patterns in useScreenShare.test.ts (1133 lines)</standard>
+    </standards>
+    <locations>
+      <location path="packages/client/tests/hooks/useAnnotationOverlay.test.ts">New test file for useAnnotationOverlay hook</location>
+      <location path="packages/client/tests/hooks/useScreenShare.test.ts">Update with overlay integration tests</location>
+    </locations>
+    <ideas>
+      <test ac="AC-3.6.1">should create overlay window when screen share starts</test>
+      <test ac="AC-3.6.1">should call create_annotation_overlay Tauri command with correct config</test>
+      <test ac="AC-3.6.2">should position overlay using source bounds</test>
+      <test ac="AC-3.6.2">should calculate correct bounds for screen vs window source</test>
+      <test ac="AC-3.6.3">should set alwaysOnTop: true in window config</test>
+      <test ac="AC-3.6.4">should set clickThrough: true in window config</test>
+      <test ac="AC-3.6.5">should update overlay position when tracking window</test>
+      <test ac="AC-3.6.5">should poll position at appropriate interval for window shares</test>
+      <test ac="AC-3.6.6">should destroy overlay when screen share stops</test>
+      <test ac="AC-3.6.6">should call destroy_annotation_overlay Tauri command</test>
+      <test ac="AC-3.6.6">should handle error gracefully if overlay already destroyed</test>
+      <test ac="all">should not create overlay if already exists</test>
+      <test ac="all">should clean up overlay on component unmount</test>
+    </ideas>
+  </tests>
+
+  <keyLearnings>
+    <learning source="Story 3.5">Quality settings (VP9, contentHint: 'text', degradationPreference) are in useScreenShare.ts:98-113</learning>
+    <learning source="Story 3.5">Follow existing patterns in useScreenShare.ts for Tauri command invocations</learning>
+    <learning source="Story 3.11">Screen share participant association uses parentId metadata pattern</learning>
+    <learning source="Code Review">handleStopShare already has TODO placeholder for overlay cleanup at line 465-469</learning>
+    <learning source="Architecture">ADR-008: Core-centric architecture where Rust binary owns media - overlay is WebView concern</learning>
+  </keyLearnings>
+
+  <windowsFallbackPlan>
+    If Windows transparent overlay doesn't work correctly:
+    - Option A: Small floating preview window showing annotations
+    - Option B: "Annotations visible to viewers" indicator only on sharer's screen
+    - Document findings and update ADR-003 with Windows-specific notes
+  </windowsFallbackPlan>
+</story-context>

@@ -201,6 +201,12 @@ pub enum UserEvent {
         height: u32,
     },
 
+    /// Create the overlay window (triggered when screen share starts)
+    CreateOverlay,
+
+    /// Destroy the overlay window (triggered when screen share stops)
+    DestroyOverlay,
+
     // ═══════════════════════════════════════════════════════════════════════
     // SOCKET EVENTS
     // ═══════════════════════════════════════════════════════════════════════
@@ -277,6 +283,10 @@ impl Default for CaptureConfig {
 pub struct ScreenInfo {
     pub id: String,
     pub name: String,
+    /// Display X position (for multi-monitor setups)
+    pub x: i32,
+    /// Display Y position (for multi-monitor setups)
+    pub y: i32,
     pub width: u32,
     pub height: u32,
     pub is_primary: bool,
@@ -426,8 +436,10 @@ pub struct Application {
     // ═══════════════════════════════════════════════════════════════════════
     // GRAPHICS (Overlay Rendering)
     // ═══════════════════════════════════════════════════════════════════════
+    /// Overlay window for annotations
+    overlay_window: Option<graphics::OverlayWindow>,
     /// wgpu graphics context for overlay window
-    _graphics_context: Option<graphics::GraphicsContext>,
+    graphics_context: Option<graphics::GraphicsContext>,
 
     // ═══════════════════════════════════════════════════════════════════════
     // ANNOTATIONS
@@ -479,7 +491,8 @@ impl Application {
             screen_capturer,
             _capturer_events_task: None,
             room_service: Arc::new(Mutex::new(None)),
-            _graphics_context: None,
+            overlay_window: None,
+            graphics_context: None,
             annotation_store: AnnotationStore::new(),
             remote_cursors: HashMap::new(),
             socket,
@@ -530,6 +543,13 @@ impl Application {
                 self.is_sharing = is_sharing;
                 self.shared_source_id = source_id;
                 self.send_screen_share_state();
+
+                // Create/destroy overlay based on screen share state
+                if is_sharing {
+                    let _ = self.event_loop_proxy.send_event(UserEvent::CreateOverlay);
+                } else {
+                    let _ = self.event_loop_proxy.send_event(UserEvent::DestroyOverlay);
+                }
             }
 
             UserEvent::AvailableContentReady { screens } => {
@@ -695,15 +715,33 @@ impl Application {
             // GRAPHICS EVENTS
             // ═══════════════════════════════════════════════════════════════
             UserEvent::RequestRedraw => {
-                // TODO: Request overlay window redraw when graphics context is implemented
+                if let Some(ref overlay) = self.overlay_window {
+                    overlay.request_redraw();
+                }
             }
 
-            UserEvent::SetOverlayVisible(_visible) => {
-                // TODO: Set overlay visibility when graphics context is implemented
+            UserEvent::SetOverlayVisible(visible) => {
+                if let Some(ref mut overlay) = self.overlay_window {
+                    overlay.set_visible(visible);
+                }
             }
 
-            UserEvent::UpdateOverlayBounds { x: _, y: _, width: _, height: _ } => {
-                // TODO: Update overlay bounds when graphics context is implemented
+            UserEvent::UpdateOverlayBounds { x, y, width, height } => {
+                if let Some(ref overlay) = self.overlay_window {
+                    overlay.set_bounds(x, y, width, height);
+                    // Resize graphics context if needed
+                    if let Some(ref mut gfx) = self.graphics_context {
+                        gfx.resize(width, height);
+                    }
+                }
+            }
+
+            UserEvent::CreateOverlay => {
+                self.create_overlay(elwt);
+            }
+
+            UserEvent::DestroyOverlay => {
+                self.destroy_overlay();
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -773,6 +811,58 @@ impl Application {
                 self.handle_shutdown();
                 elwt.exit();
             }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // OVERLAY MANAGEMENT
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    /// Create the overlay window and graphics context
+    pub fn create_overlay(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
+        if self.overlay_window.is_some() {
+            tracing::warn!("Overlay window already exists");
+            return;
+        }
+
+        match graphics::OverlayWindow::new(event_loop) {
+            Ok(overlay) => {
+                // Create graphics context
+                match graphics::GraphicsContext::new(&overlay) {
+                    Ok(gfx) => {
+                        tracing::info!("Overlay window and graphics context created");
+                        self.overlay_window = Some(overlay);
+                        self.graphics_context = Some(gfx);
+                    }
+                    Err(e) => {
+                        tracing::error!("Failed to create graphics context: {:?}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                tracing::error!("Failed to create overlay window: {:?}", e);
+            }
+        }
+    }
+
+    /// Destroy the overlay window and graphics context
+    pub fn destroy_overlay(&mut self) {
+        self.graphics_context = None;
+        self.overlay_window = None;
+        tracing::info!("Overlay window destroyed");
+    }
+
+    /// Get the overlay window ID (for event routing)
+    pub fn overlay_window_id(&self) -> Option<winit::window::WindowId> {
+        self.overlay_window.as_ref().map(|w| w.id())
+    }
+
+    /// Render the overlay (called on RedrawRequested)
+    pub fn render_overlay(&self) {
+        if let Some(ref gfx) = self.graphics_context {
+            let strokes: Vec<_> = self.annotation_store.strokes().into_iter().cloned().collect();
+            let cursors: Vec<_> = self.remote_cursors.values().cloned().collect();
+            gfx.render_annotations(&strokes, &cursors);
         }
     }
 

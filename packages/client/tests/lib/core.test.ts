@@ -322,7 +322,7 @@ describe('CoreClient', () => {
 
     it('startScreenShare uses provided config', async () => {
       mockInvoke.mockResolvedValueOnce(undefined)
-      await client.startScreenShare('window-123', 'window', {
+      await client.startScreenShare('screen-1', 'screen', {
         width: 1280,
         height: 720,
         framerate: 30,
@@ -331,8 +331,8 @@ describe('CoreClient', () => {
       const call = mockInvoke.mock.calls[0]
       const message = JSON.parse(call[1].message)
 
-      expect(message.source_id).toBe('window-123')
-      expect(message.source_type).toBe('window')
+      expect(message.source_id).toBe('screen-1')
+      expect(message.source_type).toBe('screen')
       expect(message.config.width).toBe(1280)
       expect(message.config.height).toBe(720)
       expect(message.config.framerate).toBe(30)

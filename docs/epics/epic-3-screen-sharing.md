@@ -545,3 +545,44 @@ Per Implementation Readiness assessment, Windows transparent overlay behavior ne
 **FRs Addressed:** FR15 (screen share UX)
 
 ---
+
+## Story 3.13: Add Windows Support to Core Sidecar
+
+**As a** Windows user,
+**I want** the Core sidecar to work on my platform,
+**So that** I have the same native screen sharing and annotation overlay as macOS/Linux users.
+
+**Acceptance Criteria:**
+
+**Given** I'm on Windows 10 or Windows 11
+**When** the app starts the Core sidecar
+**Then** capture and overlay work identically to macOS/Linux
+
+**And** Windows-specific implementation in `packages/core/`:
+  - Cross-compile existing Rust code for Windows target
+  - Add Windows platform conditionals where needed (`#[cfg(target_os = "windows")]`)
+  - Screen/window enumeration via existing `xcap`/`scrap` (already cross-platform)
+  - Transparent overlay using Win32 APIs
+
+**And** transparent overlay on Windows:
+  - `WS_EX_LAYERED` + `WS_EX_TRANSPARENT` for click-through
+  - `HWND_TOPMOST` for always-on-top
+  - Tracks shared window position/resize
+  - High-DPI and multi-monitor aware
+
+**And** quality/behavior matches macOS/Linux:
+  - 1080p, VP9, 4-6 Mbps
+  - 60fps capable
+  - Same IPC protocol with Tauri main process
+
+**Prerequisites:** Story 3.10 (Core already implemented for macOS/Linux)
+
+**Technical Notes:**
+- Add to existing `packages/core/src/`
+- Platform-specific overlay code in `overlay/windows.rs` or similar module
+- Build target: `x86_64-pc-windows-msvc`
+- Test: Windows 10 (1903+), Windows 11, high-DPI, multi-monitor
+
+**FRs Addressed:** FR15, FR16, FR20, FR27 (Windows platform parity)
+
+---

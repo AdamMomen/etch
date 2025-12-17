@@ -14,6 +14,9 @@ winit = { version = "0.30", features = ["rwh_06"] }
 
 # GPU-accelerated rendering (for annotation overlay)
 wgpu = "23.0"
+pollster = "0.4"
+bytemuck = { version = "1.14", features = ["derive"] }
+raw-window-handle = "0.6"
 
 # Async runtime
 tokio = { version = "1", features = ["full", "sync", "net", "io-util", "macros", "rt-multi-thread"] }
@@ -43,11 +46,15 @@ image = { version = "0.25", default-features = false, features = ["jpeg"] }
 objc2 = "0.5"
 objc2-foundation = "0.2"
 objc2-core-graphics = { version = "0.3", features = ["CGDirectDisplay"] }
+objc2-app-kit = "0.2"
 # Screen recording permission check
 core-graphics = { version = "0.24.0", features = ["highsierra"] }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Direct2D",
+    "Win32_Graphics_Direct3D",
     "Win32_Graphics_Direct3D11",
     "Win32_Graphics_Dxgi",
     "Win32_Graphics_DirectComposition",
