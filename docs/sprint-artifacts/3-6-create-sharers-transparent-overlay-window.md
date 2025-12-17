@@ -226,6 +226,65 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - `packages/client/tests/hooks/useAnnotationOverlay.test.ts` - New test file (17 tests)
 - `packages/client/tests/hooks/useScreenShare.test.ts` - Updated mock for overlay commands
 
+## Spike: wgpu Overlay Architecture (2025-12-17)
+
+### Objective
+Evaluate whether wgpu (GPU-accelerated rendering in Core process) should be used for the annotation overlay instead of Tauri WebView.
+
+### What We Built
+- Full wgpu rendering pipeline in `packages/core/src/graphics/`
+- WGSL shaders for colored geometry (`shader.wgsl`)
+- `render_border()` and `render_rectangle()` methods
+- Platform-specific overlay window config (NSMainMenuWindowLevel+1 on macOS)
+- Dev mode test button (yellow bug icon) to trigger overlay
+
+### Key Findings
+
+| Aspect | wgpu | Tauri WebView/Canvas | Winner |
+|--------|------|---------------------|--------|
+| **Cross-platform reliability** | Variable (Linux compositor issues) | Good (Tauri handles quirks) | Tauri |
+| **Transparency support** | Risky on Linux | Reliable | Tauri |
+| **Performance for annotations** | ~0.1ms/frame | ~1-5ms/frame | Both sufficient |
+| **Implementation complexity** | High (IPC for bounds, shaders) | Low (HTML/CSS/Canvas) | Tauri |
+| **Smooth drawing** | Not the bottleneck | Not the bottleneck | Equal |
+
+### Critical Insight: Drawing Smoothness
+The bottleneck for smooth annotations is **NOT rendering speed**. It's:
+1. **Input capture rate** - use `getCoalescedEvents()` for 120Hz+ input
+2. **Stroke interpolation** - bezier curves between points
+3. **State management** - don't use React state during active drawing
+
+Canvas with proper optimizations achieves excellent smoothness (used by Figma, Excalidraw, tldraw).
+
+### Recommendation: Adopted
+
+**Use Tauri WebView overlay with optimized Canvas for annotations:**
+- More reliable cross-platform (especially Linux)
+- Simpler implementation (no IPC for bounds, no shader complexity)
+- Performance is more than sufficient for human drawing speed
+- Already have working infrastructure from Story 3.6
+
+**Keep wgpu in Core for future use cases:**
+- Real-time video compositing/effects
+- Rendering hundreds of simultaneous remote cursors
+- Complex shader operations if needed later
+
+### Files Created (Spike - May Remove Later)
+- `packages/core/src/graphics/shader.wgsl` - WGSL vertex/fragment shaders
+- `packages/core/src/graphics/mod.rs` - GraphicsContext, render pipeline, border/rectangle rendering
+- `packages/core/src/graphics/macos.rs` - macOS overlay window configuration
+
+### Implementation Pattern for Smooth Canvas Drawing
+```typescript
+// High-frequency input capture
+onPointerMove = (e: PointerEvent) => {
+  for (const p of e.getCoalescedEvents()) {
+    ctx.lineTo(p.clientX, p.clientY)
+  }
+  ctx.stroke()
+}
+```
+
 ## Change Log
 
 | Date | Change | Author |
@@ -233,6 +292,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 | 2025-12-16 | Initial story draft from create-story workflow | SM Agent |
 | 2025-12-17 | Completed all 6 tasks, status changed to review | Dev Agent (Claude Opus 4.5) |
 | 2025-12-17 | Senior Developer Review: APPROVED | Senior Dev (AI - Claude Opus 4.5) |
+| 2025-12-17 | Added wgpu spike learnings - recommend Tauri Canvas for annotations | Dev Agent (Claude Opus 4.5) |
 
 ## Senior Developer Review (AI)
 

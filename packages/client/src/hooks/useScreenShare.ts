@@ -64,12 +64,64 @@ const getPlatform = async (): Promise<Platform> => {
   }
 }
 
+// Monitor info from Tauri
+interface WindowMonitorInfo {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+// Get the monitor the app window is currently on
+const getWindowMonitor = async (): Promise<WindowMonitorInfo | null> => {
+  try {
+    return await invoke<WindowMonitorInfo | null>('get_window_monitor')
+  } catch (error) {
+    console.error('Failed to get window monitor:', error)
+    return null
+  }
+}
+
+// Check if two screens are the same by comparing position
+const isSameScreen = (
+  screen1: { x: number; y: number },
+  screen2: { x: number; y: number }
+): boolean => {
+  // Screens are the same if their positions match
+  return screen1.x === screen2.x && screen1.y === screen2.y
+}
+
 // Minimize main window via Tauri
 const minimizeMainWindow = async (): Promise<void> => {
   try {
     await invoke('minimize_main_window')
   } catch (error) {
     console.error('Failed to minimize window:', error)
+  }
+}
+
+// Smart minimize: only minimize if app is on the shared screen
+const minimizeIfOnSharedScreen = async (
+  sharedScreen: { x: number; y: number } | undefined
+): Promise<void> => {
+  if (!sharedScreen) {
+    // No screen info, minimize to be safe
+    await minimizeMainWindow()
+    return
+  }
+
+  const appMonitor = await getWindowMonitor()
+  if (!appMonitor) {
+    // Can't determine app location, minimize to be safe
+    await minimizeMainWindow()
+    return
+  }
+
+  if (isSameScreen(appMonitor, sharedScreen)) {
+    console.log('[ScreenShare] App is on shared screen, minimizing')
+    await minimizeMainWindow()
+  } else {
+    console.log('[ScreenShare] App is on different screen, not minimizing')
   }
 }
 
@@ -297,12 +349,12 @@ export function useScreenShare({
           updateParticipant(localParticipant.id, { isScreenSharing: true })
         }
 
+        // Find the selected screen to get its bounds
+        const selectedScreen = sourcePicker.screens.find(s => s.id === sourceId)
+
         // Create annotation overlay over the shared screen (Story 3.6)
         // Use the selected screen's position and dimensions from the source picker
         try {
-          // Find the selected screen to get its bounds
-          const selectedScreen = sourcePicker.screens.find(s => s.id === sourceId)
-
           const overlayBounds: OverlayBounds = {
             x: selectedScreen?.x ?? 0,
             y: selectedScreen?.y ?? 0,
@@ -316,8 +368,9 @@ export function useScreenShare({
           console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
         }
 
-        // Minimize main window after successful publish
-        await minimizeMainWindow()
+        // Smart minimize: only minimize if app is on the shared screen
+        // If sharing a different screen, keep the app visible
+        await minimizeIfOnSharedScreen(selectedScreen)
       } catch (error) {
         toast.error(
           error instanceof Error
@@ -386,7 +439,8 @@ export function useScreenShare({
           console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
         }
 
-        // Minimize main window after successful publish (AC-3.1.3)
+        // Windows: Always minimize because getDisplayMedia doesn't tell us which screen was picked
+        // On macOS/Linux we use native picker which gives us screen coordinates for smart minimize
         await minimizeMainWindow()
 
         // Listen for track ended (browser "Stop sharing" button)

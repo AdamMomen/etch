@@ -82,7 +82,12 @@ development_status:
   3-10-implement-rust-screen-capture-sidecar-macos-linux: done
   3-11-associate-screen-share-participant-with-main-identity: done
   3-12-source-picker-thumbnail-previews: done
-  spike-wgpu-overlay-architecture: in-progress
+  # Spike complete: wgpu works but Tauri Canvas recommended for annotations
+  # - Cross-platform reliability better with Tauri
+  # - Performance difference negligible for annotation use case
+  # - Drawing smoothness bottleneck is input capture, not rendering
+  # - Keep wgpu in Core for future video compositing needs
+  spike-wgpu-overlay-architecture: done
   epic-3-retrospective: optional
 
   # Epic 4: Real-Time Annotations (11 stories) - CORE VALUE

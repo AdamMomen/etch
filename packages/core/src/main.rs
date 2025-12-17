@@ -1,7 +1,7 @@
 //! NAMELESS Core - Entry point
 //!
 //! This binary is spawned by the Tauri app and communicates via Unix socket.
-//! It owns all media: screen capture, LiveKit connection, annotations overlay.
+//! It owns all media: screen capture, LiveKit connection.
 
 use std::env;
 use std::sync::Arc;
@@ -81,31 +81,10 @@ impl ApplicationHandler<UserEvent> for AppHandler {
     fn window_event(
         &mut self,
         _event_loop: &ActiveEventLoop,
-        window_id: WindowId,
-        event: WindowEvent,
+        _window_id: WindowId,
+        _event: WindowEvent,
     ) {
-        // Only handle events for our overlay window
-        if let Some(app) = &self.app {
-            if app.overlay_window_id() != Some(window_id) {
-                return;
-            }
-        }
-
-        match event {
-            WindowEvent::CloseRequested => {
-                tracing::info!("Overlay window close requested");
-            }
-            WindowEvent::RedrawRequested => {
-                tracing::debug!("RedrawRequested received for overlay window");
-                if let Some(app) = &self.app {
-                    app.render_overlay();
-                }
-            }
-            WindowEvent::Resized(size) => {
-                tracing::debug!("Overlay window resized to {:?}", size);
-            }
-            _ => {}
-        }
+        // No windows managed by Core anymore - overlay rendering moved to Tauri WebView
     }
 
     fn about_to_wait(&mut self, _event_loop: &ActiveEventLoop) {

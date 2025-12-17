@@ -21,6 +21,7 @@ pub fn run() {
       screen_share::get_platform,
       screen_share::minimize_main_window,
       screen_share::restore_main_window,
+      screen_share::get_window_monitor,
       screen_share::spawn_core,
       screen_share::kill_core,
       screen_share::send_core_message,

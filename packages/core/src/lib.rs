@@ -18,7 +18,6 @@ use winit::event_loop::EventLoopProxy;
 
 pub mod annotation;
 pub mod capture;
-pub mod graphics;
 pub mod permissions;
 pub mod room;
 pub mod socket;
@@ -183,32 +182,6 @@ pub enum UserEvent {
         height: u32,
         format: FrameFormat,
     },
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // GRAPHICS / RENDERING
-    // ═══════════════════════════════════════════════════════════════════════
-    /// Request overlay window redraw
-    RequestRedraw,
-
-    /// Overlay window visibility changed
-    SetOverlayVisible(bool),
-
-    /// Update overlay position to match shared screen
-    UpdateOverlayBounds {
-        x: i32,
-        y: i32,
-        width: u32,
-        height: u32,
-    },
-
-    /// Create the overlay window (triggered when screen share starts)
-    CreateOverlay,
-
-    /// Destroy the overlay window (triggered when screen share stops)
-    DestroyOverlay,
-
-    /// Test overlay rendering (dev mode only)
-    TestOverlay,
 
     // ═══════════════════════════════════════════════════════════════════════
     // SOCKET EVENTS
@@ -437,14 +410,6 @@ pub struct Application {
     room_service: Arc<Mutex<Option<room::RoomService>>>,
 
     // ═══════════════════════════════════════════════════════════════════════
-    // GRAPHICS (Overlay Rendering)
-    // ═══════════════════════════════════════════════════════════════════════
-    /// Overlay window for annotations
-    overlay_window: Option<graphics::OverlayWindow>,
-    /// wgpu graphics context for overlay window
-    graphics_context: Option<graphics::GraphicsContext>,
-
-    // ═══════════════════════════════════════════════════════════════════════
     // ANNOTATIONS
     // ═══════════════════════════════════════════════════════════════════════
     /// In-memory annotation store
@@ -494,8 +459,6 @@ impl Application {
             screen_capturer,
             _capturer_events_task: None,
             room_service: Arc::new(Mutex::new(None)),
-            overlay_window: None,
-            graphics_context: None,
             annotation_store: AnnotationStore::new(),
             remote_cursors: HashMap::new(),
             socket,
@@ -546,13 +509,6 @@ impl Application {
                 self.is_sharing = is_sharing;
                 self.shared_source_id = source_id;
                 self.send_screen_share_state();
-
-                // Create/destroy overlay based on screen share state
-                if is_sharing {
-                    let _ = self.event_loop_proxy.send_event(UserEvent::CreateOverlay);
-                } else {
-                    let _ = self.event_loop_proxy.send_event(UserEvent::DestroyOverlay);
-                }
             }
 
             UserEvent::AvailableContentReady { screens } => {
@@ -571,27 +527,22 @@ impl Application {
             } => {
                 self.annotation_store
                     .start_stroke(&stroke_id, &participant_id, tool, color, start_point);
-                self.request_overlay_redraw();
             }
 
             UserEvent::StrokeUpdate { stroke_id, points } => {
                 self.annotation_store.update_stroke(&stroke_id, &points);
-                self.request_overlay_redraw();
             }
 
             UserEvent::StrokeComplete { stroke_id } => {
                 self.annotation_store.complete_stroke(&stroke_id);
-                self.request_overlay_redraw();
             }
 
             UserEvent::StrokeDelete { stroke_id } => {
                 self.annotation_store.delete_stroke(&stroke_id);
-                self.request_overlay_redraw();
             }
 
             UserEvent::ClearAllAnnotations => {
                 self.annotation_store.clear_all();
-                self.request_overlay_redraw();
             }
 
             UserEvent::AnnotationPermissionChanged { enabled } => {
@@ -625,7 +576,6 @@ impl Application {
                         },
                     );
                 }
-                self.request_overlay_redraw();
             }
 
             UserEvent::RemoteCursorStyle {
@@ -634,7 +584,6 @@ impl Application {
             } => {
                 if let Some(cursor) = self.remote_cursors.get_mut(&participant_id) {
                     cursor.style = style;
-                    self.request_overlay_redraw();
                 }
             }
 
@@ -658,7 +607,6 @@ impl Application {
                 self.participants.remove(&data.id);
                 self.remote_cursors.remove(&data.id);
                 self.send_participant_left(&data.id);
-                self.request_overlay_redraw();
             }
 
             UserEvent::ConnectionStateChanged(state) => {
@@ -712,63 +660,6 @@ impl Application {
                 format,
             } => {
                 self.send_video_frame(&participant_id, &track_id, frame_data, width, height, format);
-            }
-
-            // ═══════════════════════════════════════════════════════════════
-            // GRAPHICS EVENTS
-            // ═══════════════════════════════════════════════════════════════
-            UserEvent::RequestRedraw => {
-                if let Some(ref overlay) = self.overlay_window {
-                    overlay.request_redraw();
-                }
-            }
-
-            UserEvent::SetOverlayVisible(visible) => {
-                if let Some(ref mut overlay) = self.overlay_window {
-                    overlay.set_visible(visible);
-                    if visible {
-                        // Request redraw when becoming visible
-                        overlay.request_redraw();
-                    }
-                }
-            }
-
-            UserEvent::UpdateOverlayBounds { x, y, width, height } => {
-                if let Some(ref overlay) = self.overlay_window {
-                    overlay.set_bounds(x, y, width, height);
-                    // Resize graphics context if needed
-                    if let Some(ref mut gfx) = self.graphics_context {
-                        gfx.resize(width, height);
-                    }
-                }
-            }
-
-            UserEvent::CreateOverlay => {
-                self.create_overlay(elwt);
-            }
-
-            UserEvent::DestroyOverlay => {
-                self.destroy_overlay();
-            }
-
-            UserEvent::TestOverlay => {
-                // Dev mode: create overlay, show it, and render test rectangle
-                tracing::info!("TestOverlay event received!");
-                tracing::info!("TestOverlay: overlay_window exists = {}", self.overlay_window.is_some());
-                if self.overlay_window.is_none() {
-                    tracing::info!("TestOverlay: Creating new overlay window");
-                    self.create_overlay(elwt);
-                }
-                if let Some(ref mut overlay) = self.overlay_window {
-                    tracing::info!("TestOverlay: Setting bounds and showing overlay");
-                    // Position overlay at a visible location (top-left, 800x600)
-                    overlay.set_bounds(100, 100, 800, 600);
-                    overlay.set_visible(true);
-                    overlay.request_redraw();
-                    tracing::info!("TestOverlay: Overlay should now be visible");
-                } else {
-                    tracing::error!("TestOverlay: Failed to create overlay window!");
-                }
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -842,69 +733,8 @@ impl Application {
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // OVERLAY MANAGEMENT
-    // ═══════════════════════════════════════════════════════════════════════════
-
-    /// Create the overlay window and graphics context
-    pub fn create_overlay(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
-        if self.overlay_window.is_some() {
-            tracing::warn!("Overlay window already exists");
-            return;
-        }
-
-        match graphics::OverlayWindow::new(event_loop) {
-            Ok(overlay) => {
-                // Create graphics context
-                match graphics::GraphicsContext::new(&overlay) {
-                    Ok(gfx) => {
-                        tracing::info!("Overlay window and graphics context created");
-                        // Request initial redraw to render test content
-                        overlay.request_redraw();
-                        self.overlay_window = Some(overlay);
-                        self.graphics_context = Some(gfx);
-                    }
-                    Err(e) => {
-                        tracing::error!("Failed to create graphics context: {:?}", e);
-                    }
-                }
-            }
-            Err(e) => {
-                tracing::error!("Failed to create overlay window: {:?}", e);
-            }
-        }
-    }
-
-    /// Destroy the overlay window and graphics context
-    pub fn destroy_overlay(&mut self) {
-        self.graphics_context = None;
-        self.overlay_window = None;
-        tracing::info!("Overlay window destroyed");
-    }
-
-    /// Get the overlay window ID (for event routing)
-    pub fn overlay_window_id(&self) -> Option<winit::window::WindowId> {
-        self.overlay_window.as_ref().map(|w| w.id())
-    }
-
-    /// Render the overlay (called on RedrawRequested)
-    pub fn render_overlay(&self) {
-        tracing::debug!("render_overlay called, graphics_context exists = {}", self.graphics_context.is_some());
-        if let Some(ref gfx) = self.graphics_context {
-            tracing::debug!("Calling render_annotations");
-            let strokes: Vec<_> = self.annotation_store.strokes().into_iter().cloned().collect();
-            let cursors: Vec<_> = self.remote_cursors.values().cloned().collect();
-            gfx.render_annotations(&strokes, &cursors);
-            tracing::debug!("render_annotations complete");
-        }
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════
     // INTERNAL HELPERS
     // ═══════════════════════════════════════════════════════════════════════════
-
-    fn request_overlay_redraw(&self) {
-        let _ = self.event_loop_proxy.send_event(UserEvent::RequestRedraw);
-    }
 
     fn get_participant_color(&self, participant_id: &str) -> Color {
         let index = self

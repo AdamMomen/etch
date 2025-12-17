@@ -73,6 +73,41 @@ pub async fn restore_main_window(window: tauri::Window) -> Result<(), String> {
     window.set_focus().map_err(|e| e.to_string())
 }
 
+/// Monitor info returned to frontend
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct WindowMonitorInfo {
+    /// Monitor position X
+    pub x: i32,
+    /// Monitor position Y
+    pub y: i32,
+    /// Monitor width
+    pub width: u32,
+    /// Monitor height
+    pub height: u32,
+}
+
+/// Get the monitor that the main window is currently on
+/// Returns the monitor's position and size so frontend can compare with selected screen
+#[tauri::command]
+pub async fn get_window_monitor(window: tauri::Window) -> Result<Option<WindowMonitorInfo>, String> {
+    // Get the monitor that contains the window
+    let monitor = window.current_monitor().map_err(|e| e.to_string())?;
+
+    match monitor {
+        Some(m) => {
+            let position = m.position();
+            let size = m.size();
+            Ok(Some(WindowMonitorInfo {
+                x: position.x,
+                y: position.y,
+                width: size.width,
+                height: size.height,
+            }))
+        }
+        None => Ok(None),
+    }
+}
+
 /// Generate a unique socket path for this instance
 fn generate_socket_path() -> String {
     let pid = std::process::id();

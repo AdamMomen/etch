@@ -523,18 +523,6 @@ export class CoreClient {
   async ping(): Promise<void> {
     await this.sendMessage({ type: 'ping' })
   }
-
-  // ========================================================================
-  // Dev Mode
-  // ========================================================================
-
-  /**
-   * Test overlay rendering (dev mode only)
-   * Creates and shows the wgpu overlay with a test rectangle
-   */
-  async testOverlay(): Promise<void> {
-    await this.sendMessage({ type: 'test_overlay' })
-  }
 }
 
 // ============================================================================

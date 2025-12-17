@@ -1,10 +1,9 @@
-import { LogOut, Link, Bug } from 'lucide-react'
+import { LogOut, Link } from 'lucide-react'
 import { Room } from 'livekit-client'
 import { Button } from '@/components/ui/button'
 import { MicrophoneButton } from './MicrophoneButton'
 import { CameraButton } from './CameraButton'
 import { ScreenShareButton } from '@/components/ScreenShare'
-import { getCoreClient } from '@/lib/core'
 
 interface MeetingControlsBarProps {
   room: Room | null
@@ -55,27 +54,6 @@ export function MeetingControlsBar({
           aria-label="Invite participants"
         >
           <Link className="h-5 w-5" />
-        </Button>
-      )}
-
-      {/* Dev Mode: Test Overlay Button */}
-      {import.meta.env.DEV && (
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => {
-            const core = getCoreClient()
-            if (core.isRunning()) {
-              core.testOverlay()
-            } else {
-              console.warn('Core not running')
-            }
-          }}
-          className="h-12 w-12 rounded-full border-yellow-500 text-yellow-500 hover:bg-yellow-500/10"
-          aria-label="Test overlay (dev)"
-          title="Test wgpu overlay rendering"
-        >
-          <Bug className="h-5 w-5" />
         </Button>
       )}
 
