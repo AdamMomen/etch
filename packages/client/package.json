@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "trap 'exit 0' INT TERM; DEBUG_OVERLAY=1 tauri dev",
+    "dev": "trap 'exit 0' INT TERM; DEBUG_OVERLAY=0 tauri dev",
     "dev:web": "vite",
     "build": "tauri build",
     "build:web": "tsc -b && vite build",
@@ -60,3 +60,4 @@
     "vitest": "^2.0.0"
   }
 }
+

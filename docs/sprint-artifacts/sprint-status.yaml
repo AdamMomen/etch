@@ -70,7 +70,7 @@ development_status:
   3-3-implement-stop-screen-sharing: done
   3-4-enforce-single-active-screen-share: done
   3-5-implement-screen-share-quality-optimization: done
-  3-6-create-sharers-transparent-overlay-window: review
+  3-6-create-sharers-transparent-overlay-window: done
   3-7-create-sharers-floating-control-bar: backlog
   3-8-create-share-border-indicator: backlog
   3-9-implement-main-window-auto-minimize-and-restore: backlog

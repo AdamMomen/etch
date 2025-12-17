@@ -21,13 +21,14 @@ tauri-build = { version = "2.5.1", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
-tauri = { version = "2.9.2", features = ["webview-data-url"] }
+tauri = { version = "2.9.2", features = ["webview-data-url", "macos-private-api"] }
 tauri-plugin-log = "2.0.0"
 tauri-plugin-shell = "2"
 
 # Platform-specific dependencies for click-through overlay windows (Story 3.6)
 [target.'cfg(target_os = "macos")'.dependencies]
 objc = "0.2"
+dispatch = "0.2"  # For dispatching NSWindow operations to main thread
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.58", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }

@@ -368,37 +368,27 @@ pub async fn create_annotation_overlay(
     // Using a data URL for minimal content - just a transparent page
     // Epic 4 will replace this with actual annotation canvas content
     //
-    // DEBUG: Set DEBUG_OVERLAY=1 env var to see the overlay (red tint + border)
-    let debug_mode = std::env::var("DEBUG_OVERLAY").is_ok();
+    // DEBUG_OVERLAY=1 shows red debug overlay, otherwise shows subtle professional UI
+    let debug_mode = std::env::var("DEBUG_OVERLAY").map(|v| v == "1").unwrap_or(false);
+    log::info!("Overlay debug mode: {}", debug_mode);
 
-    log::info!("DEBUG_OVERLAY mode: {}", debug_mode);
-
-    let (bg_style, border_style) = if debug_mode {
-        // Semi-transparent red background + thick border for visibility
-        ("background: rgba(255, 0, 0, 0.3) !important;", "border: 8px solid red; box-sizing: border-box;")
-    } else {
-        ("background: transparent;", "")
-    };
-
-    let overlay_html = format!(r#"
+    let overlay_html = if debug_mode {
+        // Debug mode: bright red overlay for visibility testing
+        r#"
         <!DOCTYPE html>
         <html>
         <head>
             <style>
-                * {{ margin: 0; padding: 0; }}
-                html, body {{
+                * { margin: 0; padding: 0; }
+                html, body {
                     width: 100%;
                     height: 100%;
-                    {bg_style}
+                    background: rgba(255, 0, 0, 0.3);
                     overflow: hidden;
-                    {border_style}
-                }}
-                #canvas {{
-                    width: 100%;
-                    height: 100%;
-                    background: transparent;
-                }}
-                #debug {{
+                    border: 8px solid red;
+                    box-sizing: border-box;
+                }
+                #debug {
                     position: fixed;
                     top: 50%;
                     left: 50%;
@@ -407,29 +397,36 @@ pub async fn create_annotation_overlay(
                     color: white;
                     text-shadow: 2px 2px 4px black;
                     font-family: sans-serif;
-                    display: {debug_display};
-                }}
+                }
             </style>
         </head>
         <body>
             <div id="debug">OVERLAY ACTIVE</div>
-            <canvas id="canvas"></canvas>
-            <script>
-                const canvas = document.getElementById('canvas');
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-                window.addEventListener('resize', () => {{
-                    canvas.width = window.innerWidth;
-                    canvas.height = window.innerHeight;
-                }});
-            </script>
         </body>
         </html>
-    "#,
-    bg_style = bg_style,
-    border_style = border_style,
-    debug_display = if debug_mode { "block" } else { "none" }
-    );
+        "#.to_string()
+    } else {
+        // Production mode: minimal - just a subtle border indicating sharing
+        r#"
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                * { margin: 0; padding: 0; }
+                html, body {
+                    width: 100%;
+                    height: 100%;
+                    background: transparent;
+                    overflow: hidden;
+                    border: 2px solid rgba(59, 130, 246, 0.4);
+                    box-sizing: border-box;
+                }
+            </style>
+        </head>
+        <body></body>
+        </html>
+        "#.to_string()
+    };
 
     let data_url = format!(
         "data:text/html;base64,{}",
@@ -448,6 +445,7 @@ pub async fn create_annotation_overlay(
         .inner_size(bounds.width as f64, bounds.height as f64)
         .position(bounds.x as f64, bounds.y as f64)
         .decorations(false)
+        .transparent(true)  // Requires macos-private-api feature
         .always_on_top(true)
         .skip_taskbar(true)
         .visible(true)
@@ -605,9 +603,10 @@ fn configure_click_through(window: &tauri::WebviewWindow) -> Result<(), String> 
 }
 
 /// macOS: Use NSWindow.setIgnoresMouseEvents to enable click-through
+/// IMPORTANT: NSWindow operations must run on the main thread
 #[cfg(target_os = "macos")]
 fn configure_click_through_macos(window: &tauri::WebviewWindow) -> Result<(), String> {
-    use objc::runtime::{Object, YES, NO};
+    use objc::runtime::{Class, Object, YES, NO};
     use objc::{msg_send, sel, sel_impl};
 
     // Get the NSWindow pointer from the Tauri window
@@ -615,24 +614,38 @@ fn configure_click_through_macos(window: &tauri::WebviewWindow) -> Result<(), St
         .ns_window()
         .map_err(|e| format!("Failed to get NSWindow: {}", e))?;
 
-    unsafe {
-        // ns_window is already *mut c_void, cast directly to *mut Object
-        let ns_window = ns_window as *mut Object;
+    let ns_window_ptr = ns_window as usize;
 
-        // Set ignoresMouseEvents to YES for click-through behavior
-        let _: () = msg_send![ns_window, setIgnoresMouseEvents: YES];
+    // Configure NSWindow on main thread
+    dispatch::Queue::main().exec_sync(move || {
+        unsafe {
+            let ns_window = ns_window_ptr as *mut Object;
 
-        // Set window level high enough to appear above most windows
-        // NSFloatingWindowLevel = 5, we use 6 to be just above floating windows
-        // Using a lower level than before to avoid potential conflicts
-        let overlay_level: i64 = 6;
-        let _: () = msg_send![ns_window, setLevel: overlay_level];
+            // Set ignoresMouseEvents to YES for click-through behavior
+            let _: () = msg_send![ns_window, setIgnoresMouseEvents: YES];
 
-        // Remove shadow for cleaner overlay appearance
-        let _: () = msg_send![ns_window, setHasShadow: NO];
-    }
+            // Set window level high enough to appear above most windows
+            let overlay_level: i64 = 6;
+            let _: () = msg_send![ns_window, setLevel: overlay_level];
 
-    log::info!("macOS: Configured click-through (ignoresMouseEvents) and overlay window level=6");
+            // Remove shadow for cleaner overlay appearance
+            let _: () = msg_send![ns_window, setHasShadow: NO];
+
+            // Make window follow user across all Spaces (virtual desktops)
+            let can_join_all_spaces: u64 = 1;
+            let _: () = msg_send![ns_window, setCollectionBehavior: can_join_all_spaces];
+
+            // Ensure NSWindow transparency
+            let _: () = msg_send![ns_window, setOpaque: NO];
+
+            // Set NSWindow background color to clear
+            let ns_color_class = Class::get("NSColor").unwrap();
+            let clear_color: *mut Object = msg_send![ns_color_class, clearColor];
+            let _: () = msg_send![ns_window, setBackgroundColor: clear_color];
+        }
+    });
+
+    log::info!("macOS: Configured overlay - click-through, level=6, joins all spaces, transparent");
     Ok(())
 }
 

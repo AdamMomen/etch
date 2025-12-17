@@ -1909,6 +1909,7 @@ dependencies = [
 name = "nameless"
 version = "0.1.0"
 dependencies = [
+ "dispatch",
  "log",
  "objc",
  "serde",
