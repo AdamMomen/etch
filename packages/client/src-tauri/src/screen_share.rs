@@ -140,7 +140,7 @@ pub async fn spawn_core(app: AppHandle, state: State<'_, CoreState>) -> Result<S
             match event {
                 CommandEvent::Stdout(line) => {
                     let line_str = String::from_utf8_lossy(&line);
-                    log::debug!("Core stdout: {}", line_str);
+                    log::info!("[Core] {}", line_str);
                 }
                 CommandEvent::Stderr(line) => {
                     let line_str = String::from_utf8_lossy(&line);

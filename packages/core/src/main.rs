@@ -96,6 +96,7 @@ impl ApplicationHandler<UserEvent> for AppHandler {
                 tracing::info!("Overlay window close requested");
             }
             WindowEvent::RedrawRequested => {
+                tracing::debug!("RedrawRequested received for overlay window");
                 if let Some(app) = &self.app {
                     app.render_overlay();
                 }

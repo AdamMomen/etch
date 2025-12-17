@@ -17,7 +17,8 @@
       "WebFetch(domain:www.gethopp.app)",
       "WebFetch(domain:api.github.com)",
       "Bash(cargo test:*)",
-      "mcp__livekit-docs__docs_search"
+      "mcp__livekit-docs__docs_search",
+      "Bash(cargo build:*)"
     ],
     "deny": [],
     "ask": []

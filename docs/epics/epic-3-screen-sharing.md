@@ -586,3 +586,58 @@ Per Implementation Readiness assessment, Windows transparent overlay behavior ne
 **FRs Addressed:** FR15, FR16, FR20, FR27 (Windows platform parity)
 
 ---
+
+## Story 3.14: Fix Screen Share State Not Updating When Host Stops
+
+**Type:** Bug Fix
+
+**As a** meeting participant,
+**I want** the UI to immediately reflect when the host stops screen sharing,
+**So that** I have accurate information about the current meeting state.
+
+**Bug Description:**
+
+**Current behavior:** When the host stops streaming, the UI still shows the "streaming" indicator. State doesn't update in real-time.
+
+**Expected behavior:** UI should immediately update when screen share ends - indicator disappears, layout returns to video grid.
+
+**Acceptance Criteria:**
+
+**Given** the host is currently sharing their screen
+**When** the host stops screen sharing (via Stop button, keyboard shortcut, or system)
+**Then** all participants see the screen share end within 500ms
+
+**And** the UI updates immediately:
+  - Screen share video element is removed
+  - "Sharing" badge removed from host's participant entry
+  - Layout transitions back to video grid
+  - Toast notification: "{host} stopped sharing"
+
+**And** the sharer's UI updates:
+  - Floating control bar dismissed
+  - Share border indicator dismissed
+  - Main window restored (if minimized)
+  - Share button returns to default state
+
+**And** state is consistent across all participants
+
+**Investigation Areas:**
+- `RoomEvent.TrackUnpublished` event listener
+- `RoomEvent.TrackUnsubscribed` handler
+- `roomStore` screen share state updates
+- Participant metadata sync on track end
+- React re-render triggers
+
+**Prerequisites:** Story 3.2, 3.3
+
+**Technical Notes:**
+- Verify all track lifecycle events are being handled:
+  - `TrackUnpublished` (publisher side)
+  - `TrackUnsubscribed` (subscriber side)
+  - `LocalTrackUnpublished` (local cleanup)
+- Check if `screenShareTrack` state is being set to `null` on end
+- Verify `isScreenSharing` computed state updates
+- May be race condition between track end and metadata update
+- Add logging to track event flow for diagnosis
+
+---

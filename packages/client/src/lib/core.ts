@@ -111,6 +111,7 @@ type IncomingMessage =
   | { type: 'request_screen_recording_permission' }
   | { type: 'ping' }
   | { type: 'shutdown' }
+  | { type: 'test_overlay' }
 
 // ============================================================================
 // Core Client
@@ -521,6 +522,18 @@ export class CoreClient {
    */
   async ping(): Promise<void> {
     await this.sendMessage({ type: 'ping' })
+  }
+
+  // ========================================================================
+  // Dev Mode
+  // ========================================================================
+
+  /**
+   * Test overlay rendering (dev mode only)
+   * Creates and shows the wgpu overlay with a test rectangle
+   */
+  async testOverlay(): Promise<void> {
+    await this.sendMessage({ type: 'test_overlay' })
   }
 }
 

@@ -9,8 +9,43 @@
 //! - Platform-specific transparency handling
 
 use std::sync::Arc;
+use wgpu::util::DeviceExt;
 use winit::dpi::{LogicalSize, PhysicalPosition};
 use winit::window::{Window, WindowAttributes, WindowLevel};
+
+/// Vertex data for colored geometry rendering
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct ColoredVertex {
+    /// Position in clip space (-1 to 1)
+    pub position: [f32; 2],
+    /// RGBA color (0 to 1)
+    pub color: [f32; 4],
+}
+
+impl ColoredVertex {
+    /// Vertex buffer layout for the shader
+    pub fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: std::mem::size_of::<ColoredVertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: &[
+                // position
+                wgpu::VertexAttribute {
+                    offset: 0,
+                    shader_location: 0,
+                    format: wgpu::VertexFormat::Float32x2,
+                },
+                // color
+                wgpu::VertexAttribute {
+                    offset: std::mem::size_of::<[f32; 2]>() as wgpu::BufferAddress,
+                    shader_location: 1,
+                    format: wgpu::VertexFormat::Float32x4,
+                },
+            ],
+        }
+    }
+}
 
 // Platform-specific modules
 #[cfg(target_os = "macos")]
@@ -146,6 +181,9 @@ pub struct GraphicsContext {
     config: wgpu::SurfaceConfiguration,
     window: Arc<Window>,
 
+    // Render pipeline for colored geometry
+    render_pipeline: wgpu::RenderPipeline,
+
     // Windows requires DirectComposition for transparent overlays
     #[cfg(target_os = "windows")]
     _direct_composition: Option<windows::DirectComposition>,
@@ -243,6 +281,65 @@ impl GraphicsContext {
             dc.commit()?;
         }
 
+        // Create shader module from embedded WGSL
+        let shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("overlay_shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("shader.wgsl").into()),
+        });
+
+        // Create render pipeline for colored geometry
+        let render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("overlay_pipeline_layout"),
+                bind_group_layouts: &[],
+                push_constant_ranges: &[],
+            });
+
+        let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("overlay_render_pipeline"),
+            layout: Some(&render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &shader,
+                entry_point: Some("vs_main"),
+                buffers: &[ColoredVertex::desc()],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: surface_format,
+                    blend: Some(wgpu::BlendState {
+                        color: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::One,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                        alpha: wgpu::BlendComponent {
+                            src_factor: wgpu::BlendFactor::One,
+                            dst_factor: wgpu::BlendFactor::OneMinusSrcAlpha,
+                            operation: wgpu::BlendOperation::Add,
+                        },
+                    }),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None, // No culling for 2D
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+            cache: None,
+        });
+
         tracing::info!("Graphics context created: {}x{}", size.width, size.height);
 
         Ok(Self {
@@ -251,6 +348,7 @@ impl GraphicsContext {
             queue,
             config,
             window,
+            render_pipeline,
             #[cfg(target_os = "windows")]
             _direct_composition: direct_composition,
         })
@@ -266,8 +364,13 @@ impl GraphicsContext {
         }
     }
 
-    /// Render a frame - clears to transparent for now
+    /// Render a frame - clears to transparent
     pub fn render(&self) -> Result<(), wgpu::SurfaceError> {
+        self.render_with_vertices(&[])
+    }
+
+    /// Render a frame with vertices
+    pub fn render_with_vertices(&self, vertices: &[ColoredVertex]) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
@@ -279,10 +382,23 @@ impl GraphicsContext {
                 label: Some("overlay_encoder"),
             });
 
-        // Clear to fully transparent
+        // Create vertex buffer if we have vertices
+        let vertex_buffer = if !vertices.is_empty() {
+            Some(
+                self.device
+                    .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                        label: Some("vertex_buffer"),
+                        contents: bytemuck::cast_slice(vertices),
+                        usage: wgpu::BufferUsages::VERTEX,
+                    }),
+            )
+        } else {
+            None
+        };
+
         {
-            let _render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("clear_pass"),
+            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                label: Some("overlay_pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
                     resolve_target: None,
@@ -301,7 +417,12 @@ impl GraphicsContext {
                 timestamp_writes: None,
             });
 
-            // TODO: Render annotations and cursors here
+            // Draw vertices if we have any
+            if let Some(ref buffer) = vertex_buffer {
+                render_pass.set_pipeline(&self.render_pipeline);
+                render_pass.set_vertex_buffer(0, buffer.slice(..));
+                render_pass.draw(0..vertices.len() as u32, 0..1);
+            }
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -309,6 +430,62 @@ impl GraphicsContext {
         output.present();
 
         Ok(())
+    }
+
+    /// Render a test rectangle at the center of the screen
+    /// This is for spike validation - proves the wgpu pipeline works
+    pub fn render_test_rectangle(&self) -> Result<(), wgpu::SurfaceError> {
+        // Create a semi-transparent red rectangle in the center
+        // Coordinates are in clip space: -1.0 to 1.0
+        let color = [1.0, 0.2, 0.2, 0.7]; // Semi-transparent red
+
+        // Rectangle corners (center of screen, 40% width/height)
+        let vertices = [
+            // Triangle 1
+            ColoredVertex { position: [-0.2, -0.2], color },
+            ColoredVertex { position: [0.2, -0.2], color },
+            ColoredVertex { position: [0.2, 0.2], color },
+            // Triangle 2
+            ColoredVertex { position: [-0.2, -0.2], color },
+            ColoredVertex { position: [0.2, 0.2], color },
+            ColoredVertex { position: [-0.2, 0.2], color },
+        ];
+
+        self.render_with_vertices(&vertices)
+    }
+
+    /// Render a rectangle at specific pixel coordinates
+    /// x, y are top-left corner in pixels; width, height in pixels
+    pub fn render_rectangle(
+        &self,
+        x: f32,
+        y: f32,
+        width: f32,
+        height: f32,
+        color: [f32; 4],
+    ) -> Result<(), wgpu::SurfaceError> {
+        // Convert pixel coordinates to clip space (-1 to 1)
+        let surface_width = self.config.width as f32;
+        let surface_height = self.config.height as f32;
+
+        // Convert to normalized device coordinates
+        let x0 = (x / surface_width) * 2.0 - 1.0;
+        let y0 = 1.0 - (y / surface_height) * 2.0; // Flip Y (screen coords are top-down)
+        let x1 = ((x + width) / surface_width) * 2.0 - 1.0;
+        let y1 = 1.0 - ((y + height) / surface_height) * 2.0;
+
+        let vertices = [
+            // Triangle 1 (top-left, bottom-left, bottom-right)
+            ColoredVertex { position: [x0, y0], color },
+            ColoredVertex { position: [x0, y1], color },
+            ColoredVertex { position: [x1, y1], color },
+            // Triangle 2 (top-left, bottom-right, top-right)
+            ColoredVertex { position: [x0, y0], color },
+            ColoredVertex { position: [x1, y1], color },
+            ColoredVertex { position: [x1, y0], color },
+        ];
+
+        self.render_with_vertices(&vertices)
     }
 
     /// Render annotations and cursors
@@ -323,7 +500,8 @@ impl GraphicsContext {
         // 2. Texture rendering for cursors
         // 3. Proper blending for transparency
 
-        if let Err(e) = self.render() {
+        // For now, render a test rectangle to validate the pipeline
+        if let Err(e) = self.render_test_rectangle() {
             tracing::error!("Render failed: {:?}", e);
         }
     }

@@ -207,6 +207,9 @@ pub enum UserEvent {
     /// Destroy the overlay window (triggered when screen share stops)
     DestroyOverlay,
 
+    /// Test overlay rendering (dev mode only)
+    TestOverlay,
+
     // ═══════════════════════════════════════════════════════════════════════
     // SOCKET EVENTS
     // ═══════════════════════════════════════════════════════════════════════
@@ -723,6 +726,10 @@ impl Application {
             UserEvent::SetOverlayVisible(visible) => {
                 if let Some(ref mut overlay) = self.overlay_window {
                     overlay.set_visible(visible);
+                    if visible {
+                        // Request redraw when becoming visible
+                        overlay.request_redraw();
+                    }
                 }
             }
 
@@ -742,6 +749,26 @@ impl Application {
 
             UserEvent::DestroyOverlay => {
                 self.destroy_overlay();
+            }
+
+            UserEvent::TestOverlay => {
+                // Dev mode: create overlay, show it, and render test rectangle
+                tracing::info!("TestOverlay event received!");
+                tracing::info!("TestOverlay: overlay_window exists = {}", self.overlay_window.is_some());
+                if self.overlay_window.is_none() {
+                    tracing::info!("TestOverlay: Creating new overlay window");
+                    self.create_overlay(elwt);
+                }
+                if let Some(ref mut overlay) = self.overlay_window {
+                    tracing::info!("TestOverlay: Setting bounds and showing overlay");
+                    // Position overlay at a visible location (top-left, 800x600)
+                    overlay.set_bounds(100, 100, 800, 600);
+                    overlay.set_visible(true);
+                    overlay.request_redraw();
+                    tracing::info!("TestOverlay: Overlay should now be visible");
+                } else {
+                    tracing::error!("TestOverlay: Failed to create overlay window!");
+                }
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -831,6 +858,8 @@ impl Application {
                 match graphics::GraphicsContext::new(&overlay) {
                     Ok(gfx) => {
                         tracing::info!("Overlay window and graphics context created");
+                        // Request initial redraw to render test content
+                        overlay.request_redraw();
                         self.overlay_window = Some(overlay);
                         self.graphics_context = Some(gfx);
                     }
@@ -859,10 +888,13 @@ impl Application {
 
     /// Render the overlay (called on RedrawRequested)
     pub fn render_overlay(&self) {
+        tracing::debug!("render_overlay called, graphics_context exists = {}", self.graphics_context.is_some());
         if let Some(ref gfx) = self.graphics_context {
+            tracing::debug!("Calling render_annotations");
             let strokes: Vec<_> = self.annotation_store.strokes().into_iter().cloned().collect();
             let cursors: Vec<_> = self.remote_cursors.values().cloned().collect();
             gfx.render_annotations(&strokes, &cursors);
+            tracing::debug!("render_annotations complete");
         }
     }
 

@@ -76,6 +76,9 @@ pub enum IncomingMessage {
     // Lifecycle
     Ping,
     Shutdown,
+
+    // Dev mode
+    TestOverlay,
 }
 
 /// Messages from Core to WebView
@@ -400,7 +403,9 @@ impl CoreSocket {
     }
 
     fn handle_message(json: &str, proxy: &EventLoopProxy<UserEvent>) -> anyhow::Result<()> {
+        tracing::debug!("Socket received: {}", json);
         let msg: IncomingMessage = serde_json::from_str(json)?;
+        tracing::debug!("Parsed message: {:?}", msg);
 
         let event = match msg {
             IncomingMessage::JoinRoom { server_url, token } => {
@@ -474,8 +479,13 @@ impl CoreSocket {
                 return Ok(());
             }
             IncomingMessage::Shutdown => UserEvent::Terminate,
+            IncomingMessage::TestOverlay => {
+                tracing::info!("TestOverlay message received, sending event");
+                UserEvent::TestOverlay
+            }
         };
 
+        tracing::debug!("Sending event to event loop: {:?}", event);
         proxy.send_event(event)?;
         Ok(())
     }

@@ -523,3 +523,45 @@
 - Add basic settings menu accessible from home screen
 
 ---
+
+## Story 2.15: Fix Browser Room Join Retry Issue
+
+**Type:** Bug Fix
+
+**As a** browser user,
+**I want** to join a room on the first connection attempt,
+**So that** I don't experience delays or confusion waiting for retries.
+
+**Bug Description:**
+
+**Current behavior:** Browser client doesn't join room directly; connection only succeeds after automatic retries.
+
+**Expected behavior:** Room join should succeed on first attempt without requiring retry logic to kick in.
+
+**Acceptance Criteria:**
+
+**Given** I'm using the browser client
+**When** I click to join a room with valid credentials
+**Then** I connect to the room on the first attempt (within 3 seconds)
+
+**And** no retry logic is triggered for successful connections
+**And** connection status shows "Connecting..." → "Connected" (no "Retrying..." state)
+**And** console shows single connection attempt, not multiple
+
+**Investigation Areas:**
+- `room.connect()` timeout configuration
+- Token fetch timing / race condition with connection
+- LiveKit server URL resolution
+- WebSocket connection establishment
+- Signal server handshake timing
+
+**Prerequisites:** Story 2.3 (Room Joining)
+
+**Technical Notes:**
+- Check `RoomOptions.connectOptions` timeout values
+- Review token generation timing vs connection initiation
+- Inspect network tab for failed WebSocket attempts
+- Compare browser vs desktop client connection flow
+- May need to add connection state logging for diagnosis
+
+---
