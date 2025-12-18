@@ -1469,7 +1469,7 @@ packages/capture-sidecar/
 
 **Decision:** Adopt a **Core-centric architecture** where a dedicated Rust binary (Core) owns all media:
 
-- **All Platforms:** Single Core binary using LiveKit DesktopCapturer (Hopp's fork)
+- **All Platforms:** Single Core binary using LiveKit DesktopCapturer
 - **Core owns:** Screen capture, audio, camera, LiveKit connection, DataTracks
 - **Core renders:** Annotation overlay via wgpu (GPU-accelerated)
 - **WebView becomes:** Pure UI shell receiving video frames via socket
@@ -1484,7 +1484,7 @@ livekit = { git = "https://github.com/gethopp/rust-sdks", branch = "patches", fe
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                              CORE (Rust Binary)                          │
 │  ┌────────────────────────────────────────────────────────────────────┐ │
-│  │                      LiveKit Rust SDK (Hopp Fork)                   │ │
+│  │                        LiveKit Rust SDK (Fork)                       │ │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌────────────┐ │ │
 │  │  │ Desktop     │  │ Audio       │  │ Video       │  │ DataTracks │ │ │
 │  │  │ Capturer    │  │ Source      │  │ Source      │  │            │ │ │
@@ -1511,11 +1511,11 @@ livekit = { git = "https://github.com/gethopp/rust-sdks", branch = "patches", fe
 **Rationale:**
 1. **Performance:** DesktopCapturer provides native 60fps capture (vs 4-5fps with xcap)
 2. **Annotation latency:** wgpu renders directly to overlay (~1-2ms vs ~20-30ms WebView path)
-3. **Proven architecture:** Hopp ships this exact pattern in production
+3. **Proven architecture:** This pattern is used in production apps
 4. **Single LiveKit connection:** Core owns the connection, simplifying state management
 5. **Browser viewers work:** LiveKit protocol handles interoperability automatically
 
-**Key Pattern (from Hopp):**
+**Key Pattern:**
 - **winit EventLoop** as central message bus
 - **UserEvent enum** as command vocabulary
 - **Application struct** holds all components
@@ -1526,7 +1526,7 @@ livekit = { git = "https://github.com/gethopp/rust-sdks", branch = "patches", fe
 - Core becomes complex media engine (~5-10K lines Rust)
 - Must maintain socket protocol between Core and WebView
 - Build complexity increases (two Rust binaries)
-- Need to study Hopp's codebase for implementation patterns
+- Reference implementations available for implementation patterns
 
 **Migration from ADR-007:**
 - Delete `packages/capture-sidecar/` ✓ Done
