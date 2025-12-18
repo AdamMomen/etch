@@ -32,7 +32,7 @@ export interface AnnotationCanvasProps {
 }
 
 // Perfect Freehand options for pen tool
-const PEN_OPTIONS = {
+export const PEN_OPTIONS = {
   size: 8,
   thinning: 0.5,
   smoothing: 0.5,
@@ -43,7 +43,9 @@ const PEN_OPTIONS = {
 }
 
 // Perfect Freehand options for highlighter tool (wider, flatter)
-const HIGHLIGHTER_OPTIONS = {
+// AC-4.4.3: size 24 (3x pen width of 8)
+// AC-4.4.5: cap: false for flat ends
+export const HIGHLIGHTER_OPTIONS = {
   size: 24,
   thinning: 0,
   smoothing: 0.5,
@@ -53,8 +55,8 @@ const HIGHLIGHTER_OPTIONS = {
   end: { taper: 0, cap: false },
 }
 
-// Highlighter opacity (40% per spec)
-const HIGHLIGHTER_OPACITY = 0.4
+// Highlighter opacity (40% per spec - AC-4.4.2)
+export const HIGHLIGHTER_OPACITY = 0.4
 
 /**
  * Converts normalized [0,1] coordinates to canvas pixel coordinates.

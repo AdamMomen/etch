@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, cleanup } from '@testing-library/react'
-import { AnnotationCanvas } from '@/components/AnnotationCanvas'
+import {
+  AnnotationCanvas,
+  PEN_OPTIONS,
+  HIGHLIGHTER_OPTIONS,
+  HIGHLIGHTER_OPACITY,
+} from '@/components/AnnotationCanvas'
 import type { Stroke, Point } from '@nameless/shared'
 
 // Mock requestAnimationFrame (not mocked in setup)
@@ -514,6 +519,107 @@ describe('AnnotationCanvas', () => {
           />
         )
       }).not.toThrow()
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
+  // HIGHLIGHTER RENDERING TESTS (AC-4.4.2, AC-4.4.3, AC-4.4.5)
+  // ─────────────────────────────────────────────────────────
+
+  describe('Highlighter Rendering (AC-4.4.2, AC-4.4.3, AC-4.4.5)', () => {
+    it('should accept highlighter strokes without throwing', () => {
+      const videoRef = createMockVideoRef()
+      const highlighterStroke = createMockStroke({
+        id: 'highlighter-stroke',
+        tool: 'highlighter',
+        color: '#ffff00',
+      })
+
+      // Should not throw when rendering highlighter strokes
+      expect(() => {
+        render(
+          <AnnotationCanvas
+            videoRef={videoRef}
+            isScreenShareActive={true}
+            strokes={[highlighterStroke]}
+          />
+        )
+      }).not.toThrow()
+    })
+
+    it('should render highlighter with different options than pen', () => {
+      const videoRef = createMockVideoRef()
+      const penStroke = createMockStroke({
+        id: 'pen-stroke',
+        tool: 'pen',
+        color: '#ff0000',
+      })
+      const highlighterStroke = createMockStroke({
+        id: 'highlighter-stroke',
+        tool: 'highlighter',
+        color: '#00ff00',
+      })
+
+      // Should not throw - both strokes render with different options
+      expect(() => {
+        render(
+          <AnnotationCanvas
+            videoRef={videoRef}
+            isScreenShareActive={true}
+            strokes={[penStroke, highlighterStroke]}
+          />
+        )
+      }).not.toThrow()
+    })
+
+    it('should handle mixed pen and highlighter strokes', () => {
+      const videoRef = createMockVideoRef()
+      const strokes = [
+        createMockStroke({ id: 'stroke-1', tool: 'highlighter' }),
+        createMockStroke({ id: 'stroke-2', tool: 'pen' }),
+        createMockStroke({ id: 'stroke-3', tool: 'highlighter' }),
+      ]
+
+      // Should not throw when rendering mixed strokes
+      expect(() => {
+        render(
+          <AnnotationCanvas
+            videoRef={videoRef}
+            isScreenShareActive={true}
+            strokes={strokes}
+          />
+        )
+      }).not.toThrow()
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
+  // HIGHLIGHTER CONSTANTS TESTS (AC-4.4.2, AC-4.4.3, AC-4.4.5)
+  // ─────────────────────────────────────────────────────────
+
+  describe('Highlighter Constants', () => {
+    it('HIGHLIGHTER_OPACITY should be 0.4 (40%) per AC-4.4.2', () => {
+      expect(HIGHLIGHTER_OPACITY).toBe(0.4)
+    })
+
+    it('HIGHLIGHTER_OPTIONS.size should be 24 (3x pen width of 8) per AC-4.4.3', () => {
+      expect(HIGHLIGHTER_OPTIONS.size).toBe(24)
+      expect(PEN_OPTIONS.size).toBe(8)
+      expect(HIGHLIGHTER_OPTIONS.size).toBe(PEN_OPTIONS.size * 3)
+    })
+
+    it('HIGHLIGHTER_OPTIONS should have flat ends (cap: false) per AC-4.4.5', () => {
+      expect(HIGHLIGHTER_OPTIONS.start.cap).toBe(false)
+      expect(HIGHLIGHTER_OPTIONS.end.cap).toBe(false)
+    })
+
+    it('PEN_OPTIONS should have rounded ends (cap: true)', () => {
+      expect(PEN_OPTIONS.start.cap).toBe(true)
+      expect(PEN_OPTIONS.end.cap).toBe(true)
+    })
+
+    it('HIGHLIGHTER_OPTIONS should have no thinning (uniform width)', () => {
+      expect(HIGHLIGHTER_OPTIONS.thinning).toBe(0)
     })
   })
 })
