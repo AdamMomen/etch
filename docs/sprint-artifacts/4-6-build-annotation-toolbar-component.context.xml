@@ -1,0 +1,263 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>6</storyId>
+    <title>Build Annotation Toolbar Component</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-6-build-annotation-toolbar-component.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>annotator</asA>
+    <iWant>a toolbar to switch between annotation tools</iWant>
+    <soThat>I can quickly access pen, highlighter, and eraser</soThat>
+    <tasks>
+      <task id="1" name="Create AnnotationToolbar component structure" ac="4.6.1, 4.6.2">
+        <subtask>Create packages/client/src/components/AnnotationToolbar/AnnotationToolbar.tsx</subtask>
+        <subtask>Create packages/client/src/components/AnnotationToolbar/index.ts barrel export</subtask>
+        <subtask>Implement horizontal layout with tool buttons</subtask>
+        <subtask>Position toolbar at top of annotation canvas area</subtask>
+        <subtask>Add Select(1/V), Pen(2), Highlighter(3), Eraser(7) buttons with Lucide icons</subtask>
+      </task>
+      <task id="2" name="Implement tool button states and styling" ac="4.6.4, 4.6.5, 4.6.8">
+        <subtask>Connect to annotationStore for activeTool state</subtask>
+        <subtask>Apply filled accent background to active tool button</subtask>
+        <subtask>Add hover state with tooltip showing tool name and shortcut</subtask>
+        <subtask>Show shortcut numbers below icons (small, muted text)</subtask>
+        <subtask>Implement disabled state (50% opacity) when no screen share active</subtask>
+      </task>
+      <task id="3" name="Implement Clear All button with role-based visibility" ac="4.6.3, 4.6.7">
+        <subtask>Add Clear All button (0) with trash icon</subtask>
+        <subtask>Add visual separator before Clear All (destructive action)</subtask>
+        <subtask>Show Clear All only for host role (gray out/hide for others)</subtask>
+        <subtask>Connect to annotationStore.clearAll() action</subtask>
+        <subtask>Add confirmation dialog before clearing (optional enhancement)</subtask>
+      </task>
+      <task id="4" name="Add keyboard shortcut handling" ac="4.6.6">
+        <subtask>Extend existing useAnnotationKeyboard hook or create toolbar-specific handler</subtask>
+        <subtask>Add key 1 and V for select tool</subtask>
+        <subtask>Verify existing shortcuts: 2 (pen), 3 (highlighter), 7 (eraser)</subtask>
+        <subtask>Add key 0 for Clear All (host only)</subtask>
+        <subtask>Ensure shortcuts work when toolbar is visible</subtask>
+      </task>
+      <task id="5" name="Integrate toolbar with ScreenShareViewer" ac="4.6.1">
+        <subtask>Import and render AnnotationToolbar in ScreenShareViewer component</subtask>
+        <subtask>Position toolbar above AnnotationCanvas</subtask>
+        <subtask>Pass screen share active state and role props</subtask>
+        <subtask>Ensure toolbar visibility matches annotation canvas visibility</subtask>
+      </task>
+      <task id="6" name="Write comprehensive unit tests" ac="all">
+        <subtask>Create packages/client/tests/components/AnnotationToolbar/AnnotationToolbar.test.tsx</subtask>
+        <subtask>Test all tool buttons render correctly</subtask>
+        <subtask>Test active tool styling</subtask>
+        <subtask>Test role-based Clear All visibility</subtask>
+        <subtask>Test disabled state when no screen share</subtask>
+        <subtask>Test keyboard shortcuts integration</subtask>
+        <subtask>Test tool selection updates store</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.6.1">Toolbar shows at top of canvas area (Manual test: position verified)</criterion>
+    <criterion id="AC-4.6.2">Tools: Select(1/V), Pen(2), Highlighter(3), Eraser(7) (Unit test: buttons present)</criterion>
+    <criterion id="AC-4.6.3">Clear All(0) visible for host only (Unit test: role-based visibility)</criterion>
+    <criterion id="AC-4.6.4">Active tool has filled accent background (Unit test: styling)</criterion>
+    <criterion id="AC-4.6.5">Hover shows tooltip with name and shortcut (Manual test: tooltip)</criterion>
+    <criterion id="AC-4.6.6">Keyboard shortcuts 1/V, 2, 3, 7, 0 work (Unit test: shortcuts)</criterion>
+    <criterion id="AC-4.6.7">Separator before Clear All (destructive) (Unit test: UI structure)</criterion>
+    <criterion id="AC-4.6.8">Toolbar disabled (50% opacity) when no share (Unit test: disabled state)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-4.md</path>
+        <title>Epic Technical Specification: Real-Time Annotations</title>
+        <section>Story 4.6: Build Annotation Toolbar Component</section>
+        <snippet>Toolbar component specs including keyboard shortcuts (1-7, 0), tool icons (Lucide), and role-based Clear All button (host only). Per ADR-004, uses Zustand for tool state management.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-4-real-time-annotations.md</path>
+        <title>Epic 4: Real-Time Annotations</title>
+        <section>Story 4.6: Build Annotation Toolbar Component</section>
+        <snippet>Toolbar shows tools: Select(1/V), Pen(2), Highlighter(3), Eraser(7), Clear All(0). Active tool has filled accent background. Shortcut numbers shown below icons (small, muted). Separator before destructive action.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>NAMELESS UX Design Specification</title>
+        <section>Section 6: Annotation Toolbar (Excalidraw-style)</section>
+        <snippet>Horizontal toolbar with icon buttons. Subtle rounded rectangle buttons (not circles). Active tool: filled background (--accent). Shortcut number shown below icon (small, muted). Separator before destructive action (Clear All).</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>ADR-004: Zustand over Redux</section>
+        <snippet>Zustand for state management. ~1KB bundle size. Simple subscription model for slice-based re-renders. Works outside React for Tauri commands.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/4-5-implement-eraser-tool.md</path>
+        <title>Story 4.5: Implement Eraser Tool</title>
+        <section>Dev Agent Record (Learnings)</section>
+        <snippet>Keyboard shortcuts pattern in useAnnotationKeyboard.ts. Hit-testing in lib/canvas.ts. annotationStore.clearAll() exists. 195 tests across annotation modules.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>packages/client/src/stores/annotationStore.ts</path>
+        <kind>store</kind>
+        <symbol>useAnnotationStore, Tool, AnnotationState</symbol>
+        <lines>1-181</lines>
+        <reason>Central store for annotation state. Contains activeTool, setActiveTool, clearAll actions needed by toolbar. Tool type defined as 'select' | 'pen' | 'highlighter' | 'eraser'.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/hooks/useAnnotationKeyboard.ts</path>
+        <kind>hook</kind>
+        <symbol>useAnnotationKeyboard</symbol>
+        <lines>1-54</lines>
+        <reason>Existing keyboard shortcut hook with keys 2, 3, 7. Must extend to add keys 1, V (select) and 0 (clear all). Handles input field exclusion and modifier key filtering.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/hooks/useAnnotations.ts</path>
+        <kind>hook</kind>
+        <symbol>useAnnotations</symbol>
+        <lines>1-299</lines>
+        <reason>Provides canAnnotate, activeTool, setTool, clearAll functionality. Already integrates with room store for role checking. Eraser functions available for reference.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/components/ScreenShare/ScreenShareViewer.tsx</path>
+        <kind>component</kind>
+        <symbol>ScreenShareViewer</symbol>
+        <lines>1-129</lines>
+        <reason>Parent component where toolbar must be integrated. Currently renders AnnotationCanvas overlay. Toolbar should be positioned above video/canvas container.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/lib/canvas.ts</path>
+        <kind>utility</kind>
+        <symbol>findTopmostStrokeAtPoint, isPointOnStroke</symbol>
+        <lines>1-210</lines>
+        <reason>Canvas utilities including hit-testing. May be useful for any toolbar interactions with canvas. Demonstrates code patterns used in annotation system.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx</path>
+        <kind>component</kind>
+        <symbol>AnnotationCanvas</symbol>
+        <reason>Canvas component for rendering strokes. Understanding its props helps coordinate toolbar/canvas integration. Has cursor style logic at lines 504-517.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/stores/roomStore.ts</path>
+        <kind>store</kind>
+        <symbol>useRoomStore</symbol>
+        <reason>Contains localParticipant with role property. Needed to check if user is 'host' for Clear All visibility.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/stores/screenShareStore.ts</path>
+        <kind>store</kind>
+        <symbol>useScreenShareStore</symbol>
+        <reason>Contains isSharing state. Needed to disable toolbar when no screen share is active.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <node>
+        <package>lucide-react</package>
+        <version>^0.555.0</version>
+        <usage>Icons for toolbar buttons: MousePointer2 (select), Pencil (pen), Highlighter, Eraser, Trash2 (clear all)</usage>
+      </node>
+      <node>
+        <package>zustand</package>
+        <version>^5.0.9</version>
+        <usage>State management for active tool state via useAnnotationStore</usage>
+      </node>
+      <node>
+        <package>@radix-ui/react-dialog</package>
+        <version>^1.1.15</version>
+        <usage>Potential confirmation dialog for Clear All action (optional enhancement)</usage>
+      </node>
+      <node>
+        <package>class-variance-authority</package>
+        <version>^0.7.1</version>
+        <usage>Button variants for active/inactive/disabled states</usage>
+      </node>
+      <node>
+        <package>tailwind-merge</package>
+        <version>^3.4.0</version>
+        <usage>Class merging via cn() utility for conditional styling</usage>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">ADR-004: Use Zustand store (useAnnotationStore) for tool state management, not local component state</constraint>
+    <constraint type="pattern">Component pattern: Functional component with TypeScript, props interface, cn() for className merging</constraint>
+    <constraint type="architecture">Toolbar must be positioned within ScreenShareViewer, above AnnotationCanvas, inside the video container</constraint>
+    <constraint type="accessibility">ARIA role="toolbar", arrow key navigation between tools, tooltips with shortcut info</constraint>
+    <constraint type="testing">Co-locate tests: packages/client/tests/components/AnnotationToolbar/AnnotationToolbar.test.tsx</constraint>
+    <constraint type="styling">Use Tailwind CSS utilities, shadcn/ui patterns, --accent color for active state</constraint>
+    <constraint type="keyboard">Shortcuts must not fire when typing in input/textarea, modifier keys pressed</constraint>
+    <constraint type="permission">Clear All only visible/enabled for role === 'host', verify via roomStore.localParticipant.role</constraint>
+    <constraint type="ux">Per UX spec: horizontal layout, subtle rounded buttons, shortcut numbers below icons (small, muted), separator before Clear All</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>useAnnotationStore</name>
+      <kind>Zustand store hook</kind>
+      <signature>useAnnotationStore((state) => state.activeTool): Tool</signature>
+      <path>packages/client/src/stores/annotationStore.ts</path>
+    </interface>
+    <interface>
+      <name>setActiveTool</name>
+      <kind>Store action</kind>
+      <signature>setActiveTool: (tool: Tool) => void</signature>
+      <path>packages/client/src/stores/annotationStore.ts</path>
+    </interface>
+    <interface>
+      <name>clearAll</name>
+      <kind>Store action</kind>
+      <signature>clearAll: () => void</signature>
+      <path>packages/client/src/stores/annotationStore.ts</path>
+    </interface>
+    <interface>
+      <name>Tool type</name>
+      <kind>TypeScript type</kind>
+      <signature>type Tool = 'select' | 'pen' | 'highlighter' | 'eraser'</signature>
+      <path>packages/client/src/stores/annotationStore.ts</path>
+    </interface>
+    <interface>
+      <name>useRoomStore.localParticipant</name>
+      <kind>Store selector</kind>
+      <signature>localParticipant: { id: string; role: 'host' | 'sharer' | 'annotator' | 'viewer'; ... } | null</signature>
+      <path>packages/client/src/stores/roomStore.ts</path>
+    </interface>
+    <interface>
+      <name>useScreenShareStore.isSharing</name>
+      <kind>Store selector</kind>
+      <signature>isSharing: boolean</signature>
+      <path>packages/client/src/stores/screenShareStore.ts</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing uses Vitest + React Testing Library. Tests are co-located with source in tests/ directory mirroring src/ structure. Follow existing patterns from annotation modules (195 tests). Mock Zustand stores using vi.mock(). Use screen.getByRole, screen.getByTestId for queries. Test keyboard events with userEvent.keyboard().
+    </standards>
+    <locations>
+      <location>packages/client/tests/components/AnnotationToolbar/</location>
+      <location>packages/client/tests/hooks/useAnnotationKeyboard.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-4.6.1">Test toolbar renders inside ScreenShareViewer, positioned at top of canvas area</idea>
+      <idea ac="AC-4.6.2">Test all 4 tool buttons render with correct icons and data-testid attributes</idea>
+      <idea ac="AC-4.6.3">Test Clear All button: visible when role='host', hidden/disabled when role='annotator'</idea>
+      <idea ac="AC-4.6.4">Test active tool button has filled accent background class, inactive buttons do not</idea>
+      <idea ac="AC-4.6.5">Test tooltip content shows tool name and keyboard shortcut on hover</idea>
+      <idea ac="AC-4.6.6">Test keyboard shortcuts: press '1' activates select, 'v' activates select, '2' activates pen, '3' activates highlighter, '7' activates eraser, '0' triggers clearAll (host only)</idea>
+      <idea ac="AC-4.6.7">Test separator element exists before Clear All button in DOM structure</idea>
+      <idea ac="AC-4.6.8">Test toolbar has opacity-50 class when isSharing=false, pointer-events-none</idea>
+      <idea ac="integration">Test clicking tool button updates annotationStore.activeTool</idea>
+      <idea ac="integration">Test clicking Clear All button calls annotationStore.clearAll()</idea>
+    </ideas>
+  </tests>
+</story-context>
