@@ -1,0 +1,300 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>7</storyId>
+    <title>Implement DataTrack Annotation Sync</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-7-implement-datatrack-annotation-sync.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>participant</asA>
+    <iWant>to see others' annotations in real-time</iWant>
+    <soThat>we can collaborate visually during the meeting</soThat>
+    <tasks>
+      <task id="1" title="Define DataTrack message types in shared package" ac="4.7.3, 4.7.4, 4.7.5, 4.7.6">
+        <subtask>Create packages/shared/src/types/annotation.ts with all message type interfaces</subtask>
+        <subtask>Define StrokeUpdateMessage for incremental point batches during drawing</subtask>
+        <subtask>Define StrokeCompleteMessage for finalized strokes on mouse up</subtask>
+        <subtask>Define StrokeDeleteMessage for eraser operations</subtask>
+        <subtask>Define ClearAllMessage for host clear all action</subtask>
+        <subtask>Export union type AnnotationMessage for type-safe message handling</subtask>
+        <subtask>Add message type constants and validation helpers</subtask>
+      </task>
+      <task id="2" title="Create useAnnotationSync hook" ac="4.7.1, 4.7.7, 4.7.8">
+        <subtask>Create packages/client/src/hooks/useAnnotationSync.ts</subtask>
+        <subtask>Implement connection to LiveKit DataTrack with topic: 'annotations'</subtask>
+        <subtask>Add publishStroke function for sending stroke_complete messages</subtask>
+        <subtask>Add publishStrokeUpdate function for sending incremental updates</subtask>
+        <subtask>Add publishDelete function for eraser operations</subtask>
+        <subtask>Add publishClearAll function for host clear action</subtask>
+        <subtask>Use reliable: true option for all stroke-related messages</subtask>
+        <subtask>Implement message encoding/decoding (TextEncoder/TextDecoder + JSON)</subtask>
+      </task>
+      <task id="3" title="Implement DataTrack message receiver" ac="4.7.1, 4.7.2">
+        <subtask>Subscribe to RoomEvent.DataReceived in useAnnotationSync hook</subtask>
+        <subtask>Filter for topic: 'annotations' messages</subtask>
+        <subtask>Parse incoming messages and validate against AnnotationMessage type</subtask>
+        <subtask>Route messages to appropriate store actions based on type</subtask>
+        <subtask>Ignore messages from local participant (already rendered optimistically)</subtask>
+      </task>
+      <task id="4" title="Implement point batching for stroke updates" ac="4.7.3">
+        <subtask>Create point batch buffer in useAnnotationSync or useAnnotations</subtask>
+        <subtask>Accumulate points during active drawing</subtask>
+        <subtask>Flush batch every 16ms (requestAnimationFrame timing) via stroke_update message</subtask>
+        <subtask>Clear batch on stroke completion</subtask>
+        <subtask>Include strokeId, participantId, tool, color in each update</subtask>
+      </task>
+      <task id="5" title="Integrate sync with existing drawing flow" ac="4.7.8">
+        <subtask>Modify useAnnotations hook to call sync functions</subtask>
+        <subtask>Ensure local rendering happens BEFORE network publish (optimistic UI)</subtask>
+        <subtask>Integrate eraseStrokeAt with publishDelete</subtask>
+        <subtask>Integrate clearAll with publishClearAll (with host permission check)</subtask>
+      </task>
+      <task id="6" title="Handle remote stroke rendering" ac="4.7.1, 4.7.2">
+        <subtask>Add remoteStrokes or similar state to track in-progress remote strokes</subtask>
+        <subtask>Update AnnotationCanvas to render both local activeStroke AND remote in-progress strokes</subtask>
+        <subtask>Ensure remote strokes transition from in-progress to completed seamlessly</subtask>
+        <subtask>Handle out-of-order message delivery gracefully (timestamp-based ordering)</subtask>
+      </task>
+      <task id="7" title="Write comprehensive tests" ac="all">
+        <subtask>Create packages/client/tests/hooks/useAnnotationSync.test.ts</subtask>
+        <subtask>Test message encoding/decoding</subtask>
+        <subtask>Test publish functions call DataTrack with correct options</subtask>
+        <subtask>Test received messages update store correctly</subtask>
+        <subtask>Test point batching timing (16ms intervals)</subtask>
+        <subtask>Test local participant messages are ignored</subtask>
+        <subtask>Test optimistic rendering (local render before sync)</subtask>
+        <subtask>Create integration test for complete sync flow (mock DataTrack)</subtask>
+      </task>
+      <task id="8" title="Add latency measurement utilities" ac="4.7.2">
+        <subtask>Add timestamp to all outgoing messages</subtask>
+        <subtask>Log latency when receiving messages in dev mode</subtask>
+        <subtask>Create debug panel or console output for sync performance</subtask>
+        <subtask>Document measurement methodology for QA testing</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.7.1">Strokes sync to other participants in real-time</criterion>
+    <criterion id="AC-4.7.2">Latency &lt; 200ms end-to-end</criterion>
+    <criterion id="AC-4.7.3">Incremental updates sent every 16ms during draw</criterion>
+    <criterion id="AC-4.7.4">Complete stroke sent on mouse up</criterion>
+    <criterion id="AC-4.7.5">Delete messages sync to others</criterion>
+    <criterion id="AC-4.7.6">Clear all syncs to all participants</criterion>
+    <criterion id="AC-4.7.7">Uses reliable DataTrack mode</criterion>
+    <criterion id="AC-4.7.8">Local strokes render immediately (optimistic)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc type="epic" path="docs/epics/epic-4-real-time-annotations.md">
+        Story 4.7 definition, acceptance criteria, and technical notes for DataTrack sync
+      </doc>
+      <doc type="tech-spec" path="docs/sprint-artifacts/tech-spec-epic-4.md">
+        Complete technical specification including:
+        - DataTrack message protocol (StrokeUpdateMessage, StrokeCompleteMessage, StrokeDeleteMessage, ClearAllMessage)
+        - useAnnotationSync hook interface and return types
+        - Drawing flow diagram with local render + DataTrack sync
+        - Performance targets: local render &lt;16ms, network sync &lt;150ms, end-to-end &lt;200ms
+        - LiveKit DataTrack usage patterns with topic: 'annotations'
+      </doc>
+      <doc type="architecture" path="docs/architecture.md">
+        ADR-002: LiveKit DataTracks for annotation events (reliable mode)
+        System architecture showing annotation data flow through DataTracks
+      </doc>
+    </docs>
+
+    <code>
+      <file path="packages/shared/src/types/stroke.ts" action="reference">
+        <description>Existing Point and Stroke interfaces - reuse for message types</description>
+        <interface name="Point">x: number, y: number, pressure?: number (normalized 0-1)</interface>
+        <interface name="Stroke">id, participantId, tool, color, points, createdAt, isComplete</interface>
+      </file>
+
+      <file path="packages/shared/src/types/annotation.ts" action="create">
+        <description>NEW: DataTrack message type definitions per tech spec</description>
+        <interfaces>
+          StrokeUpdateMessage { type: 'stroke_update', strokeId, participantId, tool, color, points, timestamp }
+          StrokeCompleteMessage { type: 'stroke_complete', strokeId, participantId, tool, color, points, timestamp }
+          StrokeDeleteMessage { type: 'stroke_delete', strokeId, deletedBy, timestamp }
+          ClearAllMessage { type: 'clear_all', clearedBy, timestamp }
+          AnnotationMessage = union of above types
+        </interfaces>
+      </file>
+
+      <file path="packages/client/src/stores/annotationStore.ts" action="modify">
+        <description>Add remoteActiveStrokes state for in-progress remote strokes</description>
+        <existing-interface>
+          strokes: Stroke[], activeStroke: Stroke | null, activeTool: Tool
+          Actions: addStroke, updateStroke, completeStroke, deleteStroke, clearAll, setStrokes
+        </existing-interface>
+        <add>
+          remoteActiveStrokes: Map&lt;string, Stroke&gt; - keyed by strokeId for in-progress remote strokes
+          addRemoteStroke, updateRemoteStroke, completeRemoteStroke actions
+        </add>
+      </file>
+
+      <file path="packages/client/src/hooks/useAnnotationSync.ts" action="create">
+        <description>NEW: DataTrack sync hook per tech spec</description>
+        <interface>
+          UseAnnotationSyncReturn {
+            isConnected: boolean
+            publishStroke: (stroke: Stroke) => void
+            publishStrokeUpdate: (strokeId: string, points: Point[]) => void
+            publishDelete: (strokeId: string) => void
+            publishClearAll: () => void
+          }
+        </interface>
+        <implementation-notes>
+          - Accept Room from useLiveKit via prop or context
+          - Use room.localParticipant.publishData() with { reliable: true, topic: 'annotations' }
+          - Subscribe to RoomEvent.DataReceived, filter by topic
+          - TextEncoder/TextDecoder + JSON for message serialization
+          - Ignore messages from local participant (participant.identity === localParticipant.identity)
+        </implementation-notes>
+      </file>
+
+      <file path="packages/client/src/hooks/useAnnotations.ts" action="modify">
+        <description>Integrate sync calls into drawing flow</description>
+        <existing-functions>
+          startStroke, continueStroke, endStroke, eraseStrokeAt, setTool, canAnnotate
+        </existing-functions>
+        <modifications>
+          - Call publishStrokeUpdate during continueStroke (batched every 16ms)
+          - Call publishStroke in endStroke after adding to store
+          - Call publishDelete in eraseStrokeAt after local delete
+          - Add clearAll function that calls annotationStore.clearAll() + publishClearAll()
+        </modifications>
+      </file>
+
+      <file path="packages/client/src/hooks/useLiveKit.ts" action="reference">
+        <description>Existing LiveKit room management - provides Room object</description>
+        <exports>room: Room | null, isConnected, connectionState</exports>
+        <pattern>Uses RoomEvent.DataReceived for role_transfer messages - follow same pattern</pattern>
+      </file>
+
+      <file path="packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx" action="modify">
+        <description>Add rendering of remote in-progress strokes</description>
+        <current-props>strokes, activeStroke, canAnnotate, activeTool, onStrokeStart/Move/End</current-props>
+        <add-prop>remoteActiveStrokes: Map&lt;string, Stroke&gt;</add-prop>
+        <render-change>Render both local activeStroke AND all remoteActiveStrokes values</render-change>
+      </file>
+
+      <file path="packages/client/src/components/ScreenShare/ScreenShareViewer.tsx" action="reference">
+        <description>Where AnnotationCanvas is integrated - may need to pass remoteActiveStrokes</description>
+        <current-state>Uses useAnnotations hook, passes strokes/activeStroke to AnnotationCanvas</current-state>
+      </file>
+    </code>
+
+    <dependencies>
+      <package name="livekit-client" version="^2.16.0" installed="true">
+        LiveKit SDK - Room, RoomEvent.DataReceived, DataPacket_Kind, publishData()
+      </package>
+      <package name="zustand" version="^5.0.9" installed="true">
+        State management - annotationStore uses create() from zustand
+      </package>
+      <package name="@nameless/shared" version="workspace:*" installed="true">
+        Shared types package - stroke.ts exports Point, Stroke
+      </package>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="performance">
+      Local stroke render must be &lt;16ms (single frame)
+      Network sync latency target: &lt;150ms p95
+      End-to-end annotation latency: &lt;200ms
+    </constraint>
+    <constraint type="protocol">
+      All messages must use topic: 'annotations' for filtering
+      Use reliable: true for ordered delivery (strokes must arrive in order)
+      Message size must be &lt;64KB (DataTrack limit)
+    </constraint>
+    <constraint type="architecture">
+      Optimistic UI: local render happens BEFORE network publish
+      Remote strokes from local participant must be ignored (already rendered)
+      Point batching at 16ms intervals (60fps) to reduce message count
+    </constraint>
+    <constraint type="security">
+      Validate participantId matches sender identity
+      Only host role can send clear_all messages
+      Rate limit consideration for spam prevention (future)
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="LiveKit publishData">
+      <signature>room.localParticipant.publishData(data: Uint8Array, options: DataPublishOptions)</signature>
+      <options>{ reliable: true, topic: 'annotations' }</options>
+      <encoding>new TextEncoder().encode(JSON.stringify(message))</encoding>
+    </interface>
+
+    <interface name="LiveKit DataReceived event">
+      <signature>room.on(RoomEvent.DataReceived, (payload, participant, kind, topic) => {})</signature>
+      <filtering>if (topic !== 'annotations') return</filtering>
+      <decoding>JSON.parse(new TextDecoder().decode(payload)) as AnnotationMessage</decoding>
+    </interface>
+
+    <interface name="annotationStore actions">
+      <action name="addStroke">addStroke(stroke: Stroke) - add completed stroke to strokes array</action>
+      <action name="updateStroke">updateStroke(strokeId, points) - append points to existing stroke</action>
+      <action name="deleteStroke">deleteStroke(strokeId) - remove stroke by ID</action>
+      <action name="clearAll">clearAll() - remove all strokes</action>
+      <action name="setStrokes">setStrokes(strokes) - bulk replace (for late-joiner, Story 4.8)</action>
+    </interface>
+
+    <interface name="useAnnotations return">
+      <state>strokes, activeStroke, activeTool, canAnnotate, myColor, myParticipantId</state>
+      <actions>startStroke, continueStroke, endStroke, setTool, eraseStrokeAt</actions>
+      <eraser>hoveredStrokeId, updateHoveredStroke, clearHoveredStroke, canEraseStroke</eraser>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <framework>Vitest + React Testing Library</framework>
+      <pattern>Use renderHook() for hook tests</pattern>
+      <pattern>Use act() for state updates</pattern>
+      <pattern>Reset stores in beforeEach with store.setState()</pattern>
+      <pattern>Mock external dependencies (crypto.randomUUID, LiveKit Room)</pattern>
+      <coverage>Target 90%+ for new code</coverage>
+    </standards>
+
+    <locations>
+      <location path="packages/client/tests/hooks/useAnnotationSync.test.ts" action="create">
+        New test file for the sync hook
+      </location>
+      <location path="packages/client/tests/hooks/useAnnotations.test.ts" action="modify">
+        Add tests for sync integration
+      </location>
+      <location path="packages/client/tests/stores/annotationStore.test.ts" action="modify">
+        Add tests for remoteActiveStrokes if added
+      </location>
+    </locations>
+
+    <ideas>
+      <test-case>Message encoding: verify TextEncoder produces valid UTF-8 JSON</test-case>
+      <test-case>Message decoding: verify TextDecoder parses JSON correctly</test-case>
+      <test-case>publishStroke calls publishData with reliable: true and topic: 'annotations'</test-case>
+      <test-case>publishStrokeUpdate includes all required fields (strokeId, participantId, tool, color, points, timestamp)</test-case>
+      <test-case>Received stroke_update creates/updates remote stroke in store</test-case>
+      <test-case>Received stroke_complete moves stroke from remoteActive to strokes array</test-case>
+      <test-case>Received stroke_delete removes stroke from store</test-case>
+      <test-case>Received clear_all empties strokes array</test-case>
+      <test-case>Messages from local participant are ignored (no duplicate rendering)</test-case>
+      <test-case>Point batching: verify 16ms interval between stroke_update messages</test-case>
+      <test-case>Optimistic UI: local stroke renders before publishStroke is called</test-case>
+      <test-case>Latency measurement: verify timestamp is included in messages</test-case>
+      <test-case>Integration: complete draw-sync-receive flow with mocked DataTrack</test-case>
+      <mock-strategy>
+        Mock Room with: localParticipant.publishData (vi.fn()), localParticipant.identity
+        Mock RoomEvent handlers by capturing callbacks passed to room.on()
+        Simulate incoming messages by calling captured DataReceived handler
+      </mock-strategy>
+    </ideas>
+  </tests>
+</story-context>

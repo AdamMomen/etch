@@ -24,7 +24,8 @@
       "mcp__livekit-docs__code_search",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git grep:*)"
+      "Bash(git grep:*)",
+      "Bash(pnpm vitest:*)"
     ],
     "deny": [],
     "ask": []

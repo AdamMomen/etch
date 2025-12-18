@@ -98,7 +98,7 @@ development_status:
   4-4-implement-highlighter-tool: done
   4-5-implement-eraser-tool: done
   4-6-build-annotation-toolbar-component: done
-  4-7-implement-datatrack-annotation-sync: backlog
+  4-7-implement-datatrack-annotation-sync: done
   4-8-implement-late-joiner-annotation-sync: backlog
   4-9-implement-resolution-independent-coordinates: backlog
   4-10-assign-unique-colors-per-participant: backlog
