@@ -1,18 +1,24 @@
 import { useEffect } from 'react'
 import { useAnnotationStore } from '@/stores/annotationStore'
+import { useRoomStore } from '@/stores/roomStore'
 
 /**
  * Hook that registers global keyboard shortcuts for annotation tools.
  *
  * Keyboard shortcuts:
+ * - `1` or `V` key: Activate select tool (AC-4.6.6)
  * - `2` key: Activate pen tool
  * - `3` key: Activate highlighter tool
  * - `7` key: Activate eraser tool
+ * - `0` key: Clear all annotations (host only) (AC-4.6.6)
  *
  * @see docs/sprint-artifacts/tech-spec-epic-4.md
  */
 export function useAnnotationKeyboard(): void {
   const setActiveTool = useAnnotationStore((state) => state.setActiveTool)
+  const clearAll = useAnnotationStore((state) => state.clearAll)
+  const localParticipant = useRoomStore((state) => state.localParticipant)
+  const isHost = localParticipant?.role === 'host'
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -32,6 +38,11 @@ export function useAnnotationKeyboard(): void {
       }
 
       switch (event.key) {
+        case '1':
+        case 'v':
+        case 'V':
+          setActiveTool('select')
+          break
         case '2':
           setActiveTool('pen')
           break
@@ -41,6 +52,12 @@ export function useAnnotationKeyboard(): void {
         case '7':
           setActiveTool('eraser')
           break
+        case '0':
+          // Clear all is host-only
+          if (isHost) {
+            clearAll()
+          }
+          break
       }
     }
 
@@ -49,5 +66,5 @@ export function useAnnotationKeyboard(): void {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [setActiveTool])
+  }, [setActiveTool, clearAll, isHost])
 }

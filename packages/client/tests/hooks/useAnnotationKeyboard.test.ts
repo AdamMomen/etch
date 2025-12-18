@@ -2,15 +2,30 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAnnotationKeyboard } from '@/hooks/useAnnotationKeyboard'
 import { useAnnotationStore } from '@/stores/annotationStore'
+import { useRoomStore } from '@/stores/roomStore'
 
 describe('useAnnotationKeyboard', () => {
   beforeEach(() => {
-    // Reset store to initial state
+    // Reset stores to initial state
     act(() => {
       useAnnotationStore.setState({
         strokes: [],
         activeStroke: null,
         activeTool: 'pen',
+      })
+      useRoomStore.setState({
+        currentRoom: null,
+        isConnecting: false,
+        isConnected: false,
+        connectionError: null,
+        localParticipant: {
+          id: 'local-1',
+          name: 'Test User',
+          role: 'annotator',
+          color: '#ff0000',
+          isLocal: true,
+        },
+        remoteParticipants: [],
       })
     })
     vi.clearAllMocks()
@@ -30,6 +45,59 @@ describe('useAnnotationKeyboard', () => {
     })
     window.dispatchEvent(event)
   }
+
+  // ─────────────────────────────────────────────────────────
+  // SELECT TOOL SHORTCUT TESTS (AC-4.6.6)
+  // ─────────────────────────────────────────────────────────
+
+  describe('select tool shortcut (AC-4.6.6)', () => {
+    it('activates select tool when "1" key is pressed', () => {
+      // Start with pen tool (default)
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('1')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('select')
+    })
+
+    it('activates select tool when "v" key is pressed', () => {
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('v')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('select')
+    })
+
+    it('activates select tool when "V" key is pressed', () => {
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('V')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('select')
+    })
+
+    it('select tool remains active when already selected', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('select')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('1')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('select')
+    })
+  })
 
   // ─────────────────────────────────────────────────────────
   // PEN TOOL SHORTCUT TESTS (AC-4.3.10)
@@ -419,6 +487,165 @@ describe('useAnnotationKeyboard', () => {
   })
 
   // ─────────────────────────────────────────────────────────
+  // CLEAR ALL SHORTCUT TESTS (AC-4.6.6)
+  // ─────────────────────────────────────────────────────────
+
+  describe('clear all shortcut (AC-4.6.6)', () => {
+    it('clears all strokes when "0" key is pressed by host', () => {
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Host',
+            role: 'host',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+        useAnnotationStore.setState({
+          strokes: [
+            {
+              id: '1',
+              participantId: 'local-1',
+              tool: 'pen',
+              color: '#ff0000',
+              points: [{ x: 0, y: 0 }],
+              createdAt: Date.now(),
+              isComplete: true,
+            },
+          ],
+        })
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('0')
+      })
+
+      expect(useAnnotationStore.getState().strokes).toHaveLength(0)
+    })
+
+    it('does not clear strokes when "0" key is pressed by annotator', () => {
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Annotator',
+            role: 'annotator',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+        useAnnotationStore.setState({
+          strokes: [
+            {
+              id: '1',
+              participantId: 'local-1',
+              tool: 'pen',
+              color: '#ff0000',
+              points: [{ x: 0, y: 0 }],
+              createdAt: Date.now(),
+              isComplete: true,
+            },
+          ],
+        })
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('0')
+      })
+
+      // Strokes should remain (annotator cannot clear all)
+      expect(useAnnotationStore.getState().strokes).toHaveLength(1)
+    })
+
+    it('does not clear strokes when "0" is pressed with Ctrl key', () => {
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Host',
+            role: 'host',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+        useAnnotationStore.setState({
+          strokes: [
+            {
+              id: '1',
+              participantId: 'local-1',
+              tool: 'pen',
+              color: '#ff0000',
+              points: [{ x: 0, y: 0 }],
+              createdAt: Date.now(),
+              isComplete: true,
+            },
+          ],
+        })
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('0', { ctrlKey: true })
+      })
+
+      // Strokes should remain (modifier key pressed)
+      expect(useAnnotationStore.getState().strokes).toHaveLength(1)
+    })
+
+    it('does not clear strokes when typing in INPUT element', () => {
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Host',
+            role: 'host',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+        useAnnotationStore.setState({
+          strokes: [
+            {
+              id: '1',
+              participantId: 'local-1',
+              tool: 'pen',
+              color: '#ff0000',
+              points: [{ x: 0, y: 0 }],
+              createdAt: Date.now(),
+              isComplete: true,
+            },
+          ],
+        })
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      // Create an input element
+      const input = document.createElement('input')
+      document.body.appendChild(input)
+
+      const event = new KeyboardEvent('keydown', {
+        key: '0',
+        bubbles: true,
+        cancelable: true,
+      })
+      Object.defineProperty(event, 'target', { value: input })
+      window.dispatchEvent(event)
+
+      // Strokes should remain (typing in input)
+      expect(useAnnotationStore.getState().strokes).toHaveLength(1)
+
+      document.body.removeChild(input)
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
   // OTHER KEYS TESTS
   // ─────────────────────────────────────────────────────────
 
@@ -428,7 +655,6 @@ describe('useAnnotationKeyboard', () => {
 
       act(() => {
         dispatchKeyDown('a')
-        dispatchKeyDown('1')
         dispatchKeyDown('Escape')
       })
 
