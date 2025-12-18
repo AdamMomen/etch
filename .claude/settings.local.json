@@ -18,7 +18,11 @@
       "WebFetch(domain:api.github.com)",
       "Bash(cargo test:*)",
       "mcp__livekit-docs__docs_search",
-      "Bash(cargo build:*)"
+      "Bash(cargo build:*)",
+      "mcp__tauri-dev__tauri_driver_session",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "mcp__livekit-docs__code_search"
     ],
     "deny": [],
     "ask": []
