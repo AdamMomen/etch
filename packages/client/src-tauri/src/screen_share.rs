@@ -735,3 +735,371 @@ fn configure_click_through_linux(_window: &tauri::WebviewWindow) -> Result<(), S
     log::info!("Linux: For X11, full click-through would require XShape extension");
     Ok(())
 }
+
+// ============================================================================
+// Screen Bounds Utility (used by multiple features)
+// ============================================================================
+
+/// Screen bounds info for position validation and window placement
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ScreenBounds {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+    pub is_primary: bool,
+}
+
+/// Get all available screen bounds
+/// Used for transform mode positioning and multi-monitor support
+#[tauri::command]
+pub async fn get_all_screen_bounds(app: AppHandle) -> Result<Vec<ScreenBounds>, String> {
+    let monitors = app
+        .available_monitors()
+        .map_err(|e| format!("Failed to get monitors: {}", e))?;
+
+    let primary = app.primary_monitor().ok().flatten();
+    let primary_position = primary.as_ref().map(|m| m.position());
+
+    let bounds: Vec<ScreenBounds> = monitors
+        .iter()
+        .map(|m| {
+            let pos = m.position();
+            let size = m.size();
+            let is_primary = primary_position
+                .map(|pp| pp.x == pos.x && pp.y == pos.y)
+                .unwrap_or(false);
+
+            ScreenBounds {
+                x: pos.x,
+                y: pos.y,
+                width: size.width,
+                height: size.height,
+                is_primary,
+            }
+        })
+        .collect();
+
+    Ok(bounds)
+}
+
+// ============================================================================
+// Transform Mode Commands (Story 3.7 - ADR-009)
+// ============================================================================
+
+use std::sync::atomic::{AtomicBool, Ordering};
+
+/// State to store the original window geometry before transform
+pub struct TransformModeState {
+    /// Original window width
+    pub original_width: Mutex<Option<u32>>,
+    /// Original window height
+    pub original_height: Mutex<Option<u32>>,
+    /// Original window X position
+    pub original_x: Mutex<Option<i32>>,
+    /// Original window Y position
+    pub original_y: Mutex<Option<i32>>,
+    /// Whether transform mode is active
+    pub is_transformed: AtomicBool,
+}
+
+impl Default for TransformModeState {
+    fn default() -> Self {
+        Self {
+            original_width: Mutex::new(None),
+            original_height: Mutex::new(None),
+            original_x: Mutex::new(None),
+            original_y: Mutex::new(None),
+            is_transformed: AtomicBool::new(false),
+        }
+    }
+}
+
+/// Control bar dimensions
+const CONTROL_BAR_WIDTH: u32 = 450;
+const CONTROL_BAR_HEIGHT: u32 = 80;
+
+/// Configuration for saved control bar position
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct ControlBarPosition {
+    pub x: i32,
+    pub y: i32,
+}
+
+/// Transform the main window into a compact control bar
+/// Saves original geometry, resizes, repositions to top-center, enables always-on-top
+#[tauri::command]
+pub async fn transform_to_control_bar(
+    window: tauri::Window,
+    app: AppHandle,
+    state: State<'_, TransformModeState>,
+    saved_position: Option<ControlBarPosition>,
+) -> Result<(), String> {
+    // Check if already transformed
+    if state.is_transformed.load(Ordering::SeqCst) {
+        return Err("Window is already in transform mode".to_string());
+    }
+
+    // Save current window geometry
+    let current_size = window.outer_size().map_err(|e| e.to_string())?;
+    let current_position = window.outer_position().map_err(|e| e.to_string())?;
+
+    {
+        let mut width = state.original_width.lock().map_err(|e| e.to_string())?;
+        *width = Some(current_size.width);
+    }
+    {
+        let mut height = state.original_height.lock().map_err(|e| e.to_string())?;
+        *height = Some(current_size.height);
+    }
+    {
+        let mut x = state.original_x.lock().map_err(|e| e.to_string())?;
+        *x = Some(current_position.x);
+    }
+    {
+        let mut y = state.original_y.lock().map_err(|e| e.to_string())?;
+        *y = Some(current_position.y);
+    }
+
+    log::info!(
+        "Saving original window geometry: {}x{} at ({}, {})",
+        current_size.width, current_size.height,
+        current_position.x, current_position.y
+    );
+
+    // Calculate new position
+    let (new_x, new_y) = if let Some(pos) = saved_position {
+        // Validate saved position is still on screen
+        let screens = get_all_screen_bounds(app.clone()).await?;
+        let is_valid = screens.iter().any(|screen| {
+            let bar_right = pos.x + CONTROL_BAR_WIDTH as i32;
+            let bar_bottom = pos.y + CONTROL_BAR_HEIGHT as i32;
+            let screen_right = screen.x + screen.width as i32;
+            let screen_bottom = screen.y + screen.height as i32;
+            pos.x < screen_right && bar_right > screen.x &&
+            pos.y < screen_bottom && bar_bottom > screen.y
+        });
+
+        if is_valid {
+            (pos.x, pos.y)
+        } else {
+            // Fallback to default position
+            calculate_default_position(&app)?
+        }
+    } else {
+        calculate_default_position(&app)?
+    };
+
+    log::info!(
+        "Transforming window to control bar: {}x{} at ({}, {})",
+        CONTROL_BAR_WIDTH, CONTROL_BAR_HEIGHT, new_x, new_y
+    );
+
+    // Resize window to compact dimensions
+    window
+        .set_size(tauri::Size::Logical(tauri::LogicalSize {
+            width: CONTROL_BAR_WIDTH as f64,
+            height: CONTROL_BAR_HEIGHT as f64,
+        }))
+        .map_err(|e| format!("Failed to set size: {}", e))?;
+
+    // Reposition window
+    window
+        .set_position(tauri::Position::Physical(tauri::PhysicalPosition {
+            x: new_x,
+            y: new_y,
+        }))
+        .map_err(|e| format!("Failed to set position: {}", e))?;
+
+    // Enable always-on-top
+    window
+        .set_always_on_top(true)
+        .map_err(|e| format!("Failed to set always on top: {}", e))?;
+
+    // Enable content protection (exclude from screen capture)
+    set_content_protection_internal(&window, true)?;
+
+    // Mark as transformed
+    state.is_transformed.store(true, Ordering::SeqCst);
+
+    log::info!("Window transformed to control bar mode successfully");
+    Ok(())
+}
+
+/// Restore the window from control bar mode to its original state
+#[tauri::command]
+pub async fn restore_from_control_bar(
+    window: tauri::Window,
+    state: State<'_, TransformModeState>,
+) -> Result<(), String> {
+    // Check if actually transformed
+    if !state.is_transformed.load(Ordering::SeqCst) {
+        return Err("Window is not in transform mode".to_string());
+    }
+
+    // Get saved geometry
+    let width = {
+        let w = state.original_width.lock().map_err(|e| e.to_string())?;
+        w.ok_or_else(|| "No saved width".to_string())?
+    };
+    let height = {
+        let h = state.original_height.lock().map_err(|e| e.to_string())?;
+        h.ok_or_else(|| "No saved height".to_string())?
+    };
+    let x = {
+        let x = state.original_x.lock().map_err(|e| e.to_string())?;
+        x.ok_or_else(|| "No saved x position".to_string())?
+    };
+    let y = {
+        let y = state.original_y.lock().map_err(|e| e.to_string())?;
+        y.ok_or_else(|| "No saved y position".to_string())?
+    };
+
+    log::info!(
+        "Restoring window to original geometry: {}x{} at ({}, {})",
+        width, height, x, y
+    );
+
+    // Disable content protection first
+    set_content_protection_internal(&window, false)?;
+
+    // Disable always-on-top
+    window
+        .set_always_on_top(false)
+        .map_err(|e| format!("Failed to disable always on top: {}", e))?;
+
+    // Restore original size
+    window
+        .set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height }))
+        .map_err(|e| format!("Failed to restore size: {}", e))?;
+
+    // Restore original position
+    window
+        .set_position(tauri::Position::Physical(tauri::PhysicalPosition { x, y }))
+        .map_err(|e| format!("Failed to restore position: {}", e))?;
+
+    // Clear saved geometry
+    {
+        let mut w = state.original_width.lock().map_err(|e| e.to_string())?;
+        *w = None;
+    }
+    {
+        let mut h = state.original_height.lock().map_err(|e| e.to_string())?;
+        *h = None;
+    }
+    {
+        let mut x = state.original_x.lock().map_err(|e| e.to_string())?;
+        *x = None;
+    }
+    {
+        let mut y = state.original_y.lock().map_err(|e| e.to_string())?;
+        *y = None;
+    }
+
+    // Mark as not transformed
+    state.is_transformed.store(false, Ordering::SeqCst);
+
+    log::info!("Window restored from control bar mode successfully");
+    Ok(())
+}
+
+/// Check if transform mode is active
+#[tauri::command]
+pub fn is_transform_mode_active(state: State<'_, TransformModeState>) -> bool {
+    state.is_transformed.load(Ordering::SeqCst)
+}
+
+/// Calculate default position (top-center of primary screen)
+fn calculate_default_position(app: &AppHandle) -> Result<(i32, i32), String> {
+    let primary_monitor = app
+        .primary_monitor()
+        .map_err(|e| format!("Failed to get primary monitor: {}", e))?
+        .ok_or_else(|| "No primary monitor found".to_string())?;
+
+    let monitor_size = primary_monitor.size();
+    let monitor_position = primary_monitor.position();
+
+    let x = monitor_position.x + (monitor_size.width as i32 - CONTROL_BAR_WIDTH as i32) / 2;
+    let y = monitor_position.y + 40; // 40px from top, below typical camera location
+
+    Ok((x, y))
+}
+
+/// Internal function to set content protection (platform-specific)
+fn set_content_protection_internal(window: &tauri::Window, enabled: bool) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        set_content_protection_macos(window, enabled)?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        set_content_protection_windows(window, enabled)?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Linux doesn't have a standard API for this
+        log::info!("Linux: Content protection not supported");
+    }
+
+    Ok(())
+}
+
+/// macOS: Set NSWindow.sharingType to exclude from screen capture
+#[cfg(target_os = "macos")]
+fn set_content_protection_macos(window: &tauri::Window, enabled: bool) -> Result<(), String> {
+    use objc::runtime::Object;
+    use objc::{msg_send, sel, sel_impl};
+
+    let ns_window = window
+        .ns_window()
+        .map_err(|e| format!("Failed to get NSWindow: {}", e))?;
+
+    let ns_window_ptr = ns_window as usize;
+
+    // Configure NSWindow on main thread
+    dispatch::Queue::main().exec_sync(move || {
+        unsafe {
+            let ns_window = ns_window_ptr as *mut Object;
+            // NSWindowSharingNone = 0, NSWindowSharingReadOnly = 1
+            let sharing_type: i64 = if enabled { 0 } else { 1 };
+            let _: () = msg_send![ns_window, setSharingType: sharing_type];
+        }
+    });
+
+    log::info!(
+        "macOS: Content protection {} (sharingType = {})",
+        if enabled { "enabled" } else { "disabled" },
+        if enabled { "none" } else { "readOnly" }
+    );
+    Ok(())
+}
+
+/// Windows: Use SetWindowDisplayAffinity to exclude from screen capture
+#[cfg(target_os = "windows")]
+fn set_content_protection_windows(window: &tauri::Window, enabled: bool) -> Result<(), String> {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        SetWindowDisplayAffinity, WDA_EXCLUDEFROMCAPTURE, WDA_NONE,
+    };
+
+    let hwnd = window
+        .hwnd()
+        .map_err(|e| format!("Failed to get HWND: {}", e))?;
+
+    let hwnd = HWND(hwnd.0 as *mut std::ffi::c_void);
+
+    unsafe {
+        let affinity = if enabled { WDA_EXCLUDEFROMCAPTURE } else { WDA_NONE };
+        SetWindowDisplayAffinity(hwnd, affinity)
+            .map_err(|e| format!("Failed to set display affinity: {}", e))?;
+    }
+
+    log::info!(
+        "Windows: Content protection {} (WDA_{})",
+        if enabled { "enabled" } else { "disabled" },
+        if enabled { "EXCLUDEFROMCAPTURE" } else { "NONE" }
+    );
+    Ok(())
+}
