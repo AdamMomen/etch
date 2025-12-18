@@ -4,16 +4,13 @@ import { Track } from 'livekit-client'
 import { MonitorUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AnnotationCanvas } from '@/components/AnnotationCanvas'
-import type { Stroke } from '@nameless/shared'
+import { useAnnotations } from '@/hooks/useAnnotations'
+import { useAnnotationKeyboard } from '@/hooks/useAnnotationKeyboard'
 
 interface ScreenShareViewerProps {
   track: RemoteVideoTrack | null
   sharerName: string | null
   className?: string
-  /** Completed annotation strokes to display */
-  strokes?: Stroke[]
-  /** Currently in-progress stroke */
-  activeStroke?: Stroke | null
 }
 
 /**
@@ -29,12 +26,24 @@ export function ScreenShareViewer({
   track,
   sharerName,
   className,
-  strokes = [],
-  activeStroke = null,
 }: ScreenShareViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isVideoReady, setIsVideoReady] = useState(false)
   const isScreenShareActive = track !== null
+
+  // Use annotation hook for drawing functionality
+  const {
+    strokes,
+    activeStroke,
+    activeTool,
+    canAnnotate,
+    startStroke,
+    continueStroke,
+    endStroke,
+  } = useAnnotations()
+
+  // Register keyboard shortcuts for annotation tools
+  useAnnotationKeyboard()
 
   // Attach screen share track to video element
   useEffect(() => {
@@ -99,6 +108,11 @@ export function ScreenShareViewer({
             isScreenShareActive={isScreenShareActive}
             strokes={strokes}
             activeStroke={activeStroke}
+            canAnnotate={canAnnotate}
+            activeTool={activeTool}
+            onStrokeStart={startStroke}
+            onStrokeMove={continueStroke}
+            onStrokeEnd={endStroke}
           />
         )}
       </div>

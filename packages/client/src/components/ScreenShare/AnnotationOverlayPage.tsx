@@ -33,7 +33,8 @@ interface ClearEvent {
   participantId: string
 }
 
-type AnnotationEvent = StrokeEvent | ClearEvent
+// Union type for annotation events - exported for use in event handlers
+export type AnnotationEvent = StrokeEvent | ClearEvent
 
 /**
  * AnnotationOverlayPage - Renders on the sharer's transparent overlay window
