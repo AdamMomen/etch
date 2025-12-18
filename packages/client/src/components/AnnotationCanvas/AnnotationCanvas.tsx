@@ -29,6 +29,14 @@ export interface AnnotationCanvasProps {
   onStrokeMove?: (point: Point) => void
   /** Called when user finishes drawing (pointer up) */
   onStrokeEnd?: () => void
+  /** Called when eraser clicks to erase a stroke (pointer down with eraser) */
+  onEraseAt?: (point: Point) => void
+  /** Called to update hovered stroke during eraser hover (pointer move with eraser) */
+  onEraserHover?: (point: Point) => void
+  /** Called when eraser hover ends (pointer leave) */
+  onEraserHoverEnd?: () => void
+  /** ID of stroke currently hovered by eraser (for visual feedback) */
+  hoveredStrokeId?: string | null
 }
 
 // Perfect Freehand options for pen tool
@@ -89,14 +97,25 @@ function getSvgPathFromStroke(strokeOutline: number[][]): string {
   return d.join(' ')
 }
 
+// Eraser hover highlight color (red glow effect - AC-4.5.6)
+export const ERASER_HOVER_COLOR = 'rgba(255, 0, 0, 0.3)'
+export const ERASER_HOVER_STROKE_WIDTH = 4
+
 /**
  * Renders a single stroke to the canvas context.
+ *
+ * @param ctx - Canvas 2D context
+ * @param stroke - The stroke to render
+ * @param canvasWidth - Canvas width in pixels
+ * @param canvasHeight - Canvas height in pixels
+ * @param isHovered - Whether this stroke is being hovered by eraser (AC-4.5.6)
  */
 function renderStroke(
   ctx: CanvasRenderingContext2D,
   stroke: Stroke,
   canvasWidth: number,
-  canvasHeight: number
+  canvasHeight: number,
+  isHovered: boolean = false
 ): void {
   if (stroke.points.length < 2) return
 
@@ -119,6 +138,13 @@ function renderStroke(
 
   // Save context state
   ctx.save()
+
+  // If hovered by eraser, render highlight first (AC-4.5.6)
+  if (isHovered) {
+    ctx.strokeStyle = ERASER_HOVER_COLOR
+    ctx.lineWidth = ERASER_HOVER_STROKE_WIDTH
+    ctx.stroke(path)
+  }
 
   // Set stroke color and opacity
   ctx.fillStyle = stroke.color
@@ -157,6 +183,10 @@ export function AnnotationCanvas({
   onStrokeStart,
   onStrokeMove,
   onStrokeEnd,
+  onEraseAt,
+  onEraserHover,
+  onEraserHoverEnd,
+  hoveredStrokeId = null,
 }: AnnotationCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
@@ -259,16 +289,17 @@ export function AnnotationCanvas({
     // Clear canvas
     ctx.clearRect(0, 0, rect.width, rect.height)
 
-    // Render all completed strokes
+    // Render all completed strokes (with hover highlight for eraser)
     for (const stroke of strokes) {
-      renderStroke(ctx, stroke, rect.width, rect.height)
+      const isHovered = hoveredStrokeId === stroke.id
+      renderStroke(ctx, stroke, rect.width, rect.height, isHovered)
     }
 
     // Render active stroke (in-progress)
     if (activeStroke) {
       renderStroke(ctx, activeStroke, rect.width, rect.height)
     }
-  }, [strokes, activeStroke, getVideoContentRect])
+  }, [strokes, activeStroke, getVideoContentRect, hoveredStrokeId])
 
   /**
    * Initialize canvas context with optimal settings.
@@ -322,49 +353,62 @@ export function AnnotationCanvas({
   // ─────────────────────────────────────────────────────────
 
   /**
-   * Handles pointer down event - starts a new stroke.
+   * Handles pointer down event - starts a new stroke or erases.
    */
   const handlePointerDown = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
       // Only handle primary button (left click / touch)
       if (event.button !== 0) return
-
-      // Only draw if allowed and tool is pen or highlighter
-      if (!canAnnotate || (activeTool !== 'pen' && activeTool !== 'highlighter')) {
-        return
-      }
+      if (!canAnnotate) return
 
       const container = containerRef.current
       if (!container) return
+
+      // Get normalized coordinates
+      const point = getPointerCoordinates(event, container)
+
+      // Handle eraser tool (AC-4.5.2, AC-4.5.4)
+      if (activeTool === 'eraser') {
+        onEraseAt?.(point)
+        return
+      }
+
+      // Only draw with pen or highlighter
+      if (activeTool !== 'pen' && activeTool !== 'highlighter') {
+        return
+      }
 
       // Set pointer capture for reliable drag tracking
       container.setPointerCapture(event.pointerId)
 
-      // Get normalized coordinates
-      const point = getPointerCoordinates(event, container)
-
       isDrawingRef.current = true
       onStrokeStart?.(point)
     },
-    [canAnnotate, activeTool, onStrokeStart]
+    [canAnnotate, activeTool, onStrokeStart, onEraseAt]
   )
 
   /**
-   * Handles pointer move event - continues the stroke.
+   * Handles pointer move event - continues the stroke or updates eraser hover.
    */
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
-      if (!isDrawingRef.current) return
-
       const container = containerRef.current
       if (!container) return
 
       // Get normalized coordinates
       const point = getPointerCoordinates(event, container)
 
+      // Handle eraser hover feedback (AC-4.5.6)
+      if (activeTool === 'eraser' && canAnnotate) {
+        onEraserHover?.(point)
+        return
+      }
+
+      // Handle drawing
+      if (!isDrawingRef.current) return
       onStrokeMove?.(point)
     },
-    [onStrokeMove]
+    [activeTool, canAnnotate, onStrokeMove, onEraserHover]
   )
 
   /**
@@ -372,6 +416,9 @@ export function AnnotationCanvas({
    */
   const handlePointerUp = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
+      // Eraser doesn't need pointer up handling (click-to-erase)
+      if (activeTool === 'eraser') return
+
       if (!isDrawingRef.current) return
 
       const container = containerRef.current
@@ -382,15 +429,21 @@ export function AnnotationCanvas({
       isDrawingRef.current = false
       onStrokeEnd?.()
     },
-    [onStrokeEnd]
+    [activeTool, onStrokeEnd]
   )
 
   /**
    * Handles pointer leaving the canvas area.
-   * Completes the stroke if drawing was in progress.
+   * Completes the stroke if drawing was in progress, clears eraser hover.
    */
   const handlePointerLeave = useCallback(
     (event: React.PointerEvent<HTMLDivElement>) => {
+      // Clear eraser hover state when leaving canvas (AC-4.5.6)
+      if (activeTool === 'eraser') {
+        onEraserHoverEnd?.()
+        return
+      }
+
       // If we have pointer capture, don't end on leave
       const container = containerRef.current
       if (container?.hasPointerCapture(event.pointerId)) {
@@ -402,7 +455,7 @@ export function AnnotationCanvas({
         onStrokeEnd?.()
       }
     },
-    [onStrokeEnd]
+    [activeTool, onStrokeEnd, onEraserHoverEnd]
   )
 
   /**
@@ -447,9 +500,21 @@ export function AnnotationCanvas({
     return null
   }
 
-  // Determine cursor style based on canAnnotate and activeTool (AC-4.3.11)
-  const canDraw = canAnnotate && (activeTool === 'pen' || activeTool === 'highlighter')
-  const cursorStyle = canDraw ? 'crosshair' : 'default'
+  // Determine cursor style based on canAnnotate and activeTool (AC-4.3.11, AC-4.5.7)
+  const cursorStyle = useMemo((): string => {
+    if (!canAnnotate) return 'default'
+
+    switch (activeTool) {
+      case 'pen':
+      case 'highlighter':
+        return 'crosshair'
+      case 'eraser':
+        // Show pointer when hovering over an erasable stroke, crosshair otherwise
+        return hoveredStrokeId ? 'pointer' : 'crosshair'
+      default:
+        return 'default'
+    }
+  }, [canAnnotate, activeTool, hoveredStrokeId])
 
   return (
     <div

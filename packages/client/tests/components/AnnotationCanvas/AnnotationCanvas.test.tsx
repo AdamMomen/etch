@@ -368,7 +368,7 @@ describe('AnnotationCanvas', () => {
       expect(container.style.cursor).toBe('default')
     })
 
-    it('should have default cursor when tool is eraser', () => {
+    it('should have crosshair cursor when tool is eraser (AC-4.5.7)', () => {
       const videoRef = createMockVideoRef()
 
       render(
@@ -381,7 +381,25 @@ describe('AnnotationCanvas', () => {
       )
 
       const container = screen.getByTestId('annotation-canvas-container')
-      expect(container.style.cursor).toBe('default')
+      // Eraser shows crosshair by default, pointer when hovering over erasable stroke
+      expect(container.style.cursor).toBe('crosshair')
+    })
+
+    it('should have pointer cursor when eraser hovers over a stroke (AC-4.5.7)', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={true}
+          activeTool="eraser"
+          hoveredStrokeId="some-stroke-id"
+        />
+      )
+
+      const container = screen.getByTestId('annotation-canvas-container')
+      expect(container.style.cursor).toBe('pointer')
     })
 
     it('should have default cursor when tool is select', () => {
