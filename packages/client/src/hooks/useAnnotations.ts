@@ -1,10 +1,42 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef, useState, useEffect } from 'react'
 import { useAnnotationStore, type Tool } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useScreenShareStore } from '@/stores/screenShareStore'
 import { findTopmostStrokeAtPoint } from '@/lib/canvas'
 import { PARTICIPANT_COLORS } from '@nameless/shared'
 import type { Point, Stroke } from '@nameless/shared'
+
+/**
+ * Sync callbacks for DataTrack annotation synchronization.
+ * These are optional - when not provided, annotations work locally only.
+ */
+export interface AnnotationSyncCallbacks {
+  /** Publish a completed stroke to all participants */
+  publishStroke: (stroke: Stroke) => void
+  /** Publish incremental stroke updates during drawing */
+  publishStrokeUpdate: (
+    strokeId: string,
+    participantId: string,
+    tool: 'pen' | 'highlighter',
+    color: string,
+    points: Point[]
+  ) => void
+  /** Publish a stroke deletion (eraser) */
+  publishDelete: (strokeId: string) => void
+  /** Publish clear all (host only) */
+  publishClearAll: () => void
+}
+
+/**
+ * Options for the useAnnotations hook.
+ */
+export interface UseAnnotationsOptions {
+  /** Optional sync callbacks for DataTrack sync (Story 4.7) */
+  sync?: AnnotationSyncCallbacks | null
+}
+
+/** Point batching interval in milliseconds (60fps) */
+const BATCH_INTERVAL_MS = 16
 
 /**
  * Hook for managing annotation drawing operations.
@@ -17,11 +49,19 @@ import type { Point, Stroke } from '@nameless/shared'
  * - Coordinates stored as normalized [0,1] values
  * - Eraser uses hit-testing to find and delete strokes (Story 4.5)
  *
+ * @param options - Optional configuration including sync callbacks
  * @see docs/sprint-artifacts/tech-spec-epic-4.md
  */
-export function useAnnotations() {
+export function useAnnotations(options: UseAnnotationsOptions = {}) {
+  const { sync } = options
+
   // Track if we're currently drawing
   const isDrawingRef = useRef(false)
+
+  // Point batching state (Story 4.7 - AC-4.7.3)
+  const pointBatchRef = useRef<Point[]>([])
+  const lastBatchTimeRef = useRef<number>(0)
+  const batchIntervalRef = useRef<number | null>(null)
 
   // Eraser hover state - stores ID of stroke under cursor (AC-4.5.6)
   const [hoveredStrokeId, setHoveredStrokeId] = useState<string | null>(null)
@@ -30,12 +70,14 @@ export function useAnnotations() {
   const strokes = useAnnotationStore((state) => state.strokes)
   const activeStroke = useAnnotationStore((state) => state.activeStroke)
   const activeTool = useAnnotationStore((state) => state.activeTool)
+  const remoteActiveStrokes = useAnnotationStore((state) => state.remoteActiveStrokes)
 
   // Store actions
   const setActiveStroke = useAnnotationStore((state) => state.setActiveStroke)
   const addStroke = useAnnotationStore((state) => state.addStroke)
   const setActiveTool = useAnnotationStore((state) => state.setActiveTool)
   const deleteStroke = useAnnotationStore((state) => state.deleteStroke)
+  const clearAllStrokes = useAnnotationStore((state) => state.clearAll)
 
   // Get local participant info
   const localParticipant = useRoomStore((state) => state.localParticipant)
@@ -62,8 +104,65 @@ export function useAnnotations() {
   }, [])
 
   /**
+   * Flushes the current batch of points via sync.
+   * Called every 16ms during drawing (AC-4.7.3).
+   */
+  const flushPointBatch = useCallback(() => {
+    if (!sync || pointBatchRef.current.length === 0) return
+
+    const currentStroke = useAnnotationStore.getState().activeStroke
+    if (!currentStroke) return
+
+    // Send batched points via sync
+    sync.publishStrokeUpdate(
+      currentStroke.id,
+      currentStroke.participantId,
+      currentStroke.tool,
+      currentStroke.color,
+      [...pointBatchRef.current]
+    )
+
+    // Clear the batch
+    pointBatchRef.current = []
+    lastBatchTimeRef.current = Date.now()
+  }, [sync])
+
+  /**
+   * Starts the batch interval for sending incremental updates.
+   */
+  const startBatchInterval = useCallback(() => {
+    if (batchIntervalRef.current !== null) return
+
+    batchIntervalRef.current = window.setInterval(() => {
+      flushPointBatch()
+    }, BATCH_INTERVAL_MS)
+  }, [flushPointBatch])
+
+  /**
+   * Stops the batch interval and flushes any remaining points.
+   */
+  const stopBatchInterval = useCallback(() => {
+    if (batchIntervalRef.current !== null) {
+      clearInterval(batchIntervalRef.current)
+      batchIntervalRef.current = null
+    }
+    // Flush any remaining points
+    flushPointBatch()
+  }, [flushPointBatch])
+
+  // Cleanup batch interval on unmount
+  useEffect(() => {
+    return () => {
+      if (batchIntervalRef.current !== null) {
+        clearInterval(batchIntervalRef.current)
+      }
+    }
+  }, [])
+
+  /**
    * Starts a new stroke at the given point.
    * Creates a new Stroke object with unique ID, participant info, and initial point.
+   * AC-4.7.8: Local strokes render immediately (optimistic UI).
    *
    * @param point - The starting point (normalized coordinates)
    */
@@ -85,9 +184,16 @@ export function useAnnotations() {
         isComplete: false,
       }
 
-      // Set as active stroke in store
+      // Set as active stroke in store (optimistic UI - AC-4.7.8)
       setActiveStroke(newStroke)
       isDrawingRef.current = true
+
+      // Initialize point batch with first point and start interval (Story 4.7)
+      if (sync) {
+        pointBatchRef.current = [point]
+        lastBatchTimeRef.current = Date.now()
+        startBatchInterval()
+      }
     },
     [
       canAnnotate,
@@ -96,12 +202,15 @@ export function useAnnotations() {
       myColor,
       generateStrokeId,
       setActiveStroke,
+      sync,
+      startBatchInterval,
     ]
   )
 
   /**
    * Continues the current stroke by appending a new point.
    * Only works if there's an active stroke being drawn.
+   * Points are batched for sync every 16ms (AC-4.7.3).
    *
    * @param point - The new point to add (normalized coordinates)
    */
@@ -118,17 +227,28 @@ export function useAnnotations() {
         points: [...currentStroke.points, point],
       }
 
-      // Update active stroke
+      // Update active stroke (local render first - AC-4.7.8)
       setActiveStroke(updatedStroke)
+
+      // Add point to batch for sync (Story 4.7 - AC-4.7.3)
+      if (sync) {
+        pointBatchRef.current.push(point)
+      }
     },
-    [setActiveStroke]
+    [setActiveStroke, sync]
   )
 
   /**
    * Ends the current stroke, marking it as complete and moving it to the strokes array.
+   * AC-4.7.4: Complete stroke sent on mouse up.
    */
   const endStroke = useCallback((): void => {
     if (!isDrawingRef.current) return
+
+    // Stop batch interval and flush remaining points (Story 4.7)
+    if (sync) {
+      stopBatchInterval()
+    }
 
     const currentStroke = useAnnotationStore.getState().activeStroke
     if (!currentStroke) {
@@ -136,7 +256,7 @@ export function useAnnotations() {
       return
     }
 
-    // Only save strokes with at least 2 points (to form a line)
+    // Only save strokes with at least 1 point
     if (currentStroke.points.length >= 1) {
       // Mark as complete and add to strokes
       const completedStroke: Stroke = {
@@ -144,13 +264,19 @@ export function useAnnotations() {
         isComplete: true,
       }
 
+      // Add to local store
       addStroke(completedStroke)
+
+      // Publish completed stroke via sync (AC-4.7.4)
+      if (sync) {
+        sync.publishStroke(completedStroke)
+      }
     }
 
     // Clear active stroke
     setActiveStroke(null)
     isDrawingRef.current = false
-  }, [addStroke, setActiveStroke])
+  }, [addStroke, setActiveStroke, sync, stopBatchInterval])
 
   /**
    * Sets the active drawing tool.
@@ -239,6 +365,7 @@ export function useAnnotations() {
   /**
    * Erases the topmost stroke at the given point.
    * Checks permissions and removes from store if allowed.
+   * AC-4.7.5: Delete messages sync to others.
    *
    * @param point - Point to check for strokes (normalized coordinates)
    * @returns True if a stroke was erased
@@ -261,8 +388,13 @@ export function useAnnotations() {
         return false
       }
 
-      // Delete the stroke
+      // Delete the stroke locally
       deleteStroke(topStroke.id)
+
+      // Publish delete via sync (AC-4.7.5)
+      if (sync) {
+        sync.publishDelete(topStroke.id)
+      }
 
       // Clear hover state if we just deleted the hovered stroke
       if (hoveredStrokeId === topStroke.id) {
@@ -271,8 +403,22 @@ export function useAnnotations() {
 
       return true
     },
-    [canAnnotate, activeTool, canEraseStroke, deleteStroke, hoveredStrokeId]
+    [canAnnotate, activeTool, canEraseStroke, deleteStroke, hoveredStrokeId, sync]
   )
+
+  /**
+   * Clears all strokes (host only).
+   * AC-4.7.6: Clear all syncs to all participants.
+   */
+  const clearAll = useCallback((): void => {
+    // Clear locally
+    clearAllStrokes()
+
+    // Publish clear all via sync (AC-4.7.6)
+    if (sync) {
+      sync.publishClearAll()
+    }
+  }, [clearAllStrokes, sync])
 
   return {
     // State
@@ -283,6 +429,7 @@ export function useAnnotations() {
     myColor,
     myParticipantId,
     hoveredStrokeId,
+    remoteActiveStrokes, // Story 4.7 - in-progress remote strokes
 
     // Drawing Actions
     startStroke,
@@ -295,5 +442,8 @@ export function useAnnotations() {
     updateHoveredStroke,
     clearHoveredStroke,
     canEraseStroke,
+
+    // Clear All (Story 4.7)
+    clearAll,
   }
 }
