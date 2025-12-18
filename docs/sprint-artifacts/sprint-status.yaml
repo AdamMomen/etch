@@ -94,7 +94,7 @@ development_status:
   epic-4: contexted
   4-1-create-annotation-canvas-component-for-viewers: done
   4-2-implement-annotation-store-with-zustand: done
-  4-3-implement-local-stroke-drawing-pen-tool: in-progress
+  4-3-implement-local-stroke-drawing-pen-tool: done
   4-4-implement-highlighter-tool: backlog
   4-5-implement-eraser-tool: backlog
   4-6-build-annotation-toolbar-component: backlog
