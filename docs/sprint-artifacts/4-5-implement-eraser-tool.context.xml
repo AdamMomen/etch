@@ -1,0 +1,267 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>5</storyId>
+    <title>Implement Eraser Tool</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-5-implement-eraser-tool.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>annotator</asA>
+    <iWant>to erase my own annotation strokes</iWant>
+    <soThat>I can correct mistakes or clean up the shared screen</soThat>
+    <tasks>
+      <task id="1" title="Add eraser keyboard shortcut" ac="4.5.1">
+        <subtask>Update useAnnotationKeyboard hook to handle key 7 for eraser</subtask>
+        <subtask>Call annotationStore.setActiveTool('eraser') on keypress</subtask>
+        <subtask>Fix comment at line 43-44 (currently says key '4', should be '7' per spec)</subtask>
+        <subtask>Add unit test for 7 key activating eraser tool</subtask>
+      </task>
+      <task id="2" title="Implement hit-testing for strokes" ac="4.5.2, 4.5.5">
+        <subtask>Create isPointOnStroke(point, stroke, threshold) utility in lib/canvas.ts</subtask>
+        <subtask>Use stroke bounding box for fast rejection</subtask>
+        <subtask>Calculate point-to-path distance for precise detection</subtask>
+        <subtask>Add unit tests for hit-testing logic</subtask>
+      </task>
+      <task id="3" title="Implement eraseStrokeAt in useAnnotations" ac="4.5.2, 4.5.3, 4.5.4, 4.5.5">
+        <subtask>Add eraseStrokeAt(point: Point) function to useAnnotations hook</subtask>
+        <subtask>Implement permission check: filter strokes by participantId === myParticipantId</subtask>
+        <subtask>Add host/sharer bypass: allow erasing any stroke if role === 'host' || role === 'sharer'</subtask>
+        <subtask>Call annotationStore.deleteStroke(strokeId) when match found</subtask>
+        <subtask>Add unit tests for erasing own strokes</subtask>
+        <subtask>Add unit tests for permission denied on others' strokes</subtask>
+        <subtask>Add unit tests for host/sharer elevated permissions</subtask>
+      </task>
+      <task id="4" title="Wire eraser to pointer events in AnnotationCanvas" ac="4.5.2, 4.5.3">
+        <subtask>Update handlePointerDown to check if activeTool === 'eraser'</subtask>
+        <subtask>If eraser: call eraseStrokeAt(point) instead of startStroke(point)</subtask>
+        <subtask>Update handlePointerMove to continuously erase during drag when eraser active</subtask>
+        <subtask>Add unit tests for eraser pointer event handling</subtask>
+      </task>
+      <task id="5" title="Implement visual feedback for eraser hover" ac="4.5.6">
+        <subtask>Add hoveredStrokeId state to track stroke under cursor</subtask>
+        <subtask>Update render logic to draw highlighted stroke differently (e.g., brighter/pulsing)</subtask>
+        <subtask>Clear hoveredStrokeId when stroke is deleted or cursor moves away</subtask>
+        <subtask>Add unit test for hover state management</subtask>
+      </task>
+      <task id="6" title="Update cursor style for eraser tool" ac="4.5.7">
+        <subtask>Modify cursor logic in AnnotationCanvas: cursor: not-allowed when eraser over non-deletable stroke</subtask>
+        <subtask>Use custom eraser cursor or cursor: crosshair when eraser active and over deletable stroke</subtask>
+        <subtask>Add unit test verifying cursor style when activeTool === 'eraser'</subtask>
+      </task>
+      <task id="7" title="Write integration tests" ac="all">
+        <subtask>Test complete eraser flow: select tool (key 7) -> click stroke -> verify deletion</subtask>
+        <subtask>Test drag-to-erase: multiple strokes deleted in single drag</subtask>
+        <subtask>Test permission enforcement: cannot erase others' strokes as regular annotator</subtask>
+        <subtask>Test host can erase any stroke</subtask>
+        <subtask>Test sharer can erase any stroke</subtask>
+        <subtask>Test eraser does not affect pen/highlighter strokes during drawing</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.5.1">Key 7 activates eraser tool</criterion>
+    <criterion id="AC-4.5.2">Click on own stroke deletes it</criterion>
+    <criterion id="AC-4.5.3">Drag over own strokes deletes them</criterion>
+    <criterion id="AC-4.5.4">Cannot erase others' strokes (unless host/sharer)</criterion>
+    <criterion id="AC-4.5.5">Entire stroke deleted on touch (not partial)</criterion>
+    <criterion id="AC-4.5.6">Visual feedback before deletion (highlight)</criterion>
+    <criterion id="AC-4.5.7">Cursor changes to eraser icon</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-4.md</path>
+        <title>Epic 4 Technical Specification</title>
+        <section>Story 4.5: Implement Eraser Tool</section>
+        <snippet>Defines eraser flow, hit-testing algorithm, permission logic (AC-4.5.1 through AC-4.5.7), and integration with annotationStore.deleteStroke action.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-4-real-time-annotations.md</path>
+        <title>Epic 4: Real-Time Annotations</title>
+        <section>Story 4.5: Implement Eraser Tool</section>
+        <snippet>User story definition: As an annotator, I want to erase my own strokes. Only erases strokes I created. Erases entire stroke on touch.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>ADR-004: Zustand over Redux</section>
+        <snippet>Zustand stores manage annotation state. deleteStroke action removes stroke by ID. Uses lightweight ~1KB state management.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Canvas Rendering Pipeline</section>
+        <snippet>Clear canvas, draw completed strokes, draw in-progress stroke, draw laser pointers. Uses requestAnimationFrame for 60fps.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR30 - Eraser Tool</section>
+        <snippet>FR30: Users can use an eraser tool to remove their own strokes. FR32: Sharers can delete any annotation on their shared screen.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/4-4-implement-highlighter-tool.md</path>
+        <title>Story 4.4: Implement Highlighter Tool</title>
+        <section>Dev Agent Record</section>
+        <snippet>Learnings: Extended useAnnotationKeyboard for key 3, cursor style logic at AnnotationCanvas.tsx:451-452. Follow 23-test pattern.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>packages/client/src/stores/annotationStore.ts</path>
+        <kind>store</kind>
+        <symbol>useAnnotationStore, deleteStroke</symbol>
+        <lines>142-145</lines>
+        <reason>deleteStroke action removes stroke by ID - core eraser functionality uses this action</reason>
+      </file>
+      <file>
+        <path>packages/client/src/hooks/useAnnotationKeyboard.ts</path>
+        <kind>hook</kind>
+        <symbol>useAnnotationKeyboard</symbol>
+        <lines>36-45</lines>
+        <reason>Add key '7' handler here. Note: comment at line 44 mentions '4' but spec uses '7' - needs fix</reason>
+      </file>
+      <file>
+        <path>packages/client/src/hooks/useAnnotations.ts</path>
+        <kind>hook</kind>
+        <symbol>useAnnotations, startStroke, myParticipantId</symbol>
+        <lines>64-94, 41, 46-49</lines>
+        <reason>Add eraseStrokeAt function here. Use myParticipantId for permission check. Reference role from localParticipant.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx</path>
+        <kind>component</kind>
+        <symbol>AnnotationCanvas, handlePointerDown, handlePointerMove</symbol>
+        <lines>327-350, 355-368, 450-452</lines>
+        <reason>Wire eraser to pointer events. Update cursor style logic. Add eraser branch in event handlers.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/utils/coordinates.ts</path>
+        <kind>utility</kind>
+        <symbol>getPointerCoordinates, normalizeCoordinates</symbol>
+        <lines>50-64</lines>
+        <reason>Used to convert pointer events to normalized coordinates for hit-testing</reason>
+      </file>
+      <file>
+        <path>packages/shared/src/types/stroke.ts</path>
+        <kind>type</kind>
+        <symbol>Point, Stroke</symbol>
+        <lines>6-34</lines>
+        <reason>Stroke interface defines participantId (for permission check) and points array (for hit-testing)</reason>
+      </file>
+      <file>
+        <path>packages/client/tests/hooks/useAnnotationKeyboard.test.ts</path>
+        <kind>test</kind>
+        <symbol>useAnnotationKeyboard tests</symbol>
+        <reason>Add test for key '7' activating eraser tool - follow existing test patterns</reason>
+      </file>
+      <file>
+        <path>packages/client/tests/hooks/useAnnotations.test.ts</path>
+        <kind>test</kind>
+        <symbol>useAnnotations tests</symbol>
+        <reason>Add tests for eraseStrokeAt function - permission checks, own stroke deletion</reason>
+      </file>
+      <file>
+        <path>packages/client/tests/components/AnnotationCanvas/AnnotationCanvas.test.tsx</path>
+        <kind>test</kind>
+        <symbol>AnnotationCanvas tests</symbol>
+        <reason>Add tests for eraser pointer events, cursor style changes, visual feedback</reason>
+      </file>
+    </code>
+    <dependencies>
+      <ecosystem name="node">
+        <package name="zustand" version="^5.0.9">State management for annotationStore</package>
+        <package name="perfect-freehand" version="^1.2.2">Stroke path generation (may help with hit-testing bounds)</package>
+        <package name="react" version="^19.2.0">React hooks and components</package>
+        <package name="vitest" version="^2.0.0">Testing framework</package>
+        <package name="@testing-library/react" version="^16.3.0">React component testing</package>
+        <package name="@testing-library/user-event" version="^14.6.1">User event simulation for tests</package>
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">Local-first deletion: stroke removed immediately from store, sync via DataTrack happens later (Story 4.7)</constraint>
+    <constraint type="pattern">Permission check: own strokes always deletable, host/sharer can delete any stroke (FR30, FR32)</constraint>
+    <constraint type="pattern">Full stroke deletion: entire stroke removed on touch, not point-by-point partial erase (AC-4.5.5)</constraint>
+    <constraint type="architecture">Use Zustand store actions (deleteStroke) - per ADR-004</constraint>
+    <constraint type="architecture">Coordinates are normalized [0,1] - transform for hit-testing</constraint>
+    <constraint type="testing">Follow test structure from Stories 4.3-4.4: unit tests for hook logic, integration tests for complete flows</constraint>
+    <constraint type="keyboard">Key '7' for eraser (not '4' as old comment suggests) - per tech spec AC-4.5.1</constraint>
+    <constraint type="rendering">Visual feedback: briefly highlight stroke before deletion (AC-4.5.6)</constraint>
+    <constraint type="ux">Cursor changes: 'crosshair' or eraser icon when over deletable stroke, 'not-allowed' when over non-deletable</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>deleteStroke</name>
+      <kind>store action</kind>
+      <signature>deleteStroke: (strokeId: string) => void</signature>
+      <path>packages/client/src/stores/annotationStore.ts:142-145</path>
+    </interface>
+    <interface>
+      <name>setActiveTool</name>
+      <kind>store action</kind>
+      <signature>setActiveTool: (tool: Tool) => void</signature>
+      <path>packages/client/src/stores/annotationStore.ts:157</path>
+    </interface>
+    <interface>
+      <name>getStrokesByParticipant</name>
+      <kind>store selector</kind>
+      <signature>getStrokesByParticipant: (participantId: string) => Stroke[]</signature>
+      <path>packages/client/src/stores/annotationStore.ts:175-176</path>
+    </interface>
+    <interface>
+      <name>isPointOnStroke (to implement)</name>
+      <kind>utility function</kind>
+      <signature>isPointOnStroke(point: Point, stroke: Stroke, threshold: number): boolean</signature>
+      <path>packages/client/src/lib/canvas.ts (new)</path>
+    </interface>
+    <interface>
+      <name>eraseStrokeAt (to implement)</name>
+      <kind>hook function</kind>
+      <signature>eraseStrokeAt: (point: Point) => void</signature>
+      <path>packages/client/src/hooks/useAnnotations.ts (extend)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing uses Vitest + React Testing Library. Unit tests for hook logic (useAnnotationKeyboard, useAnnotations),
+      store actions (annotationStore), and utility functions. Integration tests for complete user flows.
+      Follow test patterns from Stories 4.3-4.4 (23-test structure: 8 keyboard, 3 store, 4 integration, 8 rendering).
+      Tests should mock localParticipant with different roles to verify permission logic.
+      Use mock strokes with known geometry for deterministic hit-testing tests.
+    </standards>
+    <locations>
+      <location>packages/client/tests/hooks/useAnnotationKeyboard.test.ts</location>
+      <location>packages/client/tests/hooks/useAnnotations.test.ts</location>
+      <location>packages/client/tests/stores/annotationStore.test.ts</location>
+      <location>packages/client/tests/components/AnnotationCanvas/AnnotationCanvas.test.tsx</location>
+      <location>packages/client/tests/lib/canvas.test.ts (new for hit-testing)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-4.5.1">Test key '7' activates eraser tool via useAnnotationKeyboard</idea>
+      <idea ac="AC-4.5.1">Test modifier keys (Ctrl, Alt, Meta) don't trigger eraser</idea>
+      <idea ac="AC-4.5.2">Test click on own stroke calls deleteStroke with correct strokeId</idea>
+      <idea ac="AC-4.5.2">Test isPointOnStroke returns true when point is within threshold of stroke path</idea>
+      <idea ac="AC-4.5.3">Test continuous erase during drag deletes multiple strokes</idea>
+      <idea ac="AC-4.5.4">Test permission denied when trying to erase other participant's stroke as annotator</idea>
+      <idea ac="AC-4.5.4">Test host can erase any participant's stroke</idea>
+      <idea ac="AC-4.5.4">Test sharer can erase any participant's stroke</idea>
+      <idea ac="AC-4.5.5">Test entire stroke is removed (not partial points)</idea>
+      <idea ac="AC-4.5.6">Test hoveredStrokeId state updates on pointer move over stroke</idea>
+      <idea ac="AC-4.5.7">Test cursor style is 'crosshair' when eraser over deletable stroke</idea>
+      <idea ac="AC-4.5.7">Test cursor style is 'not-allowed' when eraser over non-deletable stroke</idea>
+      <idea ac="hit-testing">Test isPointOnStroke bounding box fast rejection</idea>
+      <idea ac="hit-testing">Test isPointOnStroke point-to-line-segment distance calculation</idea>
+      <idea ac="integration">Test complete eraser flow: key 7 -> click stroke -> verify store updated</idea>
+    </ideas>
+  </tests>
+</story-context>
