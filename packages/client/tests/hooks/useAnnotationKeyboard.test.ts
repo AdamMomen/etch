@@ -177,6 +177,120 @@ describe('useAnnotationKeyboard', () => {
   })
 
   // ─────────────────────────────────────────────────────────
+  // ERASER TOOL SHORTCUT TESTS (AC-4.5.1)
+  // ─────────────────────────────────────────────────────────
+
+  describe('eraser tool shortcut (AC-4.5.1)', () => {
+    it('activates eraser tool when "7" key is pressed', () => {
+      // Start with pen tool (default)
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('7')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('eraser')
+    })
+
+    it('eraser tool remains active when already selected', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('eraser')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('7')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('eraser')
+    })
+
+    it('switches from highlighter to eraser when "7" is pressed', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('highlighter')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('7')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('eraser')
+    })
+
+    it('does not activate eraser when typing in INPUT element', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('pen')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      // Create an input element and focus it
+      const input = document.createElement('input')
+      document.body.appendChild(input)
+
+      const event = new KeyboardEvent('keydown', {
+        key: '7',
+        bubbles: true,
+        cancelable: true,
+      })
+      Object.defineProperty(event, 'target', { value: input })
+      window.dispatchEvent(event)
+
+      // Tool should remain pen
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+
+      document.body.removeChild(input)
+    })
+
+    it('does not activate eraser when Ctrl is pressed', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('pen')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('7', { ctrlKey: true })
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+    })
+
+    it('does not activate eraser when Meta (Cmd) is pressed', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('pen')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('7', { metaKey: true })
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+    })
+
+    it('does not activate eraser when Alt is pressed', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('pen')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('7', { altKey: true })
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
   // INPUT FIELD EXCLUSION TESTS
   // ─────────────────────────────────────────────────────────
 
