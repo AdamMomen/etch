@@ -1,0 +1,290 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4</storyId>
+    <title>Implement Highlighter Tool</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-4-implement-highlighter-tool.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>annotator</asA>
+    <iWant>to use a highlighter tool for semi-transparent emphasis</iWant>
+    <soThat>I can highlight areas without fully obscuring content</soThat>
+    <tasks>
+      <task id="1" ac="4.4.1">
+        <title>Add highlighter keyboard shortcut</title>
+        <subtasks>
+          <subtask>Update useAnnotationKeyboard hook to handle key 3 for highlighter</subtask>
+          <subtask>Call annotationStore.setActiveTool('highlighter') on keypress</subtask>
+          <subtask>Add unit test for 3 key activating highlighter tool</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="4.4.4">
+        <title>Update useAnnotations to support highlighter tool</title>
+        <subtasks>
+          <subtask>Modify startStroke() to set tool: activeTool (pen or highlighter) instead of hardcoded 'pen'</subtask>
+          <subtask>Ensure stroke metadata includes correct tool type for rendering</subtask>
+          <subtask>Add unit test verifying highlighter strokes have tool: 'highlighter'</subtask>
+        </subtasks>
+        <note>ALREADY IMPLEMENTED - useAnnotations.ts already uses activeTool (line 75)</note>
+      </task>
+      <task id="3" ac="4.4.2,4.4.3,4.4.5">
+        <title>Implement highlighter rendering in AnnotationCanvas</title>
+        <subtasks>
+          <subtask>Verify HIGHLIGHTER_OPTIONS constants are correctly configured (size: 24, thinning: 0, flat caps)</subtask>
+          <subtask>Update renderStroke() to apply globalAlpha = 0.4 for highlighter tool</subtask>
+          <subtask>Apply flat lineCap style (cap: false in Perfect Freehand options) for highlighter</subtask>
+          <subtask>Reset globalAlpha = 1.0 after rendering highlighter strokes</subtask>
+          <subtask>Add unit tests for highlighter opacity rendering</subtask>
+          <subtask>Add unit tests for highlighter width (3x pen)</subtask>
+        </subtasks>
+        <note>ALREADY IMPLEMENTED - AnnotationCanvas.tsx already has HIGHLIGHTER_OPTIONS (lines 46-54) and opacity handling (lines 123-125)</note>
+      </task>
+      <task id="4" ac="4.4.7">
+        <title>Update cursor style for highlighter tool</title>
+        <subtasks>
+          <subtask>Modify cursor logic in AnnotationCanvas to show appropriate cursor for highlighter</subtask>
+          <subtask>Use cursor: crosshair or custom highlighter cursor when tool is 'highlighter'</subtask>
+          <subtask>Add unit test verifying cursor style when activeTool === 'highlighter'</subtask>
+        </subtasks>
+        <note>ALREADY IMPLEMENTED - AnnotationCanvas.tsx already handles cursor for highlighter (line 449)</note>
+      </task>
+      <task id="5" ac="4.4.6">
+        <title>Prepare toolbar integration point</title>
+        <subtasks>
+          <subtask>Document the integration point for AnnotationToolbar (Story 4.6)</subtask>
+          <subtask>Verify annotationStore.activeTool state changes trigger re-renders</subtask>
+          <subtask>Add test verifying activeTool state change to 'highlighter' is observable</subtask>
+        </subtasks>
+      </task>
+      <task id="6" ac="all">
+        <title>Write integration tests</title>
+        <subtasks>
+          <subtask>Test complete highlighter flow: select tool (key 3) -> draw stroke -> verify visual properties</subtask>
+          <subtask>Test switching between pen and highlighter preserves correct tool metadata on strokes</subtask>
+          <subtask>Test that existing pen strokes continue to render correctly after highlighter strokes added</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.4.1">Key 3 activates highlighter tool</criterion>
+    <criterion id="AC-4.4.2">Highlighter stroke has 40% opacity</criterion>
+    <criterion id="AC-4.4.3">Highlighter is 3x wider than pen (24 vs 8)</criterion>
+    <criterion id="AC-4.4.4">Highlighter uses participant color with alpha</criterion>
+    <criterion id="AC-4.4.5">Highlighter has flat ends (not rounded)</criterion>
+    <criterion id="AC-4.4.6">Toolbar shows highlighter as active when selected</criterion>
+    <criterion id="AC-4.4.7">Cursor indicates highlighter mode</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-4.md</path>
+        <title>Epic 4 Technical Specification</title>
+        <section>Story 4.4: Implement Highlighter Tool</section>
+        <snippet>Highlighter tool settings (wider, flatter): size: 24, thinning: 0, smoothing: 0.5, streamline: 0.3, start/end: { taper: 0, cap: false }</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-4-real-time-annotations.md</path>
+        <title>Epic 4: Real-Time Annotations</title>
+        <section>Story 4.4: Implement Highlighter Tool</section>
+        <snippet>Highlighter stroke has 40% opacity, 3x pen width, flat/square ends, uses participant color with alpha</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>ADR-004: Zustand over Redux</section>
+        <snippet>Annotation state managed via annotationStore with activeTool state for tool selection</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR29 - Highlighter tool</section>
+        <snippet>Highlighter for semi-transparent emphasis - 40% opacity</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>packages/client/src/hooks/useAnnotationKeyboard.ts</path>
+        <kind>hook</kind>
+        <symbol>useAnnotationKeyboard</symbol>
+        <lines>1-53</lines>
+        <reason>Add key '3' handling for highlighter tool activation - currently has placeholder comment at line 41</reason>
+      </file>
+      <file>
+        <path>packages/client/src/hooks/useAnnotations.ts</path>
+        <kind>hook</kind>
+        <symbol>useAnnotations</symbol>
+        <lines>64-94</lines>
+        <reason>startStroke() already uses activeTool to create strokes with correct tool type</reason>
+      </file>
+      <file>
+        <path>packages/client/src/stores/annotationStore.ts</path>
+        <kind>store</kind>
+        <symbol>useAnnotationStore</symbol>
+        <lines>1-181</lines>
+        <reason>Store already supports 'highlighter' in Tool type and setActiveTool action</reason>
+      </file>
+      <file>
+        <path>packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx</path>
+        <kind>component</kind>
+        <symbol>AnnotationCanvas, renderStroke, HIGHLIGHTER_OPTIONS</symbol>
+        <lines>45-132, 448-451</lines>
+        <reason>Already has HIGHLIGHTER_OPTIONS constant and renderStroke handles highlighter opacity; cursor logic already handles highlighter</reason>
+      </file>
+      <file>
+        <path>packages/client/src/utils/coordinates.ts</path>
+        <kind>utility</kind>
+        <symbol>normalizeCoordinates, getPointerCoordinates</symbol>
+        <lines>1-64</lines>
+        <reason>Coordinate utilities used for stroke point normalization - no changes needed</reason>
+      </file>
+      <file>
+        <path>packages/client/tests/hooks/useAnnotationKeyboard.test.ts</path>
+        <kind>test</kind>
+        <symbol>useAnnotationKeyboard tests</symbol>
+        <lines>1-240</lines>
+        <reason>Extend with tests for key '3' activating highlighter tool</reason>
+      </file>
+      <file>
+        <path>packages/client/tests/hooks/useAnnotations.test.ts</path>
+        <kind>test</kind>
+        <symbol>useAnnotations tests</symbol>
+        <lines>296-311</lines>
+        <reason>Already has test 'creates stroke with highlighter tool when active' - may need additional tests</reason>
+      </file>
+      <file>
+        <path>packages/client/tests/components/AnnotationCanvas/AnnotationCanvas.test.tsx</path>
+        <kind>test</kind>
+        <symbol>AnnotationCanvas tests</symbol>
+        <lines>333-348</lines>
+        <reason>Already has test for crosshair cursor with highlighter tool; add opacity/width rendering tests</reason>
+      </file>
+    </code>
+    <dependencies>
+      <node>
+        <package>perfect-freehand</package>
+        <version>^1.2.2</version>
+        <purpose>Stroke path generation with natural brush feel</purpose>
+      </node>
+      <node>
+        <package>zustand</package>
+        <version>^5.0.9</version>
+        <purpose>State management for annotation store</purpose>
+      </node>
+      <node>
+        <package>vitest</package>
+        <version>^2.0.0</version>
+        <purpose>Testing framework</purpose>
+      </node>
+      <node>
+        <package>@testing-library/react</package>
+        <version>^16.3.0</version>
+        <purpose>React component testing</purpose>
+      </node>
+      <workspace>
+        <package>@nameless/shared</package>
+        <types>Stroke, Point, PARTICIPANT_COLORS</types>
+        <purpose>Shared types and constants</purpose>
+      </workspace>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">Follow local-first rendering pattern - highlighter strokes render immediately, sync later (Story 4.7)</constraint>
+    <constraint type="pattern">Use Zustand store actions via annotationStore.setActiveTool('highlighter')</constraint>
+    <constraint type="testing">All ACs must have corresponding unit tests - follow TDD pattern from Story 4.3</constraint>
+    <constraint type="testing">Tests co-located in packages/client/tests/ directory</constraint>
+    <constraint type="architecture">ADR-003: Hybrid Rendering - highlighter uses same canvas pipeline as pen</constraint>
+    <constraint type="architecture">ADR-004: Zustand - tool state managed via annotationStore.activeTool</constraint>
+    <constraint type="rendering">Use Perfect Freehand library with HIGHLIGHTER_OPTIONS configuration</constraint>
+    <constraint type="rendering">globalAlpha = 0.4 for highlighter strokes (40% opacity)</constraint>
+    <constraint type="rendering">HIGHLIGHTER_OPTIONS.size = 24 (3x PEN_OPTIONS.size of 8)</constraint>
+    <constraint type="rendering">Flat ends via cap: false in start/end options</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Tool</name>
+      <kind>type</kind>
+      <signature>type Tool = 'select' | 'pen' | 'highlighter' | 'eraser'</signature>
+      <path>packages/client/src/stores/annotationStore.ts</path>
+    </interface>
+    <interface>
+      <name>setActiveTool</name>
+      <kind>store action</kind>
+      <signature>setActiveTool: (tool: Tool) => void</signature>
+      <path>packages/client/src/stores/annotationStore.ts</path>
+    </interface>
+    <interface>
+      <name>Stroke</name>
+      <kind>type</kind>
+      <signature>interface Stroke { id: string; participantId: string; tool: 'pen' | 'highlighter'; color: string; points: Point[]; createdAt: number; isComplete: boolean; }</signature>
+      <path>packages/shared/src/types/stroke.ts</path>
+    </interface>
+    <interface>
+      <name>HIGHLIGHTER_OPTIONS</name>
+      <kind>constant</kind>
+      <signature>{ size: 24, thinning: 0, smoothing: 0.5, streamline: 0.3, easing: (t) => t, start: { taper: 0, cap: false }, end: { taper: 0, cap: false } }</signature>
+      <path>packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx</path>
+    </interface>
+    <interface>
+      <name>HIGHLIGHTER_OPACITY</name>
+      <kind>constant</kind>
+      <signature>const HIGHLIGHTER_OPACITY = 0.4</signature>
+      <path>packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework is Vitest with React Testing Library. Tests are co-located in the packages/client/tests/ directory mirroring the src/ structure. Follow the established patterns from Story 4.3 which added 69 tests. All ACs require corresponding unit tests. Mock crypto.randomUUID for deterministic stroke IDs. Use renderHook for testing hooks and screen queries for component tests.
+    </standards>
+    <locations>
+      <location>packages/client/tests/hooks/useAnnotationKeyboard.test.ts</location>
+      <location>packages/client/tests/hooks/useAnnotations.test.ts</location>
+      <location>packages/client/tests/components/AnnotationCanvas/AnnotationCanvas.test.tsx</location>
+      <location>packages/client/tests/stores/annotationStore.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-4.4.1">Test that pressing key '3' calls setActiveTool('highlighter')</idea>
+      <idea ac="AC-4.4.1">Test that key '3' does not activate when modifier keys pressed</idea>
+      <idea ac="AC-4.4.1">Test that key '3' does not activate when in input/textarea</idea>
+      <idea ac="AC-4.4.2">Test that renderStroke sets globalAlpha = 0.4 for highlighter strokes</idea>
+      <idea ac="AC-4.4.2">Test that globalAlpha is restored to 1.0 after highlighter rendering</idea>
+      <idea ac="AC-4.4.3">Test that HIGHLIGHTER_OPTIONS.size = 24 (vs PEN_OPTIONS.size = 8)</idea>
+      <idea ac="AC-4.4.4">Test that highlighter strokes use participant color (already covered)</idea>
+      <idea ac="AC-4.4.5">Test that HIGHLIGHTER_OPTIONS has cap: false for flat ends</idea>
+      <idea ac="AC-4.4.6">Test that activeTool state changes are observable (re-renders)</idea>
+      <idea ac="AC-4.4.7">Test that cursor is crosshair when activeTool === 'highlighter' (already exists)</idea>
+      <idea ac="integration">Test complete flow: key 3 -> draw -> verify stroke has tool: 'highlighter'</idea>
+      <idea ac="integration">Test switching pen to highlighter mid-session preserves existing pen strokes</idea>
+    </ideas>
+  </tests>
+
+  <implementation-notes>
+    <note priority="high">
+      MOST FUNCTIONALITY ALREADY IMPLEMENTED: The AnnotationCanvas, useAnnotations hook, and annotationStore already support highlighter tool. The primary work is adding the keyboard shortcut (key '3') and comprehensive tests.
+    </note>
+    <note priority="high">
+      Key '3' shortcut is the main implementation task. Update useAnnotationKeyboard.ts line 40-42 where the placeholder comment exists.
+    </note>
+    <note priority="medium">
+      useAnnotations.ts already handles highlighter in startStroke() - line 67 checks activeTool and line 75 sets tool: activeTool.
+    </note>
+    <note priority="medium">
+      AnnotationCanvas.tsx already has HIGHLIGHTER_OPTIONS (lines 46-54), HIGHLIGHTER_OPACITY (line 57), and applies them in renderStroke (lines 107, 123-125).
+    </note>
+    <note priority="medium">
+      Cursor handling for highlighter already implemented in AnnotationCanvas.tsx line 449 (crosshair cursor for pen OR highlighter).
+    </note>
+    <note priority="low">
+      Toolbar integration (AC-4.4.6) is deferred to Story 4.6. For this story, just ensure state changes trigger re-renders.
+    </note>
+  </implementation-notes>
+</story-context>
