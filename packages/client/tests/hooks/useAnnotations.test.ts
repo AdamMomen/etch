@@ -679,4 +679,443 @@ describe('useAnnotations', () => {
       expect(result.current.strokes[0].color).toBe(customColor)
     })
   })
+
+  // ─────────────────────────────────────────────────────────
+  // ERASER TOOL TESTS (AC-4.5 - Story 4.5)
+  // ─────────────────────────────────────────────────────────
+
+  describe('eraser tool (AC-4.5)', () => {
+    // Helper to create a stroke at a specific point
+    function createTestStroke(
+      id: string,
+      participantId: string,
+      x: number,
+      y: number
+    ): Stroke {
+      return {
+        id,
+        participantId,
+        tool: 'pen',
+        color: PARTICIPANT_COLORS[0],
+        points: [
+          { x, y },
+          { x: x + 0.1, y: y + 0.1 },
+        ],
+        createdAt: Date.now(),
+        isComplete: true,
+      }
+    }
+
+    describe('hoveredStrokeId state', () => {
+      it('returns null initially', () => {
+        const { result } = renderHook(() => useAnnotations())
+        expect(result.current.hoveredStrokeId).toBeNull()
+      })
+    })
+
+    describe('canEraseStroke (AC-4.5.5)', () => {
+      it('returns true for host user erasing any stroke', () => {
+        act(() => {
+          useRoomStore.setState({
+            localParticipant: {
+              id: 'host-123',
+              name: 'Host User',
+              role: 'host',
+              color: PARTICIPANT_COLORS[0],
+              isLocal: true,
+            },
+          })
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        // Stroke from another participant
+        const otherStroke = createTestStroke('stroke-1', 'other-participant', 0.5, 0.5)
+        expect(result.current.canEraseStroke(otherStroke)).toBe(true)
+      })
+
+      it('returns true for sharer user erasing any stroke', () => {
+        act(() => {
+          useRoomStore.setState({
+            localParticipant: {
+              id: 'sharer-123',
+              name: 'Sharer User',
+              role: 'sharer',
+              color: PARTICIPANT_COLORS[0],
+              isLocal: true,
+            },
+          })
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        // Stroke from another participant
+        const otherStroke = createTestStroke('stroke-1', 'other-participant', 0.5, 0.5)
+        expect(result.current.canEraseStroke(otherStroke)).toBe(true)
+      })
+
+      it('returns true for annotator erasing their own stroke', () => {
+        const { result } = renderHook(() => useAnnotations())
+
+        // Stroke from the current annotator
+        const ownStroke = createTestStroke('stroke-1', 'participant-123', 0.5, 0.5)
+        expect(result.current.canEraseStroke(ownStroke)).toBe(true)
+      })
+
+      it('returns false for annotator erasing another participants stroke', () => {
+        const { result } = renderHook(() => useAnnotations())
+
+        // Stroke from another participant
+        const otherStroke = createTestStroke('stroke-1', 'other-participant', 0.5, 0.5)
+        expect(result.current.canEraseStroke(otherStroke)).toBe(false)
+      })
+
+      it('returns false for viewer trying to erase any stroke', () => {
+        act(() => {
+          useRoomStore.setState({
+            localParticipant: {
+              id: 'viewer-123',
+              name: 'Viewer User',
+              role: 'viewer',
+              color: PARTICIPANT_COLORS[0],
+              isLocal: true,
+            },
+          })
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        const anyStroke = createTestStroke('stroke-1', 'viewer-123', 0.5, 0.5)
+        expect(result.current.canEraseStroke(anyStroke)).toBe(false)
+      })
+
+      it('returns false when canAnnotate is false', () => {
+        act(() => {
+          useScreenShareStore.setState({ isSharing: false })
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        const stroke = createTestStroke('stroke-1', 'participant-123', 0.5, 0.5)
+        expect(result.current.canEraseStroke(stroke)).toBe(false)
+      })
+    })
+
+    describe('eraseStrokeAt (AC-4.5.2, AC-4.5.4)', () => {
+      it('returns false when canAnnotate is false', () => {
+        act(() => {
+          useScreenShareStore.setState({ isSharing: false })
+          useAnnotationStore.getState().setActiveTool('eraser')
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        const erased = result.current.eraseStrokeAt({ x: 0.5, y: 0.5 })
+        expect(erased).toBe(false)
+      })
+
+      it('returns false when active tool is not eraser', () => {
+        // Add a stroke to erase
+        const stroke = createTestStroke('stroke-1', 'participant-123', 0.5, 0.5)
+        act(() => {
+          useAnnotationStore.getState().addStroke(stroke)
+          useAnnotationStore.getState().setActiveTool('pen') // Not eraser
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        const erased = result.current.eraseStrokeAt({ x: 0.5, y: 0.5 })
+        expect(erased).toBe(false)
+        expect(result.current.strokes).toHaveLength(1)
+      })
+
+      it('returns false when no stroke at point', () => {
+        // Add a stroke at (0.1, 0.1)
+        const stroke = createTestStroke('stroke-1', 'participant-123', 0.1, 0.1)
+        act(() => {
+          useAnnotationStore.getState().addStroke(stroke)
+          useAnnotationStore.getState().setActiveTool('eraser')
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        // Try to erase at far away point (0.9, 0.9)
+        const erased = result.current.eraseStrokeAt({ x: 0.9, y: 0.9 })
+        expect(erased).toBe(false)
+        expect(result.current.strokes).toHaveLength(1)
+      })
+
+      it('erases stroke when clicking on it (AC-4.5.2)', () => {
+        // Add a stroke at (0.5, 0.5)
+        const stroke = createTestStroke('stroke-1', 'participant-123', 0.5, 0.5)
+        act(() => {
+          useAnnotationStore.getState().addStroke(stroke)
+          useAnnotationStore.getState().setActiveTool('eraser')
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+        expect(result.current.strokes).toHaveLength(1)
+
+        // Erase at the stroke location
+        let erased: boolean
+        act(() => {
+          erased = result.current.eraseStrokeAt({ x: 0.5, y: 0.5 })
+        })
+
+        expect(erased!).toBe(true)
+        expect(result.current.strokes).toHaveLength(0)
+      })
+
+      it('erases topmost stroke when multiple overlap (AC-4.5.4)', () => {
+        // Add two overlapping strokes at (0.5, 0.5)
+        const bottomStroke = createTestStroke('stroke-bottom', 'participant-123', 0.5, 0.5)
+        const topStroke = createTestStroke('stroke-top', 'participant-123', 0.5, 0.5)
+
+        act(() => {
+          useAnnotationStore.getState().addStroke(bottomStroke)
+          useAnnotationStore.getState().addStroke(topStroke) // Added second = on top
+          useAnnotationStore.getState().setActiveTool('eraser')
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+        expect(result.current.strokes).toHaveLength(2)
+
+        // Erase at the overlap point
+        act(() => {
+          result.current.eraseStrokeAt({ x: 0.5, y: 0.5 })
+        })
+
+        // Should only erase the top stroke
+        expect(result.current.strokes).toHaveLength(1)
+        expect(result.current.strokes[0].id).toBe('stroke-bottom')
+      })
+
+      it('does not erase stroke user lacks permission for (AC-4.5.5)', () => {
+        // Add a stroke from another participant
+        const otherStroke = createTestStroke('stroke-1', 'other-participant', 0.5, 0.5)
+        act(() => {
+          useAnnotationStore.getState().addStroke(otherStroke)
+          useAnnotationStore.getState().setActiveTool('eraser')
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+        expect(result.current.strokes).toHaveLength(1)
+
+        // Try to erase (as annotator who can only erase own strokes)
+        let erased: boolean
+        act(() => {
+          erased = result.current.eraseStrokeAt({ x: 0.5, y: 0.5 })
+        })
+
+        expect(erased!).toBe(false)
+        expect(result.current.strokes).toHaveLength(1)
+      })
+    })
+
+    describe('updateHoveredStroke (AC-4.5.6)', () => {
+      it('sets hoveredStrokeId when eraser hovers over erasable stroke', () => {
+        // Add a stroke at (0.5, 0.5)
+        const stroke = createTestStroke('stroke-1', 'participant-123', 0.5, 0.5)
+        act(() => {
+          useAnnotationStore.getState().addStroke(stroke)
+          useAnnotationStore.getState().setActiveTool('eraser')
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        act(() => {
+          result.current.updateHoveredStroke({ x: 0.5, y: 0.5 })
+        })
+
+        expect(result.current.hoveredStrokeId).toBe('stroke-1')
+      })
+
+      it('clears hoveredStrokeId when eraser leaves stroke', () => {
+        // Add a stroke at (0.1, 0.1)
+        const stroke = createTestStroke('stroke-1', 'participant-123', 0.1, 0.1)
+        act(() => {
+          useAnnotationStore.getState().addStroke(stroke)
+          useAnnotationStore.getState().setActiveTool('eraser')
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        // Hover over stroke
+        act(() => {
+          result.current.updateHoveredStroke({ x: 0.1, y: 0.1 })
+        })
+        expect(result.current.hoveredStrokeId).toBe('stroke-1')
+
+        // Move away from stroke
+        act(() => {
+          result.current.updateHoveredStroke({ x: 0.9, y: 0.9 })
+        })
+        expect(result.current.hoveredStrokeId).toBeNull()
+      })
+
+      it('does not set hoveredStrokeId when not using eraser tool', () => {
+        // Add a stroke at (0.5, 0.5)
+        const stroke = createTestStroke('stroke-1', 'participant-123', 0.5, 0.5)
+        act(() => {
+          useAnnotationStore.getState().addStroke(stroke)
+          useAnnotationStore.getState().setActiveTool('pen') // Not eraser
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        act(() => {
+          result.current.updateHoveredStroke({ x: 0.5, y: 0.5 })
+        })
+
+        expect(result.current.hoveredStrokeId).toBeNull()
+      })
+
+      it('does not set hoveredStrokeId for strokes user cannot erase', () => {
+        // Add a stroke from another participant
+        const otherStroke = createTestStroke('stroke-1', 'other-participant', 0.5, 0.5)
+        act(() => {
+          useAnnotationStore.getState().addStroke(otherStroke)
+          useAnnotationStore.getState().setActiveTool('eraser')
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        act(() => {
+          result.current.updateHoveredStroke({ x: 0.5, y: 0.5 })
+        })
+
+        // Annotator can't erase other's strokes, so no hover highlight
+        expect(result.current.hoveredStrokeId).toBeNull()
+      })
+    })
+
+    describe('clearHoveredStroke', () => {
+      it('clears hoveredStrokeId', () => {
+        // Add a stroke and set hovered
+        const stroke = createTestStroke('stroke-1', 'participant-123', 0.5, 0.5)
+        act(() => {
+          useAnnotationStore.getState().addStroke(stroke)
+          useAnnotationStore.getState().setActiveTool('eraser')
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        // Set hover
+        act(() => {
+          result.current.updateHoveredStroke({ x: 0.5, y: 0.5 })
+        })
+        expect(result.current.hoveredStrokeId).toBe('stroke-1')
+
+        // Clear hover
+        act(() => {
+          result.current.clearHoveredStroke()
+        })
+        expect(result.current.hoveredStrokeId).toBeNull()
+      })
+    })
+
+    describe('eraser integration', () => {
+      it('complete eraser flow: select tool -> hover -> erase -> verify deletion', () => {
+        const { result } = renderHook(() => useAnnotations())
+
+        // Draw a stroke first (using pen)
+        act(() => {
+          result.current.startStroke({ x: 0.5, y: 0.5 })
+          result.current.continueStroke({ x: 0.6, y: 0.6 })
+          result.current.endStroke()
+        })
+        expect(result.current.strokes).toHaveLength(1)
+        const strokeId = result.current.strokes[0].id
+
+        // Switch to eraser
+        act(() => {
+          result.current.setTool('eraser')
+        })
+        expect(result.current.activeTool).toBe('eraser')
+
+        // Hover over stroke to see preview
+        act(() => {
+          result.current.updateHoveredStroke({ x: 0.55, y: 0.55 })
+        })
+        expect(result.current.hoveredStrokeId).toBe(strokeId)
+
+        // Erase the stroke
+        act(() => {
+          result.current.eraseStrokeAt({ x: 0.55, y: 0.55 })
+        })
+        expect(result.current.strokes).toHaveLength(0)
+        expect(result.current.hoveredStrokeId).toBeNull()
+      })
+
+      it('erasing clears hover state for erased stroke', () => {
+        // Add a stroke
+        const stroke = createTestStroke('stroke-1', 'participant-123', 0.5, 0.5)
+        act(() => {
+          useAnnotationStore.getState().addStroke(stroke)
+          useAnnotationStore.getState().setActiveTool('eraser')
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+
+        // Hover over stroke
+        act(() => {
+          result.current.updateHoveredStroke({ x: 0.5, y: 0.5 })
+        })
+        expect(result.current.hoveredStrokeId).toBe('stroke-1')
+
+        // Erase stroke
+        act(() => {
+          result.current.eraseStrokeAt({ x: 0.5, y: 0.5 })
+        })
+
+        // Hover state should be cleared
+        expect(result.current.hoveredStrokeId).toBeNull()
+      })
+
+      it('host can erase any stroke in the room', () => {
+        // Set user as host
+        act(() => {
+          useRoomStore.setState({
+            localParticipant: {
+              id: 'host-123',
+              name: 'Host User',
+              role: 'host',
+              color: PARTICIPANT_COLORS[0],
+              isLocal: true,
+            },
+          })
+        })
+
+        // Add strokes from different participants
+        const stroke1 = createTestStroke('stroke-1', 'participant-a', 0.2, 0.2)
+        const stroke2 = createTestStroke('stroke-2', 'participant-b', 0.5, 0.5)
+        const stroke3 = createTestStroke('stroke-3', 'host-123', 0.8, 0.8)
+
+        act(() => {
+          useAnnotationStore.getState().addStroke(stroke1)
+          useAnnotationStore.getState().addStroke(stroke2)
+          useAnnotationStore.getState().addStroke(stroke3)
+          useAnnotationStore.getState().setActiveTool('eraser')
+        })
+
+        const { result } = renderHook(() => useAnnotations())
+        expect(result.current.strokes).toHaveLength(3)
+
+        // Erase other participant's stroke
+        act(() => {
+          result.current.eraseStrokeAt({ x: 0.5, y: 0.5 })
+        })
+        expect(result.current.strokes).toHaveLength(2)
+
+        // Erase own stroke
+        act(() => {
+          result.current.eraseStrokeAt({ x: 0.8, y: 0.8 })
+        })
+        expect(result.current.strokes).toHaveLength(1)
+
+        // Remaining stroke
+        expect(result.current.strokes[0].id).toBe('stroke-1')
+      })
+    })
+  })
 })
