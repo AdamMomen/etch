@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { getCurrentWindow } from '@tauri-apps/api/window'
+import { invoke } from '@tauri-apps/api/core'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useVolumeStore } from '@/stores/volumeStore'
@@ -18,7 +19,7 @@ import { ParticipantGrid } from './ParticipantGrid'
 import { ParticipantBubbles } from './ParticipantBubbles'
 import { LeaveConfirmDialog } from './LeaveConfirmDialog'
 import { InviteModal } from './InviteModal'
-import { ScreenShareViewer, SourcePickerDialog } from '@/components/ScreenShare'
+import { ScreenShareViewer, SourcePickerDialog, SharerControlBar } from '@/components/ScreenShare'
 import { generateInviteLink, copyToClipboard } from '@/lib/invite'
 import { cn } from '@/lib/utils'
 
@@ -86,6 +87,13 @@ export function MeetingRoom() {
 
   // Get resetVolumes from volumeStore for cleanup on leave
   const resetVolumes = useVolumeStore((state) => state.resetVolumes)
+
+  // Get floating bar position from settings for transform mode
+  const floatingBarPosition = useSettingsStore((s) => s.floatingBarPosition)
+  const setFloatingBarPosition = useSettingsStore((s) => s.setFloatingBarPosition)
+
+  // Transform mode state (Story 3.7 - ADR-009)
+  const [isTransformMode, setIsTransformMode] = useState(false)
 
   // Check if local participant is the host
   const isHost = localParticipant?.role === 'host'
@@ -281,6 +289,79 @@ export function MeetingRoom() {
       })
     }
   }, [isConnected, isHost, roomId])
+
+  // Transform mode effect - transform window when local sharing starts (Story 3.7 - ADR-009)
+  useEffect(() => {
+    const handleTransform = async () => {
+      if (isLocalSharing && !isTransformMode) {
+        // Transform to control bar
+        try {
+          const savedPosition = floatingBarPosition
+            ? { x: floatingBarPosition.x, y: floatingBarPosition.y }
+            : null
+          await invoke('transform_to_control_bar', { savedPosition })
+          setIsTransformMode(true)
+          console.log('[MeetingRoom] Transformed to control bar mode')
+        } catch (error) {
+          console.error('[MeetingRoom] Failed to transform to control bar:', error)
+        }
+      } else if (!isLocalSharing && isTransformMode) {
+        // Restore from control bar
+        try {
+          await invoke('restore_from_control_bar')
+          setIsTransformMode(false)
+          console.log('[MeetingRoom] Restored from control bar mode')
+        } catch (error) {
+          console.error('[MeetingRoom] Failed to restore from control bar:', error)
+        }
+      }
+    }
+
+    handleTransform()
+  }, [isLocalSharing, isTransformMode, floatingBarPosition])
+
+  // Save position when window is moved in transform mode
+  useEffect(() => {
+    if (!isTransformMode) return
+
+    let mounted = true
+
+    const setupMoveListener = async () => {
+      try {
+        const appWindow = getCurrentWindow()
+        const unlisten = await appWindow.onMoved(async ({ payload: position }) => {
+          if (!mounted) return
+          // Save position when window is moved
+          setFloatingBarPosition({ x: position.x, y: position.y })
+        })
+        return unlisten
+      } catch {
+        // Not running in Tauri environment
+        return () => {}
+      }
+    }
+
+    const unlistenPromise = setupMoveListener()
+
+    return () => {
+      mounted = false
+      unlistenPromise.then((unlisten) => unlisten())
+    }
+  }, [isTransformMode, setFloatingBarPosition])
+
+  // Render transform mode UI (SharerControlBar) when in transform mode
+  if (isTransformMode) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-transparent">
+        <SharerControlBar
+          room={room}
+          videoTrack={videoTrack}
+          onStopShare={stopScreenShare}
+          onLeave={handleLeave}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="flex h-screen flex-col bg-background">

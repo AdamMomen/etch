@@ -368,6 +368,9 @@ export function useScreenShare({
           console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
         }
 
+        // TODO: Transform mode for sharer controls (Story 3.7 - ADR-009)
+        // Will be implemented with window transform instead of separate floating bar
+
         // Smart minimize: only minimize if app is on the shared screen
         // If sharing a different screen, keep the app visible
         await minimizeIfOnSharedScreen(selectedScreen)
@@ -438,6 +441,9 @@ export function useScreenShare({
         } catch (overlayError) {
           console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
         }
+
+        // TODO: Transform mode for sharer controls (Story 3.7 - ADR-009)
+        // Will be implemented with window transform instead of separate floating bar
 
         // Windows: Always minimize because getDisplayMedia doesn't tell us which screen was picked
         // On macOS/Linux we use native picker which gives us screen coordinates for smart minimize
@@ -564,9 +570,11 @@ export function useScreenShare({
         console.warn('[ScreenShare] Failed to destroy annotation overlay:', overlayError)
       }
 
-      // TODO: Native window cleanup for remaining sharer overlay windows (Stories 3.7, 3.8)
+      // TODO: Transform mode cleanup (Story 3.7 - ADR-009)
+      // Will restore window from control bar mode when implemented
+
+      // TODO: Native window cleanup for remaining sharer overlay windows (Story 3.8)
       // When implemented, destroy these windows here:
-      // - Floating control bar (Story 3.7) - invoke('destroy_floating_window', { label: 'floating-controls' })
       // - Share border indicator (Story 3.8) - invoke('destroy_floating_window', { label: 'share-border' })
 
       // Restore main window
@@ -583,6 +591,9 @@ export function useScreenShare({
   const stopScreenShare = useCallback(async () => {
     await handleStopShare()
   }, [handleStopShare])
+
+  // TODO: Transform mode event handling (Story 3.7 - ADR-009)
+  // Transform mode will use same React context - no IPC events needed
 
   // Listen for remote screen share events
   useEffect(() => {

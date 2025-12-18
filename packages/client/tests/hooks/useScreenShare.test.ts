@@ -5,9 +5,15 @@ import { useScreenShareStore } from '@/stores/screenShareStore'
 import { useRoomStore } from '@/stores/roomStore'
 
 // Mock Tauri invoke
-const mockInvoke = vi.fn()
+const mockInvoke = vi.fn().mockResolvedValue(undefined)
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: (...args: unknown[]) => mockInvoke(...args),
+}))
+
+// Mock Tauri event API
+vi.mock('@tauri-apps/api/event', () => ({
+  emit: vi.fn(() => Promise.resolve()),
+  listen: vi.fn(() => Promise.resolve(() => {})),
 }))
 
 // Mock sonner
@@ -59,6 +65,8 @@ describe('useScreenShare', () => {
   afterEach(() => {
     vi.clearAllMocks()
     mockInvoke.mockReset()
+    // Re-establish default mock behavior after reset
+    mockInvoke.mockResolvedValue(undefined)
   })
 
   describe('initialization', () => {

@@ -3,11 +3,17 @@ import type { RemoteVideoTrack } from 'livekit-client'
 import { Track } from 'livekit-client'
 import { MonitorUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { AnnotationCanvas } from '@/components/AnnotationCanvas'
+import type { Stroke } from '@nameless/shared'
 
 interface ScreenShareViewerProps {
   track: RemoteVideoTrack | null
   sharerName: string | null
   className?: string
+  /** Completed annotation strokes to display */
+  strokes?: Stroke[]
+  /** Currently in-progress stroke */
+  activeStroke?: Stroke | null
 }
 
 /**
@@ -23,9 +29,12 @@ export function ScreenShareViewer({
   track,
   sharerName,
   className,
+  strokes = [],
+  activeStroke = null,
 }: ScreenShareViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isVideoReady, setIsVideoReady] = useState(false)
+  const isScreenShareActive = track !== null
 
   // Attach screen share track to video element
   useEffect(() => {
@@ -68,18 +77,31 @@ export function ScreenShareViewer({
         <span>{sharerName || 'Someone'} is sharing</span>
       </div>
 
-      {/* Screen share video - object-fit: contain for aspect ratio preservation (AC-3.2.1) */}
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted
-        className={cn(
-          'max-h-full max-w-full object-contain transition-opacity duration-300',
-          isVideoReady ? 'opacity-100' : 'opacity-0'
+      {/* Video container with annotation overlay */}
+      <div className="relative flex max-h-full max-w-full items-center justify-center">
+        {/* Screen share video - object-fit: contain for aspect ratio preservation (AC-3.2.1) */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={cn(
+            'max-h-full max-w-full object-contain transition-opacity duration-300',
+            isVideoReady ? 'opacity-100' : 'opacity-0'
+          )}
+          data-testid="screen-share-video"
+        />
+
+        {/* Annotation canvas overlay - positioned over video content area (AC-4.1.1) */}
+        {isVideoReady && (
+          <AnnotationCanvas
+            videoRef={videoRef}
+            isScreenShareActive={isScreenShareActive}
+            strokes={strokes}
+            activeStroke={activeStroke}
+          />
         )}
-        data-testid="screen-share-video"
-      />
+      </div>
 
       {/* Loading placeholder while video is attaching */}
       {!isVideoReady && (

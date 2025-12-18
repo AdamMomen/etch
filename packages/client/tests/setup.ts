@@ -7,6 +7,31 @@ afterEach(() => {
   cleanup()
 })
 
+// Mock Tauri APIs globally
+// Individual tests can override these mocks as needed
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(() => Promise.resolve()),
+}))
+
+vi.mock('@tauri-apps/api/event', () => ({
+  emit: vi.fn(() => Promise.resolve()),
+  listen: vi.fn(() => Promise.resolve(() => {})),
+}))
+
+vi.mock('@tauri-apps/api/webviewWindow', () => ({
+  getCurrentWebviewWindow: vi.fn(() => ({
+    startDragging: vi.fn(() => Promise.resolve()),
+    outerPosition: vi.fn(() => Promise.resolve({ x: 100, y: 100 })),
+  })),
+}))
+
+vi.mock('@tauri-apps/api/window', () => ({
+  getCurrentWindow: vi.fn(() => ({
+    onMoved: vi.fn(() => Promise.resolve(() => {})),
+    outerPosition: vi.fn(() => Promise.resolve({ x: 100, y: 100 })),
+  })),
+}))
+
 // Mock window.matchMedia for dark mode testing
 Object.defineProperty(window, 'matchMedia', {
   writable: true,

@@ -45,7 +45,7 @@ describe('ScreenShareViewer', () => {
   describe('rendering', () => {
     it('should return null when track is null (AC-cleanup)', () => {
       const { container } = render(
-        <ScreenShareViewer track={null} sharerName="Test User" />
+        <ScreenShareViewer track={null} sharerName="Test User" room={null} />
       )
 
       expect(container.firstChild).toBeNull()

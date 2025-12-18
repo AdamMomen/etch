@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+export interface FloatingBarPosition {
+  x: number
+  y: number
+}
+
 interface SettingsState {
   displayName: string
   apiBaseUrl: string
@@ -11,6 +16,7 @@ interface SettingsState {
   preferredMicrophoneId: string | null
   preferredCameraId: string | null
   theme: 'dark' | 'light'
+  floatingBarPosition: FloatingBarPosition | null // Persisted position for floating control bar (Story 3.7)
   setDisplayName: (name: string) => void
   setApiBaseUrl: (url: string) => void
   setInviteDomain: (domain: string | null) => void
@@ -21,6 +27,7 @@ interface SettingsState {
   setPreferredMicrophone: (id: string | null) => void
   setPreferredCamera: (id: string | null) => void
   setTheme: (theme: 'dark' | 'light') => void
+  setFloatingBarPosition: (position: FloatingBarPosition | null) => void
   clearPreferences: () => void
 }
 
@@ -34,6 +41,7 @@ const defaultSettings = {
   preferredMicrophoneId: null as string | null,
   preferredCameraId: null as string | null,
   theme: 'dark' as const,
+  floatingBarPosition: null as FloatingBarPosition | null,
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -50,6 +58,7 @@ export const useSettingsStore = create<SettingsState>()(
       setPreferredMicrophone: (id) => set({ preferredMicrophoneId: id }),
       setPreferredCamera: (id) => set({ preferredCameraId: id }),
       setTheme: (theme) => set({ theme }),
+      setFloatingBarPosition: (position) => set({ floatingBarPosition: position }),
       clearPreferences: () => set(defaultSettings),
     }),
     { name: 'nameless-settings' }
