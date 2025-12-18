@@ -1542,7 +1542,115 @@ livekit = { git = "https://github.com/gethopp/rust-sdks", branch = "patches", fe
 
 ---
 
+### ADR-009: Transform Mode for Sharer Controls (Supersedes Floating Control Bar in ADR-003)
+
+**Status:** Accepted (2025-12-18)
+
+**Context:** ADR-003 specified a separate floating control bar window for sharers. Implementation revealed issues:
+1. **State sync complexity:** Separate WebView window requires event bridge (7 events) to sync mic/camera/share state with main window
+2. **Two JavaScript contexts:** Each window has separate Zustand stores, requiring IPC for every action
+3. **Performance overhead:** Extra ~25MB RAM for second WebView
+4. **Debugging difficulty:** Distributed state across two windows
+
+Additionally, studying Zoom's UX revealed a simpler pattern: transforming the main window rather than creating a second window.
+
+**Decision:** Replace floating control bar with **Transform Mode** - the main window transforms into a compact control bar during screen sharing:
+
+```
+Normal Mode:                          Sharing Mode (Transform):
+┌────────────────────────────┐       ┌─────────────────────────────────────────┐
+│                            │       │ ┌─────┐ ┌─────┐ │ 🎤 📷 ✏️ │ ■ Stop  │
+│      Full Meeting View     │  →    │ │ You │ │ Bob │ │          │ Leave   │
+│                            │       │ └─────┘ └─────┘ │          │         │
+│    [Video Grid][Controls]  │       └─────────────────────────────────────────┘
+└────────────────────────────┘        ↑ Same window, resized & repositioned
+                                      ↑ Top-center, below physical camera
+                                      ↑ Excluded from screen capture
+```
+
+**Key Features:**
+1. **Single window architecture:** No IPC, no state sync, same React context
+2. **Camera preview:** Shows self-view (and optionally other participants)
+3. **Position:** Top-center of screen, just below where physical camera typically is
+4. **Content protection:** Window excluded from screen capture via platform APIs
+5. **View modes:** Single (just you) ↔ Multi (all participants strip)
+6. **Future:** Face-tracking crop for "Around-style" circular avatars
+
+**Architecture:**
+```
+Screen Share Flow (new):
+1. User clicks "Share Screen" → screen picker
+2. User selects source → main window TRANSFORMS:
+   - Resize to compact bar (~400x80px)
+   - Reposition to top-center
+   - Set always-on-top
+   - Enable content protection (exclude from capture)
+   - Switch UI to SharerControlBar component
+3. User clicks "Stop" → window RESTORES:
+   - Resize to original dimensions
+   - Reposition to original location
+   - Disable always-on-top
+   - Switch UI back to normal Meeting view
+```
+
+**Content Protection (exclude from screen capture):**
+```rust
+// macOS: NSWindow.sharingType = .none
+#[cfg(target_os = "macos")]
+unsafe {
+    let ns_window: id = window.ns_window() as id;
+    let _: () = msg_send![ns_window, setSharingType: 0]; // NSWindowSharingNone
+}
+
+// Windows: SetWindowDisplayAffinity
+#[cfg(target_os = "windows")]
+unsafe {
+    SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE);
+}
+```
+
+**Comparison with ADR-003 Floating Bar:**
+
+| Aspect | Floating Bar (ADR-003) | Transform Mode (ADR-009) |
+|--------|------------------------|--------------------------|
+| Windows | 2 (main + floating) | 1 (main transforms) |
+| State sync | 7 events via IPC | None (same context) |
+| Memory | +25MB extra WebView | No overhead |
+| LiveKit access | Event bridge | Direct |
+| Complexity | High | Low |
+| Debug | Hard (distributed) | Easy (single window) |
+
+**Multi-Monitor Handling:**
+- **Same screen shared:** Window transforms in-place, excluded from capture
+- **Other screen shared:** Window transforms on non-shared screen, user can work normally
+
+**Consequences:**
+- Simpler architecture than floating bar
+- No IPC or event bridging needed
+- Same stores, same LiveKit connection, same React context
+- Need to implement window transform animation (resize/reposition)
+- Need platform-specific content protection code
+- Different UX than original spec (transform vs separate window)
+- Future work: Face detection for Around-style circular avatar crop
+
+**Migration:**
+- Remove `FloatingControlBar.tsx` component
+- Remove `FloatingControlBarPage.tsx` page
+- Remove `useFloatingControlBar.ts` hook
+- Remove floating bar event listeners from `useScreenShare.ts`
+- Remove floating bar Tauri commands from `screen_share.rs`
+- Add `SharerControlBar.tsx` component (compact sharing UI)
+- Add window transform logic to `useScreenShare.ts`
+- Add content protection Tauri commands
+
+**References:**
+- Zoom's screen sharing UX (transform main window pattern)
+- Around app's face-focused circular avatars (future enhancement)
+
+---
+
 _Generated by BMAD Decision Architecture Workflow v1.0_
 _Date: 2025-11-30_
 _Updated: 2025-12-06 (ADR-008 added)_
+_Updated: 2025-12-18 (ADR-009 added)_
 _For: BMad_

@@ -1,0 +1,529 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Story Context: 3.7 - Create Sharer's Floating Control Bar
+  Generated: 2025-12-18
+  Purpose: Provide comprehensive context for AI-assisted development
+-->
+<story-context version="1.0">
+  <metadata>
+    <story-id>3-7-create-sharers-floating-control-bar</story-id>
+    <epic>Epic 3: Screen Sharing</epic>
+    <generated>2025-12-18</generated>
+    <status>ready-for-dev</status>
+  </metadata>
+
+  <!-- ========================================================================
+       SECTION 1: STORY SUMMARY
+       ======================================================================== -->
+  <story-summary>
+    <title>Create Sharer's Floating Control Bar</title>
+    <user-story>
+      As a screen sharer,
+      I want a floating control bar that stays visible on top of all windows,
+      So that I can access meeting controls (mic, camera, stop sharing, leave) without switching back to the minimized Nameless window.
+    </user-story>
+    <acceptance-criteria-count>16</acceptance-criteria-count>
+    <task-count>14</task-count>
+    <key-features>
+      <feature>Native Tauri window with always-on-top behavior</feature>
+      <feature>Semi-transparent dark background with rounded corners</feature>
+      <feature>Draggable with position persistence</feature>
+      <feature>Opacity fade after 5s idle (60%), full on hover</feature>
+      <feature>Controls: mic toggle, camera toggle, participant faces, Stop Share, Leave</feature>
+      <feature>Global mute keyboard shortcut (Cmd+Shift+M / Ctrl+Shift+M)</feature>
+      <feature>Platform-specific fullscreen app handling</feature>
+    </key-features>
+  </story-summary>
+
+  <!-- ========================================================================
+       SECTION 2: ARCHITECTURAL CONTEXT
+       ======================================================================== -->
+  <architecture>
+    <relevant-adrs>
+      <adr id="ADR-003" title="Hybrid Rendering">
+        Floating control bar uses a Tauri native window containing a WebView.
+        The window shell is native (for always-on-top, draggable, transparency),
+        while the UI content is React rendered in the WebView.
+      </adr>
+      <adr id="ADR-008" title="Core-Centric Architecture">
+        Core binary owns all media (screen capture, audio/video publishing).
+        Floating bar communicates with Core via Tauri IPC for mic/camera state.
+        State sync happens through Tauri events.
+      </adr>
+    </relevant-adrs>
+
+    <component-architecture>
+      <layer name="Tauri Backend (Rust)">
+        <component>packages/client/src-tauri/src/screen_share.rs</component>
+        <responsibilities>
+          - Window creation via WebviewWindowBuilder
+          - Platform-specific always-on-top configuration
+          - NSWindow level configuration (macOS)
+          - WS_EX_TOPMOST handling (Windows)
+          - Global shortcut registration
+        </responsibilities>
+      </layer>
+      <layer name="React Frontend">
+        <component>packages/client/src/components/ScreenShare/FloatingControlBar.tsx</component>
+        <responsibilities>
+          - UI layout and styling
+          - Button interactions
+          - Opacity fade animation
+          - Participant face display
+          - Drag handling
+        </responsibilities>
+      </layer>
+      <layer name="Hooks">
+        <component>packages/client/src/hooks/useScreenShare.ts</component>
+        <responsibilities>
+          - Triggers floating bar creation on share start
+          - Coordinates bar destruction on share stop
+          - Manages screen share lifecycle
+        </responsibilities>
+      </layer>
+      <layer name="State Management">
+        <component>packages/client/src/stores/settingsStore.ts</component>
+        <responsibilities>
+          - Persists floatingBarPosition to localStorage
+          - Tracks isMuted, isVideoOff state
+        </responsibilities>
+        <component>packages/client/src/stores/roomStore.ts</component>
+        <responsibilities>
+          - Provides participant list for face circles
+          - Local participant state
+        </responsibilities>
+      </layer>
+    </component-architecture>
+
+    <platform-considerations>
+      <platform name="macOS">
+        <requirement>NSWindow level must be .screenSaver or .popUpMenu for fullscreen app visibility</requirement>
+        <requirement>.floating level is NOT sufficient for Keynote/PowerPoint presentation mode</requirement>
+        <requirement>collectionBehavior: .canJoinAllSpaces | .fullScreenAuxiliary</requirement>
+        <code-pattern><![CDATA[
+use objc::{msg_send, sel, sel_impl};
+
+unsafe {
+    let ns_window = window.ns_window()?;
+    // Set level high enough for fullscreen apps
+    let screen_saver_level: i64 = 1000; // NSScreenSaverWindowLevel
+    let _: () = msg_send![ns_window, setLevel: screen_saver_level];
+
+    // Join all spaces + fullscreen auxiliary
+    let collection_behavior: u64 = (1 << 0) | (1 << 8); // canJoinAllSpaces | fullScreenAuxiliary
+    let _: () = msg_send![ns_window, setCollectionBehavior: collection_behavior];
+}
+        ]]></code-pattern>
+      </platform>
+      <platform name="Windows">
+        <requirement>WS_EX_TOPMOST extended window style</requirement>
+        <requirement>May need SetWindowPos with HWND_TOPMOST on focus change</requirement>
+        <requirement>Test with UWP apps and DirectX fullscreen games</requirement>
+      </platform>
+    </platform-considerations>
+  </architecture>
+
+  <!-- ========================================================================
+       SECTION 3: EXISTING CODE INTERFACES
+       ======================================================================== -->
+  <code-interfaces>
+    <interface name="Tauri Window Commands">
+      <file>packages/client/src-tauri/src/screen_share.rs</file>
+      <existing-commands>
+        <command name="minimize_main_window">Minimizes the main app window</command>
+        <command name="restore_main_window">Restores and focuses the main app window</command>
+        <command name="get_window_monitor">Gets monitor bounds for the app window</command>
+        <command name="create_annotation_overlay">Creates transparent overlay window (pattern to follow)</command>
+        <command name="destroy_annotation_overlay">Destroys overlay window (pattern to follow)</command>
+      </existing-commands>
+      <new-commands-needed>
+        <command name="create_floating_control_bar">
+          Creates the floating control bar window with always-on-top and platform-specific config
+        </command>
+        <command name="destroy_floating_control_bar">
+          Destroys the floating control bar window
+        </command>
+        <command name="save_floating_bar_position">
+          Persists the bar position to settings
+        </command>
+        <command name="get_available_screens">
+          Returns all screen bounds for position validation
+        </command>
+        <command name="register_global_mute_shortcut">
+          Registers Cmd+Shift+M / Ctrl+Shift+M global hotkey
+        </command>
+      </new-commands-needed>
+    </interface>
+
+    <interface name="useScreenShare Hook">
+      <file>packages/client/src/hooks/useScreenShare.ts</file>
+      <relevant-exports>
+        <export name="startScreenShare">Initiates screen share - should trigger bar creation</export>
+        <export name="stopScreenShare">Stops screen share - should trigger bar destruction</export>
+        <export name="isLocalSharing">Boolean indicating if local user is sharing</export>
+      </relevant-exports>
+      <integration-points>
+        <point>Add createFloatingControlBar call after share starts</point>
+        <point>Add destroyFloatingControlBar call when share stops (any reason)</point>
+        <point>Line 567-570 has TODO comment for floating bar cleanup</point>
+      </integration-points>
+    </interface>
+
+    <interface name="useAnnotationOverlay Hook (Reference Pattern)">
+      <file>packages/client/src/hooks/useAnnotationOverlay.ts</file>
+      <pattern-to-follow>
+        <description>
+          This hook demonstrates the pattern for managing Tauri overlay windows.
+          The floating control bar hook should follow similar structure.
+        </description>
+        <methods>
+          <method name="createOverlay">Calls Tauri command, updates local state</method>
+          <method name="destroyOverlay">Calls Tauri command, cleans up</method>
+          <method name="isOverlayActive">Boolean state tracking</method>
+        </methods>
+      </pattern-to-follow>
+    </interface>
+
+    <interface name="settingsStore">
+      <file>packages/client/src/stores/settingsStore.ts</file>
+      <existing-state>
+        <field name="isMuted">boolean - mic mute state</field>
+        <field name="isVideoOff">boolean - camera off state</field>
+        <field name="preferredMicrophoneId">string | null</field>
+        <field name="preferredCameraId">string | null</field>
+      </existing-state>
+      <new-state-needed>
+        <field name="floatingBarPosition">{ x: number, y: number } | null - persisted bar position</field>
+      </new-state-needed>
+    </interface>
+
+    <interface name="roomStore">
+      <file>packages/client/src/stores/roomStore.ts</file>
+      <relevant-state>
+        <field name="localParticipant">Participant | null - local user info</field>
+        <field name="remoteParticipants">Participant[] - for face circles display</field>
+      </relevant-state>
+    </interface>
+
+    <interface name="UI Components">
+      <file>packages/client/src/components/ui/button.tsx</file>
+      <variants>
+        <variant name="default">Primary filled button (use for Stop Share)</variant>
+        <variant name="destructive">Red filled button (avoid for Leave to distinguish from Stop)</variant>
+        <variant name="outline">Bordered button (use for Leave)</variant>
+      </variants>
+      <file>packages/client/src/components/ui/tooltip-button.tsx</file>
+      <description>Button with tooltip support - may be useful for control buttons</description>
+    </interface>
+  </code-interfaces>
+
+  <!-- ========================================================================
+       SECTION 4: DEPENDENCIES AND FRAMEWORKS
+       ======================================================================== -->
+  <dependencies>
+    <frontend>
+      <dependency name="react" version="^19.2.0">Core UI framework</dependency>
+      <dependency name="zustand" version="^5.0.9">State management with persist middleware</dependency>
+      <dependency name="@tauri-apps/api" version="^2.9.1">Tauri IPC for window commands</dependency>
+      <dependency name="lucide-react" version="^0.555.0">Icons (Mic, MicOff, Camera, CameraOff, MonitorOff, LogOut, GripVertical)</dependency>
+      <dependency name="class-variance-authority" version="^0.7.1">Button variants</dependency>
+      <dependency name="tailwind-merge" version="^3.4.0">CSS class merging</dependency>
+      <dependency name="livekit-client" version="^2.16.0">Participant info for face circles</dependency>
+    </frontend>
+    <backend>
+      <dependency name="tauri" version="2.9.2" features="webview-data-url, macos-private-api">
+        Window management, global shortcuts
+      </dependency>
+      <dependency name="tauri-plugin-shell" version="2">Sidecar/Core process management</dependency>
+      <dependency name="objc" version="0.2" platform="macos">NSWindow level configuration</dependency>
+      <dependency name="dispatch" version="0.2" platform="macos">Main thread dispatch for NSWindow</dependency>
+      <dependency name="windows" version="0.58" platform="windows" features="Win32_Foundation, Win32_UI_WindowsAndMessaging">
+        WS_EX_TOPMOST and window management
+      </dependency>
+    </backend>
+    <new-dependencies-needed>
+      <dependency name="tauri-plugin-global-shortcut" reason="Global mute hotkey registration (AC-3.7.13)">
+        Check if already included in tauri 2.9.2 or needs separate plugin
+      </dependency>
+    </new-dependencies-needed>
+  </dependencies>
+
+  <!-- ========================================================================
+       SECTION 5: TESTING CONTEXT
+       ======================================================================== -->
+  <testing>
+    <framework>vitest + @testing-library/react</framework>
+    <patterns>
+      <pattern name="Tauri Mock Pattern">
+        <file>packages/client/tests/hooks/useAnnotationOverlay.test.ts</file>
+        <description>
+          Mock @tauri-apps/api/core invoke function. Test both success and error paths.
+          Use vi.mocked(invoke) for type-safe mocking.
+        </description>
+        <example><![CDATA[
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn(),
+}))
+
+import { invoke } from '@tauri-apps/api/core'
+const mockInvoke = vi.mocked(invoke)
+
+mockInvoke.mockImplementation(async (cmd) => {
+  if (cmd === 'create_floating_control_bar') {
+    return undefined
+  }
+  throw new Error(`Unknown command: ${cmd}`)
+})
+        ]]></example>
+      </pattern>
+      <pattern name="Component Test Pattern">
+        <file>packages/client/tests/components/ScreenShare/SourcePickerDialog.test.tsx</file>
+        <description>
+          Use render, screen, userEvent from @testing-library/react.
+          Test rendering, interactions, state changes.
+        </description>
+      </pattern>
+      <pattern name="Timer Mocking">
+        <description>For opacity fade tests, use vi.useFakeTimers() and vi.advanceTimersByTime()</description>
+        <example><![CDATA[
+beforeEach(() => {
+  vi.useFakeTimers()
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+it('should fade to 60% opacity after 5 seconds', async () => {
+  render(<FloatingControlBar />)
+
+  await act(async () => {
+    vi.advanceTimersByTime(5000)
+  })
+
+  expect(screen.getByTestId('control-bar')).toHaveStyle({ opacity: '0.6' })
+})
+        ]]></example>
+      </pattern>
+    </patterns>
+
+    <test-cases-from-story>
+      <test-case ac="3.7.1">FloatingControlBar Tauri window is created on share start</test-case>
+      <test-case ac="3.7.2">FloatingControlBar renders all required elements (status, mic, camera, faces, buttons)</test-case>
+      <test-case ac="3.7.3">Window has correct always-on-top configuration</test-case>
+      <test-case ac="3.7.4">Dragging updates window position via Tauri API</test-case>
+      <test-case ac="3.7.5">Position is saved to localStorage and restored on next share</test-case>
+      <test-case ac="3.7.5">Invalid saved position falls back to primary screen top-center</test-case>
+      <test-case ac="3.7.6">Opacity fades to 60% after 5s of bar inactivity</test-case>
+      <test-case ac="3.7.7">Hover restores full opacity</test-case>
+      <test-case ac="3.7.8">Mic toggle calls roomStore.toggleMic and updates icon</test-case>
+      <test-case ac="3.7.9">Camera toggle calls roomStore.toggleCamera and updates icon</test-case>
+      <test-case ac="3.7.10">Stop Share stops capture, destroys bar, restores main window</test-case>
+      <test-case ac="3.7.11">Leave shows confirmation dialog for host</test-case>
+      <test-case ac="3.7.12">Bar destroyed when share stops by any means (error, permission revoked)</test-case>
+      <test-case ac="3.7.13">Global mute shortcut toggles mic regardless of focused app</test-case>
+      <test-case ac="3.7.14">Stop Share and Leave buttons have visual separation</test-case>
+      <test-case ac="3.7.15">Bar appears within 200ms of main window minimizing</test-case>
+      <test-case ac="3.7.16">Drag handle/area is at least 100px wide</test-case>
+    </test-cases-from-story>
+
+    <rust-tests>
+      <description>
+        Rust unit tests in screen_share.rs for new Tauri commands.
+        Test window configuration, position validation, shortcut registration.
+      </description>
+      <location>packages/client/src-tauri/src/screen_share.rs (inline #[cfg(test)] module)</location>
+    </rust-tests>
+  </testing>
+
+  <!-- ========================================================================
+       SECTION 6: UX SPECIFICATIONS
+       ======================================================================== -->
+  <ux-specifications>
+    <component name="Sharer Floating Control Bar">
+      <visual-design>
+        <property name="background">rgba(0,0,0,0.85) - semi-transparent dark</property>
+        <property name="border-radius">12px</property>
+        <property name="height">~48px compact</property>
+        <property name="width">~450px (auto based on content)</property>
+        <property name="default-position">Top-center of primary screen</property>
+      </visual-design>
+
+      <elements-layout>
+        <element order="1" name="Drag Handle">
+          Optional visible grip icon (⋮⋮) or entire background draggable.
+          Minimum 100px wide drag area.
+        </element>
+        <element order="2" name="Status Indicator">
+          Red dot + "Sharing" text. Always visible, prominent.
+        </element>
+        <element order="3" name="Mic Toggle">
+          Mic/MicOff icon button. Shows current state.
+        </element>
+        <element order="4" name="Camera Toggle">
+          Camera/CameraOff icon button. Shows current state.
+        </element>
+        <element order="5" name="Participant Faces">
+          Circular avatars, Around-style. Max 4 visible, "+N" overflow.
+        </element>
+        <element order="6" name="Visual Separator">
+          Gap or divider before action buttons.
+        </element>
+        <element order="7" name="Stop Share Button">
+          Accent color (primary/blue), FILLED style.
+          Text: "Stop Share" or icon.
+        </element>
+        <element order="8" name="Leave Button">
+          Destructive OUTLINE style (not filled).
+          Text: "Leave" or icon.
+        </element>
+      </elements-layout>
+
+      <behaviors>
+        <behavior name="Idle Fade">
+          After 5 seconds with no mouse over the bar, fade to 60% opacity.
+          On hover, restore to 100% opacity immediately.
+          Mouse movement in other apps does NOT reset timer.
+        </behavior>
+        <behavior name="Dragging">
+          Click and drag on non-interactive areas repositions bar.
+          Position saved on drag end.
+        </behavior>
+        <behavior name="Position Validation">
+          On share start, validate saved position against current screens.
+          If off-screen or monitor disconnected, reset to primary top-center.
+        </behavior>
+      </behaviors>
+
+      <accessibility>
+        <requirement>All buttons have aria-labels</requirement>
+        <requirement>Focus visible ring on keyboard navigation</requirement>
+        <requirement>Global mute shortcut announced via screen reader (if possible)</requirement>
+      </accessibility>
+    </component>
+  </ux-specifications>
+
+  <!-- ========================================================================
+       SECTION 7: LEARNINGS FROM PREVIOUS STORIES
+       ======================================================================== -->
+  <learnings>
+    <story id="3-6" title="Create Sharer's Transparent Overlay Window">
+      <learning>
+        WebviewWindowBuilder pattern for creating Tauri windows.
+        Platform-specific click-through configuration (NSWindow, WS_EX_TRANSPARENT).
+        Use dispatch::Queue::main().exec_sync() for NSWindow operations on macOS.
+      </learning>
+      <code-reference>packages/client/src-tauri/src/screen_share.rs:382-510</code-reference>
+    </story>
+
+    <story id="3-12" title="Source Picker Thumbnail Previews">
+      <learning>
+        Synchronous capture pattern established in Core.
+        Test patterns for component testing with Tauri mocks.
+        SourcePickerDialog patterns for Tauri window communication.
+      </learning>
+    </story>
+
+    <elicitation-insights>
+      <insight source="Journey Mapping">
+        Critical moments: "The Gap" (bar appearing), "The Hunt" (finding controls),
+        "The Panic" (quick mute), "The Return" (restoring main window).
+        Bar must appear within 200ms. Controls must be findable in &lt;1 second.
+      </insight>
+      <insight source="Devil's Advocate">
+        Blind spots addressed: multi-monitor transitions, keyboard shortcuts,
+        idle definition (bar-only), error-triggered termination, Leave vs Stop confusion.
+      </insight>
+      <insight source="Risk Matrix">
+        Priority 1: Bar hidden behind fullscreen apps - use higher window level.
+        Priority 2: Position invalid on monitor change - validate against screen bounds.
+        Priority 3: Main window doesn't restore - explicit show + focus + unminimize.
+        Priority 4: IPC state desync - optimistic UI + confirmation.
+      </insight>
+      <insight source="Empathy Map">
+        Sharer feels exposed, divided attention, urgency for mute, confusion Leave/Stop.
+        Design responses: prominent "Sharing" indicator, findable controls,
+        global hotkey, visual separation.
+      </insight>
+    </elicitation-insights>
+  </learnings>
+
+  <!-- ========================================================================
+       SECTION 8: IMPLEMENTATION CHECKLIST
+       ======================================================================== -->
+  <implementation-checklist>
+    <phase name="1. Rust Backend">
+      <item>Add create_floating_control_bar Tauri command</item>
+      <item>Add destroy_floating_control_bar Tauri command</item>
+      <item>Configure platform-specific always-on-top (NSWindow level, WS_EX_TOPMOST)</item>
+      <item>Add get_all_screen_bounds for position validation</item>
+      <item>Register global mute shortcut (tauri-plugin-global-shortcut if needed)</item>
+      <item>Register commands in lib.rs invoke_handler</item>
+    </phase>
+
+    <phase name="2. React Component">
+      <item>Create FloatingControlBar.tsx in ScreenShare folder</item>
+      <item>Implement visual layout (status, controls, faces, buttons)</item>
+      <item>Style with semi-transparent dark background, rounded corners</item>
+      <item>Add visual separation between Stop Share and Leave</item>
+      <item>Export from ScreenShare/index.ts</item>
+    </phase>
+
+    <phase name="3. Hooks">
+      <item>Create useFloatingControlBar hook (similar to useAnnotationOverlay)</item>
+      <item>Integrate with useScreenShare (create on start, destroy on stop)</item>
+      <item>Add position persistence to settingsStore</item>
+    </phase>
+
+    <phase name="4. Behaviors">
+      <item>Implement draggable behavior with position save</item>
+      <item>Implement position validation on share start</item>
+      <item>Implement 5s idle fade (bar-only mouse tracking)</item>
+      <item>Implement hover full opacity restore</item>
+      <item>Wire mic/camera toggles to roomStore</item>
+      <item>Implement Stop Share flow (stop capture, destroy bar, restore window)</item>
+      <item>Implement Leave with host confirmation</item>
+      <item>Handle error-triggered share termination cleanup</item>
+    </phase>
+
+    <phase name="5. Testing">
+      <item>Unit tests for FloatingControlBar component</item>
+      <item>Unit tests for useFloatingControlBar hook</item>
+      <item>Unit tests for position persistence and validation</item>
+      <item>Integration tests for mic/camera toggles</item>
+      <item>Integration tests for Stop Share cleanup</item>
+      <item>Rust tests for Tauri commands</item>
+      <item>Manual testing: fullscreen apps (Keynote, games), multi-monitor</item>
+    </phase>
+  </implementation-checklist>
+
+  <!-- ========================================================================
+       SECTION 9: FILE MANIFEST
+       ======================================================================== -->
+  <file-manifest>
+    <files-to-create>
+      <file>packages/client/src/components/ScreenShare/FloatingControlBar.tsx</file>
+      <file>packages/client/src/hooks/useFloatingControlBar.ts</file>
+      <file>packages/client/tests/components/ScreenShare/FloatingControlBar.test.tsx</file>
+      <file>packages/client/tests/hooks/useFloatingControlBar.test.ts</file>
+    </files-to-create>
+
+    <files-to-modify>
+      <file reason="Add floating bar Tauri commands">packages/client/src-tauri/src/screen_share.rs</file>
+      <file reason="Register new commands">packages/client/src-tauri/src/lib.rs</file>
+      <file reason="Add floatingBarPosition field">packages/client/src/stores/settingsStore.ts</file>
+      <file reason="Integrate bar creation/destruction">packages/client/src/hooks/useScreenShare.ts</file>
+      <file reason="Export FloatingControlBar">packages/client/src/components/ScreenShare/index.ts</file>
+      <file reason="Add global-shortcut plugin if needed">packages/client/src-tauri/Cargo.toml</file>
+      <file reason="Add tauri.conf.json permissions if needed">packages/client/src-tauri/tauri.conf.json</file>
+    </files-to-modify>
+
+    <reference-files>
+      <file reason="Pattern for Tauri window creation">packages/client/src-tauri/src/screen_share.rs (create_annotation_overlay)</file>
+      <file reason="Pattern for overlay hook">packages/client/src/hooks/useAnnotationOverlay.ts</file>
+      <file reason="Button variants">packages/client/src/components/ui/button.tsx</file>
+      <file reason="Test patterns">packages/client/tests/hooks/useAnnotationOverlay.test.ts</file>
+      <file reason="Component test patterns">packages/client/tests/components/ScreenShare/SourcePickerDialog.test.tsx</file>
+    </reference-files>
+  </file-manifest>
+</story-context>

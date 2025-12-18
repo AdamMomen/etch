@@ -71,7 +71,7 @@ development_status:
   3-4-enforce-single-active-screen-share: done
   3-5-implement-screen-share-quality-optimization: done
   3-6-create-sharers-transparent-overlay-window: done
-  3-7-create-sharers-floating-control-bar: backlog
+  3-7-create-sharers-floating-control-bar: on-hold # Transform mode implemented, capture errors need debugging - PAUSED for Epic 4
   3-8-create-share-border-indicator: backlog
   3-9-implement-main-window-auto-minimize-and-restore: backlog
   # Story 3.10 - Core-centric architecture with hybrid approach
@@ -90,10 +90,10 @@ development_status:
   spike-wgpu-overlay-architecture: done
   epic-3-retrospective: optional
 
-  # Epic 4: Real-Time Annotations (11 stories) - CORE VALUE
-  epic-4: backlog
-  4-1-create-annotation-canvas-component-for-viewers: backlog
-  4-2-implement-annotation-store-with-zustand: backlog
+  # Epic 4: Real-Time Annotations (13 stories) - CORE VALUE
+  epic-4: contexted
+  4-1-create-annotation-canvas-component-for-viewers: review
+  4-2-implement-annotation-store-with-zustand: drafted
   4-3-implement-local-stroke-drawing-pen-tool: backlog
   4-4-implement-highlighter-tool: backlog
   4-5-implement-eraser-tool: backlog

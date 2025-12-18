@@ -1,0 +1,207 @@
+<story-context id="4-1-create-annotation-canvas-component-for-viewers" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>1</storyId>
+    <title>Create Annotation Canvas Component for Viewers</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-1-create-annotation-canvas-component-for-viewers.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>viewer</asA>
+    <iWant>to see an annotation layer overlaid on the shared screen</iWant>
+    <soThat>I can see what others are drawing in real-time</soThat>
+    <tasks>
+      <task id="1">Create AnnotationCanvas component structure (AC: 4.1.1, 4.1.4)</task>
+      <task id="2">Implement canvas sizing and positioning (AC: 4.1.2, 4.1.3, 4.1.6)</task>
+      <task id="3">Implement render loop (AC: 4.1.5, 4.1.9)</task>
+      <task id="4">Implement stroke rendering (AC: 4.1.5)</task>
+      <task id="5">Implement conditional visibility (AC: 4.1.7)</task>
+      <task id="6">Handle window resize (AC: 4.1.8)</task>
+      <task id="7">Integrate with ScreenShareViewer (AC: 4.1.1)</task>
+      <task id="8">Write unit tests (AC: all)</task>
+      <task id="9">Add perfect-freehand dependency</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="4.1.1">Transparent canvas overlay renders on top of video element</ac>
+    <ac id="4.1.2">Canvas matches exact dimensions of video element</ac>
+    <ac id="4.1.3">Canvas has pointer-events: none by default (click-through)</ac>
+    <ac id="4.1.4">Canvas uses HTML Canvas 2D context</ac>
+    <ac id="4.1.5">Canvas clears and redraws on each animation frame when strokes change</ac>
+    <ac id="4.1.6">Canvas scales correctly with letterboxing (only covers video content area)</ac>
+    <ac id="4.1.7">Canvas not visible when no screen share active</ac>
+    <ac id="4.1.8">Annotations stay aligned with video content when window resizes</ac>
+    <ac id="4.1.9">Canvas uses requestAnimationFrame for 60fps render loop</ac>
+    <ac id="4.1.10">Canvas context created with willReadFrequently: false for performance</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-4.md</path>
+        <title>Epic 4 Technical Specification</title>
+        <section>Story 4.1: Create Annotation Canvas Component for Viewers</section>
+        <snippet>Canvas overlay component for rendering annotations on shared screen using HTML Canvas 2D with requestAnimationFrame for 60fps rendering and perfect-freehand for stroke generation.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-4-real-time-annotations.md</path>
+        <title>Epic 4: Real-Time Annotations</title>
+        <section>Story 4.1</section>
+        <snippet>Create AnnotationCanvas component in client/src/components/AnnotationCanvas/ using requestAnimationFrame for 60fps render loop. Canvas context: 2d with willReadFrequently: false.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>System Architecture</title>
+        <section>Novel Pattern: Decoupled Annotation Layer</section>
+        <snippet>Viewer's canvas overlay renders strokes from annotationStore using Perfect Freehand library. Canvas positioned over video element with pointer-events: none.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <file>
+        <path>packages/client/src/components/ScreenShare/ScreenShareViewer.tsx</path>
+        <kind>component</kind>
+        <symbol>ScreenShareViewer</symbol>
+        <lines>1-107</lines>
+        <reason>Integration point - AnnotationCanvas will overlay this component's video element. Contains videoRef that canvas needs to sync dimensions with.</reason>
+      </file>
+      <file>
+        <path>packages/shared/src/types/stroke.ts</path>
+        <kind>type</kind>
+        <symbol>Point, Stroke</symbol>
+        <lines>1-32</lines>
+        <reason>Core types for annotation data. Point has normalized [0,1] coordinates. Stroke has id, participantId, tool, color, points, createdAt.</reason>
+      </file>
+      <file>
+        <path>packages/shared/src/constants/colors.ts</path>
+        <kind>constant</kind>
+        <symbol>PARTICIPANT_COLORS</symbol>
+        <lines>1-14</lines>
+        <reason>Color palette for participant strokes - Orange, Cyan, Purple, Green, Pink.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/stores/roomStore.ts</path>
+        <kind>store</kind>
+        <symbol>useRoomStore</symbol>
+        <reason>Reference for Zustand store pattern used in this project.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/stores/screenShareStore.ts</path>
+        <kind>store</kind>
+        <symbol>useScreenShareStore</symbol>
+        <reason>Provides isSharing, sharerId state to determine if canvas should be visible.</reason>
+      </file>
+    </code>
+
+    <dependencies>
+      <node>
+        <package>zustand</package>
+        <version>^5.0.9</version>
+        <purpose>State management for annotationStore (Story 4.2 dependency)</purpose>
+      </node>
+      <node>
+        <package>livekit-client</package>
+        <version>^2.16.0</version>
+        <purpose>RemoteVideoTrack type for video element reference</purpose>
+      </node>
+      <node>
+        <package>react</package>
+        <version>^19.2.0</version>
+        <purpose>useRef, useEffect, useState for canvas management</purpose>
+      </node>
+      <node>
+        <package>perfect-freehand</package>
+        <version>^1.2.2</version>
+        <purpose>NEEDS TO BE ADDED - Stroke path generation for natural drawing feel</purpose>
+        <status>not-installed</status>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <interfaces>
+    <interface>
+      <name>AnnotationCanvasProps</name>
+      <kind>component-props</kind>
+      <signature>
+interface AnnotationCanvasProps {
+  videoRef: React.RefObject&lt;HTMLVideoElement&gt;;
+  isScreenShareActive: boolean;
+  className?: string;
+}
+      </signature>
+      <path>packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx</path>
+    </interface>
+    <interface>
+      <name>Stroke</name>
+      <kind>type</kind>
+      <signature>
+interface Stroke {
+  id: string;
+  participantId: string;
+  tool: 'pen' | 'highlighter';
+  color: string;
+  points: Point[];
+  createdAt: number;
+}
+      </signature>
+      <path>packages/shared/src/types/stroke.ts</path>
+    </interface>
+    <interface>
+      <name>Point</name>
+      <kind>type</kind>
+      <signature>
+interface Point {
+  x: number;  // 0.0 - 1.0 (normalized)
+  y: number;  // 0.0 - 1.0 (normalized)
+  pressure?: number;
+}
+      </signature>
+      <path>packages/shared/src/types/stroke.ts</path>
+    </interface>
+    <interface>
+      <name>getStroke</name>
+      <kind>function</kind>
+      <signature>getStroke(points: number[][], options?: StrokeOptions): number[][]</signature>
+      <path>perfect-freehand (external)</path>
+    </interface>
+  </interfaces>
+
+  <constraints>
+    <constraint>Component location: packages/client/src/components/AnnotationCanvas/ per architecture.md</constraint>
+    <constraint>Use Zustand store pattern consistent with existing stores (roomStore, screenShareStore)</constraint>
+    <constraint>Canvas must be click-through (pointer-events: none) by default</constraint>
+    <constraint>Use requestAnimationFrame for 60fps render loop - no setInterval</constraint>
+    <constraint>Canvas context with willReadFrequently: false for GPU-accelerated rendering</constraint>
+    <constraint>All coordinates in normalized [0,1] range - transform to pixels only at render time</constraint>
+    <constraint>Co-located tests: AnnotationCanvas.test.tsx in same directory</constraint>
+    <constraint>Depends on Story 4.2 (annotationStore) for stroke data - can mock for initial development</constraint>
+  </constraints>
+
+  <tests>
+    <standards>
+      Vitest + React Testing Library for unit tests. Tests co-located with source files.
+      Use createMockStroke() and createMockPoint() from @nameless/shared/test-utils.
+      Mock annotationStore for isolated component testing.
+      Test render behavior, CSS properties, conditional rendering, and cleanup.
+    </standards>
+    <locations>
+      <location>packages/client/src/components/AnnotationCanvas/AnnotationCanvas.test.tsx</location>
+    </locations>
+    <ideas>
+      <idea ac="4.1.1">Test canvas element renders inside ScreenShareViewer container</idea>
+      <idea ac="4.1.2">Test canvas dimensions match video dimensions via ResizeObserver mock</idea>
+      <idea ac="4.1.3">Test pointer-events CSS property is 'none'</idea>
+      <idea ac="4.1.4">Test getContext('2d') is called with correct options</idea>
+      <idea ac="4.1.5">Test render function is called when strokes array changes</idea>
+      <idea ac="4.1.7">Test component returns null when isScreenShareActive is false</idea>
+      <idea ac="4.1.9">Test requestAnimationFrame is used (mock RAF)</idea>
+      <idea ac="4.1.10">Test canvas context options include willReadFrequently: false</idea>
+      <idea ac="cleanup">Test cancelAnimationFrame called on unmount</idea>
+    </ideas>
+  </tests>
+</story-context>
+
