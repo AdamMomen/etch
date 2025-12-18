@@ -6,9 +6,9 @@ import { useAnnotationStore } from '@/stores/annotationStore'
  *
  * Keyboard shortcuts:
  * - `2` key: Activate pen tool
+ * - `3` key: Activate highlighter tool
  *
  * Note: Future stories will add:
- * - `3` key: Activate highlighter tool (Story 4.4)
  * - `4` key: Activate eraser tool (Story 4.5)
  *
  * @see docs/sprint-artifacts/tech-spec-epic-4.md
@@ -37,8 +37,10 @@ export function useAnnotationKeyboard(): void {
         case '2':
           setActiveTool('pen')
           break
+        case '3':
+          setActiveTool('highlighter')
+          break
         // Future shortcuts will be added here:
-        // case '3': setActiveTool('highlighter'); break;
         // case '4': setActiveTool('eraser'); break;
       }
     }

@@ -63,6 +63,120 @@ describe('useAnnotationKeyboard', () => {
   })
 
   // ─────────────────────────────────────────────────────────
+  // HIGHLIGHTER TOOL SHORTCUT TESTS (AC-4.4.1)
+  // ─────────────────────────────────────────────────────────
+
+  describe('highlighter tool shortcut (AC-4.4.1)', () => {
+    it('activates highlighter tool when "3" key is pressed', () => {
+      // Start with pen tool (default)
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('3')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('highlighter')
+    })
+
+    it('highlighter tool remains active when already selected', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('highlighter')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('3')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('highlighter')
+    })
+
+    it('switches from pen to highlighter when "3" is pressed', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('pen')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('3')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('highlighter')
+    })
+
+    it('does not activate highlighter when typing in INPUT element', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('pen')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      // Create an input element and focus it
+      const input = document.createElement('input')
+      document.body.appendChild(input)
+
+      const event = new KeyboardEvent('keydown', {
+        key: '3',
+        bubbles: true,
+        cancelable: true,
+      })
+      Object.defineProperty(event, 'target', { value: input })
+      window.dispatchEvent(event)
+
+      // Tool should remain pen
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+
+      document.body.removeChild(input)
+    })
+
+    it('does not activate highlighter when Ctrl is pressed', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('pen')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('3', { ctrlKey: true })
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+    })
+
+    it('does not activate highlighter when Meta (Cmd) is pressed', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('pen')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('3', { metaKey: true })
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+    })
+
+    it('does not activate highlighter when Alt is pressed', () => {
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('pen')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('3', { altKey: true })
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
   // INPUT FIELD EXCLUSION TESTS
   // ─────────────────────────────────────────────────────────
 
