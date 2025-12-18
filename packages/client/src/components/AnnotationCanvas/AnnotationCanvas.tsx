@@ -1,6 +1,8 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react'
 import { getStroke } from 'perfect-freehand'
 import type { Point, Stroke } from '@nameless/shared'
+import { getPointerCoordinates } from '@/utils/coordinates'
+import type { Tool } from '@/stores/annotationStore'
 
 /**
  * Props for the AnnotationCanvas component.
@@ -17,6 +19,16 @@ export interface AnnotationCanvasProps {
   activeStroke?: Stroke | null
   /** Additional CSS classes */
   className?: string
+  /** Whether the local user can draw annotations */
+  canAnnotate?: boolean
+  /** Currently active drawing tool */
+  activeTool?: Tool
+  /** Called when user starts drawing (pointer down) */
+  onStrokeStart?: (point: Point) => void
+  /** Called when user continues drawing (pointer move) */
+  onStrokeMove?: (point: Point) => void
+  /** Called when user finishes drawing (pointer up) */
+  onStrokeEnd?: () => void
 }
 
 // Perfect Freehand options for pen tool
@@ -138,11 +150,17 @@ export function AnnotationCanvas({
   strokes = [],
   activeStroke = null,
   className,
+  canAnnotate = false,
+  activeTool = 'pen',
+  onStrokeStart,
+  onStrokeMove,
+  onStrokeEnd,
 }: AnnotationCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const rafIdRef = useRef<number | null>(null)
+  const isDrawingRef = useRef(false)
 
   /**
    * Calculates the actual rendered video dimensions accounting for letterboxing.
@@ -297,6 +315,94 @@ export function AnnotationCanvas({
     }
   }, [isScreenShareActive, videoRef, updateCanvasDimensions])
 
+  // ─────────────────────────────────────────────────────────
+  // POINTER EVENT HANDLERS
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * Handles pointer down event - starts a new stroke.
+   */
+  const handlePointerDown = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      // Only handle primary button (left click / touch)
+      if (event.button !== 0) return
+
+      // Only draw if allowed and tool is pen or highlighter
+      if (!canAnnotate || (activeTool !== 'pen' && activeTool !== 'highlighter')) {
+        return
+      }
+
+      const container = containerRef.current
+      if (!container) return
+
+      // Set pointer capture for reliable drag tracking
+      container.setPointerCapture(event.pointerId)
+
+      // Get normalized coordinates
+      const point = getPointerCoordinates(event, container)
+
+      isDrawingRef.current = true
+      onStrokeStart?.(point)
+    },
+    [canAnnotate, activeTool, onStrokeStart]
+  )
+
+  /**
+   * Handles pointer move event - continues the stroke.
+   */
+  const handlePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!isDrawingRef.current) return
+
+      const container = containerRef.current
+      if (!container) return
+
+      // Get normalized coordinates
+      const point = getPointerCoordinates(event, container)
+
+      onStrokeMove?.(point)
+    },
+    [onStrokeMove]
+  )
+
+  /**
+   * Handles pointer up event - completes the stroke.
+   */
+  const handlePointerUp = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!isDrawingRef.current) return
+
+      const container = containerRef.current
+      if (container) {
+        container.releasePointerCapture(event.pointerId)
+      }
+
+      isDrawingRef.current = false
+      onStrokeEnd?.()
+    },
+    [onStrokeEnd]
+  )
+
+  /**
+   * Handles pointer leaving the canvas area.
+   * Completes the stroke if drawing was in progress.
+   */
+  const handlePointerLeave = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      // If we have pointer capture, don't end on leave
+      const container = containerRef.current
+      if (container?.hasPointerCapture(event.pointerId)) {
+        return
+      }
+
+      if (isDrawingRef.current) {
+        isDrawingRef.current = false
+        onStrokeEnd?.()
+      }
+    },
+    [onStrokeEnd]
+  )
+
   /**
    * Animation frame loop for 60fps rendering.
    */
@@ -339,16 +445,30 @@ export function AnnotationCanvas({
     return null
   }
 
+  // Determine cursor style based on canAnnotate and activeTool (AC-4.3.11)
+  const canDraw = canAnnotate && (activeTool === 'pen' || activeTool === 'highlighter')
+  const cursorStyle = canDraw ? 'crosshair' : 'default'
+
   return (
     <div
       ref={containerRef}
       className={className}
       style={{
         position: 'absolute',
-        pointerEvents: 'none', // Click-through (AC-4.1.3)
+        // Toggle pointer-events based on canAnnotate (AC-4.3.11)
+        pointerEvents: canAnnotate ? 'auto' : 'none',
         overflow: 'hidden',
+        cursor: cursorStyle,
+        // Prevent text selection while drawing
+        userSelect: canAnnotate ? 'none' : undefined,
+        // Disable touch actions while drawing to prevent scroll
+        touchAction: canAnnotate ? 'none' : undefined,
       }}
       data-testid="annotation-canvas-container"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
     >
       <canvas
         ref={canvasRef}
@@ -356,6 +476,7 @@ export function AnnotationCanvas({
           width: '100%',
           height: '100%',
           display: 'block',
+          pointerEvents: 'none', // Canvas itself doesn't receive events
         }}
         data-testid="annotation-canvas"
       />

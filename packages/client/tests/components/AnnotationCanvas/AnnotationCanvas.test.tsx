@@ -32,18 +32,28 @@ const mockContext = {
 }
 
 // Helper to create mock video element ref
-function createMockVideoRef(options: {
-  videoWidth?: number
-  videoHeight?: number
-  clientWidth?: number
-  clientHeight?: number
-} = {}) {
+function createMockVideoRef(
+  options: {
+    videoWidth?: number
+    videoHeight?: number
+    clientWidth?: number
+    clientHeight?: number
+  } = {}
+) {
   const video = document.createElement('video')
-  Object.defineProperty(video, 'videoWidth', { value: options.videoWidth ?? 1920 })
-  Object.defineProperty(video, 'videoHeight', { value: options.videoHeight ?? 1080 })
-  Object.defineProperty(video, 'clientWidth', { value: options.clientWidth ?? 800 })
-  Object.defineProperty(video, 'clientHeight', { value: options.clientHeight ?? 450 })
-  
+  Object.defineProperty(video, 'videoWidth', {
+    value: options.videoWidth ?? 1920,
+  })
+  Object.defineProperty(video, 'videoHeight', {
+    value: options.videoHeight ?? 1080,
+  })
+  Object.defineProperty(video, 'clientWidth', {
+    value: options.clientWidth ?? 800,
+  })
+  Object.defineProperty(video, 'clientHeight', {
+    value: options.clientHeight ?? 450,
+  })
+
   return { current: video }
 }
 
@@ -60,6 +70,7 @@ function createMockStroke(overrides: Partial<Stroke> = {}): Stroke {
       { x: 0.3, y: 0.3 },
     ],
     createdAt: Date.now(),
+    isComplete: true,
     ...overrides,
   }
 }
@@ -77,9 +88,9 @@ function createMockPoint(overrides: Partial<Point> = {}): Point {
 describe('AnnotationCanvas', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    
+
     // Mock getContext for each test
-    HTMLCanvasElement.prototype.getContext = vi.fn((contextId, options) => {
+    HTMLCanvasElement.prototype.getContext = vi.fn((contextId, _options) => {
       if (contextId === '2d') {
         return mockContext as unknown as CanvasRenderingContext2D
       }
@@ -90,58 +101,48 @@ describe('AnnotationCanvas', () => {
   describe('Conditional Visibility (AC-4.1.7)', () => {
     it('should not render when isScreenShareActive is false', () => {
       const videoRef = createMockVideoRef()
-      
+
       render(
-        <AnnotationCanvas
-          videoRef={videoRef}
-          isScreenShareActive={false}
-        />
+        <AnnotationCanvas videoRef={videoRef} isScreenShareActive={false} />
       )
-      
+
       expect(screen.queryByTestId('annotation-canvas')).toBeNull()
       expect(screen.queryByTestId('annotation-canvas-container')).toBeNull()
     })
 
     it('should render when isScreenShareActive is true', () => {
       const videoRef = createMockVideoRef()
-      
+
       render(
-        <AnnotationCanvas
-          videoRef={videoRef}
-          isScreenShareActive={true}
-        />
+        <AnnotationCanvas videoRef={videoRef} isScreenShareActive={true} />
       )
-      
+
       expect(screen.getByTestId('annotation-canvas')).toBeInTheDocument()
-      expect(screen.getByTestId('annotation-canvas-container')).toBeInTheDocument()
+      expect(
+        screen.getByTestId('annotation-canvas-container')
+      ).toBeInTheDocument()
     })
   })
 
   describe('Canvas Element (AC-4.1.1, AC-4.1.4)', () => {
     it('should render a canvas element', () => {
       const videoRef = createMockVideoRef()
-      
+
       render(
-        <AnnotationCanvas
-          videoRef={videoRef}
-          isScreenShareActive={true}
-        />
+        <AnnotationCanvas videoRef={videoRef} isScreenShareActive={true} />
       )
-      
+
       const canvas = screen.getByTestId('annotation-canvas')
       expect(canvas.tagName).toBe('CANVAS')
     })
 
     it('should create 2D context with willReadFrequently: false (AC-4.1.10)', () => {
       const videoRef = createMockVideoRef()
-      
+
       render(
-        <AnnotationCanvas
-          videoRef={videoRef}
-          isScreenShareActive={true}
-        />
+        <AnnotationCanvas videoRef={videoRef} isScreenShareActive={true} />
       )
-      
+
       expect(HTMLCanvasElement.prototype.getContext).toHaveBeenCalledWith(
         '2d',
         expect.objectContaining({ willReadFrequently: false })
@@ -152,14 +153,11 @@ describe('AnnotationCanvas', () => {
   describe('Pointer Events (AC-4.1.3)', () => {
     it('should have pointer-events: none on container', () => {
       const videoRef = createMockVideoRef()
-      
+
       render(
-        <AnnotationCanvas
-          videoRef={videoRef}
-          isScreenShareActive={true}
-        />
+        <AnnotationCanvas videoRef={videoRef} isScreenShareActive={true} />
       )
-      
+
       const container = screen.getByTestId('annotation-canvas-container')
       expect(container.style.pointerEvents).toBe('none')
     })
@@ -168,44 +166,35 @@ describe('AnnotationCanvas', () => {
   describe('Render Loop (AC-4.1.5, AC-4.1.9)', () => {
     it('should use requestAnimationFrame when active', () => {
       const videoRef = createMockVideoRef()
-      
+
       render(
-        <AnnotationCanvas
-          videoRef={videoRef}
-          isScreenShareActive={true}
-        />
+        <AnnotationCanvas videoRef={videoRef} isScreenShareActive={true} />
       )
-      
+
       // RAF should be called to start render loop
       expect(requestAnimationFrame).toHaveBeenCalled()
     })
 
     it('should cancel animation frame on unmount', () => {
       const videoRef = createMockVideoRef()
-      
+
       const { unmount } = render(
-        <AnnotationCanvas
-          videoRef={videoRef}
-          isScreenShareActive={true}
-        />
+        <AnnotationCanvas videoRef={videoRef} isScreenShareActive={true} />
       )
-      
+
       unmount()
-      
+
       expect(cancelAnimationFrame).toHaveBeenCalled()
     })
 
     it('should not start render loop when inactive', () => {
       const videoRef = createMockVideoRef()
       vi.mocked(requestAnimationFrame).mockClear()
-      
+
       render(
-        <AnnotationCanvas
-          videoRef={videoRef}
-          isScreenShareActive={false}
-        />
+        <AnnotationCanvas videoRef={videoRef} isScreenShareActive={false} />
       )
-      
+
       expect(requestAnimationFrame).not.toHaveBeenCalled()
     })
   })
@@ -214,7 +203,7 @@ describe('AnnotationCanvas', () => {
     it('should accept strokes prop', () => {
       const videoRef = createMockVideoRef()
       const strokes = [createMockStroke()]
-      
+
       // Should not throw
       expect(() => {
         render(
@@ -230,7 +219,7 @@ describe('AnnotationCanvas', () => {
     it('should accept activeStroke prop', () => {
       const videoRef = createMockVideoRef()
       const activeStroke = createMockStroke({ id: 'active-stroke' })
-      
+
       // Should not throw
       expect(() => {
         render(
@@ -247,9 +236,13 @@ describe('AnnotationCanvas', () => {
       const videoRef = createMockVideoRef()
       const strokes = [
         createMockStroke({ tool: 'pen', color: '#ff0000' }),
-        createMockStroke({ id: 'stroke-2', tool: 'highlighter', color: '#00ff00' }),
+        createMockStroke({
+          id: 'stroke-2',
+          tool: 'highlighter',
+          color: '#00ff00',
+        }),
       ]
-      
+
       // Should not throw
       expect(() => {
         render(
@@ -266,14 +259,11 @@ describe('AnnotationCanvas', () => {
   describe('Container Positioning (AC-4.1.1)', () => {
     it('should position container absolutely', () => {
       const videoRef = createMockVideoRef()
-      
+
       render(
-        <AnnotationCanvas
-          videoRef={videoRef}
-          isScreenShareActive={true}
-        />
+        <AnnotationCanvas videoRef={videoRef} isScreenShareActive={true} />
       )
-      
+
       const container = screen.getByTestId('annotation-canvas-container')
       expect(container.style.position).toBe('absolute')
     })
@@ -282,7 +272,7 @@ describe('AnnotationCanvas', () => {
   describe('Custom className', () => {
     it('should accept custom className', () => {
       const videoRef = createMockVideoRef()
-      
+
       render(
         <AnnotationCanvas
           videoRef={videoRef}
@@ -290,7 +280,7 @@ describe('AnnotationCanvas', () => {
           className="custom-class"
         />
       )
-      
+
       const container = screen.getByTestId('annotation-canvas-container')
       expect(container.className).toContain('custom-class')
     })
@@ -299,27 +289,228 @@ describe('AnnotationCanvas', () => {
   describe('Default Props', () => {
     it('should work with default strokes (empty array)', () => {
       const videoRef = createMockVideoRef()
-      
+
       // Should not throw when strokes is not provided
       expect(() => {
         render(
-          <AnnotationCanvas
-            videoRef={videoRef}
-            isScreenShareActive={true}
-          />
+          <AnnotationCanvas videoRef={videoRef} isScreenShareActive={true} />
         )
       }).not.toThrow()
     })
 
     it('should work with default activeStroke (null)', () => {
       const videoRef = createMockVideoRef()
-      
+
       // Should not throw when activeStroke is not provided
+      expect(() => {
+        render(
+          <AnnotationCanvas videoRef={videoRef} isScreenShareActive={true} />
+        )
+      }).not.toThrow()
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
+  // CURSOR STYLES TESTS (AC-4.3.11)
+  // ─────────────────────────────────────────────────────────
+
+  describe('Cursor Styles (AC-4.3.11)', () => {
+    it('should have crosshair cursor when canAnnotate is true and tool is pen', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={true}
+          activeTool="pen"
+        />
+      )
+
+      const container = screen.getByTestId('annotation-canvas-container')
+      expect(container.style.cursor).toBe('crosshair')
+    })
+
+    it('should have crosshair cursor when canAnnotate is true and tool is highlighter', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={true}
+          activeTool="highlighter"
+        />
+      )
+
+      const container = screen.getByTestId('annotation-canvas-container')
+      expect(container.style.cursor).toBe('crosshair')
+    })
+
+    it('should have default cursor when canAnnotate is false', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={false}
+          activeTool="pen"
+        />
+      )
+
+      const container = screen.getByTestId('annotation-canvas-container')
+      expect(container.style.cursor).toBe('default')
+    })
+
+    it('should have default cursor when tool is eraser', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={true}
+          activeTool="eraser"
+        />
+      )
+
+      const container = screen.getByTestId('annotation-canvas-container')
+      expect(container.style.cursor).toBe('default')
+    })
+
+    it('should have default cursor when tool is select', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={true}
+          activeTool="select"
+        />
+      )
+
+      const container = screen.getByTestId('annotation-canvas-container')
+      expect(container.style.cursor).toBe('default')
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
+  // POINTER EVENTS TOGGLE TESTS (AC-4.3.11)
+  // ─────────────────────────────────────────────────────────
+
+  describe('Pointer Events Toggle (AC-4.3.11)', () => {
+    it('should have pointer-events: auto when canAnnotate is true', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={true}
+        />
+      )
+
+      const container = screen.getByTestId('annotation-canvas-container')
+      expect(container.style.pointerEvents).toBe('auto')
+    })
+
+    it('should have pointer-events: none when canAnnotate is false', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={false}
+        />
+      )
+
+      const container = screen.getByTestId('annotation-canvas-container')
+      expect(container.style.pointerEvents).toBe('none')
+    })
+
+    it('should have user-select: none when canAnnotate is true', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={true}
+        />
+      )
+
+      const container = screen.getByTestId('annotation-canvas-container')
+      expect(container.style.userSelect).toBe('none')
+    })
+
+    it('should have touch-action: none when canAnnotate is true', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={true}
+        />
+      )
+
+      const container = screen.getByTestId('annotation-canvas-container')
+      expect(container.style.touchAction).toBe('none')
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
+  // POINTER EVENT CALLBACK TESTS
+  // ─────────────────────────────────────────────────────────
+
+  describe('Pointer Event Callbacks', () => {
+    it('should accept onStrokeStart callback', () => {
+      const videoRef = createMockVideoRef()
+      const onStrokeStart = vi.fn()
+
+      // Should not throw
       expect(() => {
         render(
           <AnnotationCanvas
             videoRef={videoRef}
             isScreenShareActive={true}
+            canAnnotate={true}
+            onStrokeStart={onStrokeStart}
+          />
+        )
+      }).not.toThrow()
+    })
+
+    it('should accept onStrokeMove callback', () => {
+      const videoRef = createMockVideoRef()
+      const onStrokeMove = vi.fn()
+
+      expect(() => {
+        render(
+          <AnnotationCanvas
+            videoRef={videoRef}
+            isScreenShareActive={true}
+            canAnnotate={true}
+            onStrokeMove={onStrokeMove}
+          />
+        )
+      }).not.toThrow()
+    })
+
+    it('should accept onStrokeEnd callback', () => {
+      const videoRef = createMockVideoRef()
+      const onStrokeEnd = vi.fn()
+
+      expect(() => {
+        render(
+          <AnnotationCanvas
+            videoRef={videoRef}
+            isScreenShareActive={true}
+            canAnnotate={true}
+            onStrokeEnd={onStrokeEnd}
           />
         )
       }).not.toThrow()
@@ -331,7 +522,7 @@ describe('Test helpers', () => {
   describe('createMockStroke', () => {
     it('should create a valid stroke', () => {
       const stroke = createMockStroke()
-      
+
       expect(stroke.id).toBeDefined()
       expect(stroke.participantId).toBeDefined()
       expect(stroke.tool).toMatch(/pen|highlighter/)
@@ -346,7 +537,7 @@ describe('Test helpers', () => {
         tool: 'highlighter',
         color: '#00ff00',
       })
-      
+
       expect(stroke.id).toBe('custom-id')
       expect(stroke.tool).toBe('highlighter')
       expect(stroke.color).toBe('#00ff00')
@@ -356,7 +547,7 @@ describe('Test helpers', () => {
   describe('createMockPoint', () => {
     it('should create a valid point', () => {
       const point = createMockPoint()
-      
+
       expect(point.x).toBeGreaterThanOrEqual(0)
       expect(point.x).toBeLessThanOrEqual(1)
       expect(point.y).toBeGreaterThanOrEqual(0)
@@ -365,7 +556,7 @@ describe('Test helpers', () => {
 
     it('should accept overrides', () => {
       const point = createMockPoint({ x: 0.75, y: 0.25 })
-      
+
       expect(point.x).toBe(0.75)
       expect(point.y).toBe(0.25)
     })
