@@ -1,4 +1,0 @@
-backend/web/* linguist-vendored
-tauri/*.html linguist-vendored
-web-app/index.html linguist-vendored
-docs/dist/* linguist-vendored
