@@ -4,6 +4,7 @@ import { Track } from 'livekit-client'
 import { MonitorUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AnnotationCanvas } from '@/components/AnnotationCanvas'
+import { AnnotationToolbar } from '@/components/AnnotationToolbar'
 import { useAnnotations } from '@/hooks/useAnnotations'
 import { useAnnotationKeyboard } from '@/hooks/useAnnotationKeyboard'
 
@@ -40,6 +41,11 @@ export function ScreenShareViewer({
     startStroke,
     continueStroke,
     endStroke,
+    // Eraser functionality (Story 4.5)
+    eraseStrokeAt,
+    updateHoveredStroke,
+    clearHoveredStroke,
+    hoveredStrokeId,
   } = useAnnotations()
 
   // Register keyboard shortcuts for annotation tools
@@ -86,6 +92,11 @@ export function ScreenShareViewer({
         <span>{sharerName || 'Someone'} is sharing</span>
       </div>
 
+      {/* Annotation toolbar - top center (AC-4.6.1) */}
+      <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2">
+        <AnnotationToolbar isScreenShareActive={isScreenShareActive} />
+      </div>
+
       {/* Video container with annotation overlay */}
       <div className="relative flex max-h-full max-w-full items-center justify-center">
         {/* Screen share video - object-fit: contain for aspect ratio preservation (AC-3.2.1) */}
@@ -113,6 +124,11 @@ export function ScreenShareViewer({
             onStrokeStart={startStroke}
             onStrokeMove={continueStroke}
             onStrokeEnd={endStroke}
+            // Eraser functionality (Story 4.5)
+            onEraseAt={eraseStrokeAt}
+            onEraserHover={updateHoveredStroke}
+            onEraserHoverEnd={clearHoveredStroke}
+            hoveredStrokeId={hoveredStrokeId}
           />
         )}
       </div>
