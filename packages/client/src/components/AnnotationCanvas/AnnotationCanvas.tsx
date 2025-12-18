@@ -17,6 +17,8 @@ export interface AnnotationCanvasProps {
   strokes?: Stroke[]
   /** Currently in-progress stroke (being drawn) */
   activeStroke?: Stroke | null
+  /** In-progress strokes from remote participants (Story 4.7) */
+  remoteActiveStrokes?: Map<string, Stroke>
   /** Additional CSS classes */
   className?: string
   /** Whether the local user can draw annotations */
@@ -177,6 +179,7 @@ export function AnnotationCanvas({
   isScreenShareActive,
   strokes = [],
   activeStroke = null,
+  remoteActiveStrokes,
   className,
   canAnnotate = false,
   activeTool = 'pen',
@@ -277,6 +280,8 @@ export function AnnotationCanvas({
 
   /**
    * Render loop - clears canvas and redraws all strokes.
+   * Renders in order: completed strokes, remote active strokes, local active stroke.
+   * This ensures local stroke always appears on top for responsive feedback.
    */
   const render = useCallback(() => {
     const canvas = canvasRef.current
@@ -295,11 +300,18 @@ export function AnnotationCanvas({
       renderStroke(ctx, stroke, rect.width, rect.height, isHovered)
     }
 
-    // Render active stroke (in-progress)
+    // Render remote in-progress strokes (Story 4.7 - AC-4.7.9)
+    if (remoteActiveStrokes) {
+      for (const stroke of remoteActiveStrokes.values()) {
+        renderStroke(ctx, stroke, rect.width, rect.height)
+      }
+    }
+
+    // Render local active stroke (in-progress) on top for responsive feedback
     if (activeStroke) {
       renderStroke(ctx, activeStroke, rect.width, rect.height)
     }
-  }, [strokes, activeStroke, getVideoContentRect, hoveredStrokeId])
+  }, [strokes, activeStroke, remoteActiveStrokes, getVideoContentRect, hoveredStrokeId])
 
   /**
    * Initialize canvas context with optimal settings.

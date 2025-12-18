@@ -1,16 +1,19 @@
-import { useEffect, useRef, useState } from 'react'
-import type { RemoteVideoTrack } from 'livekit-client'
+import { useEffect, useRef, useState, useMemo } from 'react'
+import type { RemoteVideoTrack, Room } from 'livekit-client'
 import { Track } from 'livekit-client'
 import { MonitorUp } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { AnnotationCanvas } from '@/components/AnnotationCanvas'
 import { AnnotationToolbar } from '@/components/AnnotationToolbar'
 import { useAnnotations } from '@/hooks/useAnnotations'
+import { useAnnotationSync } from '@/hooks/useAnnotationSync'
 import { useAnnotationKeyboard } from '@/hooks/useAnnotationKeyboard'
 
 interface ScreenShareViewerProps {
   track: RemoteVideoTrack | null
   sharerName: string | null
+  /** LiveKit room for DataTrack sync (Story 4.7) */
+  room: Room | null
   className?: string
 }
 
@@ -26,13 +29,36 @@ interface ScreenShareViewerProps {
 export function ScreenShareViewer({
   track,
   sharerName,
+  room,
   className,
 }: ScreenShareViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isVideoReady, setIsVideoReady] = useState(false)
   const isScreenShareActive = track !== null
 
-  // Use annotation hook for drawing functionality
+  // Use annotation sync hook for DataTrack communication (Story 4.7)
+  const {
+    publishStroke,
+    publishStrokeUpdate,
+    publishDelete,
+    publishClearAll,
+  } = useAnnotationSync(room)
+
+  // Create sync callbacks object for useAnnotations
+  const sync = useMemo(
+    () =>
+      room
+        ? {
+            publishStroke,
+            publishStrokeUpdate,
+            publishDelete,
+            publishClearAll,
+          }
+        : null,
+    [room, publishStroke, publishStrokeUpdate, publishDelete, publishClearAll]
+  )
+
+  // Use annotation hook for drawing functionality with sync integration
   const {
     strokes,
     activeStroke,
@@ -46,7 +72,9 @@ export function ScreenShareViewer({
     updateHoveredStroke,
     clearHoveredStroke,
     hoveredStrokeId,
-  } = useAnnotations()
+    // Remote strokes (Story 4.7)
+    remoteActiveStrokes,
+  } = useAnnotations({ sync })
 
   // Register keyboard shortcuts for annotation tools
   useAnnotationKeyboard()
@@ -119,6 +147,7 @@ export function ScreenShareViewer({
             isScreenShareActive={isScreenShareActive}
             strokes={strokes}
             activeStroke={activeStroke}
+            remoteActiveStrokes={remoteActiveStrokes}
             canAnnotate={canAnnotate}
             activeTool={activeTool}
             onStrokeStart={startStroke}

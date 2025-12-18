@@ -409,6 +409,7 @@ export function MeetingRoom() {
               <ScreenShareViewer
                 track={remoteScreenTrack}
                 sharerName={sharerName}
+                room={room}
                 className="flex-1"
               />
 
