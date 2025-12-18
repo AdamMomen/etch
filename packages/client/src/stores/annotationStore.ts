@@ -28,6 +28,9 @@ export interface AnnotationState {
   /** Currently selected tool */
   activeTool: Tool
 
+  /** In-progress strokes from remote participants (Story 4.7) */
+  remoteActiveStrokes: Map<string, Stroke>
+
   // ─────────────────────────────────────────────────────────
   // STROKE ACTIONS
   // ─────────────────────────────────────────────────────────
@@ -62,6 +65,19 @@ export interface AnnotationState {
   setActiveStroke: (stroke: Stroke | null) => void
 
   // ─────────────────────────────────────────────────────────
+  // REMOTE ACTIVE STROKE ACTIONS (Story 4.7 - DataTrack sync)
+  // ─────────────────────────────────────────────────────────
+
+  /** Add a new in-progress stroke from a remote participant */
+  addRemoteActiveStroke: (stroke: Stroke) => void
+
+  /** Append points to a remote in-progress stroke */
+  updateRemoteActiveStroke: (strokeId: string, points: Point[]) => void
+
+  /** Move a remote stroke from active to completed */
+  completeRemoteActiveStroke: (strokeId: string) => void
+
+  // ─────────────────────────────────────────────────────────
   // BULK OPERATIONS (late-joiner sync)
   // ─────────────────────────────────────────────────────────
 
@@ -87,6 +103,7 @@ const initialState = {
   strokes: [] as Stroke[],
   activeStroke: null as Stroke | null,
   activeTool: 'pen' as Tool, // Default to pen tool per AC-4.3.9
+  remoteActiveStrokes: new Map<string, Stroke>(), // Story 4.7
 }
 
 /**
@@ -148,6 +165,7 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
     set({
       strokes: [],
       activeStroke: null,
+      remoteActiveStrokes: new Map(),
     }),
 
   // ─────────────────────────────────────────────────────────
@@ -161,6 +179,37 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
   // ─────────────────────────────────────────────────────────
 
   setActiveStroke: (stroke) => set({ activeStroke: stroke }),
+
+  // ─────────────────────────────────────────────────────────
+  // REMOTE ACTIVE STROKE ACTIONS (Story 4.7 - DataTrack sync)
+  // ─────────────────────────────────────────────────────────
+
+  addRemoteActiveStroke: (stroke) =>
+    set((state) => {
+      const newMap = new Map(state.remoteActiveStrokes)
+      newMap.set(stroke.id, stroke)
+      return { remoteActiveStrokes: newMap }
+    }),
+
+  updateRemoteActiveStroke: (strokeId, points) =>
+    set((state) => {
+      const existing = state.remoteActiveStrokes.get(strokeId)
+      if (!existing) return state
+
+      const newMap = new Map(state.remoteActiveStrokes)
+      newMap.set(strokeId, {
+        ...existing,
+        points: [...existing.points, ...points],
+      })
+      return { remoteActiveStrokes: newMap }
+    }),
+
+  completeRemoteActiveStroke: (strokeId) =>
+    set((state) => {
+      const newMap = new Map(state.remoteActiveStrokes)
+      newMap.delete(strokeId)
+      return { remoteActiveStrokes: newMap }
+    }),
 
   // ─────────────────────────────────────────────────────────
   // BULK OPERATIONS (late-joiner sync)
