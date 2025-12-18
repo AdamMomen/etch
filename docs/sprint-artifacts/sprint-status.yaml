@@ -92,7 +92,7 @@ development_status:
 
   # Epic 4: Real-Time Annotations (13 stories) - CORE VALUE
   epic-4: contexted
-  4-1-create-annotation-canvas-component-for-viewers: review
+  4-1-create-annotation-canvas-component-for-viewers: done
   4-2-implement-annotation-store-with-zustand: drafted
   4-3-implement-local-stroke-drawing-pen-tool: backlog
   4-4-implement-highlighter-tool: backlog
