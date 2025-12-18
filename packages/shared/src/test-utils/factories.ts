@@ -13,6 +13,7 @@ export function createMockStroke(overrides?: Partial<Stroke>): Stroke {
     color: PARTICIPANT_COLORS[0],
     points: [{ x: 0.5, y: 0.5 }],
     createdAt: Date.now(),
+    isComplete: false,
     ...overrides,
   }
 }

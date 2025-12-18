@@ -29,4 +29,6 @@ export interface Stroke {
   points: Point[]
   /** Unix timestamp in milliseconds when stroke was created */
   createdAt: number
+  /** Whether the stroke is complete (mouse up occurred) */
+  isComplete: boolean
 }
