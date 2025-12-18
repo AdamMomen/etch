@@ -517,4 +517,166 @@ describe('useAnnotations', () => {
       expect(result.current.strokes).toHaveLength(2)
     })
   })
+
+  // ─────────────────────────────────────────────────────────
+  // HIGHLIGHTER INTEGRATION TESTS (AC-4.4 - all)
+  // ─────────────────────────────────────────────────────────
+
+  describe('highlighter integration (AC-4.4)', () => {
+    it('complete highlighter flow: select tool -> draw stroke -> verify properties', () => {
+      const { result } = renderHook(() => useAnnotations())
+
+      // Start with pen (default)
+      expect(result.current.activeTool).toBe('pen')
+
+      // Switch to highlighter
+      act(() => {
+        result.current.setTool('highlighter')
+      })
+      expect(result.current.activeTool).toBe('highlighter')
+
+      // Draw a highlighter stroke
+      act(() => {
+        result.current.startStroke({ x: 0.1, y: 0.1 })
+      })
+
+      // Verify active stroke has highlighter tool
+      expect(result.current.activeStroke?.tool).toBe('highlighter')
+
+      act(() => {
+        result.current.continueStroke({ x: 0.5, y: 0.5 })
+        result.current.endStroke()
+      })
+
+      // Verify completed stroke has highlighter tool
+      expect(result.current.strokes).toHaveLength(1)
+      expect(result.current.strokes[0].tool).toBe('highlighter')
+      expect(result.current.strokes[0].isComplete).toBe(true)
+    })
+
+    it('switching between pen and highlighter preserves correct tool metadata on strokes', () => {
+      const { result } = renderHook(() => useAnnotations())
+
+      // Draw a pen stroke (pen is default, so no need to set)
+      act(() => {
+        result.current.startStroke({ x: 0.1, y: 0.1 })
+        result.current.endStroke()
+      })
+
+      // Switch to highlighter
+      act(() => {
+        result.current.setTool('highlighter')
+      })
+
+      // Draw a highlighter stroke
+      act(() => {
+        result.current.startStroke({ x: 0.3, y: 0.3 })
+        result.current.endStroke()
+      })
+
+      // Switch back to pen
+      act(() => {
+        result.current.setTool('pen')
+      })
+
+      // Draw another pen stroke
+      act(() => {
+        result.current.startStroke({ x: 0.5, y: 0.5 })
+        result.current.endStroke()
+      })
+
+      // Switch back to highlighter
+      act(() => {
+        result.current.setTool('highlighter')
+      })
+
+      // Draw another highlighter stroke
+      act(() => {
+        result.current.startStroke({ x: 0.7, y: 0.7 })
+        result.current.endStroke()
+      })
+
+      // Verify each stroke has correct tool
+      expect(result.current.strokes).toHaveLength(4)
+      expect(result.current.strokes[0].tool).toBe('pen')
+      expect(result.current.strokes[1].tool).toBe('highlighter')
+      expect(result.current.strokes[2].tool).toBe('pen')
+      expect(result.current.strokes[3].tool).toBe('highlighter')
+    })
+
+    it('existing pen strokes remain unchanged when adding highlighter strokes', () => {
+      const { result } = renderHook(() => useAnnotations())
+
+      // Draw multiple pen strokes (pen is default)
+      act(() => {
+        result.current.startStroke({ x: 0.1, y: 0.1 })
+        result.current.continueStroke({ x: 0.2, y: 0.2 })
+        result.current.endStroke()
+
+        result.current.startStroke({ x: 0.3, y: 0.3 })
+        result.current.continueStroke({ x: 0.4, y: 0.4 })
+        result.current.endStroke()
+      })
+
+      // Capture pen stroke state
+      const penStroke1 = { ...result.current.strokes[0] }
+      const penStroke2 = { ...result.current.strokes[1] }
+
+      // Switch to highlighter
+      act(() => {
+        result.current.setTool('highlighter')
+      })
+
+      // Draw a highlighter stroke
+      act(() => {
+        result.current.startStroke({ x: 0.5, y: 0.5 })
+        result.current.continueStroke({ x: 0.6, y: 0.6 })
+        result.current.endStroke()
+      })
+
+      // Verify pen strokes are unchanged
+      expect(result.current.strokes[0].id).toBe(penStroke1.id)
+      expect(result.current.strokes[0].tool).toBe('pen')
+      expect(result.current.strokes[0].points).toHaveLength(penStroke1.points.length)
+
+      expect(result.current.strokes[1].id).toBe(penStroke2.id)
+      expect(result.current.strokes[1].tool).toBe('pen')
+      expect(result.current.strokes[1].points).toHaveLength(penStroke2.points.length)
+
+      // Verify highlighter stroke was added correctly
+      expect(result.current.strokes[2].tool).toBe('highlighter')
+    })
+
+    it('highlighter stroke uses participant color (AC-4.4.4)', () => {
+      const customColor = '#ff6600'
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'participant-123',
+            name: 'Test User',
+            role: 'annotator',
+            color: customColor,
+            isLocal: true,
+          },
+        })
+      })
+
+      const { result } = renderHook(() => useAnnotations())
+
+      // Switch to highlighter
+      act(() => {
+        result.current.setTool('highlighter')
+      })
+
+      // Draw a highlighter stroke
+      act(() => {
+        result.current.startStroke({ x: 0.5, y: 0.5 })
+        result.current.endStroke()
+      })
+
+      // Verify stroke uses participant color
+      expect(result.current.strokes[0].tool).toBe('highlighter')
+      expect(result.current.strokes[0].color).toBe(customColor)
+    })
+  })
 })

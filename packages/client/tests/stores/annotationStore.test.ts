@@ -430,6 +430,53 @@ describe('annotationStore', () => {
   })
 
   // ─────────────────────────────────────────────────────────
+  // TOOLBAR INTEGRATION (AC-4.4.6)
+  // ─────────────────────────────────────────────────────────
+
+  describe('toolbar integration (AC-4.4.6)', () => {
+    it('activeTool state change to highlighter is observable', () => {
+      // Start with pen (default)
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+
+      // Change to highlighter
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('highlighter')
+      })
+
+      // State change should be immediately observable
+      expect(useAnnotationStore.getState().activeTool).toBe('highlighter')
+    })
+
+    it('activeTool state changes trigger store updates', () => {
+      const tools: Tool[] = ['pen', 'highlighter', 'pen', 'highlighter']
+
+      for (const tool of tools) {
+        act(() => {
+          useAnnotationStore.getState().setActiveTool(tool)
+        })
+        expect(useAnnotationStore.getState().activeTool).toBe(tool)
+      }
+    })
+
+    it('highlighter tool state persists correctly', () => {
+      // Set highlighter
+      act(() => {
+        useAnnotationStore.getState().setActiveTool('highlighter')
+      })
+
+      // Add a stroke (simulating drawing)
+      const stroke = createMockStroke({ tool: 'highlighter' })
+      act(() => {
+        useAnnotationStore.getState().addStroke(stroke)
+      })
+
+      // Tool should still be highlighter after adding stroke
+      expect(useAnnotationStore.getState().activeTool).toBe('highlighter')
+      expect(useAnnotationStore.getState().strokes[0].tool).toBe('highlighter')
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
   // setActiveStroke TESTS (AC-4.2.10)
   // ─────────────────────────────────────────────────────────
 
