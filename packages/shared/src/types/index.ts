@@ -9,12 +9,14 @@ export type {
   HealthResponse,
 } from './api'
 
-// Annotation DataTrack message types (Story 4.7)
+// Annotation DataTrack message types (Story 4.7, 4.8)
 export type {
   StrokeUpdateMessage,
   StrokeCompleteMessage,
   StrokeDeleteMessage,
   ClearAllMessage,
+  StateRequestMessage,
+  StateSnapshotMessage,
   AnnotationMessage,
 } from './annotation'
 
@@ -25,6 +27,8 @@ export {
   isStrokeCompleteMessage,
   isStrokeDeleteMessage,
   isClearAllMessage,
+  isStateRequestMessage,
+  isStateSnapshotMessage,
   isValidAnnotationMessage,
   encodeAnnotationMessage,
   decodeAnnotationMessage,

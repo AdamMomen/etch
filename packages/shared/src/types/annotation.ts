@@ -8,7 +8,7 @@
  * @see docs/sprint-artifacts/tech-spec-epic-4.md
  */
 
-import type { Point } from './stroke'
+import type { Point, Stroke } from './stroke'
 
 /**
  * Message type constants for type-safe message handling.
@@ -19,6 +19,8 @@ export const ANNOTATION_MESSAGE_TYPES = {
   STROKE_COMPLETE: 'stroke_complete',
   STROKE_DELETE: 'stroke_delete',
   CLEAR_ALL: 'clear_all',
+  STATE_REQUEST: 'state_request',
+  STATE_SNAPSHOT: 'state_snapshot',
 } as const
 
 /**
@@ -100,6 +102,36 @@ export interface ClearAllMessage {
 }
 
 /**
+ * State request message sent by late-joining participants.
+ * Requests the current annotation state from existing participants.
+ *
+ * Used for: Late-joiner sync - requesting current state on join
+ * @see Story 4.8: Implement Late-Joiner Annotation Sync
+ */
+export interface StateRequestMessage {
+  type: typeof ANNOTATION_MESSAGE_TYPES.STATE_REQUEST
+  /** ID of the participant requesting state */
+  requesterId: string
+}
+
+/**
+ * State snapshot message sent in response to a state request.
+ * Contains all completed strokes for the late-joiner to render.
+ *
+ * Used for: Late-joiner sync - responding with current state
+ * @see Story 4.8: Implement Late-Joiner Annotation Sync
+ */
+export interface StateSnapshotMessage {
+  type: typeof ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT
+  /** ID of the participant who requested state (for filtering) */
+  requesterId: string
+  /** Array of completed strokes to sync */
+  strokes: Stroke[]
+  /** Unix timestamp in milliseconds for conflict resolution */
+  timestamp: number
+}
+
+/**
  * Union type for all annotation messages.
  * Enables type-safe message handling with discriminated unions.
  *
@@ -122,6 +154,8 @@ export type AnnotationMessage =
   | StrokeCompleteMessage
   | StrokeDeleteMessage
   | ClearAllMessage
+  | StateRequestMessage
+  | StateSnapshotMessage
 
 /**
  * Type guard to check if a message is a StrokeUpdateMessage.
@@ -157,6 +191,26 @@ export function isClearAllMessage(
   msg: AnnotationMessage
 ): msg is ClearAllMessage {
   return msg.type === ANNOTATION_MESSAGE_TYPES.CLEAR_ALL
+}
+
+/**
+ * Type guard to check if a message is a StateRequestMessage.
+ * @see Story 4.8: Implement Late-Joiner Annotation Sync
+ */
+export function isStateRequestMessage(
+  msg: AnnotationMessage
+): msg is StateRequestMessage {
+  return msg.type === ANNOTATION_MESSAGE_TYPES.STATE_REQUEST
+}
+
+/**
+ * Type guard to check if a message is a StateSnapshotMessage.
+ * @see Story 4.8: Implement Late-Joiner Annotation Sync
+ */
+export function isStateSnapshotMessage(
+  msg: AnnotationMessage
+): msg is StateSnapshotMessage {
+  return msg.type === ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT
 }
 
 /**
@@ -208,6 +262,16 @@ export function isValidAnnotationMessage(obj: unknown): obj is AnnotationMessage
     case ANNOTATION_MESSAGE_TYPES.CLEAR_ALL:
       return (
         typeof msg.clearedBy === 'string' &&
+        typeof msg.timestamp === 'number'
+      )
+
+    case ANNOTATION_MESSAGE_TYPES.STATE_REQUEST:
+      return typeof msg.requesterId === 'string'
+
+    case ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT:
+      return (
+        typeof msg.requesterId === 'string' &&
+        Array.isArray(msg.strokes) &&
         typeof msg.timestamp === 'number'
       )
 

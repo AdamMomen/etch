@@ -6,6 +6,8 @@ import {
   isStrokeCompleteMessage,
   isStrokeDeleteMessage,
   isClearAllMessage,
+  isStateRequestMessage,
+  isStateSnapshotMessage,
   isValidAnnotationMessage,
   encodeAnnotationMessage,
   decodeAnnotationMessage,
@@ -13,8 +15,11 @@ import {
   type StrokeCompleteMessage,
   type StrokeDeleteMessage,
   type ClearAllMessage,
+  type StateRequestMessage,
+  type StateSnapshotMessage,
   type AnnotationMessage,
 } from './annotation'
+import type { Stroke } from './stroke'
 
 // ─────────────────────────────────────────────────────────
 // TEST HELPERS
@@ -69,6 +74,38 @@ const createClearAllMessage = (
   ...overrides,
 })
 
+const createStateRequestMessage = (
+  overrides?: Partial<StateRequestMessage>
+): StateRequestMessage => ({
+  type: ANNOTATION_MESSAGE_TYPES.STATE_REQUEST,
+  requesterId: 'new-participant-1',
+  ...overrides,
+})
+
+const createMockStroke = (overrides?: Partial<Stroke>): Stroke => ({
+  id: 'stroke-1',
+  participantId: 'participant-1',
+  tool: 'pen',
+  color: '#f97316',
+  points: [
+    { x: 0.1, y: 0.1 },
+    { x: 0.5, y: 0.5 },
+  ],
+  createdAt: Date.now(),
+  isComplete: true,
+  ...overrides,
+})
+
+const createStateSnapshotMessage = (
+  overrides?: Partial<StateSnapshotMessage>
+): StateSnapshotMessage => ({
+  type: ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT,
+  requesterId: 'new-participant-1',
+  strokes: [createMockStroke()],
+  timestamp: Date.now(),
+  ...overrides,
+})
+
 // ─────────────────────────────────────────────────────────
 // TESTS
 // ─────────────────────────────────────────────────────────
@@ -84,6 +121,8 @@ describe('annotation message types', () => {
       expect(ANNOTATION_MESSAGE_TYPES.STROKE_COMPLETE).toBe('stroke_complete')
       expect(ANNOTATION_MESSAGE_TYPES.STROKE_DELETE).toBe('stroke_delete')
       expect(ANNOTATION_MESSAGE_TYPES.CLEAR_ALL).toBe('clear_all')
+      expect(ANNOTATION_MESSAGE_TYPES.STATE_REQUEST).toBe('state_request')
+      expect(ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT).toBe('state_snapshot')
     })
   })
 
@@ -135,6 +174,40 @@ describe('annotation message types', () => {
         expect(isClearAllMessage(msg)).toBe(false)
       })
     })
+
+    describe('isStateRequestMessage (Story 4.8)', () => {
+      it('returns true for state_request messages', () => {
+        const msg = createStateRequestMessage()
+        expect(isStateRequestMessage(msg)).toBe(true)
+      })
+
+      it('returns false for other message types', () => {
+        const msg = createStrokeUpdateMessage()
+        expect(isStateRequestMessage(msg)).toBe(false)
+      })
+
+      it('returns false for state_snapshot messages', () => {
+        const msg = createStateSnapshotMessage()
+        expect(isStateRequestMessage(msg)).toBe(false)
+      })
+    })
+
+    describe('isStateSnapshotMessage (Story 4.8)', () => {
+      it('returns true for state_snapshot messages', () => {
+        const msg = createStateSnapshotMessage()
+        expect(isStateSnapshotMessage(msg)).toBe(true)
+      })
+
+      it('returns false for other message types', () => {
+        const msg = createStrokeUpdateMessage()
+        expect(isStateSnapshotMessage(msg)).toBe(false)
+      })
+
+      it('returns false for state_request messages', () => {
+        const msg = createStateRequestMessage()
+        expect(isStateSnapshotMessage(msg)).toBe(false)
+      })
+    })
   })
 
   describe('isValidAnnotationMessage', () => {
@@ -155,6 +228,32 @@ describe('annotation message types', () => {
 
     it('validates clear_all message', () => {
       const msg = createClearAllMessage()
+      expect(isValidAnnotationMessage(msg)).toBe(true)
+    })
+
+    it('validates state_request message (Story 4.8)', () => {
+      const msg = createStateRequestMessage()
+      expect(isValidAnnotationMessage(msg)).toBe(true)
+    })
+
+    it('validates state_snapshot message (Story 4.8)', () => {
+      const msg = createStateSnapshotMessage()
+      expect(isValidAnnotationMessage(msg)).toBe(true)
+    })
+
+    it('validates state_snapshot with empty strokes array (Story 4.8)', () => {
+      const msg = createStateSnapshotMessage({ strokes: [] })
+      expect(isValidAnnotationMessage(msg)).toBe(true)
+    })
+
+    it('validates state_snapshot with multiple strokes (Story 4.8)', () => {
+      const msg = createStateSnapshotMessage({
+        strokes: [
+          createMockStroke({ id: 'stroke-1' }),
+          createMockStroke({ id: 'stroke-2' }),
+          createMockStroke({ id: 'stroke-3' }),
+        ],
+      })
       expect(isValidAnnotationMessage(msg)).toBe(true)
     })
 
@@ -215,6 +314,54 @@ describe('annotation message types', () => {
       }
       expect(isValidAnnotationMessage(msg)).toBe(false)
     })
+
+    it('rejects state_request with missing requesterId (Story 4.8)', () => {
+      const msg = {
+        type: ANNOTATION_MESSAGE_TYPES.STATE_REQUEST,
+        // requesterId missing
+      }
+      expect(isValidAnnotationMessage(msg)).toBe(false)
+    })
+
+    it('rejects state_snapshot with missing requesterId (Story 4.8)', () => {
+      const msg = {
+        type: ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT,
+        strokes: [],
+        timestamp: Date.now(),
+        // requesterId missing
+      }
+      expect(isValidAnnotationMessage(msg)).toBe(false)
+    })
+
+    it('rejects state_snapshot with missing strokes (Story 4.8)', () => {
+      const msg = {
+        type: ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT,
+        requesterId: 'participant-1',
+        timestamp: Date.now(),
+        // strokes missing
+      }
+      expect(isValidAnnotationMessage(msg)).toBe(false)
+    })
+
+    it('rejects state_snapshot with missing timestamp (Story 4.8)', () => {
+      const msg = {
+        type: ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT,
+        requesterId: 'participant-1',
+        strokes: [],
+        // timestamp missing
+      }
+      expect(isValidAnnotationMessage(msg)).toBe(false)
+    })
+
+    it('rejects state_snapshot with non-array strokes (Story 4.8)', () => {
+      const msg = {
+        type: ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT,
+        requesterId: 'participant-1',
+        strokes: 'not-an-array',
+        timestamp: Date.now(),
+      }
+      expect(isValidAnnotationMessage(msg)).toBe(false)
+    })
   })
 
   describe('encode/decode', () => {
@@ -248,6 +395,47 @@ describe('annotation message types', () => {
       const decoded = decodeAnnotationMessage(encoded)
 
       expect(decoded).toEqual(original)
+    })
+
+    it('encodes and decodes state_request message (Story 4.8)', () => {
+      const original = createStateRequestMessage()
+      const encoded = encodeAnnotationMessage(original)
+      const decoded = decodeAnnotationMessage(encoded)
+
+      expect(decoded).toEqual(original)
+    })
+
+    it('encodes and decodes state_snapshot message (Story 4.8)', () => {
+      const original = createStateSnapshotMessage()
+      const encoded = encodeAnnotationMessage(original)
+      const decoded = decodeAnnotationMessage(encoded)
+
+      expect(decoded).toEqual(original)
+    })
+
+    it('encodes and decodes state_snapshot with multiple strokes (Story 4.8)', () => {
+      const original = createStateSnapshotMessage({
+        strokes: [
+          createMockStroke({ id: 'stroke-1', color: '#ff0000' }),
+          createMockStroke({ id: 'stroke-2', color: '#00ff00' }),
+          createMockStroke({ id: 'stroke-3', color: '#0000ff' }),
+        ],
+      })
+      const encoded = encodeAnnotationMessage(original)
+      const decoded = decodeAnnotationMessage(encoded) as StateSnapshotMessage
+
+      expect(decoded.strokes).toHaveLength(3)
+      expect(decoded.strokes[0].id).toBe('stroke-1')
+      expect(decoded.strokes[1].id).toBe('stroke-2')
+      expect(decoded.strokes[2].id).toBe('stroke-3')
+    })
+
+    it('encodes and decodes state_snapshot with empty strokes (Story 4.8)', () => {
+      const original = createStateSnapshotMessage({ strokes: [] })
+      const encoded = encodeAnnotationMessage(original)
+      const decoded = decodeAnnotationMessage(encoded) as StateSnapshotMessage
+
+      expect(decoded.strokes).toHaveLength(0)
     })
 
     it('returns Uint8Array from encode', () => {
@@ -316,6 +504,21 @@ describe('annotation message types', () => {
       const msg = createClearAllMessage()
       expect(msg.type).toBe(ANNOTATION_MESSAGE_TYPES.CLEAR_ALL)
       expect(msg.clearedBy).toBeDefined()
+      expect(msg.timestamp).toBeDefined()
+    })
+
+    it('StateRequestMessage has required fields (Story 4.8)', () => {
+      const msg = createStateRequestMessage()
+      expect(msg.type).toBe(ANNOTATION_MESSAGE_TYPES.STATE_REQUEST)
+      expect(msg.requesterId).toBeDefined()
+    })
+
+    it('StateSnapshotMessage has required fields (Story 4.8)', () => {
+      const msg = createStateSnapshotMessage()
+      expect(msg.type).toBe(ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT)
+      expect(msg.requesterId).toBeDefined()
+      expect(msg.strokes).toBeDefined()
+      expect(Array.isArray(msg.strokes)).toBe(true)
       expect(msg.timestamp).toBeDefined()
     })
   })

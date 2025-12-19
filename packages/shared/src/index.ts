@@ -11,6 +11,29 @@ export type {
   JoinRoomResponse,
   ApiError,
   HealthResponse,
+  // Annotation message types (Story 4.7, 4.8)
+  StrokeUpdateMessage,
+  StrokeCompleteMessage,
+  StrokeDeleteMessage,
+  ClearAllMessage,
+  StateRequestMessage,
+  StateSnapshotMessage,
+  AnnotationMessage,
+} from './types'
+
+// Annotation constants and utilities (Story 4.7, 4.8)
+export {
+  ANNOTATION_MESSAGE_TYPES,
+  ANNOTATION_TOPIC,
+  isStrokeUpdateMessage,
+  isStrokeCompleteMessage,
+  isStrokeDeleteMessage,
+  isClearAllMessage,
+  isStateRequestMessage,
+  isStateSnapshotMessage,
+  isValidAnnotationMessage,
+  encodeAnnotationMessage,
+  decodeAnnotationMessage,
 } from './types'
 
 // Constants
