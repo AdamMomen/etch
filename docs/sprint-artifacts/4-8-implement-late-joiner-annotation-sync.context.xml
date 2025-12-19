@@ -1,0 +1,200 @@
+<story-context id="4-8-implement-late-joiner-annotation-sync" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>8</storyId>
+    <title>Implement Late-Joiner Annotation Sync</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-19</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-8-implement-late-joiner-annotation-sync.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>late-joining participant</asA>
+    <iWant>to see all existing annotations when I join</iWant>
+    <soThat>I have full context of what's been discussed</soThat>
+    <tasks>
+      <task id="1" ac="4.8.3,4.8.4">Add late-joiner message types to shared package
+        <subtask>Add StateRequestMessage interface to packages/shared/src/types/annotation.ts</subtask>
+        <subtask>Add StateSnapshotMessage interface with strokes array and timestamp</subtask>
+        <subtask>Add message type constants: STATE_REQUEST, STATE_SNAPSHOT</subtask>
+        <subtask>Add type guards: isStateRequestMessage(), isStateSnapshotMessage()</subtask>
+        <subtask>Export from union type AnnotationMessage</subtask>
+        <subtask>Add unit tests for new message types</subtask>
+      </task>
+      <task id="2" ac="4.8.1,4.8.3">Implement state request on join
+        <subtask>Modify useAnnotationSync hook to send state_request on connection</subtask>
+        <subtask>Add requesterId from local participant identity</subtask>
+        <subtask>Trigger request when RoomEvent.Connected fires (after DataTrack ready)</subtask>
+        <subtask>Only request if screen share is active (annotations canvas relevant)</subtask>
+        <subtask>Add isRequestingState flag to track pending request</subtask>
+      </task>
+      <task id="3" ac="4.8.4,4.8.7">Implement state snapshot response
+        <subtask>Listen for state_request messages in existing DataReceived handler</subtask>
+        <subtask>Determine responder: host participant responds (use isHost from roomStore)</subtask>
+        <subtask>If not host, check if any participant has already responded (avoid duplicates)</subtask>
+        <subtask>Gather completed strokes from annotationStore (filter isComplete: true)</subtask>
+        <subtask>Send state_snapshot via DataTrack with reliable mode</subtask>
+        <subtask>Include timestamp for conflict resolution</subtask>
+      </task>
+      <task id="4" ac="4.8.1,4.8.2">Handle incoming state snapshot
+        <subtask>Listen for state_snapshot messages in DataReceived handler</subtask>
+        <subtask>Validate message is directed to requesting participant (compare requesterId)</subtask>
+        <subtask>Call annotationStore.setStrokes() to bulk-load received strokes</subtask>
+        <subtask>Clear isRequestingState flag on receipt</subtask>
+        <subtask>Log latency measurement in dev mode (time from request to receipt)</subtask>
+      </task>
+      <task id="5" ac="4.8.5">Add loading indicator UI
+        <subtask>Create loading state in useAnnotationSync: syncState: 'idle' | 'requesting' | 'synced'</subtask>
+        <subtask>Update AnnotationCanvas to show loading indicator when syncState === 'requesting'</subtask>
+        <subtask>Use subtle spinner or "Syncing annotations..." text overlay</subtask>
+        <subtask>Hide loading indicator when snapshot received or no annotations exist</subtask>
+      </task>
+      <task id="6" ac="4.8.6">Implement retry mechanism
+        <subtask>Set timeout of 3 seconds after sending state_request</subtask>
+        <subtask>If no state_snapshot received, retry request (max 3 attempts)</subtask>
+        <subtask>Exponential backoff: 3s, 6s, 12s between retries</subtask>
+        <subtask>After max retries, set syncState: 'synced' (assume empty state)</subtask>
+        <subtask>Clear timeout on successful snapshot receipt</subtask>
+      </task>
+      <task id="7" ac="4.8.1,4.8.7">Handle edge cases
+        <subtask>Handle case where no participants have state (first join, no annotations)</subtask>
+        <subtask>Handle case where host disconnects during request (fallback to any participant)</subtask>
+        <subtask>Ignore duplicate snapshots (use timestamp to pick most recent)</subtask>
+        <subtask>Handle late arrival of stroke_complete messages during sync (merge correctly)</subtask>
+      </task>
+      <task id="8" ac="all">Write comprehensive tests
+        <subtask>Unit tests for new message types in annotation.test.ts</subtask>
+        <subtask>Unit tests for setStrokes bulk action in annotationStore.test.ts</subtask>
+        <subtask>Integration tests for request/response flow (mock DataTrack)</subtask>
+        <subtask>Test timeout and retry logic</subtask>
+        <subtask>Test edge cases: no state, host disconnect, duplicate response</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.8.1" verification="Manual: join mid-session">Late joiner sees all existing annotations</criterion>
+    <criterion id="AC-4.8.2" verification="Performance: measure">Sync completes in &lt; 1 second for 100 strokes</criterion>
+    <criterion id="AC-4.8.3" verification="Test: message sent">state_request message sent on join</criterion>
+    <criterion id="AC-4.8.4" verification="Test: response">Host (or any participant with state) responds with state_snapshot</criterion>
+    <criterion id="AC-4.8.5" verification="Test: UI state">Loading indicator shown while waiting for snapshot</criterion>
+    <criterion id="AC-4.8.6" verification="Test: timeout handling">Retry after 3 seconds if no response</criterion>
+    <criterion id="AC-4.8.7" verification="Test: filtering">Snapshot includes only completed strokes (not in-progress)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-4.md" title="Epic 4 Tech Spec" section="Story 4.8: Implement Late-Joiner Annotation Sync" snippet="Late-joiner sync flow: send state_request, receive state_snapshot, bulk-load strokes via setStrokes() action. Message protocol defined with StateRequestMessage and StateSnapshotMessage interfaces." />
+      <doc path="docs/epics/epic-4-real-time-annotations.md" title="Epic 4 Stories" section="Story 4.8" snippet="AC-4.8.1 through AC-4.8.7 define late-joiner sync requirements: 1s sync time, retry on timeout, loading indicator." />
+      <doc path="docs/architecture.md" title="Architecture" section="Late-Joiner Flow" snippet="New participant sends state_request via DataTrack, host responds with state_snapshot containing all completed strokes." />
+      <doc path="docs/architecture.md" title="Architecture" section="Message Protocol" snippet="StateRequestMessage: { type: 'state_request', requesterId: string }. StateSnapshotMessage: { type: 'state_snapshot', strokes: Stroke[], timestamp: number }." />
+      <doc path="docs/architecture.md" title="Architecture" section="ADR-002: LiveKit DataTracks for Annotations" snippet="All annotation events flow through DataTracks in reliable mode. state_request/state_snapshot use same pattern." />
+      <doc path="docs/prd.md" title="PRD" section="FR35" snippet="Late-joining participants see all existing annotations immediately." />
+      <doc path="docs/sprint-artifacts/4-7-implement-datatrack-annotation-sync.md" title="Story 4.7 Reference" section="Dev Agent Record" snippet="Message types, useAnnotationSync hook, point batching patterns established. Extend for state request/snapshot." />
+    </docs>
+    <code>
+      <file path="packages/shared/src/types/annotation.ts" kind="types" symbol="AnnotationMessage" lines="1-251" reason="MODIFY: Add StateRequestMessage, StateSnapshotMessage interfaces and type guards. Currently missing late-joiner message types." />
+      <file path="packages/shared/src/types/stroke.ts" kind="types" symbol="Stroke, Point" lines="all" reason="REFERENCE: Stroke interface needed for StateSnapshotMessage.strokes array." />
+      <file path="packages/client/src/hooks/useAnnotationSync.ts" kind="hook" symbol="useAnnotationSync" lines="1-333" reason="MODIFY: Add state request on join, state snapshot response handling, loading state, retry mechanism. Core implementation location." />
+      <file path="packages/client/src/stores/annotationStore.ts" kind="store" symbol="setStrokes" lines="218" reason="REFERENCE: Bulk setStrokes() action already exists for late-joiner sync." />
+      <file path="packages/client/src/stores/annotationStore.ts" kind="store" symbol="getCompletedStrokes" lines="227-228" reason="REFERENCE: Selector to filter isComplete strokes for snapshot." />
+      <file path="packages/client/src/stores/roomStore.ts" kind="store" symbol="localParticipant" lines="28" reason="REFERENCE: Get local participant identity for requesterId." />
+      <file path="packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx" kind="component" symbol="AnnotationCanvas" lines="177-564" reason="MODIFY: Add loading indicator overlay when syncState === 'requesting'." />
+    </code>
+    <dependencies>
+      <ecosystem name="node">
+        <package name="livekit-client" version="^2.16.0" purpose="WebRTC connection, DataTracks, RoomEvent.Connected" />
+        <package name="zustand" version="^5.0.9" purpose="State management for annotationStore" />
+        <package name="react" version="^19.2.0" purpose="Hooks and component lifecycle" />
+        <package name="vitest" version="^2.0.0" purpose="Unit and integration tests" />
+        <package name="@testing-library/react" version="^16.3.0" purpose="Component testing" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">ADR-002: All annotation events flow through LiveKit DataTracks in reliable mode</constraint>
+    <constraint type="architecture">ADR-004: Use Zustand for state management (annotationStore)</constraint>
+    <constraint type="pattern">Optimistic UI: Local strokes render immediately, sync in background</constraint>
+    <constraint type="pattern">Message types follow existing pattern: interface + type constant + type guard</constraint>
+    <constraint type="pattern">Co-locate tests with source files: annotation.test.ts, annotationStore.test.ts</constraint>
+    <constraint type="performance">Sync must complete in &lt; 1 second for 100 strokes (AC-4.8.2)</constraint>
+    <constraint type="performance">setStrokes() should replace entire array, not iterate (bulk load)</constraint>
+    <constraint type="reliability">Use reliable DataTrack mode for state_request/state_snapshot (ordered delivery)</constraint>
+    <constraint type="reliability">Retry with exponential backoff: 3s, 6s, 12s (max 3 attempts)</constraint>
+    <constraint type="datatrack">DataTrack message size limit: 64KB - consider batching for very large snapshots</constraint>
+    <constraint type="naming">Files: camelCase for hooks/utils, PascalCase for components</constraint>
+    <constraint type="testing">Follow existing test patterns from Story 4.7 (89 tests for message types and store)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="StateRequestMessage" kind="message" path="packages/shared/src/types/annotation.ts">
+      <signature>
+interface StateRequestMessage {
+  type: 'state_request';
+  requesterId: string;
+}
+      </signature>
+    </interface>
+    <interface name="StateSnapshotMessage" kind="message" path="packages/shared/src/types/annotation.ts">
+      <signature>
+interface StateSnapshotMessage {
+  type: 'state_snapshot';
+  strokes: Stroke[];
+  timestamp: number;
+}
+      </signature>
+    </interface>
+    <interface name="UseAnnotationSyncReturn" kind="hook-return" path="packages/client/src/hooks/useAnnotationSync.ts">
+      <signature>
+// Existing interface - EXTEND with:
+interface UseAnnotationSyncReturn {
+  // ... existing members
+  syncState: 'idle' | 'requesting' | 'synced';
+  requestStateSnapshot: () => void;
+}
+      </signature>
+    </interface>
+    <interface name="DataTrack.publishData" kind="api" path="livekit-client">
+      <signature>
+room.localParticipant.publishData(data: Uint8Array, {
+  reliable: true,
+  topic: 'annotations'
+});
+      </signature>
+    </interface>
+    <interface name="RoomEvent.Connected" kind="event" path="livekit-client">
+      <signature>
+room.on(RoomEvent.Connected, () => {
+  // Room is connected, DataTrack ready
+  // Safe to send state_request
+});
+      </signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Testing uses Vitest with React Testing Library for components. Unit tests are co-located with source files (*.test.ts pattern). Story 4.7 established 89 tests covering message types and store actions. Follow same patterns: test message type validation, type guards, store actions, and mock LiveKit DataTrack for integration tests. Use describe/it blocks with clear AC references.
+    </standards>
+    <locations>
+      <location>packages/shared/src/types/annotation.test.ts</location>
+      <location>packages/client/src/stores/annotationStore.test.ts</location>
+      <location>packages/client/src/hooks/useAnnotationSync.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-4.8.3">Test: StateRequestMessage validation and type guard</idea>
+      <idea ac="AC-4.8.4">Test: StateSnapshotMessage validation with strokes array</idea>
+      <idea ac="AC-4.8.3">Test: state_request sent on room connection when screen share active</idea>
+      <idea ac="AC-4.8.4">Test: Host responds with state_snapshot containing completed strokes only</idea>
+      <idea ac="AC-4.8.7">Test: Snapshot filters out isComplete: false strokes</idea>
+      <idea ac="AC-4.8.1">Test: setStrokes() bulk-loads strokes into store</idea>
+      <idea ac="AC-4.8.5">Test: syncState transitions: idle -> requesting -> synced</idea>
+      <idea ac="AC-4.8.6">Test: Retry after 3s timeout, exponential backoff</idea>
+      <idea ac="AC-4.8.6">Test: Max 3 retry attempts then assume empty</idea>
+      <idea ac="AC-4.8.7">Edge case: Empty response when no annotations exist</idea>
+      <idea ac="AC-4.8.1">Edge case: Duplicate snapshot ignored (use timestamp)</idea>
+    </ideas>
+  </tests>
+</story-context>
