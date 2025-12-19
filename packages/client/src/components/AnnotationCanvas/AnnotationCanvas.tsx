@@ -3,6 +3,7 @@ import { getStroke } from 'perfect-freehand'
 import type { Point, Stroke } from '@nameless/shared'
 import { getPointerCoordinates } from '@/utils/coordinates'
 import type { Tool } from '@/stores/annotationStore'
+import type { SyncState } from '@/hooks/useAnnotationSync'
 
 /**
  * Props for the AnnotationCanvas component.
@@ -39,6 +40,8 @@ export interface AnnotationCanvasProps {
   onEraserHoverEnd?: () => void
   /** ID of stroke currently hovered by eraser (for visual feedback) */
   hoveredStrokeId?: string | null
+  /** Late-joiner sync state (Story 4.8 AC-4.8.5) */
+  syncState?: SyncState
 }
 
 // Perfect Freehand options for pen tool
@@ -190,6 +193,7 @@ export function AnnotationCanvas({
   onEraserHover,
   onEraserHoverEnd,
   hoveredStrokeId = null,
+  syncState = 'synced',
 }: AnnotationCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
@@ -559,6 +563,47 @@ export function AnnotationCanvas({
         }}
         data-testid="annotation-canvas"
       />
+
+      {/* Late-joiner sync loading indicator (Story 4.8 AC-4.8.5) */}
+      {syncState === 'requesting' && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '8px 16px',
+            borderRadius: '8px',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            color: 'white',
+            fontSize: '14px',
+            pointerEvents: 'none',
+            zIndex: 10,
+          }}
+          data-testid="annotation-sync-loading"
+        >
+          {/* Simple CSS spinner */}
+          <div
+            style={{
+              width: '16px',
+              height: '16px',
+              border: '2px solid rgba(255, 255, 255, 0.3)',
+              borderTopColor: 'white',
+              borderRadius: '50%',
+              animation: 'spin 0.8s linear infinite',
+            }}
+          />
+          <span>Syncing annotations...</span>
+          <style>{`
+            @keyframes spin {
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
+        </div>
+      )}
     </div>
   )
 }

@@ -36,13 +36,14 @@ export function ScreenShareViewer({
   const [isVideoReady, setIsVideoReady] = useState(false)
   const isScreenShareActive = track !== null
 
-  // Use annotation sync hook for DataTrack communication (Story 4.7)
+  // Use annotation sync hook for DataTrack communication (Story 4.7, 4.8)
   const {
+    syncState,
     publishStroke,
     publishStrokeUpdate,
     publishDelete,
     publishClearAll,
-  } = useAnnotationSync(room)
+  } = useAnnotationSync(room, isScreenShareActive)
 
   // Create sync callbacks object for useAnnotations
   const sync = useMemo(
@@ -158,6 +159,8 @@ export function ScreenShareViewer({
             onEraserHover={updateHoveredStroke}
             onEraserHoverEnd={clearHoveredStroke}
             hoveredStrokeId={hoveredStrokeId}
+            // Late-joiner sync state (Story 4.8)
+            syncState={syncState}
           />
         )}
       </div>
