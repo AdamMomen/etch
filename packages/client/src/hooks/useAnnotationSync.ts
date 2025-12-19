@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useRef } from 'react'
+import { useEffect, useCallback, useRef, useState } from 'react'
 import { Room, RoomEvent, RemoteParticipant } from 'livekit-client'
 import { useAnnotationStore } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
@@ -12,9 +12,17 @@ import {
   type StrokeCompleteMessage,
   type StrokeDeleteMessage,
   type ClearAllMessage,
+  type StateRequestMessage,
+  type StateSnapshotMessage,
   type Point,
   type Stroke,
 } from '@nameless/shared'
+
+/**
+ * Sync state for late-joiner annotation sync.
+ * @see Story 4.8: Implement Late-Joiner Annotation Sync
+ */
+export type SyncState = 'idle' | 'requesting' | 'synced'
 
 /**
  * Return type for the useAnnotationSync hook.
@@ -22,6 +30,8 @@ import {
 export interface UseAnnotationSyncReturn {
   /** Whether the room is connected and sync is available */
   isConnected: boolean
+  /** Current sync state for late-joiner sync (Story 4.8) */
+  syncState: SyncState
   /** Publish a completed stroke to all participants */
   publishStroke: (stroke: Stroke) => void
   /** Publish incremental stroke updates during drawing */
@@ -38,6 +48,13 @@ export interface UseAnnotationSyncReturn {
   publishClearAll: () => void
 }
 
+/** Retry configuration for late-joiner sync (Story 4.8 AC-4.8.6) */
+const RETRY_CONFIG = {
+  initialTimeoutMs: 3000,
+  maxAttempts: 3,
+  backoffMultiplier: 2,
+}
+
 /**
  * Hook for synchronizing annotations across participants via LiveKit DataTrack.
  *
@@ -49,13 +66,18 @@ export interface UseAnnotationSyncReturn {
  * - Receives and processes annotation messages from other participants
  * - Updates annotation store with remote strokes
  * - Ignores messages from local participant (optimistic UI)
+ * - Late-joiner sync: requests and receives state snapshots (Story 4.8)
  *
  * @param room - LiveKit Room object for publishing and subscribing
+ * @param isScreenShareActive - Whether screen share is active (needed for late-joiner sync)
  * @returns Sync state and publish functions
  *
  * @see docs/sprint-artifacts/tech-spec-epic-4.md
  */
-export function useAnnotationSync(room: Room | null): UseAnnotationSyncReturn {
+export function useAnnotationSync(
+  room: Room | null,
+  isScreenShareActive: boolean = false
+): UseAnnotationSyncReturn {
   // Get local participant ID to ignore own messages
   const localParticipant = useRoomStore((state) => state.localParticipant)
   const localParticipantId = localParticipant?.id ?? ''
@@ -64,6 +86,7 @@ export function useAnnotationSync(room: Room | null): UseAnnotationSyncReturn {
   const addStroke = useAnnotationStore((state) => state.addStroke)
   const deleteStroke = useAnnotationStore((state) => state.deleteStroke)
   const clearAll = useAnnotationStore((state) => state.clearAll)
+  const setStrokes = useAnnotationStore((state) => state.setStrokes)
   const addRemoteActiveStroke = useAnnotationStore(
     (state) => state.addRemoteActiveStroke
   )
@@ -77,15 +100,167 @@ export function useAnnotationSync(room: Room | null): UseAnnotationSyncReturn {
   // Track connection state
   const isConnected = room !== null
 
+  // Late-joiner sync state (Story 4.8)
+  const [syncState, setSyncState] = useState<SyncState>('idle')
+
   // Ref to track if we've set up listeners (to avoid duplicates)
   const listenerSetupRef = useRef(false)
+
+  // Refs for late-joiner sync (Story 4.8)
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const retryCountRef = useRef(0)
+  const stateRequestTimestampRef = useRef<number>(0)
+  const hasReceivedSnapshotRef = useRef(false)
+  const respondedToRequestersRef = useRef<Set<string>>(new Set())
+
+  /**
+   * Clear retry timeout and reset state.
+   */
+  const clearRetryTimeout = useCallback(() => {
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current)
+      retryTimeoutRef.current = null
+    }
+  }, [])
+
+  /**
+   * Send a state request to existing participants.
+   * AC-4.8.3: state_request message sent on join
+   */
+  const sendStateRequest = useCallback(() => {
+    if (!room || !localParticipantId) return
+
+    const message: StateRequestMessage = {
+      type: ANNOTATION_MESSAGE_TYPES.STATE_REQUEST,
+      requesterId: localParticipantId,
+    }
+
+    const encoded = encodeAnnotationMessage(message)
+
+    room.localParticipant.publishData(encoded, {
+      reliable: true,
+      topic: ANNOTATION_TOPIC,
+    })
+
+    stateRequestTimestampRef.current = Date.now()
+
+    if (import.meta.env.DEV) {
+      console.debug('[AnnotationSync] Sent state_request', { requesterId: localParticipantId })
+    }
+  }, [room, localParticipantId])
+
+  /**
+   * Send a state snapshot in response to a state request.
+   * AC-4.8.4: Host (or any participant with state) responds with state_snapshot
+   * AC-4.8.7: Snapshot includes only completed strokes (not in-progress)
+   */
+  const sendStateSnapshot = useCallback(
+    (requesterId: string) => {
+      if (!room) return
+
+      // Get only completed strokes (AC-4.8.7)
+      const completedStrokes = useAnnotationStore
+        .getState()
+        .strokes.filter((s) => s.isComplete)
+
+      const message: StateSnapshotMessage = {
+        type: ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT,
+        requesterId,
+        strokes: completedStrokes,
+        timestamp: Date.now(),
+      }
+
+      const encoded = encodeAnnotationMessage(message)
+
+      room.localParticipant.publishData(encoded, {
+        reliable: true,
+        topic: ANNOTATION_TOPIC,
+      })
+
+      // Track that we've responded to this requester
+      respondedToRequestersRef.current.add(requesterId)
+
+      if (import.meta.env.DEV) {
+        console.debug('[AnnotationSync] Sent state_snapshot', {
+          requesterId,
+          strokeCount: completedStrokes.length,
+        })
+      }
+    },
+    [room]
+  )
 
   /**
    * Handle incoming annotation messages from other participants.
    */
   const handleAnnotationMessage = useCallback(
     (message: AnnotationMessage, senderIdentity: string) => {
-      // Ignore messages from local participant (already rendered optimistically)
+      // Handle state_request from any participant (Story 4.8)
+      if (message.type === ANNOTATION_MESSAGE_TYPES.STATE_REQUEST) {
+        const requestMsg = message as StateRequestMessage
+
+        // Don't respond to our own requests
+        if (requestMsg.requesterId === localParticipantId) {
+          return
+        }
+
+        // Don't respond twice to the same requester
+        if (respondedToRequestersRef.current.has(requestMsg.requesterId)) {
+          if (import.meta.env.DEV) {
+            console.debug('[AnnotationSync] Already responded to', requestMsg.requesterId)
+          }
+          return
+        }
+
+        // Small random delay to avoid simultaneous responses from multiple participants
+        const delay = Math.random() * 100
+        setTimeout(() => {
+          sendStateSnapshot(requestMsg.requesterId)
+        }, delay)
+
+        return
+      }
+
+      // Handle state_snapshot for late-joiner sync (Story 4.8)
+      if (message.type === ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT) {
+        const snapshotMsg = message as StateSnapshotMessage
+
+        // Only process if it's for us
+        if (snapshotMsg.requesterId !== localParticipantId) {
+          return
+        }
+
+        // Ignore if we've already received a snapshot (AC-4.8.7 - use timestamp)
+        if (hasReceivedSnapshotRef.current) {
+          if (import.meta.env.DEV) {
+            console.debug('[AnnotationSync] Ignoring duplicate state_snapshot')
+          }
+          return
+        }
+
+        // Mark as received and clear retry timeout
+        hasReceivedSnapshotRef.current = true
+        clearRetryTimeout()
+
+        // Bulk load strokes (AC-4.8.1, AC-4.8.2)
+        setStrokes(snapshotMsg.strokes)
+
+        // Update sync state
+        setSyncState('synced')
+
+        // Log latency in dev mode
+        if (import.meta.env.DEV) {
+          const latency = Date.now() - stateRequestTimestampRef.current
+          console.debug('[AnnotationSync] Received state_snapshot', {
+            strokeCount: snapshotMsg.strokes.length,
+            latency: `${latency}ms`,
+          })
+        }
+
+        return
+      }
+
+      // Ignore other messages from local participant (already rendered optimistically)
       if (senderIdentity === localParticipantId) {
         return
       }
@@ -162,6 +337,9 @@ export function useAnnotationSync(room: Room | null): UseAnnotationSyncReturn {
     },
     [
       localParticipantId,
+      sendStateSnapshot,
+      clearRetryTimeout,
+      setStrokes,
       addRemoteActiveStroke,
       updateRemoteActiveStroke,
       completeRemoteActiveStroke,
@@ -209,6 +387,83 @@ export function useAnnotationSync(room: Room | null): UseAnnotationSyncReturn {
       listenerSetupRef.current = false
     }
   }, [room, handleAnnotationMessage])
+
+  /**
+   * Late-joiner sync: Request state on connection when screen share is active.
+   * AC-4.8.3: state_request message sent on join
+   * AC-4.8.6: Retry after 3 seconds if no response
+   */
+  useEffect(() => {
+    // Only request state if room is connected and screen share is active
+    if (!room || !isScreenShareActive || !localParticipantId) {
+      return
+    }
+
+    // Don't request if we've already synced or are requesting
+    if (syncState !== 'idle') {
+      return
+    }
+
+    // Check if there are any remote participants to request state from
+    const remoteParticipants = room.remoteParticipants
+    if (remoteParticipants.size === 0) {
+      // No one to request from, we're the first - mark as synced
+      setSyncState('synced')
+      hasReceivedSnapshotRef.current = true
+      if (import.meta.env.DEV) {
+        console.debug('[AnnotationSync] No remote participants, skipping state request')
+      }
+      return
+    }
+
+    // Start requesting state
+    setSyncState('requesting')
+    retryCountRef.current = 0
+    hasReceivedSnapshotRef.current = false
+
+    const attemptRequest = () => {
+      if (hasReceivedSnapshotRef.current) {
+        return // Already received snapshot
+      }
+
+      if (retryCountRef.current >= RETRY_CONFIG.maxAttempts) {
+        // Max retries reached, assume empty state (AC-4.8.6)
+        if (import.meta.env.DEV) {
+          console.debug('[AnnotationSync] Max retries reached, assuming empty state')
+        }
+        setSyncState('synced')
+        hasReceivedSnapshotRef.current = true
+        return
+      }
+
+      // Send request
+      sendStateRequest()
+      retryCountRef.current++
+
+      // Calculate timeout with exponential backoff
+      const timeoutMs =
+        RETRY_CONFIG.initialTimeoutMs *
+        Math.pow(RETRY_CONFIG.backoffMultiplier, retryCountRef.current - 1)
+
+      // Schedule retry
+      retryTimeoutRef.current = setTimeout(attemptRequest, timeoutMs)
+    }
+
+    // Start first attempt
+    attemptRequest()
+
+    // Cleanup on unmount
+    return () => {
+      clearRetryTimeout()
+    }
+  }, [
+    room,
+    isScreenShareActive,
+    localParticipantId,
+    syncState,
+    sendStateRequest,
+    clearRetryTimeout,
+  ])
 
   /**
    * Publish a completed stroke to all participants.
@@ -324,6 +579,7 @@ export function useAnnotationSync(room: Room | null): UseAnnotationSyncReturn {
 
   return {
     isConnected,
+    syncState,
     publishStroke,
     publishStrokeUpdate,
     publishDelete,
