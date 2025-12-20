@@ -151,7 +151,7 @@ pub async fn spawn_core(app: AppHandle, state: State<'_, CoreState>) -> Result<S
         .shell()
         .sidecar("nameless-core")
         .map_err(|e| format!("Failed to create sidecar command: {}", e))?
-        .env("RUST_LOG", "nameless_core=debug,livekit=debug,webrtc=info")
+        .env("RUST_LOG", "nameless_core=info,nameless_core::capture=warn,livekit=warn,webrtc=warn")
         .args([&socket_path]);
 
     let (mut rx, child) = sidecar_command
@@ -815,9 +815,13 @@ impl Default for TransformModeState {
     }
 }
 
-/// Control bar dimensions
-const CONTROL_BAR_WIDTH: u32 = 450;
-const CONTROL_BAR_HEIGHT: u32 = 80;
+/// Control bar dimensions (Vertical Design - ADR-010)
+/// Height varies based on view mode:
+/// - Multi view: 420px (with participant preview)
+/// - Single view: 280px (self only)
+/// - Hide view: 120px (controls only)
+const CONTROL_BAR_WIDTH: u32 = 200;
+const CONTROL_BAR_HEIGHT: u32 = 420; // Default to multi view height
 
 /// Configuration for saved control bar position
 #[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
@@ -895,6 +899,19 @@ pub async fn transform_to_control_bar(
         CONTROL_BAR_WIDTH, CONTROL_BAR_HEIGHT, new_x, new_y
     );
 
+    // Remove window decorations (title bar, borders) for clean floating pill look
+    window
+        .set_decorations(false)
+        .map_err(|e| format!("Failed to disable decorations: {}", e))?;
+
+    // Disable window shadow for cleaner appearance
+    #[cfg(target_os = "macos")]
+    {
+        window
+            .set_shadow(false)
+            .map_err(|e| format!("Failed to disable shadow: {}", e))?;
+    }
+
     // Resize window to compact dimensions
     window
         .set_size(tauri::Size::Logical(tauri::LogicalSize {
@@ -968,6 +985,19 @@ pub async fn restore_from_control_bar(
         .set_always_on_top(false)
         .map_err(|e| format!("Failed to disable always on top: {}", e))?;
 
+    // Restore window decorations (title bar, borders)
+    window
+        .set_decorations(true)
+        .map_err(|e| format!("Failed to enable decorations: {}", e))?;
+
+    // Restore window shadow on macOS
+    #[cfg(target_os = "macos")]
+    {
+        window
+            .set_shadow(true)
+            .map_err(|e| format!("Failed to enable shadow: {}", e))?;
+    }
+
     // Restore original size
     window
         .set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height }))
@@ -1009,7 +1039,7 @@ pub fn is_transform_mode_active(state: State<'_, TransformModeState>) -> bool {
     state.is_transformed.load(Ordering::SeqCst)
 }
 
-/// Calculate default position (top-center of primary screen)
+/// Calculate default position (right edge of screen, vertically centered)
 fn calculate_default_position(app: &AppHandle) -> Result<(i32, i32), String> {
     let primary_monitor = app
         .primary_monitor()
@@ -1019,8 +1049,9 @@ fn calculate_default_position(app: &AppHandle) -> Result<(i32, i32), String> {
     let monitor_size = primary_monitor.size();
     let monitor_position = primary_monitor.position();
 
-    let x = monitor_position.x + (monitor_size.width as i32 - CONTROL_BAR_WIDTH as i32) / 2;
-    let y = monitor_position.y + 40; // 40px from top, below typical camera location
+    // Position on right edge with 20px margin, vertically centered
+    let x = monitor_position.x + monitor_size.width as i32 - CONTROL_BAR_WIDTH as i32 - 20;
+    let y = monitor_position.y + (monitor_size.height as i32 - CONTROL_BAR_HEIGHT as i32) / 2;
 
     Ok((x, y))
 }
@@ -1101,5 +1132,211 @@ fn set_content_protection_windows(window: &tauri::Window, enabled: bool) -> Resu
         if enabled { "enabled" } else { "disabled" },
         if enabled { "EXCLUDEFROMCAPTURE" } else { "NONE" }
     );
+    Ok(())
+}
+
+// ============================================================================
+// Floating Control Bar Window (Story 3.7 - Separate Window Approach)
+// ============================================================================
+
+/// Label for the floating control bar window
+const FLOATING_BAR_LABEL: &str = "floating-control-bar";
+
+/// Floating control bar dimensions (same as vertical design)
+const FLOATING_BAR_WIDTH: u32 = 200;
+const FLOATING_BAR_HEIGHT: u32 = 420;
+
+/// Create a separate floating control bar window
+/// This window loads the same app but navigates to the /floating-control-bar route
+/// Uses BroadcastChannel for state sync with main window
+#[tauri::command]
+pub async fn create_floating_bar(
+    app: AppHandle,
+    saved_position: Option<ControlBarPosition>,
+) -> Result<(), String> {
+    // Check if floating bar already exists
+    if let Some(existing) = app.get_webview_window(FLOATING_BAR_LABEL) {
+        log::info!("Floating control bar already exists, focusing it");
+        let _ = existing.show();
+        let _ = existing.set_focus();
+        return Ok(());
+    }
+
+    // Calculate position (right edge of primary screen, vertically centered)
+    let (new_x, new_y) = if let Some(pos) = saved_position {
+        // Validate saved position is still on screen
+        let screens = get_all_screen_bounds(app.clone()).await?;
+        let is_valid = screens.iter().any(|screen| {
+            let bar_right = pos.x + FLOATING_BAR_WIDTH as i32;
+            let bar_bottom = pos.y + FLOATING_BAR_HEIGHT as i32;
+            let screen_right = screen.x + screen.width as i32;
+            let screen_bottom = screen.y + screen.height as i32;
+            pos.x < screen_right && bar_right > screen.x &&
+            pos.y < screen_bottom && bar_bottom > screen.y
+        });
+
+        if is_valid {
+            (pos.x, pos.y)
+        } else {
+            calculate_floating_bar_position(&app)?
+        }
+    } else {
+        calculate_floating_bar_position(&app)?
+    };
+
+    log::info!(
+        "Creating floating control bar at ({}, {}) with size {}x{}",
+        new_x, new_y, FLOATING_BAR_WIDTH, FLOATING_BAR_HEIGHT
+    );
+
+    // Build the floating window
+    // Navigate to /floating-control-bar route which will render the control bar UI
+    let url = WebviewUrl::App("/floating-control-bar".into());
+
+    let window = WebviewWindowBuilder::new(&app, FLOATING_BAR_LABEL, url)
+        .title("Controls")
+        .inner_size(FLOATING_BAR_WIDTH as f64, FLOATING_BAR_HEIGHT as f64)
+        .position(new_x as f64, new_y as f64)
+        .decorations(false)
+        .transparent(false) // Disabled for debugging - was causing invisible window
+        .always_on_top(true)
+        .skip_taskbar(false) // Show in taskbar for debugging
+        .visible(true)
+        .focused(true) // Focus for visibility
+        .resizable(false)
+        .build()
+        .map_err(|e| format!("Failed to create floating bar window: {}", e))?;
+
+    // Temporarily disabled content protection for debugging
+    // set_content_protection_webview(&window, true)?;
+
+    // On macOS, remove shadow for cleaner look
+    #[cfg(target_os = "macos")]
+    {
+        window
+            .set_shadow(false)
+            .map_err(|e| format!("Failed to disable shadow: {}", e))?;
+    }
+
+    // Force show the window
+    window.show().map_err(|e| format!("Failed to show window: {}", e))?;
+    window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
+
+    log::info!("Floating control bar created successfully at ({}, {})", new_x, new_y);
+    Ok(())
+}
+
+/// Close the floating control bar window
+#[tauri::command]
+pub async fn close_floating_bar(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window(FLOATING_BAR_LABEL) {
+        log::info!("Closing floating control bar");
+        window
+            .destroy()
+            .map_err(|e| format!("Failed to close floating bar: {}", e))?;
+        log::info!("Floating control bar closed successfully");
+    } else {
+        log::info!("Floating control bar not found, nothing to close");
+    }
+    Ok(())
+}
+
+/// Check if floating control bar window exists
+#[tauri::command]
+pub fn is_floating_bar_open(app: AppHandle) -> bool {
+    app.get_webview_window(FLOATING_BAR_LABEL).is_some()
+}
+
+/// Get the current position of the floating control bar (for saving)
+#[tauri::command]
+pub async fn get_floating_bar_position(app: AppHandle) -> Result<Option<ControlBarPosition>, String> {
+    if let Some(window) = app.get_webview_window(FLOATING_BAR_LABEL) {
+        let position = window.outer_position().map_err(|e| e.to_string())?;
+        Ok(Some(ControlBarPosition {
+            x: position.x,
+            y: position.y,
+        }))
+    } else {
+        Ok(None)
+    }
+}
+
+/// Calculate default position for floating bar (right edge of screen, vertically centered)
+fn calculate_floating_bar_position(app: &AppHandle) -> Result<(i32, i32), String> {
+    let primary_monitor = app
+        .primary_monitor()
+        .map_err(|e| format!("Failed to get primary monitor: {}", e))?
+        .ok_or_else(|| "No primary monitor found".to_string())?;
+
+    let monitor_size = primary_monitor.size();
+    let monitor_position = primary_monitor.position();
+
+    // Position on right edge with 20px margin, vertically centered
+    let x = monitor_position.x + monitor_size.width as i32 - FLOATING_BAR_WIDTH as i32 - 20;
+    let y = monitor_position.y + (monitor_size.height as i32 - FLOATING_BAR_HEIGHT as i32) / 2;
+
+    Ok((x, y))
+}
+
+/// Set content protection on a WebviewWindow
+fn set_content_protection_webview(window: &tauri::WebviewWindow, enabled: bool) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        use objc::runtime::Object;
+        use objc::{msg_send, sel, sel_impl};
+
+        let ns_window = window
+            .ns_window()
+            .map_err(|e| format!("Failed to get NSWindow: {}", e))?;
+
+        let ns_window_ptr = ns_window as usize;
+
+        dispatch::Queue::main().exec_sync(move || {
+            unsafe {
+                let ns_window = ns_window_ptr as *mut Object;
+                let sharing_type: i64 = if enabled { 0 } else { 1 };
+                let _: () = msg_send![ns_window, setSharingType: sharing_type];
+            }
+        });
+
+        log::info!(
+            "macOS: Floating bar content protection {} (sharingType = {})",
+            if enabled { "enabled" } else { "disabled" },
+            if enabled { "none" } else { "readOnly" }
+        );
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use windows::Win32::Foundation::HWND;
+        use windows::Win32::UI::WindowsAndMessaging::{
+            SetWindowDisplayAffinity, WDA_EXCLUDEFROMCAPTURE, WDA_NONE,
+        };
+
+        let hwnd = window
+            .hwnd()
+            .map_err(|e| format!("Failed to get HWND: {}", e))?;
+
+        let hwnd = HWND(hwnd.0 as *mut std::ffi::c_void);
+
+        unsafe {
+            let affinity = if enabled { WDA_EXCLUDEFROMCAPTURE } else { WDA_NONE };
+            SetWindowDisplayAffinity(hwnd, affinity)
+                .map_err(|e| format!("Failed to set display affinity: {}", e))?;
+        }
+
+        log::info!(
+            "Windows: Floating bar content protection {} (WDA_{})",
+            if enabled { "enabled" } else { "disabled" },
+            if enabled { "EXCLUDEFROMCAPTURE" } else { "NONE" }
+        );
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let _ = (window, enabled);
+        log::info!("Linux: Floating bar content protection not supported");
+    }
+
     Ok(())
 }

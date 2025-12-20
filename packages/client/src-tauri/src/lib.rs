@@ -40,6 +40,11 @@ pub fn run() {
       screen_share::transform_to_control_bar,
       screen_share::restore_from_control_bar,
       screen_share::is_transform_mode_active,
+      // Floating control bar window commands (Story 3.7 - Separate Window)
+      screen_share::create_floating_bar,
+      screen_share::close_floating_bar,
+      screen_share::is_floating_bar_open,
+      screen_share::get_floating_bar_position,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
