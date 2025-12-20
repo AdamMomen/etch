@@ -39,7 +39,9 @@ const createMockStroke = (overrides: Partial<Stroke> = {}): Stroke => ({
 })
 
 // Helper to create mock room
-const createMockRoom = (overrides: Partial<Room> = {}): Room => {
+type MockRoom = Room & { __simulateDataReceived: (payload: Uint8Array, participant?: { identity: string }, topic?: string) => void }
+
+const createMockRoom = (overrides: Partial<Room> = {}): MockRoom => {
   const handlers = new Map<string, Function[]>()
 
   return {
@@ -69,11 +71,11 @@ const createMockRoom = (overrides: Partial<Room> = {}): Room => {
       eventHandlers.forEach((handler) => handler(payload, participant, undefined, topic))
     },
     ...overrides,
-  } as unknown as Room & { __simulateDataReceived: Function }
+  } as unknown as MockRoom
 }
 
 describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
-  let mockRoom: Room & { __simulateDataReceived: Function }
+  let mockRoom: MockRoom
   let mockSetStrokes: ReturnType<typeof vi.fn>
   let mockAddStroke: ReturnType<typeof vi.fn>
   let mockDeleteStroke: ReturnType<typeof vi.fn>
