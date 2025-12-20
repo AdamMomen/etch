@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react'
 import { getStroke } from 'perfect-freehand'
 import type { Point, Stroke } from '@nameless/shared'
-import { getPointerCoordinates } from '@/utils/coordinates'
+import { getPointerCoordinates, denormalizeStrokePoints } from '@/utils/coordinates'
 import type { Tool } from '@/stores/annotationStore'
 import type { SyncState } from '@/hooks/useAnnotationSync'
 
@@ -72,17 +72,6 @@ export const HIGHLIGHTER_OPTIONS = {
 export const HIGHLIGHTER_OPACITY = 0.4
 
 /**
- * Converts normalized [0,1] coordinates to canvas pixel coordinates.
- */
-function denormalizePoint(
-  point: Point,
-  width: number,
-  height: number
-): [number, number, number] {
-  return [point.x * width, point.y * height, point.pressure ?? 0.5]
-}
-
-/**
  * Converts an array of stroke outline points to an SVG path string.
  * Used with getStroke from perfect-freehand.
  */
@@ -124,15 +113,15 @@ function renderStroke(
 ): void {
   if (stroke.points.length < 2) return
 
-  // Convert normalized points to pixel coordinates for perfect-freehand
-  const pixelPoints = stroke.points.map((p) =>
-    denormalizePoint(p, canvasWidth, canvasHeight)
-  )
+  // Convert normalized points to pixel coordinates for perfect-freehand (AC-4.9.3)
+  // Using centralized denormalization from coordinates.ts for consistency
+  const pixelPoints = denormalizeStrokePoints(stroke.points, canvasWidth, canvasHeight)
 
   // Get stroke options based on tool type
   const options = stroke.tool === 'highlighter' ? HIGHLIGHTER_OPTIONS : PEN_OPTIONS
 
   // Generate stroke outline using perfect-freehand
+  // perfect-freehand accepts points as {x, y, pressure?} objects
   const strokeOutline = getStroke(pixelPoints, options)
   const pathString = getSvgPathFromStroke(strokeOutline)
 
