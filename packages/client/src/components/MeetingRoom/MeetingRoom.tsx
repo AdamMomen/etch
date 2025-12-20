@@ -19,8 +19,9 @@ import { ParticipantGrid } from './ParticipantGrid'
 import { ParticipantBubbles } from './ParticipantBubbles'
 import { LeaveConfirmDialog } from './LeaveConfirmDialog'
 import { InviteModal } from './InviteModal'
-import { ScreenShareViewer, SourcePickerDialog, SharerControlBar } from '@/components/ScreenShare'
+import { ScreenShareViewer, SourcePickerDialog } from '@/components/ScreenShare'
 import { generateInviteLink, copyToClipboard } from '@/lib/invite'
+import { floatingBarChannel, type FloatingBarMessageType } from '@/lib/floatingBarChannel'
 import { cn } from '@/lib/utils'
 
 const RESPONSIVE_BREAKPOINT = 1000
@@ -88,12 +89,21 @@ export function MeetingRoom() {
   // Get resetVolumes from volumeStore for cleanup on leave
   const resetVolumes = useVolumeStore((state) => state.resetVolumes)
 
-  // Get floating bar position from settings for transform mode
-  const floatingBarPosition = useSettingsStore((s) => s.floatingBarPosition)
+  // Get floating bar position setter for saving position
   const setFloatingBarPosition = useSettingsStore((s) => s.setFloatingBarPosition)
 
-  // Transform mode state (Story 3.7 - ADR-009)
-  const [isTransformMode, setIsTransformMode] = useState(false)
+  // Settings for floating bar state sync
+  const isMutedSetting = useSettingsStore((s) => s.isMuted)
+  const isVideoOffSetting = useSettingsStore((s) => s.isVideoOff)
+  const setMuted = useSettingsStore((s) => s.setMuted)
+  const setVideoOff = useSettingsStore((s) => s.setVideoOff)
+  const selectedAudioDevice = useSettingsStore((s) => s.preferredMicrophoneId)
+  const selectedVideoDevice = useSettingsStore((s) => s.preferredCameraId)
+  const setSelectedAudioDevice = useSettingsStore((s) => s.setPreferredMicrophone)
+  const setSelectedVideoDevice = useSettingsStore((s) => s.setPreferredCamera)
+
+  // Floating bar window state (Story 3.7 - Separate Window)
+  const [isFloatingBarOpen, setIsFloatingBarOpen] = useState(false)
 
   // Check if local participant is the host
   const isHost = localParticipant?.role === 'host'
@@ -290,78 +300,175 @@ export function MeetingRoom() {
     }
   }, [isConnected, isHost, roomId])
 
-  // Transform mode effect - transform window when local sharing starts (Story 3.7 - ADR-009)
+  // Initialize BroadcastChannel as main window and handle commands from floating bar
   useEffect(() => {
-    const handleTransform = async () => {
-      if (isLocalSharing && !isTransformMode) {
-        // Transform to control bar
-        try {
-          const savedPosition = floatingBarPosition
-            ? { x: floatingBarPosition.x, y: floatingBarPosition.y }
-            : null
-          await invoke('transform_to_control_bar', { savedPosition })
-          setIsTransformMode(true)
-          console.log('[MeetingRoom] Transformed to control bar mode')
-        } catch (error) {
-          console.error('[MeetingRoom] Failed to transform to control bar:', error)
-        }
-      } else if (!isLocalSharing && isTransformMode) {
-        // Restore from control bar
-        try {
-          await invoke('restore_from_control_bar')
-          setIsTransformMode(false)
-          console.log('[MeetingRoom] Restored from control bar mode')
-        } catch (error) {
-          console.error('[MeetingRoom] Failed to restore from control bar:', error)
-        }
+    floatingBarChannel.initAsMain()
+
+    const unsubscribe = floatingBarChannel.onCommand(async (command: FloatingBarMessageType, payload?: unknown) => {
+      console.log('[MeetingRoom] Received command from floating bar:', command, payload)
+
+      switch (command) {
+        case 'TOGGLE_MIC':
+          if (room) {
+            const newMuted = !isMutedSetting
+            setMuted(newMuted)
+            try {
+              await room.localParticipant.setMicrophoneEnabled(!newMuted)
+            } catch (error) {
+              console.error('[MeetingRoom] Failed to toggle mic:', error)
+              setMuted(isMutedSetting) // Revert on error
+            }
+          }
+          break
+
+        case 'TOGGLE_CAMERA':
+          if (room) {
+            const newVideoOff = !isVideoOffSetting
+            setVideoOff(newVideoOff)
+            try {
+              await room.localParticipant.setCameraEnabled(!newVideoOff)
+            } catch (error) {
+              console.error('[MeetingRoom] Failed to toggle camera:', error)
+              setVideoOff(isVideoOffSetting) // Revert on error
+            }
+          }
+          break
+
+        case 'SWITCH_AUDIO_DEVICE':
+          if (room && payload && typeof payload === 'object' && 'deviceId' in payload) {
+            const { deviceId } = payload as { deviceId: string }
+            setSelectedAudioDevice(deviceId)
+            try {
+              await room.switchActiveDevice('audioinput', deviceId)
+            } catch (error) {
+              console.error('[MeetingRoom] Failed to switch audio device:', error)
+            }
+          }
+          break
+
+        case 'SWITCH_VIDEO_DEVICE':
+          if (room && payload && typeof payload === 'object' && 'deviceId' in payload) {
+            const { deviceId } = payload as { deviceId: string }
+            setSelectedVideoDevice(deviceId)
+            try {
+              await room.switchActiveDevice('videoinput', deviceId)
+            } catch (error) {
+              console.error('[MeetingRoom] Failed to switch video device:', error)
+            }
+          }
+          break
+
+        case 'STOP_SHARING':
+          stopScreenShare()
+          break
+
+        case 'FLOATING_CLOSED':
+          setIsFloatingBarOpen(false)
+          break
       }
-    }
-
-    handleTransform()
-  }, [isLocalSharing, isTransformMode, floatingBarPosition])
-
-  // Save position when window is moved in transform mode
-  useEffect(() => {
-    if (!isTransformMode) return
-
-    let mounted = true
-
-    const setupMoveListener = async () => {
-      try {
-        const appWindow = getCurrentWindow()
-        const unlisten = await appWindow.onMoved(async ({ payload: position }) => {
-          if (!mounted) return
-          // Save position when window is moved
-          setFloatingBarPosition({ x: position.x, y: position.y })
-        })
-        return unlisten
-      } catch {
-        // Not running in Tauri environment
-        return () => {}
-      }
-    }
-
-    const unlistenPromise = setupMoveListener()
+    })
 
     return () => {
-      mounted = false
-      unlistenPromise.then((unlisten) => unlisten())
+      unsubscribe()
+      floatingBarChannel.close()
     }
-  }, [isTransformMode, setFloatingBarPosition])
+  }, [room, isMutedSetting, isVideoOffSetting, setMuted, setVideoOff, setSelectedAudioDevice, setSelectedVideoDevice, stopScreenShare])
 
-  // Render transform mode UI (SharerControlBar) when in transform mode
-  if (isTransformMode) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-transparent">
-        <SharerControlBar
-          room={room}
-          videoTrack={videoTrack}
-          onStopShare={stopScreenShare}
-          onLeave={handleLeave}
-        />
-      </div>
-    )
-  }
+  // Sync state to floating bar window
+  useEffect(() => {
+    if (!isFloatingBarOpen) return
+
+    floatingBarChannel.syncState({
+      isMuted: isMutedSetting,
+      isVideoOff: isVideoOffSetting,
+      isSharing: isLocalSharing,
+      localParticipant,
+      remoteParticipants,
+      selectedAudioDevice,
+      selectedVideoDevice,
+      audioDevices: audioDevices.map((d) => ({ deviceId: d.deviceId, label: d.label })),
+      videoDevices: videoDevices.map((d) => ({ deviceId: d.deviceId, label: d.label })),
+    })
+  }, [
+    isFloatingBarOpen,
+    isMutedSetting,
+    isVideoOffSetting,
+    isLocalSharing,
+    localParticipant,
+    remoteParticipants,
+    selectedAudioDevice,
+    selectedVideoDevice,
+    audioDevices,
+    videoDevices,
+  ])
+
+  // Track if we're currently opening/closing to prevent loops
+  const floatingBarActionRef = useRef(false)
+
+  // Floating bar window effect - open/close floating window when local sharing starts/stops (Story 3.7)
+  useEffect(() => {
+    const handleFloatingBar = async () => {
+      // Prevent concurrent actions
+      if (floatingBarActionRef.current) return
+
+      if (isLocalSharing && !isFloatingBarOpen) {
+        // Open floating control bar window when sharing starts
+        floatingBarActionRef.current = true
+        try {
+          // Read position directly from store to avoid dependency
+          const pos = useSettingsStore.getState().floatingBarPosition
+          const savedPosition = pos ? { x: pos.x, y: pos.y } : null
+          console.log('[MeetingRoom] Opening floating bar with position:', savedPosition)
+          await invoke('create_floating_bar', { savedPosition })
+          setIsFloatingBarOpen(true)
+          console.log('[MeetingRoom] Opened floating control bar')
+        } catch (error) {
+          console.error('[MeetingRoom] Failed to open floating bar:', error)
+        } finally {
+          floatingBarActionRef.current = false
+        }
+      } else if (!isLocalSharing && isFloatingBarOpen) {
+        // Close floating control bar when sharing stops
+        floatingBarActionRef.current = true
+        try {
+          await invoke('close_floating_bar')
+          setIsFloatingBarOpen(false)
+          console.log('[MeetingRoom] Closed floating control bar')
+        } catch (error) {
+          console.error('[MeetingRoom] Failed to close floating bar:', error)
+        } finally {
+          floatingBarActionRef.current = false
+        }
+      }
+    }
+
+    handleFloatingBar()
+  }, [isLocalSharing, isFloatingBarOpen])
+
+  // Save floating bar position periodically when open
+  useEffect(() => {
+    if (!isFloatingBarOpen) return
+
+    const savePosition = async () => {
+      try {
+        const position = await invoke<{ x: number; y: number } | null>('get_floating_bar_position')
+        if (position) {
+          setFloatingBarPosition({ x: position.x, y: position.y })
+        }
+      } catch {
+        // Floating bar might be closed
+      }
+    }
+
+    // Save position every 2 seconds while floating bar is open
+    const interval = setInterval(savePosition, 2000)
+
+    // Also save on unmount
+    return () => {
+      clearInterval(interval)
+      savePosition()
+    }
+  }, [isFloatingBarOpen, setFloatingBarPosition])
 
   return (
     <div className="flex h-screen flex-col bg-background">

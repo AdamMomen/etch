@@ -33,6 +33,13 @@ export interface SourcePickerState {
   // Window capture not supported - only screens are available
 }
 
+export interface SharedScreenBounds {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export interface UseScreenShareReturn {
   isSharing: boolean
   isLocalSharing: boolean
@@ -49,6 +56,10 @@ export interface UseScreenShareReturn {
     sourceId: string,
     sourceType: 'screen'
   ) => Promise<void>
+  // Shared screen bounds for same-screen detection (Story 3.7 - ADR-010)
+  sharedScreenBounds: SharedScreenBounds | null
+  // Check if app window is on same screen as shared screen
+  checkIsSameScreen: () => Promise<boolean>
 }
 
 // Platform type from Tauri command
@@ -91,48 +102,9 @@ const isSameScreen = (
   return screen1.x === screen2.x && screen1.y === screen2.y
 }
 
-// Minimize main window via Tauri
-const minimizeMainWindow = async (): Promise<void> => {
-  try {
-    await invoke('minimize_main_window')
-  } catch (error) {
-    console.error('Failed to minimize window:', error)
-  }
-}
-
-// Smart minimize: only minimize if app is on the shared screen
-const minimizeIfOnSharedScreen = async (
-  sharedScreen: { x: number; y: number } | undefined
-): Promise<void> => {
-  if (!sharedScreen) {
-    // No screen info, minimize to be safe
-    await minimizeMainWindow()
-    return
-  }
-
-  const appMonitor = await getWindowMonitor()
-  if (!appMonitor) {
-    // Can't determine app location, minimize to be safe
-    await minimizeMainWindow()
-    return
-  }
-
-  if (isSameScreen(appMonitor, sharedScreen)) {
-    console.log('[ScreenShare] App is on shared screen, minimizing')
-    await minimizeMainWindow()
-  } else {
-    console.log('[ScreenShare] App is on different screen, not minimizing')
-  }
-}
-
-// Restore main window via Tauri
-const restoreMainWindow = async (): Promise<void> => {
-  try {
-    await invoke('restore_main_window')
-  } catch (error) {
-    console.error('Failed to restore window:', error)
-  }
-}
+// NOTE: minimizeMainWindow and restoreMainWindow have been REMOVED (Story 3.7 - ADR-010)
+// Window transform is now handled by MeetingRoom using transform_to_control_bar/restore_from_control_bar
+// The MeetingRoom component detects same-screen scenario and transforms accordingly
 
 // Start screen share using Windows WebView getDisplayMedia
 const startWindowsScreenShare = async (
@@ -303,6 +275,9 @@ export function useScreenShare({
   const [canShare, setCanShare] = useState(true)
   const streamRef = useRef<MediaStream | null>(null)
 
+  // Shared screen bounds for same-screen detection (Story 3.7 - ADR-010)
+  const [sharedScreenBounds, setSharedScreenBounds] = useState<SharedScreenBounds | null>(null)
+
   // Annotation overlay for sharer (Story 3.6)
   const { createOverlay, destroyOverlay } = useAnnotationOverlay()
 
@@ -319,6 +294,16 @@ export function useScreenShare({
     setCanShare(true)
   }, [])
 
+  // Check if app window is on same screen as shared screen (Story 3.7 - ADR-010)
+  const checkIsSameScreen = useCallback(async (): Promise<boolean> => {
+    if (!sharedScreenBounds) return false
+
+    const appMonitor = await getWindowMonitor()
+    if (!appMonitor) return true // Assume same screen if can't determine
+
+    return isSameScreen(appMonitor, sharedScreenBounds)
+  }, [sharedScreenBounds])
+
   // Handle source selection from picker
   // Note: Only 'screen' type is supported - window capture is not yet implemented
   const onSourceSelect = useCallback(
@@ -332,6 +317,20 @@ export function useScreenShare({
         // Close picker
         setSourcePicker((prev) => ({ ...prev, isOpen: false }))
 
+        // Find the selected screen to get its bounds FIRST (before triggering state changes)
+        const selectedScreen = sourcePicker.screens.find(s => s.id === sourceId)
+
+        // Store shared screen bounds for same-screen detection (Story 3.7 - ADR-010)
+        // IMPORTANT: Set bounds BEFORE startSharing() to avoid race condition with MeetingRoom transform effect
+        if (selectedScreen) {
+          setSharedScreenBounds({
+            x: selectedScreen.x,
+            y: selectedScreen.y,
+            width: selectedScreen.width,
+            height: selectedScreen.height,
+          })
+        }
+
         // Start capture with selected source - use screenShareToken for Core connection
         // to avoid disconnecting the WebView's LiveKit connection (different identity)
         await startNativeCapture(
@@ -341,16 +340,13 @@ export function useScreenShare({
           screenShareToken
         )
 
-        // Update store state
+        // Update store state (triggers MeetingRoom transform effect)
         startSharing('screen', sourceId)
 
         // Update local participant's sharing state
         if (localParticipant?.id) {
           updateParticipant(localParticipant.id, { isScreenSharing: true })
         }
-
-        // Find the selected screen to get its bounds
-        const selectedScreen = sourcePicker.screens.find(s => s.id === sourceId)
 
         // Create annotation overlay over the shared screen (Story 3.6)
         // Use the selected screen's position and dimensions from the source picker
@@ -368,12 +364,8 @@ export function useScreenShare({
           console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
         }
 
-        // TODO: Transform mode for sharer controls (Story 3.7 - ADR-009)
-        // Will be implemented with window transform instead of separate floating bar
-
-        // Smart minimize: only minimize if app is on the shared screen
-        // If sharing a different screen, keep the app visible
-        await minimizeIfOnSharedScreen(selectedScreen)
+        // Transform mode is handled by MeetingRoom using checkIsSameScreen (Story 3.7 - ADR-010)
+        // No auto-minimize here - MeetingRoom decides whether to transform or stay full
       } catch (error) {
         toast.error(
           error instanceof Error
@@ -421,7 +413,17 @@ export function useScreenShare({
         streamRef.current = stream
         setScreenTrack(track)
 
-        // Update store state
+        // Windows: Set primary screen bounds FIRST (before triggering state changes)
+        // IMPORTANT: Set bounds BEFORE startSharing() to avoid race condition with MeetingRoom transform effect
+        // Note: getDisplayMedia doesn't tell us which screen was picked, so assume primary
+        setSharedScreenBounds({
+          x: 0,
+          y: 0,
+          width: window.screen.width,
+          height: window.screen.height,
+        })
+
+        // Update store state (triggers MeetingRoom transform effect)
         startSharing('screen', stream.getVideoTracks()[0].id)
 
         // Update local participant's sharing state
@@ -442,12 +444,8 @@ export function useScreenShare({
           console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
         }
 
-        // TODO: Transform mode for sharer controls (Story 3.7 - ADR-009)
-        // Will be implemented with window transform instead of separate floating bar
-
-        // Windows: Always minimize because getDisplayMedia doesn't tell us which screen was picked
-        // On macOS/Linux we use native picker which gives us screen coordinates for smart minimize
-        await minimizeMainWindow()
+        // Transform mode is handled by MeetingRoom using checkIsSameScreen (Story 3.7 - ADR-010)
+        // No auto-minimize here - MeetingRoom decides whether to transform or stay full
 
         // Listen for track ended (browser "Stop sharing" button)
         stream.getVideoTracks()[0].onended = () => {
@@ -570,15 +568,15 @@ export function useScreenShare({
         console.warn('[ScreenShare] Failed to destroy annotation overlay:', overlayError)
       }
 
-      // TODO: Transform mode cleanup (Story 3.7 - ADR-009)
-      // Will restore window from control bar mode when implemented
+      // Clear shared screen bounds (Story 3.7 - ADR-010)
+      setSharedScreenBounds(null)
 
       // TODO: Native window cleanup for remaining sharer overlay windows (Story 3.8)
       // When implemented, destroy these windows here:
       // - Share border indicator (Story 3.8) - invoke('destroy_floating_window', { label: 'share-border' })
 
-      // Restore main window
-      await restoreMainWindow()
+      // Window restoration is handled by MeetingRoom transform mode (Story 3.7 - ADR-010)
+      // MeetingRoom will call restore_from_control_bar when isLocalSharing changes to false
     } catch (error) {
       console.error('Error stopping screen share:', error)
       stopSharingStore()
@@ -752,5 +750,8 @@ export function useScreenShare({
     sourcePicker,
     onSourcePickerClose,
     onSourceSelect,
+    // Same-screen detection for transform mode (Story 3.7 - ADR-010)
+    sharedScreenBounds,
+    checkIsSameScreen,
   }
 }
