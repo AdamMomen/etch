@@ -56,6 +56,28 @@ const RETRY_CONFIG = {
 }
 
 /**
+ * Validates that all points in an array are within the normalized [0, 1] range.
+ * Logs a warning if any coordinates are out of bounds.
+ * Story 4.9 AC-4.9.1: All coordinates stored as [0, 1] normalized range
+ *
+ * @param points - Array of points to validate
+ * @param context - Context string for logging (e.g., message type)
+ * @returns true if all points are valid, false if any are out of range
+ */
+function validateNormalizedCoordinates(points: Point[], context: string): boolean {
+  for (const point of points) {
+    if (point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) {
+      console.warn(
+        `[AnnotationSync] Received coordinates outside [0, 1] range in ${context}:`,
+        { x: point.x, y: point.y }
+      )
+      return false
+    }
+  }
+  return true
+}
+
+/**
  * Hook for synchronizing annotations across participants via LiveKit DataTrack.
  *
  * Per ADR-002: LiveKit DataTracks for Annotations
@@ -242,6 +264,11 @@ export function useAnnotationSync(
         hasReceivedSnapshotRef.current = true
         clearRetryTimeout()
 
+        // Validate normalized coordinates for all strokes (Story 4.9 AC-4.9.1)
+        for (const stroke of snapshotMsg.strokes) {
+          validateNormalizedCoordinates(stroke.points, 'state_snapshot')
+        }
+
         // Bulk load strokes (AC-4.8.1, AC-4.8.2)
         setStrokes(snapshotMsg.strokes)
 
@@ -276,6 +303,10 @@ export function useAnnotationSync(
       switch (message.type) {
         case ANNOTATION_MESSAGE_TYPES.STROKE_UPDATE: {
           const updateMsg = message as StrokeUpdateMessage
+
+          // Validate normalized coordinates (Story 4.9 AC-4.9.1)
+          validateNormalizedCoordinates(updateMsg.points, 'stroke_update')
+
           // Create or update in-progress remote stroke
           const existingStrokes = useAnnotationStore.getState().remoteActiveStrokes
           const existing = existingStrokes.get(updateMsg.strokeId)
@@ -301,6 +332,10 @@ export function useAnnotationSync(
 
         case ANNOTATION_MESSAGE_TYPES.STROKE_COMPLETE: {
           const completeMsg = message as StrokeCompleteMessage
+
+          // Validate normalized coordinates (Story 4.9 AC-4.9.1)
+          validateNormalizedCoordinates(completeMsg.points, 'stroke_complete')
+
           // Create completed stroke and add to store
           const completedStroke: Stroke = {
             id: completeMsg.strokeId,

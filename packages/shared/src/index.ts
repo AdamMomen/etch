@@ -40,6 +40,7 @@ export {
 export {
   PARTICIPANT_COLORS,
   type ParticipantColor,
+  getParticipantColor,
   MAX_STROKE_POINTS,
   MAX_PARTICIPANTS,
   TOKEN_EXPIRY_SECONDS,

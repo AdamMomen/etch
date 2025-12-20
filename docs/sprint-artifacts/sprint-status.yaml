@@ -100,8 +100,8 @@ development_status:
   4-6-build-annotation-toolbar-component: done
   4-7-implement-datatrack-annotation-sync: done
   4-8-implement-late-joiner-annotation-sync: done
-  4-9-implement-resolution-independent-coordinates: backlog
-  4-10-assign-unique-colors-per-participant: backlog
+  4-9-implement-resolution-independent-coordinates: done
+  4-10-assign-unique-colors-per-participant: ready-for-dev
   4-11-render-annotations-on-sharers-overlay: backlog
   epic-4-retrospective: optional
 
