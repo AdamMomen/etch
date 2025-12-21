@@ -157,8 +157,8 @@ export function AnnotationOverlayPage() {
         padding: 0,
         overflow: 'hidden',
         background: 'transparent',
-        // Subtle border to indicate sharing
-        border: '2px solid rgba(59, 130, 246, 0.4)',
+        // Red border to indicate sharing (Story 3.8)
+        border: '4px solid rgba(239, 68, 68, 0.8)',
         boxSizing: 'border-box',
       }}
     >

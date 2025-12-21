@@ -571,9 +571,7 @@ export function useScreenShare({
       // Clear shared screen bounds (Story 3.7 - ADR-010)
       setSharedScreenBounds(null)
 
-      // TODO: Native window cleanup for remaining sharer overlay windows (Story 3.8)
-      // When implemented, destroy these windows here:
-      // - Share border indicator (Story 3.8) - invoke('destroy_floating_window', { label: 'share-border' })
+      // Border indicator is part of annotation overlay - destroyed with destroyOverlay() above (Story 3.8)
 
       // Window restoration is handled by MeetingRoom transform mode (Story 3.7 - ADR-010)
       // MeetingRoom will call restore_from_control_bar when isLocalSharing changes to false

@@ -441,7 +441,7 @@ pub async fn create_annotation_overlay(
         </html>
         "#.to_string()
     } else {
-        // Production mode: minimal - just a subtle border indicating sharing
+        // Production mode: visible red border indicating sharing (Story 3.8)
         r#"
         <!DOCTYPE html>
         <html>
@@ -453,7 +453,7 @@ pub async fn create_annotation_overlay(
                     height: 100%;
                     background: transparent;
                     overflow: hidden;
-                    border: 2px solid rgba(59, 130, 246, 0.4);
+                    border: 4px solid rgba(239, 68, 68, 0.8);
                     box-sizing: border-box;
                 }
             </style>
