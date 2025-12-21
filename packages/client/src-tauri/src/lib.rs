@@ -1,13 +1,13 @@
 mod screen_share;
 
-use screen_share::{CoreState, TransformModeState};
+use screen_share::{CoreState, SharingTrayState};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_shell::init())
     .manage(CoreState::default())
-    .manage(TransformModeState::default())
+    .manage(SharingTrayState::default())
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -36,15 +36,9 @@ pub fn run() {
       screen_share::get_window_bounds_by_title,
       // Screen bounds utility (used by multiple features)
       screen_share::get_all_screen_bounds,
-      // Transform mode commands (Story 3.7 - ADR-009)
-      screen_share::transform_to_control_bar,
-      screen_share::restore_from_control_bar,
-      screen_share::is_transform_mode_active,
-      // Floating control bar window commands (Story 3.7 - Separate Window)
-      screen_share::create_floating_bar,
-      screen_share::close_floating_bar,
-      screen_share::is_floating_bar_open,
-      screen_share::get_floating_bar_position,
+      // System tray commands (Story 3.7 - ADR-011 Menu Bar)
+      screen_share::show_sharing_tray,
+      screen_share::hide_sharing_tray,
     ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

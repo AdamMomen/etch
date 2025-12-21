@@ -784,559 +784,182 @@ pub async fn get_all_screen_bounds(app: AppHandle) -> Result<Vec<ScreenBounds>, 
 }
 
 // ============================================================================
-// Transform Mode Commands (Story 3.7 - ADR-009)
+// System Tray Menu for Screen Sharing (Story 3.7 - ADR-011 Simple Menu)
 // ============================================================================
+//
+// Simple, clean system tray menu that appears when screen sharing is active.
+// ADR-011: Simplified to 3 actions only (no mic/camera controls)
+//
+// Design:
+// ┌───────────────────────────┐
+// │ Sharing Screen            │  ← Header (disabled)
+// ├───────────────────────────┤
+// │ Open Nameless     ⌘O      │
+// │ Stop Sharing      ⌘S      │
+// │ Leave Meeting     ⌘Q      │
+// └───────────────────────────┘
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use tauri::tray::{TrayIcon, TrayIconBuilder};
+use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem};
 
-/// State to store the original window geometry before transform
-pub struct TransformModeState {
-    /// Original window width
-    pub original_width: Mutex<Option<u32>>,
-    /// Original window height
-    pub original_height: Mutex<Option<u32>>,
-    /// Original window X position
-    pub original_x: Mutex<Option<i32>>,
-    /// Original window Y position
-    pub original_y: Mutex<Option<i32>>,
-    /// Whether transform mode is active
-    pub is_transformed: AtomicBool,
+/// State to hold the sharing tray icon
+pub struct SharingTrayState {
+    pub tray: Mutex<Option<TrayIcon>>,
 }
 
-impl Default for TransformModeState {
+impl Default for SharingTrayState {
     fn default() -> Self {
         Self {
-            original_width: Mutex::new(None),
-            original_height: Mutex::new(None),
-            original_x: Mutex::new(None),
-            original_y: Mutex::new(None),
-            is_transformed: AtomicBool::new(false),
+            tray: Mutex::new(None),
         }
     }
 }
 
-/// Control bar dimensions (Vertical Design - ADR-010)
-/// Height varies based on view mode:
-/// - Multi view: 420px (with participant preview)
-/// - Single view: 280px (self only)
-/// - Hide view: 120px (controls only)
-const CONTROL_BAR_WIDTH: u32 = 200;
-const CONTROL_BAR_HEIGHT: u32 = 420; // Default to multi view height
-
-/// Configuration for saved control bar position
-#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
-pub struct ControlBarPosition {
-    pub x: i32,
-    pub y: i32,
-}
-
-/// Transform the main window into a compact control bar
-/// Saves original geometry, resizes, repositions to top-center, enables always-on-top
+/// Show the sharing tray icon with menu (AC-3.7.1)
+/// Called when screen sharing starts
 #[tauri::command]
-pub async fn transform_to_control_bar(
-    window: tauri::Window,
+pub async fn show_sharing_tray(
     app: AppHandle,
-    state: State<'_, TransformModeState>,
-    saved_position: Option<ControlBarPosition>,
+    state: State<'_, SharingTrayState>,
 ) -> Result<(), String> {
-    // Check if already transformed
-    if state.is_transformed.load(Ordering::SeqCst) {
-        return Err("Window is already in transform mode".to_string());
-    }
-
-    // Save current window geometry
-    let current_size = window.outer_size().map_err(|e| e.to_string())?;
-    let current_position = window.outer_position().map_err(|e| e.to_string())?;
-
+    // Check if tray already exists
     {
-        let mut width = state.original_width.lock().map_err(|e| e.to_string())?;
-        *width = Some(current_size.width);
-    }
-    {
-        let mut height = state.original_height.lock().map_err(|e| e.to_string())?;
-        *height = Some(current_size.height);
-    }
-    {
-        let mut x = state.original_x.lock().map_err(|e| e.to_string())?;
-        *x = Some(current_position.x);
-    }
-    {
-        let mut y = state.original_y.lock().map_err(|e| e.to_string())?;
-        *y = Some(current_position.y);
-    }
-
-    log::info!(
-        "Saving original window geometry: {}x{} at ({}, {})",
-        current_size.width, current_size.height,
-        current_position.x, current_position.y
-    );
-
-    // Calculate new position
-    let (new_x, new_y) = if let Some(pos) = saved_position {
-        // Validate saved position is still on screen
-        let screens = get_all_screen_bounds(app.clone()).await?;
-        let is_valid = screens.iter().any(|screen| {
-            let bar_right = pos.x + CONTROL_BAR_WIDTH as i32;
-            let bar_bottom = pos.y + CONTROL_BAR_HEIGHT as i32;
-            let screen_right = screen.x + screen.width as i32;
-            let screen_bottom = screen.y + screen.height as i32;
-            pos.x < screen_right && bar_right > screen.x &&
-            pos.y < screen_bottom && bar_bottom > screen.y
-        });
-
-        if is_valid {
-            (pos.x, pos.y)
-        } else {
-            // Fallback to default position
-            calculate_default_position(&app)?
+        let tray = state.tray.lock().map_err(|e| e.to_string())?;
+        if tray.is_some() {
+            log::info!("Sharing tray already exists");
+            return Ok(());
         }
+    }
+
+    log::info!("Creating sharing tray menu (ADR-011: 3 actions only)...");
+
+    // Build the simplified menu
+    let menu = build_sharing_menu(&app)?;
+
+    // Create tray icon using app's default icon
+    let icon = app.default_window_icon()
+        .ok_or_else(|| "No default icon".to_string())?
+        .clone();
+
+    let tray = TrayIconBuilder::new()
+        .menu(&menu)
+        .icon(icon)
+        .tooltip("NAMELESS - Sharing Screen")
+        .menu_on_left_click(true) // AC-3.7.2: Show menu on click
+        .on_menu_event(move |app, event| {
+            handle_tray_menu_event(app, event.id.as_ref());
+        })
+        .build(&app)
+        .map_err(|e| format!("Failed to create tray: {}", e))?;
+
+    // Store the tray
+    {
+        let mut tray_state = state.tray.lock().map_err(|e| e.to_string())?;
+        *tray_state = Some(tray);
+    }
+
+    log::info!("Sharing tray created successfully");
+    Ok(())
+}
+
+/// Hide the sharing tray icon (AC-3.7.7)
+/// Called when screen sharing stops or meeting ends
+#[tauri::command]
+pub async fn hide_sharing_tray(
+    state: State<'_, SharingTrayState>,
+) -> Result<(), String> {
+    let mut tray = state.tray.lock().map_err(|e| e.to_string())?;
+
+    if let Some(t) = tray.take() {
+        log::info!("Removing sharing tray");
+        // Tray is automatically removed when dropped
+        drop(t);
+        log::info!("Sharing tray removed");
     } else {
-        calculate_default_position(&app)?
-    };
-
-    log::info!(
-        "Transforming window to control bar: {}x{} at ({}, {})",
-        CONTROL_BAR_WIDTH, CONTROL_BAR_HEIGHT, new_x, new_y
-    );
-
-    // Remove window decorations (title bar, borders) for clean floating pill look
-    window
-        .set_decorations(false)
-        .map_err(|e| format!("Failed to disable decorations: {}", e))?;
-
-    // Disable window shadow for cleaner appearance
-    #[cfg(target_os = "macos")]
-    {
-        window
-            .set_shadow(false)
-            .map_err(|e| format!("Failed to disable shadow: {}", e))?;
-    }
-
-    // Resize window to compact dimensions
-    window
-        .set_size(tauri::Size::Logical(tauri::LogicalSize {
-            width: CONTROL_BAR_WIDTH as f64,
-            height: CONTROL_BAR_HEIGHT as f64,
-        }))
-        .map_err(|e| format!("Failed to set size: {}", e))?;
-
-    // Reposition window
-    window
-        .set_position(tauri::Position::Physical(tauri::PhysicalPosition {
-            x: new_x,
-            y: new_y,
-        }))
-        .map_err(|e| format!("Failed to set position: {}", e))?;
-
-    // Enable always-on-top
-    window
-        .set_always_on_top(true)
-        .map_err(|e| format!("Failed to set always on top: {}", e))?;
-
-    // Enable content protection (exclude from screen capture)
-    set_content_protection_internal(&window, true)?;
-
-    // Mark as transformed
-    state.is_transformed.store(true, Ordering::SeqCst);
-
-    log::info!("Window transformed to control bar mode successfully");
-    Ok(())
-}
-
-/// Restore the window from control bar mode to its original state
-#[tauri::command]
-pub async fn restore_from_control_bar(
-    window: tauri::Window,
-    state: State<'_, TransformModeState>,
-) -> Result<(), String> {
-    // Check if actually transformed
-    if !state.is_transformed.load(Ordering::SeqCst) {
-        return Err("Window is not in transform mode".to_string());
-    }
-
-    // Get saved geometry
-    let width = {
-        let w = state.original_width.lock().map_err(|e| e.to_string())?;
-        w.ok_or_else(|| "No saved width".to_string())?
-    };
-    let height = {
-        let h = state.original_height.lock().map_err(|e| e.to_string())?;
-        h.ok_or_else(|| "No saved height".to_string())?
-    };
-    let x = {
-        let x = state.original_x.lock().map_err(|e| e.to_string())?;
-        x.ok_or_else(|| "No saved x position".to_string())?
-    };
-    let y = {
-        let y = state.original_y.lock().map_err(|e| e.to_string())?;
-        y.ok_or_else(|| "No saved y position".to_string())?
-    };
-
-    log::info!(
-        "Restoring window to original geometry: {}x{} at ({}, {})",
-        width, height, x, y
-    );
-
-    // Disable content protection first
-    set_content_protection_internal(&window, false)?;
-
-    // Disable always-on-top
-    window
-        .set_always_on_top(false)
-        .map_err(|e| format!("Failed to disable always on top: {}", e))?;
-
-    // Restore window decorations (title bar, borders)
-    window
-        .set_decorations(true)
-        .map_err(|e| format!("Failed to enable decorations: {}", e))?;
-
-    // Restore window shadow on macOS
-    #[cfg(target_os = "macos")]
-    {
-        window
-            .set_shadow(true)
-            .map_err(|e| format!("Failed to enable shadow: {}", e))?;
-    }
-
-    // Restore original size
-    window
-        .set_size(tauri::Size::Physical(tauri::PhysicalSize { width, height }))
-        .map_err(|e| format!("Failed to restore size: {}", e))?;
-
-    // Restore original position
-    window
-        .set_position(tauri::Position::Physical(tauri::PhysicalPosition { x, y }))
-        .map_err(|e| format!("Failed to restore position: {}", e))?;
-
-    // Clear saved geometry
-    {
-        let mut w = state.original_width.lock().map_err(|e| e.to_string())?;
-        *w = None;
-    }
-    {
-        let mut h = state.original_height.lock().map_err(|e| e.to_string())?;
-        *h = None;
-    }
-    {
-        let mut x = state.original_x.lock().map_err(|e| e.to_string())?;
-        *x = None;
-    }
-    {
-        let mut y = state.original_y.lock().map_err(|e| e.to_string())?;
-        *y = None;
-    }
-
-    // Mark as not transformed
-    state.is_transformed.store(false, Ordering::SeqCst);
-
-    log::info!("Window restored from control bar mode successfully");
-    Ok(())
-}
-
-/// Check if transform mode is active
-#[tauri::command]
-pub fn is_transform_mode_active(state: State<'_, TransformModeState>) -> bool {
-    state.is_transformed.load(Ordering::SeqCst)
-}
-
-/// Calculate default position (right edge of screen, vertically centered)
-fn calculate_default_position(app: &AppHandle) -> Result<(i32, i32), String> {
-    let primary_monitor = app
-        .primary_monitor()
-        .map_err(|e| format!("Failed to get primary monitor: {}", e))?
-        .ok_or_else(|| "No primary monitor found".to_string())?;
-
-    let monitor_size = primary_monitor.size();
-    let monitor_position = primary_monitor.position();
-
-    // Position on right edge with 20px margin, vertically centered
-    let x = monitor_position.x + monitor_size.width as i32 - CONTROL_BAR_WIDTH as i32 - 20;
-    let y = monitor_position.y + (monitor_size.height as i32 - CONTROL_BAR_HEIGHT as i32) / 2;
-
-    Ok((x, y))
-}
-
-/// Internal function to set content protection (platform-specific)
-fn set_content_protection_internal(window: &tauri::Window, enabled: bool) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        set_content_protection_macos(window, enabled)?;
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        set_content_protection_windows(window, enabled)?;
-    }
-
-    #[cfg(target_os = "linux")]
-    {
-        // Linux doesn't have a standard API for this
-        log::info!("Linux: Content protection not supported");
+        log::info!("No sharing tray to remove");
     }
 
     Ok(())
 }
 
-/// macOS: Set NSWindow.sharingType to exclude from screen capture
-#[cfg(target_os = "macos")]
-fn set_content_protection_macos(window: &tauri::Window, enabled: bool) -> Result<(), String> {
-    use objc::runtime::Object;
-    use objc::{msg_send, sel, sel_impl};
+/// Build the sharing menu (ADR-011: simplified to 3 actions)
+/// AC-3.7.2: Menu structure with keyboard shortcuts
+fn build_sharing_menu(
+    app: &AppHandle,
+) -> Result<tauri::menu::Menu<tauri::Wry>, String> {
+    // Header item (disabled) - shows sharing status
+    let header = MenuItemBuilder::new("Sharing Screen")
+        .id("header")
+        .enabled(false)
+        .build(app)
+        .map_err(|e| format!("Failed to create header: {}", e))?;
 
-    let ns_window = window
-        .ns_window()
-        .map_err(|e| format!("Failed to get NSWindow: {}", e))?;
+    // Separator after header
+    let sep = PredefinedMenuItem::separator(app)
+        .map_err(|e| format!("Failed to create separator: {}", e))?;
 
-    let ns_window_ptr = ns_window as usize;
+    // Open Nameless (AC-3.7.3) - show and focus main window
+    let open_item = MenuItemBuilder::new("Open Nameless")
+        .id("open_nameless")
+        // .accelerator("CmdOrCtrl+O")
+        .build(app)
+        .map_err(|e| format!("Failed to create open item: {}", e))?;
 
-    // Configure NSWindow on main thread
-    dispatch::Queue::main().exec_sync(move || {
-        unsafe {
-            let ns_window = ns_window_ptr as *mut Object;
-            // NSWindowSharingNone = 0, NSWindowSharingReadOnly = 1
-            let sharing_type: i64 = if enabled { 0 } else { 1 };
-            let _: () = msg_send![ns_window, setSharingType: sharing_type];
-        }
-    });
+    // Stop Sharing (AC-3.7.4)
+    let stop_item = MenuItemBuilder::new("Stop Sharing")
+        .id("stop_sharing")
+        // .accelerator("CmdOrCtrl+S")
+        .build(app)
+        .map_err(|e| format!("Failed to create stop item: {}", e))?;
 
-    log::info!(
-        "macOS: Content protection {} (sharingType = {})",
-        if enabled { "enabled" } else { "disabled" },
-        if enabled { "none" } else { "readOnly" }
-    );
-    Ok(())
-}
+    // Leave Meeting (AC-3.7.5)
+    let leave_item = MenuItemBuilder::new("Leave Meeting")
+        .id("leave_meeting")
+        // .accelerator("CmdOrCtrl+Q")
+        .build(app)
+        .map_err(|e| format!("Failed to create leave item: {}", e))?;
 
-/// Windows: Use SetWindowDisplayAffinity to exclude from screen capture
-#[cfg(target_os = "windows")]
-fn set_content_protection_windows(window: &tauri::Window, enabled: bool) -> Result<(), String> {
-    use windows::Win32::Foundation::HWND;
-    use windows::Win32::UI::WindowsAndMessaging::{
-        SetWindowDisplayAffinity, WDA_EXCLUDEFROMCAPTURE, WDA_NONE,
-    };
-
-    let hwnd = window
-        .hwnd()
-        .map_err(|e| format!("Failed to get HWND: {}", e))?;
-
-    let hwnd = HWND(hwnd.0 as *mut std::ffi::c_void);
-
-    unsafe {
-        let affinity = if enabled { WDA_EXCLUDEFROMCAPTURE } else { WDA_NONE };
-        SetWindowDisplayAffinity(hwnd, affinity)
-            .map_err(|e| format!("Failed to set display affinity: {}", e))?;
-    }
-
-    log::info!(
-        "Windows: Content protection {} (WDA_{})",
-        if enabled { "enabled" } else { "disabled" },
-        if enabled { "EXCLUDEFROMCAPTURE" } else { "NONE" }
-    );
-    Ok(())
-}
-
-// ============================================================================
-// Floating Control Bar Window (Story 3.7 - Separate Window Approach)
-// ============================================================================
-
-/// Label for the floating control bar window
-const FLOATING_BAR_LABEL: &str = "floating-control-bar";
-
-/// Floating control bar dimensions (same as vertical design)
-const FLOATING_BAR_WIDTH: u32 = 200;
-const FLOATING_BAR_HEIGHT: u32 = 420;
-
-/// Create a separate floating control bar window
-/// This window loads the same app but navigates to the /floating-control-bar route
-/// Uses BroadcastChannel for state sync with main window
-#[tauri::command]
-pub async fn create_floating_bar(
-    app: AppHandle,
-    saved_position: Option<ControlBarPosition>,
-) -> Result<(), String> {
-    // Check if floating bar already exists
-    if let Some(existing) = app.get_webview_window(FLOATING_BAR_LABEL) {
-        log::info!("Floating control bar already exists, focusing it");
-        let _ = existing.show();
-        let _ = existing.set_focus();
-        return Ok(());
-    }
-
-    // Calculate position (right edge of primary screen, vertically centered)
-    let (new_x, new_y) = if let Some(pos) = saved_position {
-        // Validate saved position is still on screen
-        let screens = get_all_screen_bounds(app.clone()).await?;
-        let is_valid = screens.iter().any(|screen| {
-            let bar_right = pos.x + FLOATING_BAR_WIDTH as i32;
-            let bar_bottom = pos.y + FLOATING_BAR_HEIGHT as i32;
-            let screen_right = screen.x + screen.width as i32;
-            let screen_bottom = screen.y + screen.height as i32;
-            pos.x < screen_right && bar_right > screen.x &&
-            pos.y < screen_bottom && bar_bottom > screen.y
-        });
-
-        if is_valid {
-            (pos.x, pos.y)
-        } else {
-            calculate_floating_bar_position(&app)?
-        }
-    } else {
-        calculate_floating_bar_position(&app)?
-    };
-
-    log::info!(
-        "Creating floating control bar at ({}, {}) with size {}x{}",
-        new_x, new_y, FLOATING_BAR_WIDTH, FLOATING_BAR_HEIGHT
-    );
-
-    // Build the floating window
-    // Navigate to /floating-control-bar route which will render the control bar UI
-    let url = WebviewUrl::App("/floating-control-bar".into());
-
-    let window = WebviewWindowBuilder::new(&app, FLOATING_BAR_LABEL, url)
-        .title("Controls")
-        .inner_size(FLOATING_BAR_WIDTH as f64, FLOATING_BAR_HEIGHT as f64)
-        .position(new_x as f64, new_y as f64)
-        .decorations(false)
-        .transparent(false) // Disabled for debugging - was causing invisible window
-        .always_on_top(true)
-        .skip_taskbar(false) // Show in taskbar for debugging
-        .visible(true)
-        .focused(true) // Focus for visibility
-        .resizable(false)
+    // Build menu (AC-3.7.2: exact structure)
+    let menu = MenuBuilder::new(app)
+        .item(&header)
+        .item(&sep)
+        .item(&open_item)
+        .item(&stop_item)
+        .item(&leave_item)
         .build()
-        .map_err(|e| format!("Failed to create floating bar window: {}", e))?;
+        .map_err(|e| format!("Failed to build menu: {}", e))?;
 
-    // Temporarily disabled content protection for debugging
-    // set_content_protection_webview(&window, true)?;
-
-    // On macOS, remove shadow for cleaner look
-    #[cfg(target_os = "macos")]
-    {
-        window
-            .set_shadow(false)
-            .map_err(|e| format!("Failed to disable shadow: {}", e))?;
-    }
-
-    // Force show the window
-    window.show().map_err(|e| format!("Failed to show window: {}", e))?;
-    window.set_focus().map_err(|e| format!("Failed to focus window: {}", e))?;
-
-    log::info!("Floating control bar created successfully at ({}, {})", new_x, new_y);
-    Ok(())
+    Ok(menu)
 }
 
-/// Close the floating control bar window
-#[tauri::command]
-pub async fn close_floating_bar(app: AppHandle) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window(FLOATING_BAR_LABEL) {
-        log::info!("Closing floating control bar");
-        window
-            .destroy()
-            .map_err(|e| format!("Failed to close floating bar: {}", e))?;
-        log::info!("Floating control bar closed successfully");
-    } else {
-        log::info!("Floating control bar not found, nothing to close");
-    }
-    Ok(())
-}
+/// Handle tray menu item clicks (AC-3.7.3, AC-3.7.4, AC-3.7.5, AC-3.7.6)
+fn handle_tray_menu_event(app: &AppHandle, menu_id: &str) {
+    log::info!("Tray menu clicked: {}", menu_id);
 
-/// Check if floating control bar window exists
-#[tauri::command]
-pub fn is_floating_bar_open(app: AppHandle) -> bool {
-    app.get_webview_window(FLOATING_BAR_LABEL).is_some()
-}
-
-/// Get the current position of the floating control bar (for saving)
-#[tauri::command]
-pub async fn get_floating_bar_position(app: AppHandle) -> Result<Option<ControlBarPosition>, String> {
-    if let Some(window) = app.get_webview_window(FLOATING_BAR_LABEL) {
-        let position = window.outer_position().map_err(|e| e.to_string())?;
-        Ok(Some(ControlBarPosition {
-            x: position.x,
-            y: position.y,
-        }))
-    } else {
-        Ok(None)
-    }
-}
-
-/// Calculate default position for floating bar (right edge of screen, vertically centered)
-fn calculate_floating_bar_position(app: &AppHandle) -> Result<(i32, i32), String> {
-    let primary_monitor = app
-        .primary_monitor()
-        .map_err(|e| format!("Failed to get primary monitor: {}", e))?
-        .ok_or_else(|| "No primary monitor found".to_string())?;
-
-    let monitor_size = primary_monitor.size();
-    let monitor_position = primary_monitor.position();
-
-    // Position on right edge with 20px margin, vertically centered
-    let x = monitor_position.x + monitor_size.width as i32 - FLOATING_BAR_WIDTH as i32 - 20;
-    let y = monitor_position.y + (monitor_size.height as i32 - FLOATING_BAR_HEIGHT as i32) / 2;
-
-    Ok((x, y))
-}
-
-/// Set content protection on a WebviewWindow
-fn set_content_protection_webview(window: &tauri::WebviewWindow, enabled: bool) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        use objc::runtime::Object;
-        use objc::{msg_send, sel, sel_impl};
-
-        let ns_window = window
-            .ns_window()
-            .map_err(|e| format!("Failed to get NSWindow: {}", e))?;
-
-        let ns_window_ptr = ns_window as usize;
-
-        dispatch::Queue::main().exec_sync(move || {
-            unsafe {
-                let ns_window = ns_window_ptr as *mut Object;
-                let sharing_type: i64 = if enabled { 0 } else { 1 };
-                let _: () = msg_send![ns_window, setSharingType: sharing_type];
+    match menu_id {
+        "open_nameless" => {
+            // AC-3.7.3: Show and focus main window
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+                log::info!("Main window shown and focused");
             }
-        });
-
-        log::info!(
-            "macOS: Floating bar content protection {} (sharingType = {})",
-            if enabled { "enabled" } else { "disabled" },
-            if enabled { "none" } else { "readOnly" }
-        );
-    }
-
-    #[cfg(target_os = "windows")]
-    {
-        use windows::Win32::Foundation::HWND;
-        use windows::Win32::UI::WindowsAndMessaging::{
-            SetWindowDisplayAffinity, WDA_EXCLUDEFROMCAPTURE, WDA_NONE,
-        };
-
-        let hwnd = window
-            .hwnd()
-            .map_err(|e| format!("Failed to get HWND: {}", e))?;
-
-        let hwnd = HWND(hwnd.0 as *mut std::ffi::c_void);
-
-        unsafe {
-            let affinity = if enabled { WDA_EXCLUDEFROMCAPTURE } else { WDA_NONE };
-            SetWindowDisplayAffinity(hwnd, affinity)
-                .map_err(|e| format!("Failed to set display affinity: {}", e))?;
         }
-
-        log::info!(
-            "Windows: Floating bar content protection {} (WDA_{})",
-            if enabled { "enabled" } else { "disabled" },
-            if enabled { "EXCLUDEFROMCAPTURE" } else { "NONE" }
-        );
+        "stop_sharing" => {
+            // AC-3.7.4: Emit event to frontend to stop sharing
+            if let Err(e) = app.emit("tray://stop-sharing", ()) {
+                log::error!("Failed to emit stop-sharing event: {}", e);
+            }
+        }
+        "leave_meeting" => {
+            // AC-3.7.5: Emit event to frontend to leave meeting
+            if let Err(e) = app.emit("tray://leave-meeting", ()) {
+                log::error!("Failed to emit leave-meeting event: {}", e);
+            }
+        }
+        _ => {
+            log::warn!("Unknown tray menu action: {}", menu_id);
+        }
     }
-
-    #[cfg(target_os = "linux")]
-    {
-        let _ = (window, enabled);
-        log::info!("Linux: Floating bar content protection not supported");
-    }
-
-    Ok(())
 }
