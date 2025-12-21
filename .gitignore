@@ -58,3 +58,5 @@ coverage/
 # Shared Rust target directory (see .cargo/config.toml)
 target/
 packages/core/target/
+
+hopp-main

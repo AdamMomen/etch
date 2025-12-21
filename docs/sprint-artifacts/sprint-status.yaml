@@ -71,7 +71,10 @@ development_status:
   3-4-enforce-single-active-screen-share: done
   3-5-implement-screen-share-quality-optimization: done
   3-6-create-sharers-transparent-overlay-window: done
-  3-7-create-sharers-floating-control-bar: backlog
+  # ADR-011 (2025-12-21): Complete redesign to Menu Bar approach
+  # Simplest solution wins - native macOS menu, 3 actions
+  # 2025-12-21: COMPLETE - Removed ~800 lines of old code, added ~80 lines of tray code
+  3-7-create-sharers-floating-control-bar: done
   3-8-create-share-border-indicator: done
   3-9-implement-main-window-auto-minimize-and-restore: backlog
   # Story 3.10 - Core-centric architecture with hybrid approach

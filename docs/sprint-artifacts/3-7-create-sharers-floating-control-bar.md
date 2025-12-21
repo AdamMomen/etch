@@ -1,367 +1,279 @@
-# Story 3.7: Create Sharer's Floating Control Bar (Vertical Design)
+# Story 3.7: Create Sharer's Menu Bar Control
 
-Status: in-progress
+Status: complete
 
 ## Architecture Change Notice
 
-**ADR-009 (2025-12-18):** Redesigned from separate floating window to Transform Mode (main window transforms).
+**ADR-011 (2025-12-21):** Complete redesign to **Menu Bar approach**. Replaces all previous floating window/transform mode designs (ADR-009, ADR-010) with native macOS menu bar control.
 
-**ADR-010 (2025-12-20):** Redesigned from horizontal bar to **Vertical Layout** with:
-- Smart same-screen detection for bandwidth optimization
-- Oval video frames (Around-style)
-- 4 circular control buttons with dropdowns
-- View mode toggles (single/multi/hide)
+**Design Principle:** Simplest solution wins.
 
 ## Story
 
 As a **screen sharer**,
-I want **the main window to transform into a compact vertical control bar with my camera preview and meeting controls**,
-So that **I can manage my meeting presence while sharing, with minimal screen footprint and optimized bandwidth**.
+I want **a menu bar icon with quick controls while sharing**,
+So that **I can stop sharing or leave the meeting without switching windows**.
 
 ## Acceptance Criteria
 
-1. **AC-3.7.1: Window transforms on share start (same screen)**
+1. **AC-3.7.1: Tray Icon Appears When Sharing**
    - Given I start sharing my screen
-   - When the shared screen is on the SAME monitor as the Nameless window
-   - Then the main window transforms:
-     - Resizes to compact vertical dimensions (~200x380px)
-     - Removes window decorations (borderless floating pill)
-     - Sets always-on-top
-     - Enables content protection (excluded from capture)
-     - Repositions to right edge of screen (or saved position)
+   - When the screen share is active
+   - Then a tray icon appears in the macOS menu bar
+   - And the icon has a red dot badge indicating active share
 
-2. **AC-3.7.2: Window stays full on different screen**
-   - Given I start sharing my screen
-   - When the shared screen is on a DIFFERENT monitor than the Nameless window
-   - Then the main window stays full-size on the other monitor
-   - And I can view the meeting normally while sharing
+2. **AC-3.7.2: Menu Shows on Click**
+   - Given the tray icon is visible
+   - When I click the tray icon
+   - Then a native menu appears with:
+     - "Sharing Screen" status header (disabled, with red indicator)
+     - Separator
+     - "Open Nameless" (⌘O)
+     - "Stop Sharing" (⌘S)
+     - "Leave Meeting" (⌘Q)
 
-3. **AC-3.7.3: Vertical layout with video previews**
-   - Given the window is in floating control bar mode
-   - Then it displays vertically:
-     - Top bar with view toggle icons (40px)
-     - Self camera preview in large oval frame (~140px)
-     - Participant preview(s) in oval frames (~140px, scrollable if >2)
-     - Bottom control bar with 4 circular buttons (60px)
-   - And has semi-transparent dark background (`rgba(0,0,0,0.85)`)
-   - And has rounded corners (16px border radius)
+3. **AC-3.7.3: Open Nameless Works**
+   - Given the menu is visible
+   - When I click "Open Nameless"
+   - Then the main Nameless window shows and focuses
+   - And I can access full meeting controls (mic, camera, etc.)
 
-4. **AC-3.7.4: Top bar view controls**
-   - Given the floating control bar is visible
-   - Then the top bar shows 3 toggle icons (left to right):
-     1. **Single view** (👤) — Show only self camera preview
-     2. **Multi view** (👥) — Show self + participant previews
-     3. **Hide videos** (⊘) — Collapse video section, show only controls (~120px total height)
+4. **AC-3.7.4: Stop Sharing Works**
+   - Given the menu is visible
+   - When I click "Stop Sharing"
+   - Then screen sharing stops immediately
+   - And the tray icon red dot badge is removed
+   - And the main window restores (if minimized)
 
-5. **AC-3.7.5: Bottom control bar with 4 circular buttons**
-   - Given the floating control bar is visible
-   - Then the bottom bar shows 4 circular buttons (left to right):
-     1. **Annotation** (✏️) — Opens annotation tools
-     2. **Camera** (📹) — Toggle camera + dropdown for device selection
-     3. **Mic** (🎤) — Toggle mic + dropdown for device selection
-     4. **Stop** (⏹) — Stops sharing with confirmation popup
-   - And buttons are 44px diameter with 12px gap
+5. **AC-3.7.5: Leave Meeting Works**
+   - Given the menu is visible
+   - When I click "Leave Meeting"
+   - Then I leave the meeting immediately
+   - And the tray icon is hidden
+   - And the main window shows the home screen
 
-6. **AC-3.7.6: Camera/Mic dropdowns for device selection**
-   - Given I click the dropdown indicator on Camera or Mic button
-   - Then a menu appears listing available devices
-   - And I can switch devices without leaving the control bar
-   - And the dropdown closes after selection
+6. **AC-3.7.6: Keyboard Shortcuts Work**
+   - Given the menu is visible
+   - When I press ⌘O, ⌘S, or ⌘Q
+   - Then the corresponding action executes
 
-7. **AC-3.7.7: Stop sharing confirmation popup**
-   - Given I click the Stop button
-   - Then a confirmation popup appears: "Stop sharing?"
-   - And I must confirm to stop (prevents accidental clicks)
-   - And on confirm, sharing stops and window restores
-
-8. **AC-3.7.8: Conditional unsubscribe (bandwidth optimization)**
-   - Given I am sharing on the SAME screen as the Nameless window
-   - Then I am unsubscribed from my own screen share track
-   - And bandwidth is saved (I see my actual screen, not the feed)
-   - Note: Uses monitor comparison to detect same-screen scenario
-
-9. **AC-3.7.9: Resubscribe on restore**
-   - Given I stop sharing (or move to different screen)
-   - Then I am resubscribed to remote screen share tracks
-   - And the window restores to previous size/position/decorations
-
-10. **AC-3.7.10: Window is draggable**
-    - Given the floating control bar is visible
-    - When I drag on non-interactive areas (top bar, between elements)
-    - Then I can reposition anywhere on screen
-    - And position is persisted for next session
-
-11. **AC-3.7.11: Oval video frames (Around-style)**
-    - Given video previews are displayed
-    - Then they use soft oval/rounded frames (border-radius: 50%)
-    - And show colored avatar placeholder when camera is off
-    - And self video is mirrored (scaleX: -1)
-
-12. **AC-3.7.12: Content protection**
-    - Given the window is in transform mode
-    - Then the window is NOT visible in the screen capture
-    - Note: macOS `NSWindow.sharingType = .none`, Windows `WDA_EXCLUDEFROMCAPTURE`
-
-13. **AC-3.7.13: Window always on top**
-    - Given the window is in transform mode
-    - Then it appears above all other windows including fullscreen apps
-    - And it works across all screens/desktops (multi-monitor)
+7. **AC-3.7.7: Tray Icon Hidden When Not Sharing**
+   - Given I am not sharing my screen
+   - When I look at the menu bar
+   - Then no Nameless sharing indicator is visible
 
 ## Visual Spec
 
+### Tray Icon States
+
+| State | Icon |
+|-------|------|
+| In meeting, not sharing | No tray icon |
+| In meeting, sharing | App icon + red dot badge |
+
+### Menu Layout
+
 ```
 ┌──────────────────────┐
-│  [👤] [👥] [⊘]      │  ← Top bar: view toggles (40px)
-├──────────────────────┤
-│  ╭────────────────╮  │
-│  │                │  │
-│  │   👤 Self      │  │  ← Self camera oval (140px)
-│  │                │  │
-│  ╰────────────────╯  │
-├──────────────────────┤
-│  ╭────────────────╮  │
-│  │                │  │
-│  │  👤 Participant│  │  ← Participant oval (140px)
-│  │                │  │
-│  ╰────────────────╯  │
-├──────────────────────┤
-│   ◯    ◯    ◯    ◯   │  ← Bottom controls (60px)
-│   ✏️   📹   🎤   ⏹   │
-│        ▾    ▾        │  ← Dropdown indicators
+│ 🔴 Sharing Screen    │  ← status (disabled)
+│ ──────────────────── │  ← separator
+│ Open Nameless   ⌘O   │  ← show main window
+│ Stop Sharing    ⌘S   │  ← stop screen share
+│ Leave Meeting   ⌘Q   │  ← leave meeting
 └──────────────────────┘
-     ~200px wide
-     ~380px tall (multi view)
-     ~280px tall (single view)
-     ~120px tall (hide videos)
 ```
 
-[Source: User sketch 2025-12-20]
-[Supersedes: Horizontal bar design from ADR-009]
+**That's it. 3 actions.**
 
 ## Tasks / Subtasks
 
-### Completed (Previous Implementation)
+- [x] **Task 1: Create Tauri tray icon infrastructure** (AC: 3.7.1, 3.7.7)
+  - [x] Add `TrayIconBuilder` setup in `lib.rs` or new `tray.rs` module
+  - [x] Create tray icon asset (app icon with red dot variant)
+  - [x] Configure `show_menu_on_left_click(true)`
+  - [x] Add Tauri commands: `show_share_tray()`, `hide_share_tray()`
 
-- [x] **Task 0: Remove old floating bar code** — Done 2025-12-18
-- [x] **Task 1: Add window transform Tauri commands** — Done 2025-12-18
-- [x] **Task 2: Implement content protection** — Done 2025-12-18
-- [x] **Task 8: Fix window decorations** — Done 2025-12-20
+- [x] **Task 2: Create native menu** (AC: 3.7.2)
+  - [x] Build menu with `MenuBuilder`:
+    - Disabled "Sharing Screen" status item
+    - Separator
+    - "Open Nameless" with ⌘O accelerator
+    - "Stop Sharing" with ⌘S accelerator
+    - "Leave Meeting" with ⌘Q accelerator
 
-### Vertical Design Implementation (ADR-010) — 2025-12-20
+- [x] **Task 3: Implement menu actions** (AC: 3.7.3, 3.7.4, 3.7.5, 3.7.6)
+  - [x] `open_nameless`: Show and focus main window
+  - [x] `stop_sharing`: Emit `tray://stop-sharing` event to frontend
+  - [x] `leave_meeting`: Emit `tray://leave-meeting` event to frontend
+  - [x] Frontend listens and handles events
 
-- [x] **Task 9: Same-screen detection** (AC: 3.7.1, 3.7.2, 3.7.8)
-  - [x] Compare window monitor to shared screen bounds via `checkIsSameScreen()`
-  - [x] Store `sharedScreenBounds` in useScreenShare hook
-  - [x] Export `checkIsSameScreen` function from hook
-  - [x] Only transform window if on same screen
-  - [x] Keep full UI if sharing on different monitor
+- [x] **Task 4: Integrate with screen share lifecycle**
+  - [x] Call `show_share_tray()` when `startScreenShare` succeeds
+  - [x] Call `hide_share_tray()` when sharing stops
+  - [x] Listen for tray events in MeetingRoom component
+  - [x] Clean up tray on app exit
 
-- [ ] **Task 10: Conditional track unsubscribe** (AC: 3.7.8, 3.7.9) — Deferred
-  - [ ] When `isSameScreen && isLocalSharing`: unsubscribe from own screen track
-  - [ ] When stopping share: resubscribe to remote tracks
-  - [ ] Use `track.setSubscribed(false/true)` LiveKit API
-  - Note: Deferred to post-v1 — bandwidth optimization, not critical for UX
+- [x] **Task 5: Cleanup old implementation**
+  - [x] Remove `SharerControlBar.tsx`
+  - [x] Remove `SharerControlBarVertical.tsx`
+  - [x] Remove `FloatingControlBarPage.tsx`
+  - [x] Remove `floatingBarChannel.ts`
+  - [x] Remove transform mode commands from `screen_share.rs`
+  - [x] Remove related tests
+  - [x] Update MeetingRoom to remove transform mode logic
 
-- [x] **Task 11: Create SharerControlBarVertical component** (AC: 3.7.3, 3.7.11)
-  - [x] Create `packages/client/src/components/ScreenShare/SharerControlBarVertical.tsx`
-  - [x] Vertical layout: 200px wide, variable height
-  - [x] Semi-transparent dark background (`rgba(0,0,0,0.85)`)
-  - [x] Border radius 16px
-  - [x] Draggable via `data-tauri-drag-region`
-
-- [x] **Task 12: Top bar view toggles** (AC: 3.7.4)
-  - [x] 3 toggle buttons: Single (👤), Multi (👥), Hide (⊘)
-  - [x] State management for view mode
-  - [x] Dynamic height based on view mode:
-    - Multi: ~420px
-    - Single: ~280px
-    - Hide: ~120px
-
-- [x] **Task 13: Oval video frames** (AC: 3.7.11)
-  - [x] Self camera preview with oval frame (border-radius: 50%)
-  - [x] Participant previews with oval frames (stacked circles for multiple)
-  - [x] Avatar placeholder when camera off
-  - [x] Mirror self video (scaleX: -1)
-
-- [x] **Task 14: Bottom control bar with 4 buttons** (AC: 3.7.5)
-  - [x] Annotation button (✏️) — disabled placeholder
-  - [x] Camera button (📹) with toggle state
-  - [x] Mic button (🎤) with toggle state
-  - [x] Stop button (⏹) with red background
-  - [x] 44px diameter buttons, 12px gap
-
-- [x] **Task 15: Device selection dropdowns** (AC: 3.7.6)
-  - [x] Dropdown on Camera button (ChevronDown indicator)
-  - [x] Dropdown on Mic button (ChevronDown indicator)
-  - [x] List available devices from `useDevices` hook
-  - [x] Switch device on selection
-
-- [x] **Task 16: Stop confirmation popup** (AC: 3.7.7)
-  - [x] AlertDialog with "Stop sharing?" message
-  - [x] Cancel/Stop buttons
-  - [x] On confirm: calls `onStopShare` prop
-
-- [x] **Task 17: Update transform dimensions** (AC: 3.7.1)
-  - [x] Change `CONTROL_BAR_WIDTH` from 450 to 200
-  - [x] Change `CONTROL_BAR_HEIGHT` from 80 to 420
-  - [x] Update default position to right edge of screen, vertically centered
-
-- [x] **Task 18: Update MeetingRoom integration**
-  - [x] Replace `SharerControlBar` with `SharerControlBarVertical`
-  - [x] Add same-screen detection logic via `checkIsSameScreen`
-  - [x] Conditional transform: only transform if on same screen
-  - [x] Remove auto-minimize from useScreenShare (let MeetingRoom handle)
-
-- [ ] **Task 19: Write tests for new components** — Pending
-  - [ ] Unit test: SharerControlBarVertical renders correctly
-  - [ ] Unit test: View mode toggles work
-  - [ ] Unit test: Device dropdowns work
-  - [ ] Unit test: Stop confirmation works
-  - [ ] Integration test: Same-screen detection
+- [x] **Task 6: Write tests**
+  - [x] Test tray icon visibility on share start/stop
+  - [x] Test menu action event emissions
+  - [x] Test frontend event handlers
 
 ## Dev Notes
 
-### Architecture Context (Updated per ADR-009)
+### Architecture Decision: ADR-011
 
-**Transform Mode** replaces the separate floating bar window:
-- Main window transforms in-place (resize, reposition, always-on-top)
-- Same React context - no IPC needed for controls
-- Same Zustand stores - direct state access
-- Same LiveKit connection - direct API calls
-- Content protection excludes window from screen capture
+**Decision:** Replace all previous approaches with native macOS menu bar control.
 
-### Technical Approach
+**Previous approaches (superseded):**
+- ADR-003: Separate floating window (complex IPC)
+- ADR-009: Transform mode (window transforms)
+- ADR-010: Vertical layout (elaborate UI)
 
-**Window Transform (Rust):**
+**Why this is better:**
+
+| Aspect | Previous | Menu Bar |
+|--------|----------|----------|
+| Lines of code | ~800 | ~80 |
+| Custom UI | Complex React components | None (native menu) |
+| IPC | BroadcastChannel | Tauri events |
+| State sync | Custom hooks | None needed |
+| Maintenance | High | Minimal |
+| Look & feel | Custom | Native macOS |
+
+### Key Tauri APIs
+
 ```rust
-#[tauri::command]
-async fn transform_to_control_bar(window: tauri::Window) -> Result<(), String> {
-    // Save current state
-    let current_size = window.outer_size()?;
-    let current_position = window.outer_position()?;
+use tauri::tray::{TrayIconBuilder};
+use tauri::menu::{MenuBuilder, MenuItemBuilder};
 
-    // Transform
-    window.set_size(LogicalSize::new(450.0, 80.0))?;
-    window.set_position(/* top-center */)?;
-    window.set_always_on_top(true)?;
-    set_content_protection(&window, true)?;
+pub fn create_share_tray(app: &AppHandle) -> Result<(), String> {
+    let menu = MenuBuilder::new(app)
+        .text("status", "🔴 Sharing Screen")
+        .separator()
+        .item(&MenuItemBuilder::new("Open Nameless")
+            .id("open")
+            .accelerator("CmdOrCtrl+O")
+            .build(app)?)
+        .item(&MenuItemBuilder::new("Stop Sharing")
+            .id("stop")
+            .accelerator("CmdOrCtrl+S")
+            .build(app)?)
+        .item(&MenuItemBuilder::new("Leave Meeting")
+            .id("leave")
+            .accelerator("CmdOrCtrl+Q")
+            .build(app)?)
+        .build()?;
+
+    TrayIconBuilder::new()
+        .icon(/* app icon with red dot */)
+        .menu(&menu)
+        .show_menu_on_left_click(true)
+        .on_menu_event(|app, event| {
+            match event.id.as_ref() {
+                "open" => {
+                    if let Some(w) = app.get_webview_window("main") {
+                        let _ = w.show();
+                        let _ = w.set_focus();
+                    }
+                }
+                "stop" => { let _ = app.emit("tray://stop-sharing", ()); }
+                "leave" => { let _ = app.emit("tray://leave-meeting", ()); }
+                _ => {}
+            }
+        })
+        .build(app)?;
 
     Ok(())
 }
 ```
 
-**Content Protection (Rust):**
-```rust
-fn set_content_protection(window: &tauri::Window, enabled: bool) -> Result<(), String> {
-    #[cfg(target_os = "macos")]
-    {
-        use cocoa::appkit::NSWindow;
-        let ns_window = window.ns_window()? as cocoa::base::id;
-        unsafe {
-            let _: () = msg_send![ns_window, setSharingType: if enabled { 0 } else { 1 }];
-        }
-    }
+### Frontend Integration
 
-    #[cfg(target_os = "windows")]
-    {
-        use windows::Win32::UI::WindowsAndMessaging::*;
-        let hwnd = window.hwnd()?;
-        unsafe {
-            SetWindowDisplayAffinity(hwnd, if enabled { WDA_EXCLUDEFROMCAPTURE } else { WDA_NONE });
-        }
-    }
-
-    Ok(())
-}
-```
-
-**React Component Structure:**
 ```tsx
-// MeetingRoom.tsx
-function MeetingRoom() {
-  const { isSharing } = useScreenShare()
-  const [isTransformMode, setIsTransformMode] = useState(false)
+// In MeetingRoom.tsx or useScreenShare.ts
+import { listen } from '@tauri-apps/api/event';
 
-  // Transform on share start
-  useEffect(() => {
-    if (isSharing) {
-      invoke('transform_to_control_bar')
-      setIsTransformMode(true)
-    } else if (isTransformMode) {
-      invoke('restore_from_control_bar')
-      setIsTransformMode(false)
-    }
-  }, [isSharing])
+useEffect(() => {
+  const unlistenStop = listen('tray://stop-sharing', () => {
+    stopScreenShare();
+  });
 
-  if (isTransformMode) {
-    return <SharerControlBar />  // Compact view with camera + controls
-  }
+  const unlistenLeave = listen('tray://leave-meeting', () => {
+    leaveRoom();
+  });
 
-  return <NormalMeetingView />  // Full meeting UI
-}
+  return () => {
+    unlistenStop.then(fn => fn());
+    unlistenLeave.then(fn => fn());
+  };
+}, []);
 ```
 
-### Benefits over Previous Approach
+### Icon Design
 
-| Aspect | Old (Floating Bar) | New (Transform Mode) |
-|--------|-------------------|---------------------|
-| Windows | 2 separate | 1 transformed |
-| State sync | 7 events via IPC | None (same context) |
-| Memory | +25MB WebView | No overhead |
-| Controls | Event bridge to LiveKit | Direct LiveKit access |
-| Debugging | Hard (distributed) | Easy (single window) |
+The tray icon should follow macOS conventions:
+- Template image (monochrome, system handles dark/light mode)
+- Red dot badge when sharing (similar to recording indicator)
+- 22x22 points (44x44 pixels @2x)
 
-### References
+### Platform Considerations
 
-- [ADR-009: Transform Mode](docs/architecture.md#ADR-009)
-- Zoom screen sharing UX (inspiration)
-- Around app circular avatars (future enhancement)
+| Platform | Support | Notes |
+|----------|---------|-------|
+| macOS | Full | Native NSStatusItem |
+| Windows | Partial | System tray (bottom-right) |
+| Linux | Varies | AppIndicator/StatusNotifier |
 
-### Future Enhancement: Face-Tracking Camera Crop
+For MVP, macOS is primary. Windows/Linux use same Tauri APIs.
 
-For "Around-style" circular avatars with face focus:
+### Files to Remove (Cleanup)
 
-| Approach | Platform | Notes |
-|----------|----------|-------|
-| Apple Vision framework | macOS | Native, fast, uses Neural Engine |
-| MediaPipe Face Detection | WebView | Cross-platform, ~30fps |
-| ONNX Runtime in Rust | Core | Cross-platform, need model |
-| Windows.Media.FaceAnalysis | Windows | Native |
+```
+packages/client/src/components/ScreenShare/SharerControlBar.tsx
+packages/client/src/components/ScreenShare/SharerControlBarVertical.tsx
+packages/client/src/components/ScreenShare/FloatingControlBarPage.tsx
+packages/client/src/lib/floatingBarChannel.ts
+packages/client/tests/components/ScreenShare/SharerControlBar.test.tsx
+```
 
-## Dev Agent Record
+### Files to Modify
 
-### Agent Model Used
+```
+packages/client/src-tauri/src/lib.rs  -- Add tray module
+packages/client/src-tauri/src/screen_share.rs  -- Add show/hide tray commands
+packages/client/src/hooks/useScreenShare.ts  -- Call tray commands
+packages/client/src/components/MeetingRoom/MeetingRoom.tsx  -- Listen for tray events
+```
 
-Claude Opus 4.5 (claude-opus-4-5-20251101)
+### Files to Create
 
-### Architecture Decision
+```
+packages/client/src-tauri/src/tray.rs  -- Tray icon module
+packages/client/src-tauri/resources/tray-icon.png  -- Icon asset
+packages/client/src-tauri/resources/tray-icon-sharing.png  -- Icon with red dot
+```
 
-- **ADR-009 (2025-12-18):** Replaced floating bar approach with Transform Mode
-- Eliminates IPC complexity, state sync issues, extra memory overhead
-- Main window transforms in-place instead of creating second window
+## References
 
-### Files to Create (Transform Mode)
-
-- `packages/client/src/components/ScreenShare/SharerControlBar.tsx` - Compact control bar UI
-- Transform commands in `screen_share.rs`
-
-### Files to Delete (Old Floating Bar)
-
-- `packages/client/src/components/ScreenShare/FloatingControlBar.tsx`
-- `packages/client/src/components/ScreenShare/FloatingControlBarPage.tsx`
-- `packages/client/src/hooks/useFloatingControlBar.ts`
-- `packages/client/tests/components/ScreenShare/FloatingControlBar.test.tsx`
-- `packages/client/tests/hooks/useFloatingControlBar.test.ts`
+- [Tauri System Tray](https://v2.tauri.app/learn/system-tray/)
+- [Tauri Menu](https://v2.tauri.app/learn/window-menu/)
+- [hopp-main tray implementation](../../../hopp-main/tauri/src-tauri/src/lib.rs)
+- [AltTab menu bar design](inspiration)
 
 ## Change Log
 
 | Date | Change | Author |
 |------|--------|--------|
 | 2025-12-17 | Initial story draft (floating bar approach) | Dev Agent |
-| 2025-12-17 | Enhanced via Advanced Elicitation | Dev Agent |
-| 2025-12-18 | Floating bar implementation (v1) | Claude Opus 4.5 |
-| 2025-12-18 | **ADR-009**: Redesigned to Transform Mode approach - main window transforms instead of separate floating bar. Eliminates IPC complexity. | Claude Opus 4.5 |
-| 2025-12-18 | **Implementation Complete**: Removed old floating bar, implemented transform commands (Rust), content protection (macOS/Windows), SharerControlBar UI, MeetingRoom integration, 13 tests passing. | Claude Opus 4.5 |
-| 2025-12-20 | **Bug Fix**: Added `set_decorations(false)` and `set_shadow(false)` to transform mode for proper borderless floating pill UI. Window was showing title bar/borders. | Claude Opus 4.5 |
-| 2025-12-20 | **ADR-010**: Complete redesign to **Vertical Layout**. New spec includes: same-screen detection for conditional transform, bandwidth optimization via track unsubscribe, oval video frames, 4 circular control buttons with dropdowns, view mode toggles (single/multi/hide), stop confirmation popup. 13 new acceptance criteria. | Claude Opus 4.5 |
-| 2025-12-20 | **Implementation**: Created `SharerControlBarVertical.tsx` with full vertical design. Implemented same-screen detection in `useScreenShare` hook. Updated MeetingRoom to use new component with conditional transform. Updated Rust dimensions (200x420px, right-edge position). Tasks 9, 11-18 complete. Task 10 (bandwidth optimization) deferred. | Claude Opus 4.5 |
+| 2025-12-18 | ADR-009: Transform mode | Claude Opus 4.5 |
+| 2025-12-20 | ADR-010: Vertical layout | Claude Opus 4.5 |
+| 2025-12-21 | **ADR-011: Complete rewrite to Menu Bar approach** - Simplest solution wins. Native macOS menu, 3 actions, ~80 lines of code. | Claude Opus 4.5 |
