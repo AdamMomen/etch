@@ -4,7 +4,6 @@ import { Toaster } from 'sonner'
 import { HomeScreen } from '@/components/HomeScreen'
 import { MeetingRoom } from '@/components/MeetingRoom'
 import { JoinRoom } from '@/components/JoinRoom'
-import { FloatingControlBarPage } from '@/components/ScreenShare'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 function App() {
@@ -22,8 +21,6 @@ function App() {
         <Route path="/" element={<HomeScreen />} />
         <Route path="/room/:roomId" element={<MeetingRoom />} />
         <Route path="/join/:roomId" element={<JoinRoom />} />
-        {/* Floating control bar - rendered in separate Tauri window */}
-        <Route path="/floating-control-bar" element={<FloatingControlBarPage />} />
       </Routes>
       <Toaster position="bottom-right" richColors />
     </BrowserRouter>

@@ -18,6 +18,30 @@ import { getCoreClient, type ScreenInfo } from '@/lib/core'
 import { parseParticipantMetadata } from '@/utils/participantMetadata'
 import { useAnnotationOverlay, type OverlayBounds } from './useAnnotationOverlay'
 
+// ============================================================================
+// System Tray API (Story 3.7 - ADR-011 Simple Menu Bar)
+// ============================================================================
+
+/** Show the sharing tray icon with menu (AC-3.7.1) */
+export const showSharingTray = async (): Promise<void> => {
+  try {
+    await invoke('show_sharing_tray')
+    console.log('[Tray] Sharing tray shown')
+  } catch (error) {
+    console.warn('[Tray] Failed to show sharing tray:', error)
+  }
+}
+
+/** Hide the sharing tray icon (AC-3.7.7) */
+export const hideSharingTray = async (): Promise<void> => {
+  try {
+    await invoke('hide_sharing_tray')
+    console.log('[Tray] Sharing tray hidden')
+  } catch (error) {
+    console.warn('[Tray] Failed to hide sharing tray:', error)
+  }
+}
+
 export interface UseScreenShareOptions {
   room: Room | null
   livekitUrl?: string | null

@@ -2,13 +2,13 @@ import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { invoke } from '@tauri-apps/api/core'
+import { listen, type UnlistenFn } from '@tauri-apps/api/event'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useVolumeStore } from '@/stores/volumeStore'
 import { useLiveKit } from '@/hooks/useLiveKit'
 import { useVideo } from '@/hooks/useVideo'
-import { useScreenShare } from '@/hooks/useScreenShare'
+import { useScreenShare, showSharingTray, hideSharingTray } from '@/hooks/useScreenShare'
 import { useDevices } from '@/hooks/useDevices'
 import { useDeviceDisconnection } from '@/hooks/useDeviceDisconnection'
 import { Sidebar } from './Sidebar'
@@ -21,7 +21,6 @@ import { LeaveConfirmDialog } from './LeaveConfirmDialog'
 import { InviteModal } from './InviteModal'
 import { ScreenShareViewer, SourcePickerDialog } from '@/components/ScreenShare'
 import { generateInviteLink, copyToClipboard } from '@/lib/invite'
-import { floatingBarChannel, type FloatingBarMessageType } from '@/lib/floatingBarChannel'
 import { cn } from '@/lib/utils'
 
 const RESPONSIVE_BREAKPOINT = 1000
@@ -67,7 +66,7 @@ export function MeetingRoom() {
   // Handle device disconnection - auto fallback to default
   useDeviceDisconnection({ room, audioDevices, videoDevices })
 
-  // Screen share state and controls
+  // Screen share state and controls (Story 3.7 - ADR-011 Menu Bar)
   const {
     isSharing: isScreenSharing,
     isLocalSharing,
@@ -88,22 +87,6 @@ export function MeetingRoom() {
 
   // Get resetVolumes from volumeStore for cleanup on leave
   const resetVolumes = useVolumeStore((state) => state.resetVolumes)
-
-  // Get floating bar position setter for saving position
-  const setFloatingBarPosition = useSettingsStore((s) => s.setFloatingBarPosition)
-
-  // Settings for floating bar state sync
-  const isMutedSetting = useSettingsStore((s) => s.isMuted)
-  const isVideoOffSetting = useSettingsStore((s) => s.isVideoOff)
-  const setMuted = useSettingsStore((s) => s.setMuted)
-  const setVideoOff = useSettingsStore((s) => s.setVideoOff)
-  const selectedAudioDevice = useSettingsStore((s) => s.preferredMicrophoneId)
-  const selectedVideoDevice = useSettingsStore((s) => s.preferredCameraId)
-  const setSelectedAudioDevice = useSettingsStore((s) => s.setPreferredMicrophone)
-  const setSelectedVideoDevice = useSettingsStore((s) => s.setPreferredCamera)
-
-  // Floating bar window state (Story 3.7 - Separate Window)
-  const [isFloatingBarOpen, setIsFloatingBarOpen] = useState(false)
 
   // Check if local participant is the host
   const isHost = localParticipant?.role === 'host'
@@ -300,175 +283,50 @@ export function MeetingRoom() {
     }
   }, [isConnected, isHost, roomId])
 
-  // Initialize BroadcastChannel as main window and handle commands from floating bar
+  // System tray event listeners (Story 3.7 - ADR-011)
+  // Listen for tray://stop-sharing and tray://leave-meeting events
   useEffect(() => {
-    floatingBarChannel.initAsMain()
+    let unlistenStopSharing: UnlistenFn | null = null
+    let unlistenLeaveMeeting: UnlistenFn | null = null
 
-    const unsubscribe = floatingBarChannel.onCommand(async (command: FloatingBarMessageType, payload?: unknown) => {
-      console.log('[MeetingRoom] Received command from floating bar:', command, payload)
-
-      switch (command) {
-        case 'TOGGLE_MIC':
-          if (room) {
-            const newMuted = !isMutedSetting
-            setMuted(newMuted)
-            try {
-              await room.localParticipant.setMicrophoneEnabled(!newMuted)
-            } catch (error) {
-              console.error('[MeetingRoom] Failed to toggle mic:', error)
-              setMuted(isMutedSetting) // Revert on error
-            }
-          }
-          break
-
-        case 'TOGGLE_CAMERA':
-          if (room) {
-            const newVideoOff = !isVideoOffSetting
-            setVideoOff(newVideoOff)
-            try {
-              await room.localParticipant.setCameraEnabled(!newVideoOff)
-            } catch (error) {
-              console.error('[MeetingRoom] Failed to toggle camera:', error)
-              setVideoOff(isVideoOffSetting) // Revert on error
-            }
-          }
-          break
-
-        case 'SWITCH_AUDIO_DEVICE':
-          if (room && payload && typeof payload === 'object' && 'deviceId' in payload) {
-            const { deviceId } = payload as { deviceId: string }
-            setSelectedAudioDevice(deviceId)
-            try {
-              await room.switchActiveDevice('audioinput', deviceId)
-            } catch (error) {
-              console.error('[MeetingRoom] Failed to switch audio device:', error)
-            }
-          }
-          break
-
-        case 'SWITCH_VIDEO_DEVICE':
-          if (room && payload && typeof payload === 'object' && 'deviceId' in payload) {
-            const { deviceId } = payload as { deviceId: string }
-            setSelectedVideoDevice(deviceId)
-            try {
-              await room.switchActiveDevice('videoinput', deviceId)
-            } catch (error) {
-              console.error('[MeetingRoom] Failed to switch video device:', error)
-            }
-          }
-          break
-
-        case 'STOP_SHARING':
-          stopScreenShare()
-          break
-
-        case 'FLOATING_CLOSED':
-          setIsFloatingBarOpen(false)
-          break
-      }
-    })
-
-    return () => {
-      unsubscribe()
-      floatingBarChannel.close()
-    }
-  }, [room, isMutedSetting, isVideoOffSetting, setMuted, setVideoOff, setSelectedAudioDevice, setSelectedVideoDevice, stopScreenShare])
-
-  // Sync state to floating bar window
-  useEffect(() => {
-    if (!isFloatingBarOpen) return
-
-    floatingBarChannel.syncState({
-      isMuted: isMutedSetting,
-      isVideoOff: isVideoOffSetting,
-      isSharing: isLocalSharing,
-      localParticipant,
-      remoteParticipants,
-      selectedAudioDevice,
-      selectedVideoDevice,
-      audioDevices: audioDevices.map((d) => ({ deviceId: d.deviceId, label: d.label })),
-      videoDevices: videoDevices.map((d) => ({ deviceId: d.deviceId, label: d.label })),
-    })
-  }, [
-    isFloatingBarOpen,
-    isMutedSetting,
-    isVideoOffSetting,
-    isLocalSharing,
-    localParticipant,
-    remoteParticipants,
-    selectedAudioDevice,
-    selectedVideoDevice,
-    audioDevices,
-    videoDevices,
-  ])
-
-  // Track if we're currently opening/closing to prevent loops
-  const floatingBarActionRef = useRef(false)
-
-  // Floating bar window effect - open/close floating window when local sharing starts/stops (Story 3.7)
-  useEffect(() => {
-    const handleFloatingBar = async () => {
-      // Prevent concurrent actions
-      if (floatingBarActionRef.current) return
-
-      if (isLocalSharing && !isFloatingBarOpen) {
-        // Open floating control bar window when sharing starts
-        floatingBarActionRef.current = true
-        try {
-          // Read position directly from store to avoid dependency
-          const pos = useSettingsStore.getState().floatingBarPosition
-          const savedPosition = pos ? { x: pos.x, y: pos.y } : null
-          console.log('[MeetingRoom] Opening floating bar with position:', savedPosition)
-          await invoke('create_floating_bar', { savedPosition })
-          setIsFloatingBarOpen(true)
-          console.log('[MeetingRoom] Opened floating control bar')
-        } catch (error) {
-          console.error('[MeetingRoom] Failed to open floating bar:', error)
-        } finally {
-          floatingBarActionRef.current = false
-        }
-      } else if (!isLocalSharing && isFloatingBarOpen) {
-        // Close floating control bar when sharing stops
-        floatingBarActionRef.current = true
-        try {
-          await invoke('close_floating_bar')
-          setIsFloatingBarOpen(false)
-          console.log('[MeetingRoom] Closed floating control bar')
-        } catch (error) {
-          console.error('[MeetingRoom] Failed to close floating bar:', error)
-        } finally {
-          floatingBarActionRef.current = false
-        }
-      }
-    }
-
-    handleFloatingBar()
-  }, [isLocalSharing, isFloatingBarOpen])
-
-  // Save floating bar position periodically when open
-  useEffect(() => {
-    if (!isFloatingBarOpen) return
-
-    const savePosition = async () => {
+    const setupTrayListeners = async () => {
       try {
-        const position = await invoke<{ x: number; y: number } | null>('get_floating_bar_position')
-        if (position) {
-          setFloatingBarPosition({ x: position.x, y: position.y })
-        }
-      } catch {
-        // Floating bar might be closed
+        // AC-3.7.4: Handle "Stop Sharing" from tray menu
+        unlistenStopSharing = await listen('tray://stop-sharing', () => {
+          console.log('[MeetingRoom] Received tray://stop-sharing event')
+          stopScreenShare()
+        })
+
+        // AC-3.7.5: Handle "Leave Meeting" from tray menu
+        unlistenLeaveMeeting = await listen('tray://leave-meeting', () => {
+          console.log('[MeetingRoom] Received tray://leave-meeting event')
+          performLeave()
+        })
+
+        console.log('[MeetingRoom] Tray event listeners set up')
+      } catch (error) {
+        console.warn('[MeetingRoom] Failed to set up tray listeners:', error)
       }
     }
 
-    // Save position every 2 seconds while floating bar is open
-    const interval = setInterval(savePosition, 2000)
+    setupTrayListeners()
 
-    // Also save on unmount
     return () => {
-      clearInterval(interval)
-      savePosition()
+      if (unlistenStopSharing) unlistenStopSharing()
+      if (unlistenLeaveMeeting) unlistenLeaveMeeting()
     }
-  }, [isFloatingBarOpen, setFloatingBarPosition])
+  }, [stopScreenShare, performLeave])
+
+  // Tray lifecycle - show/hide tray based on screen share state (AC-3.7.1, AC-3.7.7)
+  useEffect(() => {
+    if (isLocalSharing) {
+      // Show tray when sharing starts
+      showSharingTray()
+    } else {
+      // Hide tray when sharing stops
+      hideSharingTray()
+    }
+  }, [isLocalSharing])
 
   return (
     <div className="flex h-screen flex-col bg-background">
