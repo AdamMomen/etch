@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useScreenShare, showSharingTray, hideSharingTray } from '@/hooks/useScreenShare'
+import { useScreenShare, showSharingTray, hideSharingTray, storeWindowBounds, minimizeMainWindow, restoreMainWindow } from '@/hooks/useScreenShare'
 import { useScreenShareStore } from '@/stores/screenShareStore'
 import { useRoomStore } from '@/stores/roomStore'
 
@@ -1179,6 +1179,214 @@ describe('useScreenShare', () => {
           }),
         })
       )
+    })
+  })
+
+  describe('window minimize/restore (Story 3.9)', () => {
+    it('should call store_window_bounds when storeWindowBounds is called (AC-3.9.4)', async () => {
+      mockInvoke.mockResolvedValueOnce(undefined)
+
+      await storeWindowBounds()
+
+      expect(mockInvoke).toHaveBeenCalledWith('store_window_bounds')
+    })
+
+    it('should call minimize_main_window when minimizeMainWindow is called (AC-3.9.1)', async () => {
+      mockInvoke.mockResolvedValueOnce(undefined)
+
+      await minimizeMainWindow()
+
+      expect(mockInvoke).toHaveBeenCalledWith('minimize_main_window')
+    })
+
+    it('should call restore_main_window when restoreMainWindow is called (AC-3.9.3)', async () => {
+      mockInvoke.mockResolvedValueOnce(undefined)
+
+      await restoreMainWindow()
+
+      expect(mockInvoke).toHaveBeenCalledWith('restore_main_window')
+    })
+
+    it('should handle storeWindowBounds failure gracefully', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockInvoke.mockRejectedValueOnce(new Error('Window not found'))
+
+      await storeWindowBounds()
+
+      expect(consoleSpy).toHaveBeenCalledWith('[Window] Failed to store bounds:', expect.any(Error))
+      consoleSpy.mockRestore()
+    })
+
+    it('should handle minimizeMainWindow failure gracefully', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockInvoke.mockRejectedValueOnce(new Error('Minimize failed'))
+
+      await minimizeMainWindow()
+
+      expect(consoleSpy).toHaveBeenCalledWith('[Window] Failed to minimize:', expect.any(Error))
+      consoleSpy.mockRestore()
+    })
+
+    it('should handle restoreMainWindow failure gracefully', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockInvoke.mockRejectedValueOnce(new Error('Restore failed'))
+
+      await restoreMainWindow()
+
+      expect(consoleSpy).toHaveBeenCalledWith('[Window] Failed to restore:', expect.any(Error))
+      consoleSpy.mockRestore()
+    })
+
+    it('should store bounds and minimize on same-screen share start (AC-3.9.1, AC-3.9.4)', async () => {
+      const mockRoom = createMockRoom()
+
+      // Mock platform as Windows
+      mockInvoke.mockImplementation((cmd: string) => {
+        if (cmd === 'get_platform') return Promise.resolve('windows')
+        if (cmd === 'get_window_monitor') return Promise.resolve({ x: 0, y: 0, width: 1920, height: 1080 })
+        if (cmd === 'store_window_bounds') return Promise.resolve()
+        if (cmd === 'minimize_main_window') return Promise.resolve()
+        return Promise.resolve()
+      })
+
+      const mockTrack = { id: 'track-123', onended: null, stop: vi.fn(), contentHint: '' }
+      const mockStream = {
+        getVideoTracks: () => [mockTrack],
+        getTracks: () => [mockTrack],
+      }
+      vi.mocked(navigator.mediaDevices.getDisplayMedia).mockResolvedValueOnce(
+        mockStream as unknown as MediaStream
+      )
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      await act(async () => {
+        await result.current.startScreenShare()
+      })
+
+      // Verify store_window_bounds was called before minimize_main_window
+      const calls = mockInvoke.mock.calls.map(c => c[0])
+      const storeBoundsIndex = calls.indexOf('store_window_bounds')
+      const minimizeIndex = calls.indexOf('minimize_main_window')
+
+      expect(storeBoundsIndex).toBeGreaterThan(-1)
+      expect(minimizeIndex).toBeGreaterThan(-1)
+      expect(storeBoundsIndex).toBeLessThan(minimizeIndex)
+    })
+
+    it('should NOT minimize when on different screen (AC-3.9.1 condition)', async () => {
+      const mockRoom = createMockRoom()
+
+      // Mock platform as Windows
+      mockInvoke.mockImplementation((cmd: string) => {
+        if (cmd === 'get_platform') return Promise.resolve('windows')
+        // Return a monitor on a different screen (x: 1920 means secondary monitor)
+        if (cmd === 'get_window_monitor') return Promise.resolve({ x: 1920, y: 0, width: 1920, height: 1080 })
+        if (cmd === 'store_window_bounds') return Promise.resolve()
+        if (cmd === 'minimize_main_window') return Promise.resolve()
+        return Promise.resolve()
+      })
+
+      const mockTrack = { id: 'track-123', onended: null, stop: vi.fn(), contentHint: '' }
+      const mockStream = {
+        getVideoTracks: () => [mockTrack],
+        getTracks: () => [mockTrack],
+      }
+      vi.mocked(navigator.mediaDevices.getDisplayMedia).mockResolvedValueOnce(
+        mockStream as unknown as MediaStream
+      )
+
+      const consoleSpy = vi.spyOn(console, 'log')
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      await act(async () => {
+        await result.current.startScreenShare()
+      })
+
+      // Verify "Skipping minimize (different screen)" was logged
+      expect(consoleSpy).toHaveBeenCalledWith('[ScreenShare] Skipping minimize (different screen)')
+
+      // Verify minimize_main_window was NOT called
+      const calls = mockInvoke.mock.calls.map(c => c[0])
+      expect(calls).not.toContain('minimize_main_window')
+
+      consoleSpy.mockRestore()
+    })
+
+    it('should restore window on share stop (AC-3.9.3)', async () => {
+      const mockRoom = createMockRoom()
+
+      // Mock Tauri commands
+      mockInvoke.mockResolvedValue(undefined)
+
+      // Set up sharing state
+      useScreenShareStore.setState({
+        isSharing: true,
+        isLocalSharing: true,
+        sharedSource: 'screen',
+        sharedSourceId: 'screen-123',
+      })
+
+      const mockTrack = {
+        stop: vi.fn(),
+      }
+      mockRoom.localParticipant.getTrackPublication.mockReturnValue({
+        track: mockTrack,
+      })
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      await act(async () => {
+        await result.current.stopScreenShare()
+      })
+
+      // Verify restore_main_window was called
+      expect(mockInvoke).toHaveBeenCalledWith('restore_main_window')
+    })
+
+    it('should restore window after overlay cleanup (AC-3.9.5)', async () => {
+      const mockRoom = createMockRoom()
+
+      // Track call order
+      const callOrder: string[] = []
+      mockInvoke.mockImplementation((cmd: string) => {
+        callOrder.push(cmd)
+        return Promise.resolve()
+      })
+
+      // Set up sharing state
+      useScreenShareStore.setState({
+        isSharing: true,
+        isLocalSharing: true,
+        sharedSource: 'screen',
+        sharedSourceId: 'screen-123',
+      })
+
+      const mockTrack = { stop: vi.fn() }
+      mockRoom.localParticipant.getTrackPublication.mockReturnValue({ track: mockTrack })
+
+      const { result } = renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      await act(async () => {
+        await result.current.stopScreenShare()
+      })
+
+      // Verify destroy_annotation_overlay is called BEFORE restore_main_window
+      const destroyIndex = callOrder.indexOf('destroy_annotation_overlay')
+      const restoreIndex = callOrder.indexOf('restore_main_window')
+
+      expect(destroyIndex).toBeGreaterThan(-1)
+      expect(restoreIndex).toBeGreaterThan(-1)
+      expect(destroyIndex).toBeLessThan(restoreIndex)
     })
   })
 })

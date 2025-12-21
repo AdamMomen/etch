@@ -16,6 +16,63 @@ use tauri_plugin_shell::ShellExt;
 #[cfg(unix)]
 use std::os::unix::net::UnixStream;
 
+// ============================================================================
+// Main Window Bounds Storage (Story 3.9)
+// ============================================================================
+
+/// Stored window bounds for restore after screen share ends
+#[derive(Debug, Clone, Copy)]
+pub struct WindowBounds {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+}
+
+/// State to hold the stored window bounds
+pub struct WindowBoundsState {
+    pub bounds: Mutex<Option<WindowBounds>>,
+}
+
+impl Default for WindowBoundsState {
+    fn default() -> Self {
+        Self {
+            bounds: Mutex::new(None),
+        }
+    }
+}
+
+/// Store the current window bounds before minimizing (AC-3.9.4)
+/// Called before minimize_main_window to preserve position/size for restore
+#[tauri::command]
+pub async fn store_window_bounds(
+    window: tauri::Window,
+    state: State<'_, WindowBoundsState>,
+) -> Result<(), String> {
+    let position = window.outer_position().map_err(|e| e.to_string())?;
+    let size = window.outer_size().map_err(|e| e.to_string())?;
+
+    let bounds = WindowBounds {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+    };
+
+    log::info!(
+        "Storing window bounds: ({}, {}) {}x{}",
+        bounds.x,
+        bounds.y,
+        bounds.width,
+        bounds.height
+    );
+
+    let mut stored = state.bounds.lock().map_err(|e| e.to_string())?;
+    *stored = Some(bounds);
+
+    Ok(())
+}
+
 /// State to hold the running Core process and socket connection
 pub struct CoreState {
     /// The Core child process (sidecar)
@@ -66,10 +123,56 @@ pub async fn minimize_main_window(window: tauri::Window) -> Result<(), String> {
     window.minimize().map_err(|e| e.to_string())
 }
 
-/// Restore the main window when screen sharing ends
+/// Restore the main window when screen sharing ends (AC-3.9.3, AC-3.9.4)
+/// Uses stored bounds from store_window_bounds to restore exact position/size
 #[tauri::command]
-pub async fn restore_main_window(window: tauri::Window) -> Result<(), String> {
+pub async fn restore_main_window(
+    window: tauri::Window,
+    state: State<'_, WindowBoundsState>,
+) -> Result<(), String> {
+    // First unminimize
     window.unminimize().map_err(|e| e.to_string())?;
+
+    // Then restore to stored bounds if available (AC-3.9.4)
+    let stored_bounds = {
+        let stored = state.bounds.lock().map_err(|e| e.to_string())?;
+        *stored
+    };
+
+    if let Some(bounds) = stored_bounds {
+        log::info!(
+            "Restoring window to stored bounds: ({}, {}) {}x{}",
+            bounds.x,
+            bounds.y,
+            bounds.width,
+            bounds.height
+        );
+
+        // Set position first, then size
+        window
+            .set_position(tauri::Position::Physical(tauri::PhysicalPosition {
+                x: bounds.x,
+                y: bounds.y,
+            }))
+            .map_err(|e| format!("Failed to restore position: {}", e))?;
+
+        window
+            .set_size(tauri::Size::Physical(tauri::PhysicalSize {
+                width: bounds.width,
+                height: bounds.height,
+            }))
+            .map_err(|e| format!("Failed to restore size: {}", e))?;
+
+        // Clear stored bounds after successful restore
+        {
+            let mut stored = state.bounds.lock().map_err(|e| e.to_string())?;
+            *stored = None;
+        }
+    } else {
+        log::info!("No stored bounds, just unminimizing");
+    }
+
+    // Focus the window
     window.set_focus().map_err(|e| e.to_string())
 }
 

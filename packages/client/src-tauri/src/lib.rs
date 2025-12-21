@@ -1,6 +1,6 @@
 mod screen_share;
 
-use screen_share::{CoreState, SharingTrayState};
+use screen_share::{CoreState, SharingTrayState, WindowBoundsState};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -8,6 +8,7 @@ pub fn run() {
     .plugin(tauri_plugin_shell::init())
     .manage(CoreState::default())
     .manage(SharingTrayState::default())
+    .manage(WindowBoundsState::default())
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(
@@ -20,6 +21,8 @@ pub fn run() {
     })
     .invoke_handler(tauri::generate_handler![
       screen_share::get_platform,
+      // Window bounds storage (Story 3.9)
+      screen_share::store_window_bounds,
       screen_share::minimize_main_window,
       screen_share::restore_main_window,
       screen_share::get_window_monitor,

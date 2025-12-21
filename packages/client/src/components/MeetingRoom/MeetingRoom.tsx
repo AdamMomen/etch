@@ -298,8 +298,12 @@ export function MeetingRoom() {
         })
 
         // AC-3.7.5: Handle "Leave Meeting" from tray menu
-        unlistenLeaveMeeting = await listen('tray://leave-meeting', () => {
+        // Story 3.9: Stop sharing first to restore window before leaving
+        unlistenLeaveMeeting = await listen('tray://leave-meeting', async () => {
           console.log('[MeetingRoom] Received tray://leave-meeting event')
+          if (isLocalSharing) {
+            await stopScreenShare()
+          }
           performLeave()
         })
 
@@ -315,7 +319,7 @@ export function MeetingRoom() {
       if (unlistenStopSharing) unlistenStopSharing()
       if (unlistenLeaveMeeting) unlistenLeaveMeeting()
     }
-  }, [stopScreenShare, performLeave])
+  }, [stopScreenShare, performLeave, isLocalSharing])
 
   // Tray lifecycle - show/hide tray based on screen share state (AC-3.7.1, AC-3.7.7)
   useEffect(() => {

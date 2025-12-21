@@ -126,9 +126,48 @@ const isSameScreen = (
   return screen1.x === screen2.x && screen1.y === screen2.y
 }
 
-// NOTE: minimizeMainWindow and restoreMainWindow have been REMOVED (Story 3.7 - ADR-010)
-// Window transform is now handled by MeetingRoom using transform_to_control_bar/restore_from_control_bar
-// The MeetingRoom component detects same-screen scenario and transforms accordingly
+// ============================================================================
+// Main Window Minimize/Restore (Story 3.9)
+// ============================================================================
+
+/**
+ * Store current window bounds before minimizing (AC-3.9.4)
+ * Must be called BEFORE minimize to preserve position for restore
+ */
+export const storeWindowBounds = async (): Promise<void> => {
+  try {
+    await invoke('store_window_bounds')
+    console.log('[Window] Bounds stored for restore')
+  } catch (error) {
+    console.warn('[Window] Failed to store bounds:', error)
+  }
+}
+
+/**
+ * Minimize the main window (AC-3.9.1)
+ * Called after overlay/border are created and bounds are stored
+ */
+export const minimizeMainWindow = async (): Promise<void> => {
+  try {
+    await invoke('minimize_main_window')
+    console.log('[Window] Main window minimized')
+  } catch (error) {
+    console.warn('[Window] Failed to minimize:', error)
+  }
+}
+
+/**
+ * Restore the main window to stored bounds (AC-3.9.3, AC-3.9.4)
+ * Called after overlay/border are destroyed on share stop
+ */
+export const restoreMainWindow = async (): Promise<void> => {
+  try {
+    await invoke('restore_main_window')
+    console.log('[Window] Main window restored')
+  } catch (error) {
+    console.warn('[Window] Failed to restore:', error)
+  }
+}
 
 // Start screen share using Windows WebView getDisplayMedia
 const startWindowsScreenShare = async (
@@ -388,8 +427,28 @@ export function useScreenShare({
           console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
         }
 
-        // Transform mode is handled by MeetingRoom using checkIsSameScreen (Story 3.7 - ADR-010)
-        // No auto-minimize here - MeetingRoom decides whether to transform or stay full
+        // Story 3.9: Auto-minimize main window if sharing on SAME screen
+        // Store bounds → Check same screen → Minimize if true
+        try {
+          // Store bounds BEFORE minimize (AC-3.9.4)
+          await storeWindowBounds()
+
+          // Check if app window is on same screen as shared content
+          const appMonitor = await getWindowMonitor()
+          const sameScreen = appMonitor && selectedScreen
+            ? isSameScreen(appMonitor, selectedScreen)
+            : true // Assume same screen if can't determine
+
+          if (sameScreen) {
+            // Minimize to get out of the way (AC-3.9.1)
+            await minimizeMainWindow()
+            console.log('[ScreenShare] Minimized main window (same screen)')
+          } else {
+            console.log('[ScreenShare] Skipping minimize (different screen)')
+          }
+        } catch (minimizeError) {
+          console.warn('[ScreenShare] Failed to minimize:', minimizeError)
+        }
       } catch (error) {
         toast.error(
           error instanceof Error
@@ -468,8 +527,30 @@ export function useScreenShare({
           console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
         }
 
-        // Transform mode is handled by MeetingRoom using checkIsSameScreen (Story 3.7 - ADR-010)
-        // No auto-minimize here - MeetingRoom decides whether to transform or stay full
+        // Story 3.9: Auto-minimize main window if sharing on SAME screen
+        // Windows: getDisplayMedia doesn't tell us which screen, assume primary
+        // Store bounds → Check same screen → Minimize if true
+        try {
+          // Store bounds BEFORE minimize (AC-3.9.4)
+          await storeWindowBounds()
+
+          // Check if app window is on same screen as shared content
+          // For Windows, we assume primary screen (0, 0)
+          const appMonitor = await getWindowMonitor()
+          const sameScreen = appMonitor
+            ? isSameScreen(appMonitor, { x: 0, y: 0 })
+            : true // Assume same screen if can't determine
+
+          if (sameScreen) {
+            // Minimize to get out of the way (AC-3.9.1)
+            await minimizeMainWindow()
+            console.log('[ScreenShare] Minimized main window (same screen)')
+          } else {
+            console.log('[ScreenShare] Skipping minimize (different screen)')
+          }
+        } catch (minimizeError) {
+          console.warn('[ScreenShare] Failed to minimize:', minimizeError)
+        }
 
         // Listen for track ended (browser "Stop sharing" button)
         stream.getVideoTracks()[0].onended = () => {
@@ -597,8 +678,12 @@ export function useScreenShare({
 
       // Border indicator is part of annotation overlay - destroyed with destroyOverlay() above (Story 3.8)
 
-      // Window restoration is handled by MeetingRoom transform mode (Story 3.7 - ADR-010)
-      // MeetingRoom will call restore_from_control_bar when isLocalSharing changes to false
+      // Story 3.9: Restore main window after overlay cleanup (AC-3.9.3, AC-3.9.5)
+      try {
+        await restoreMainWindow()
+      } catch (restoreError) {
+        console.warn('[ScreenShare] Failed to restore main window:', restoreError)
+      }
     } catch (error) {
       console.error('Error stopping screen share:', error)
       stopSharingStore()
@@ -725,14 +810,30 @@ export function useScreenShare({
       }
     }
 
-    // Handle local track unpublished
-    const handleLocalTrackUnpublished = (
+    // Handle local track unpublished (Story 3.9 - AC-3.9.6)
+    // This can be triggered by system events (network issues, LiveKit disconnect)
+    // We need to ensure cleanup happens (destroy overlay, restore window)
+    const handleLocalTrackUnpublished = async (
       publication: LocalTrackPublication
     ) => {
       if (publication.source === Track.Source.ScreenShare) {
+        console.log('[ScreenShare] LocalTrackUnpublished - performing cleanup')
         setScreenTrack(null)
         stopSharingStore()
         setCanShare(true)
+
+        // Cleanup overlay and restore window (Story 3.9)
+        try {
+          await destroyOverlay()
+        } catch (e) {
+          console.warn('[ScreenShare] Failed to destroy overlay on unpublish:', e)
+        }
+        setSharedScreenBounds(null)
+        try {
+          await restoreMainWindow()
+        } catch (e) {
+          console.warn('[ScreenShare] Failed to restore window on unpublish:', e)
+        }
       }
     }
 
@@ -747,7 +848,7 @@ export function useScreenShare({
       room.off(RoomEvent.LocalTrackPublished, handleLocalTrackPublished)
       room.off(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished)
     }
-  }, [room, setRemoteSharer, stopSharingStore, updateParticipant])
+  }, [room, setRemoteSharer, stopSharingStore, updateParticipant, destroyOverlay, setSharedScreenBounds])
 
   // Cleanup on unmount
   useEffect(() => {

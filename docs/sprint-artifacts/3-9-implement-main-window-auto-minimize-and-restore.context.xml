@@ -1,0 +1,202 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>9</storyId>
+    <title>Implement Main Window Auto-Minimize and Restore</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-21</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-9-implement-main-window-auto-minimize-and-restore.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>screen sharer</asA>
+    <iWant>the Nameless window to automatically minimize when I start sharing and restore when I stop</iWant>
+    <soThat>my shared content is visible and I can focus on presenting without the meeting UI blocking my view</soThat>
+    <tasks>
+      <task id="1" ac="3.9.4">Store window position/size before minimizing
+        <subtask>Add state to track original window bounds (x, y, width, height) in Rust</subtask>
+        <subtask>Create Tauri command store_window_bounds to capture current position</subtask>
+        <subtask>Call store_window_bounds before minimize in screen share flow</subtask>
+      </task>
+      <task id="2" ac="3.9.1,3.9.2">Implement main window minimize on share start
+        <subtask>Create Tauri command minimize_main_window in screen_share.rs</subtask>
+        <subtask>Integrate minimize call into useScreenShare.ts after capture starts</subtask>
+        <subtask>Call after overlay/border windows are created (z-order matters)</subtask>
+        <subtask>Add unit test for minimize command invocation</subtask>
+      </task>
+      <task id="3" ac="3.9.2">Implement window focus for shared content
+        <subtask>macOS: Use NSApp.activate(ignoringOtherApps:) or similar</subtask>
+        <subtask>Windows: Use SetForegroundWindow Win32 API</subtask>
+        <subtask>Create Tauri command focus_window with window ID parameter</subtask>
+        <subtask>Call focus after minimize for window shares</subtask>
+      </task>
+      <task id="4" ac="3.9.3,3.9.4">Implement main window restore on share stop
+        <subtask>Create Tauri command restore_main_window that reads stored bounds</subtask>
+        <subtask>Apply stored position/size during restore (set_position, set_size)</subtask>
+        <subtask>Integrate restore call into useScreenShare.ts stopSharing flow</subtask>
+        <subtask>Ensure restore happens AFTER native windows are destroyed</subtask>
+        <subtask>Add unit test for restore command invocation</subtask>
+      </task>
+      <task id="5" ac="3.9.5">Handle system-initiated share stop
+        <subtask>Verify RoomEvent.LocalTrackUnpublished listener exists</subtask>
+        <subtask>Ensure cleanup flow (destroy overlay, restore window) triggers on track end</subtask>
+        <subtask>Add test case for track ended event triggering cleanup</subtask>
+      </task>
+      <task id="6" ac="3.9.6">Handle leave meeting during share
+        <subtask>Update menu bar Leave Meeting handler to call cleanup</subtask>
+        <subtask>Ensure confirmation dialog appears for hosts</subtask>
+        <subtask>After confirmation: destroy native windows, restore main, then leave</subtask>
+        <subtask>Add test for leave flow during active share</subtask>
+      </task>
+      <task id="7" ac="all">Integration testing
+        <subtask>Test: Start share - verify window minimizes</subtask>
+        <subtask>Test: Stop share - verify window restores to original position</subtask>
+        <subtask>Test: System stop - verify cleanup and restore</subtask>
+        <subtask>Test: Leave meeting - verify cleanup and restore</subtask>
+        <subtask>Verify no position drift after multiple share cycles</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.9.1" title="Main Window Minimizes on Share Start">
+      Given I'm in a meeting and initiate screen share, when I select a window/screen to share, then the main Nameless window automatically minimizes and the shared window/screen is brought to focus (foreground).
+    </criterion>
+    <criterion id="AC-3.9.2" title="Shared Content Focused">
+      Given I selected a window to share, when the screen share starts, then the selected window is brought to the foreground and the system UI elements (floating bar, border, overlay) appear.
+    </criterion>
+    <criterion id="AC-3.9.3" title="Main Window Restores on Share Stop">
+      Given I'm actively sharing my screen with main window minimized, when I stop sharing (via menu bar Stop Sharing), then the main Nameless window restores from minimized state and all native windows (border, overlay) are dismissed.
+    </criterion>
+    <criterion id="AC-3.9.4" title="Window Returns to Previous Position/Size">
+      Given the main window was minimized during screen share, when the window restores, then the window returns to its exact previous position and size and no visual artifacts or position drift occurs.
+    </criterion>
+    <criterion id="AC-3.9.5" title="Restore Works Even if System Stops Share">
+      Given I'm actively sharing my screen, when the OS or browser stops the screen share (e.g., user clicks system stop button), then the app detects the track ended event, all native windows are dismissed, and the main window restores properly.
+    </criterion>
+    <criterion id="AC-3.9.6" title="Restore Works on Leave Meeting">
+      Given I'm actively sharing my screen with main window minimized, when I click Leave Meeting on the menu bar, then confirmation dialog appears (if host), and on confirm, all native windows are dismissed and main window restores briefly, then closes/returns to home.
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="ADR-003: Hybrid Rendering, ADR-011: Menu Bar Control">
+        ADR-003 defines window z-order (floating bar > overlay > border > content) and main window minimizes during share.
+        ADR-011 (2025-12-21) replaces Transform Mode with Menu Bar control - native tray icon with 3 actions (Open Nameless, Stop Sharing, Leave Meeting).
+      </doc>
+      <doc path="docs/prd.md" title="PRD" section="FR21">
+        FR21: When sharing begins, the main Nameless window automatically minimizes and the shared window/screen is focused.
+      </doc>
+      <doc path="docs/epics/epic-3-screen-sharing.md" title="Epic 3" section="Story 3.9">
+        Story definition with acceptance criteria for auto-minimize/restore behavior.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Spec" section="Sharer Experience">
+        Sharer UX: App minimizes, floating control bar stays on top, visual share border, annotation overlay, one-click stop.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="packages/client/src-tauri/src/screen_share.rs" kind="tauri-commands" symbol="minimize_main_window, restore_main_window, get_window_monitor" lines="64-109" reason="Existing minimize/restore/monitor commands - extend with bounds storage">
+        Contains existing Tauri commands for window management. Need to add bounds storage before minimize.
+      </artifact>
+      <artifact path="packages/client/src-tauri/src/screen_share.rs" kind="tauri-commands" symbol="show_sharing_tray, hide_sharing_tray, handle_tray_menu_event" lines="820-965" reason="Tray menu handles Stop Sharing and Leave Meeting - triggers events back to frontend">
+        ADR-011 tray implementation. Emits tray://stop-sharing and tray://leave-meeting events.
+      </artifact>
+      <artifact path="packages/client/src/hooks/useScreenShare.ts" kind="hook" symbol="useScreenShare, checkIsSameScreen, isSameScreen, getWindowMonitor" lines="1-779" reason="Main integration point - screen share lifecycle, same-screen detection already exists">
+        Contains checkIsSameScreen (lines 322-329), sharedScreenBounds state, and isSameScreen helper.
+        NOTE: minimize/restore NOT called in onSourceSelect or handleStopShare - delegated elsewhere.
+      </artifact>
+      <artifact path="packages/client/src/components/MeetingRoom/MeetingRoom.tsx" kind="component" symbol="MeetingRoom" lines="1-100, 199-329" reason="Controls tray show/hide based on isLocalSharing, may need minimize/restore integration">
+        Lines 322-329: useEffect that calls showSharingTray/hideSharingTray when isLocalSharing changes.
+      </artifact>
+      <artifact path="packages/client/src/hooks/useAnnotationOverlay.ts" kind="hook" symbol="useAnnotationOverlay, createOverlay, destroyOverlay" reason="Overlay lifecycle tied to share state - destroyOverlay must complete before restore">
+        Creates/destroys annotation overlay window. Overlay includes share border (Story 3.8).
+      </artifact>
+    </code>
+    <dependencies>
+      <tauri version="2.9.2" features="webview-data-url, macos-private-api, tray-icon">Core desktop framework</tauri>
+      <tauri-plugin-shell version="2">Sidecar/Core process management</tauri-plugin-shell>
+      <objc version="0.2" platform="macos">NSWindow operations for click-through, window level</objc>
+      <dispatch version="0.2" platform="macos">Main thread dispatch for NSWindow</dispatch>
+      <windows version="0.58" platform="windows" features="Win32_Foundation, Win32_UI_WindowsAndMessaging">Win32 window APIs</windows>
+      <livekit-client version="2.16.0">WebRTC, track lifecycle events (LocalTrackUnpublished)</livekit-client>
+      <zustand version="5.0.9">State management for screenShareStore</zustand>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="user-feedback" priority="high">
+      SAME-SCREEN DETECTION: Do NOT minimize the main window if the shared screen is on a DIFFERENT display than the app window.
+      The main window only needs to get out of the way when it would occlude the shared content.
+      checkIsSameScreen() and isSameScreen() already exist - use them BEFORE calling minimize.
+    </constraint>
+    <constraint source="ADR-011" priority="high">
+      Menu bar (tray) is the control mechanism, not floating UI. Tray emits events for actions.
+    </constraint>
+    <constraint source="ADR-003" priority="medium">
+      Window z-order: Floating bar > Annotation overlay > Share border > Shared content.
+      Minimize AFTER overlay/border windows are created.
+    </constraint>
+    <constraint source="architecture" priority="medium">
+      Restore must happen AFTER native windows (overlay, border) are destroyed to avoid z-order issues.
+    </constraint>
+    <constraint source="story-3.8" priority="low">
+      Share border is part of annotation overlay - single destroyOverlay() handles both.
+    </constraint>
+    <constraint source="pattern" priority="medium">
+      Use Tauri window API: window.minimize(), window.unminimize(), window.set_position(), window.set_size().
+      Store bounds as WindowBounds struct with x, y, width, height.
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="minimize_main_window" kind="tauri-command" path="packages/client/src-tauri/src/screen_share.rs">
+      #[tauri::command] pub async fn minimize_main_window(window: tauri::Window) -> Result&lt;(), String&gt;
+      Existing command at line 65.
+    </interface>
+    <interface name="restore_main_window" kind="tauri-command" path="packages/client/src-tauri/src/screen_share.rs">
+      #[tauri::command] pub async fn restore_main_window(window: tauri::Window) -> Result&lt;(), String&gt;
+      Existing command at line 71. Does unminimize + set_focus but NOT position restore.
+    </interface>
+    <interface name="get_window_monitor" kind="tauri-command" path="packages/client/src-tauri/src/screen_share.rs">
+      #[tauri::command] pub async fn get_window_monitor(window: tauri::Window) -> Result&lt;Option&lt;WindowMonitorInfo&gt;, String&gt;
+      Returns monitor bounds {x, y, width, height} for same-screen detection.
+    </interface>
+    <interface name="store_window_bounds" kind="tauri-command-new" path="packages/client/src-tauri/src/screen_share.rs">
+      NEW: Store current window position/size before minimizing.
+      Returns WindowBounds struct.
+    </interface>
+    <interface name="tray://stop-sharing" kind="tauri-event" path="packages/client/src-tauri/src/screen_share.rs:951">
+      Emitted when user clicks "Stop Sharing" in tray menu. Frontend should call stopScreenShare().
+    </interface>
+    <interface name="tray://leave-meeting" kind="tauri-event" path="packages/client/src-tauri/src/screen_share.rs:956">
+      Emitted when user clicks "Leave Meeting" in tray menu. Frontend should trigger leave flow.
+    </interface>
+    <interface name="RoomEvent.LocalTrackUnpublished" kind="livekit-event" path="packages/client/src/hooks/useScreenShare.ts:730">
+      LiveKit event when local track is unpublished (system stop). Triggers cleanup.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Vitest for unit tests. Tests are in packages/client/tests/ mirroring src structure.
+      React Testing Library for component tests. Mock Tauri invoke() calls.
+      Pattern: describe/it blocks, async/await for promises.
+    </standards>
+    <locations>
+      packages/client/tests/stores/screenShareStore.test.ts
+      packages/client/tests/components/ScreenShare/*.test.tsx
+      packages/client/tests/components/MeetingRoom/*.test.tsx
+    </locations>
+    <ideas>
+      <idea ac="3.9.1">Test: When isLocalSharing becomes true AND isSameScreen=true, invoke('minimize_main_window') is called</idea>
+      <idea ac="3.9.1">Test: When isLocalSharing becomes true AND isSameScreen=false, minimize is NOT called</idea>
+      <idea ac="3.9.4">Test: store_window_bounds is called BEFORE minimize_main_window</idea>
+      <idea ac="3.9.3,3.9.4">Test: On stopScreenShare, destroyOverlay completes THEN restore_main_window is called</idea>
+      <idea ac="3.9.5">Test: LocalTrackUnpublished event triggers cleanup including window restore</idea>
+      <idea ac="3.9.6">Test: tray://leave-meeting event shows confirmation dialog for host, then cleanup + restore</idea>
+      <idea ac="3.9.4">Test: After multiple share/stop cycles, window position matches original (no drift)</idea>
+    </ideas>
+  </tests>
+</story-context>

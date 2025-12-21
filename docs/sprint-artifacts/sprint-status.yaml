@@ -76,7 +76,10 @@ development_status:
   # 2025-12-21: COMPLETE - Removed ~800 lines of old code, added ~80 lines of tray code
   3-7-create-sharers-floating-control-bar: done
   3-8-create-share-border-indicator: done
-  3-9-implement-main-window-auto-minimize-and-restore: backlog
+  # Story 3.9 - Auto minimize/restore with same-screen detection
+  # Key constraint: Only minimize if shared screen is on SAME display as app window
+  # Context generated 2025-12-21 with checkIsSameScreen() integration point identified
+  3-9-implement-main-window-auto-minimize-and-restore: in-review
   # Story 3.10 - Core-centric architecture with hybrid approach
   # xcap unsuitable (4-5 FPS) → LiveKit DesktopCapturer (60fps)
   # 2025-12-14: Task 7 (frame relay) CUT - WebView keeps audio/video, Core handles capture + overlay
