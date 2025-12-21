@@ -1388,5 +1388,77 @@ describe('useScreenShare', () => {
       expect(restoreIndex).toBeGreaterThan(-1)
       expect(destroyIndex).toBeLessThan(restoreIndex)
     })
+
+    it('should cleanup overlay and restore window on LocalTrackUnpublished (AC-3.9.5 system stop)', async () => {
+      // Track call order
+      const callOrder: string[] = []
+      mockInvoke.mockImplementation((cmd: string) => {
+        callOrder.push(cmd)
+        return Promise.resolve()
+      })
+
+      // Set up sharing state
+      useScreenShareStore.setState({
+        isSharing: true,
+        isLocalSharing: true,
+        sharedSource: 'screen',
+        sharedSourceId: 'screen-123',
+      })
+
+      // Create mock room with handler capture
+      const eventHandlers: Record<string, ((...args: unknown[]) => void)[]> = {}
+      const mockRoom = {
+        localParticipant: {
+          publishTrack: vi.fn().mockResolvedValue({ track: { id: 'screen-track-123' } }),
+          unpublishTrack: vi.fn().mockResolvedValue(undefined),
+          getTrackPublication: vi.fn().mockReturnValue(null),
+        },
+        on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
+          if (!eventHandlers[event]) {
+            eventHandlers[event] = []
+          }
+          eventHandlers[event].push(handler)
+          return mockRoom
+        }),
+        off: vi.fn(),
+      }
+
+      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+
+      renderHook(() =>
+        useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
+      )
+
+      // Verify LocalTrackUnpublished handler was registered
+      // RoomEvent.LocalTrackUnpublished = 'localTrackUnpublished' (lowercase first letter)
+      expect(eventHandlers['localTrackUnpublished']).toBeDefined()
+      expect(eventHandlers['localTrackUnpublished'].length).toBeGreaterThan(0)
+
+      // Simulate system-initiated track unpublish (e.g., OS stops share, network disconnect)
+      // The handler expects a publication object with source property
+      const mockPublication = { source: 'screen_share' }
+
+      await act(async () => {
+        for (const handler of eventHandlers['localTrackUnpublished']) {
+          await handler(mockPublication)
+        }
+      })
+
+      // Verify cleanup was logged
+      expect(consoleSpy).toHaveBeenCalledWith('[ScreenShare] LocalTrackUnpublished - performing cleanup')
+
+      // Verify destroy_annotation_overlay was called
+      expect(callOrder).toContain('destroy_annotation_overlay')
+
+      // Verify restore_main_window was called
+      expect(callOrder).toContain('restore_main_window')
+
+      // Verify order: destroy BEFORE restore
+      const destroyIndex = callOrder.indexOf('destroy_annotation_overlay')
+      const restoreIndex = callOrder.indexOf('restore_main_window')
+      expect(destroyIndex).toBeLessThan(restoreIndex)
+
+      consoleSpy.mockRestore()
+    })
   })
 })
