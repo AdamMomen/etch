@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useScreenShare } from '@/hooks/useScreenShare'
+import { useScreenShare, showSharingTray, hideSharingTray } from '@/hooks/useScreenShare'
 import { useScreenShareStore } from '@/stores/screenShareStore'
 import { useRoomStore } from '@/stores/roomStore'
 
@@ -182,10 +182,10 @@ describe('useScreenShare', () => {
     it('should start screen share successfully on Windows', async () => {
       const mockRoom = createMockRoom()
 
-      // Mock platform as Windows and minimize_main_window
+      // Mock platform as Windows
       mockInvoke.mockImplementation((cmd: string) => {
         if (cmd === 'get_platform') return Promise.resolve('windows')
-        if (cmd === 'minimize_main_window') return Promise.resolve()
+        // ADR-011: No more minimize_main_window - tray handles sharer controls
         return Promise.resolve()
       })
 
@@ -224,8 +224,8 @@ describe('useScreenShare', () => {
       // Should publish track to LiveKit
       expect(mockRoom.localParticipant.publishTrack).toHaveBeenCalled()
 
-      // Should call minimize after successful publish
-      expect(mockInvoke).toHaveBeenCalledWith('minimize_main_window')
+      // ADR-011: No more minimize - tray menu is used instead
+      // MeetingRoom component will call showSharingTray() separately
     })
   })
 
@@ -241,10 +241,10 @@ describe('useScreenShare', () => {
       expect(result.current.isSharing).toBe(false)
     })
 
-    it('should restore window when stopping share', async () => {
+    it('should stop screen share and update store state', async () => {
       const mockRoom = createMockRoom()
 
-      // Mock restore_main_window
+      // Mock Tauri commands
       mockInvoke.mockResolvedValue(undefined)
 
       // Set up sharing state
@@ -270,8 +270,8 @@ describe('useScreenShare', () => {
         await result.current.stopScreenShare()
       })
 
-      // Should call restore window
-      expect(mockInvoke).toHaveBeenCalledWith('restore_main_window')
+      // ADR-011: No more restore_main_window - tray handles sharer controls
+      // MeetingRoom component will call hideSharingTray() separately
 
       // Should update store state
       const state = useScreenShareStore.getState()
@@ -436,8 +436,7 @@ describe('useScreenShare', () => {
       // Mock platform as Windows
       mockInvoke.mockImplementation((cmd: string) => {
         if (cmd === 'get_platform') return Promise.resolve('windows')
-        if (cmd === 'minimize_main_window') return Promise.resolve()
-        if (cmd === 'restore_main_window') return Promise.resolve()
+        // ADR-011: No more minimize/restore - tray handles sharer controls
         return Promise.resolve()
       })
 
@@ -479,8 +478,8 @@ describe('useScreenShare', () => {
       expect(state.isSharing).toBe(false)
       expect(state.isLocalSharing).toBe(false)
 
-      // Window should be restored
-      expect(mockInvoke).toHaveBeenCalledWith('restore_main_window')
+      // ADR-011: No more restore_main_window - tray handles sharer controls
+      // MeetingRoom component will call hideSharingTray() via useEffect
     })
   })
 
@@ -975,6 +974,44 @@ describe('useScreenShare', () => {
       // canShare should remain true (not disabled by own screen share)
       // This allows the stop button to work
       expect(result.current.canShare).toBe(true)
+    })
+  })
+
+  describe('system tray API (Story 3.7 - ADR-011)', () => {
+    it('should call show_sharing_tray when showSharingTray is called (AC-3.7.1)', async () => {
+      mockInvoke.mockResolvedValueOnce(undefined)
+
+      await showSharingTray()
+
+      expect(mockInvoke).toHaveBeenCalledWith('show_sharing_tray')
+    })
+
+    it('should call hide_sharing_tray when hideSharingTray is called (AC-3.7.7)', async () => {
+      mockInvoke.mockResolvedValueOnce(undefined)
+
+      await hideSharingTray()
+
+      expect(mockInvoke).toHaveBeenCalledWith('hide_sharing_tray')
+    })
+
+    it('should handle showSharingTray failure gracefully', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockInvoke.mockRejectedValueOnce(new Error('Tray creation failed'))
+
+      await showSharingTray()
+
+      expect(consoleSpy).toHaveBeenCalledWith('[Tray] Failed to show sharing tray:', expect.any(Error))
+      consoleSpy.mockRestore()
+    })
+
+    it('should handle hideSharingTray failure gracefully', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      mockInvoke.mockRejectedValueOnce(new Error('Tray removal failed'))
+
+      await hideSharingTray()
+
+      expect(consoleSpy).toHaveBeenCalledWith('[Tray] Failed to hide sharing tray:', expect.any(Error))
+      consoleSpy.mockRestore()
     })
   })
 
