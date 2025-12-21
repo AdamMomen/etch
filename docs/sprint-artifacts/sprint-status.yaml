@@ -72,7 +72,7 @@ development_status:
   3-5-implement-screen-share-quality-optimization: done
   3-6-create-sharers-transparent-overlay-window: done
   3-7-create-sharers-floating-control-bar: backlog
-  3-8-create-share-border-indicator: drafted
+  3-8-create-share-border-indicator: done
   3-9-implement-main-window-auto-minimize-and-restore: backlog
   # Story 3.10 - Core-centric architecture with hybrid approach
   # xcap unsuitable (4-5 FPS) → LiveKit DesktopCapturer (60fps)
