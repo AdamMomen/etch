@@ -31,11 +31,12 @@ pub fn run() {
       screen_share::send_core_message,
       screen_share::is_core_running,
       screen_share::check_screen_permission,
-      // Annotation overlay commands (Story 3.6)
+      // Annotation overlay commands (Story 3.6, Story 4.11)
       screen_share::create_annotation_overlay,
       screen_share::destroy_annotation_overlay,
       screen_share::update_overlay_bounds,
       screen_share::is_overlay_active,
+      screen_share::set_overlay_click_through,
       screen_share::get_window_bounds_by_title,
       // Screen bounds utility (used by multiple features)
       screen_share::get_all_screen_bounds,

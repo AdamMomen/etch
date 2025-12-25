@@ -4,6 +4,8 @@ import { Toaster } from 'sonner'
 import { HomeScreen } from '@/components/HomeScreen'
 import { MeetingRoom } from '@/components/MeetingRoom'
 import { JoinRoom } from '@/components/JoinRoom'
+import { AnnotationOverlayPage } from '@/components/ScreenShare/AnnotationOverlayPage'
+import { AnnotationOverlayTest } from '@/components/ScreenShare/AnnotationOverlayTest'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 function App() {
@@ -21,6 +23,10 @@ function App() {
         <Route path="/" element={<HomeScreen />} />
         <Route path="/room/:roomId" element={<MeetingRoom />} />
         <Route path="/join/:roomId" element={<JoinRoom />} />
+        {/* Story 4.11: Overlay window for sharer annotation rendering */}
+        <Route path="/overlay" element={<AnnotationOverlayPage />} />
+        {/* Test page for annotation overlay development */}
+        <Route path="/overlay-test" element={<AnnotationOverlayTest />} />
       </Routes>
       <Toaster position="bottom-right" richColors />
     </BrowserRouter>

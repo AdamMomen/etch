@@ -21,6 +21,10 @@ import {
 /**
  * Sync state for late-joiner annotation sync.
  * @see Story 4.8: Implement Late-Joiner Annotation Sync
+ *
+ * Note: We now use optimistic UI - canvas is usable immediately while sync
+ * happens in the background. The 'requesting' state is still tracked internally
+ * but we default to 'synced' to avoid blocking the UI.
  */
 export type SyncState = 'idle' | 'requesting' | 'synced'
 
@@ -123,7 +127,14 @@ export function useAnnotationSync(
   const isConnected = room !== null
 
   // Late-joiner sync state (Story 4.8)
-  const [syncState, setSyncState] = useState<SyncState>('idle')
+  // Default to 'synced' for optimistic UI - canvas is usable immediately
+  // State request happens in background and merges when received
+  // Note: setSyncState kept for potential future use (e.g., showing background sync indicator)
+  const [syncState, _setSyncState] = useState<SyncState>('synced')
+  void _setSyncState // Suppress unused warning - kept for future extensibility
+
+  // Internal flag to track if we're actively requesting (for retry logic)
+  const isRequestingRef = useRef(false)
 
   // Ref to track if we've set up listeners (to avoid duplicates)
   const listenerSetupRef = useRef(false)
@@ -262,6 +273,7 @@ export function useAnnotationSync(
 
         // Mark as received and clear retry timeout
         hasReceivedSnapshotRef.current = true
+        isRequestingRef.current = false
         clearRetryTimeout()
 
         // Validate normalized coordinates for all strokes (Story 4.9 AC-4.9.1)
@@ -270,10 +282,8 @@ export function useAnnotationSync(
         }
 
         // Bulk load strokes (AC-4.8.1, AC-4.8.2)
+        // This merges with any strokes drawn while waiting for sync
         setStrokes(snapshotMsg.strokes)
-
-        // Update sync state
-        setSyncState('synced')
 
         // Log latency in dev mode
         if (import.meta.env.DEV) {
@@ -427,6 +437,8 @@ export function useAnnotationSync(
    * Late-joiner sync: Request state on connection when screen share is active.
    * AC-4.8.3: state_request message sent on join
    * AC-4.8.6: Retry after 3 seconds if no response
+   *
+   * Uses optimistic UI - canvas is usable immediately while sync happens in background.
    */
   useEffect(() => {
     // Only request state if room is connected and screen share is active
@@ -434,16 +446,15 @@ export function useAnnotationSync(
       return
     }
 
-    // Don't request if we've already synced or are requesting
-    if (syncState !== 'idle') {
+    // Don't request if we're already requesting or have received a snapshot
+    if (isRequestingRef.current || hasReceivedSnapshotRef.current) {
       return
     }
 
     // Check if there are any remote participants to request state from
     const remoteParticipants = room.remoteParticipants
     if (remoteParticipants.size === 0) {
-      // No one to request from, we're the first - mark as synced
-      setSyncState('synced')
+      // No one to request from, we're the first
       hasReceivedSnapshotRef.current = true
       if (import.meta.env.DEV) {
         console.debug('[AnnotationSync] No remote participants, skipping state request')
@@ -451,13 +462,13 @@ export function useAnnotationSync(
       return
     }
 
-    // Start requesting state
-    setSyncState('requesting')
+    // Start requesting state in background (UI already shows synced/usable)
+    isRequestingRef.current = true
     retryCountRef.current = 0
-    hasReceivedSnapshotRef.current = false
 
     const attemptRequest = () => {
       if (hasReceivedSnapshotRef.current) {
+        isRequestingRef.current = false
         return // Already received snapshot
       }
 
@@ -466,8 +477,8 @@ export function useAnnotationSync(
         if (import.meta.env.DEV) {
           console.debug('[AnnotationSync] Max retries reached, assuming empty state')
         }
-        setSyncState('synced')
         hasReceivedSnapshotRef.current = true
+        isRequestingRef.current = false
         return
       }
 
@@ -490,12 +501,12 @@ export function useAnnotationSync(
     // Cleanup on unmount
     return () => {
       clearRetryTimeout()
+      isRequestingRef.current = false
     }
   }, [
     room,
     isScreenShareActive,
     localParticipantId,
-    syncState,
     sendStateRequest,
     clearRetryTimeout,
   ])

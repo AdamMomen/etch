@@ -1,5 +1,6 @@
 import { useCallback, useState, useRef, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { useOverlayAnnotationBridge } from './useOverlayAnnotationBridge'
 
 /**
  * Bounds for the overlay window
@@ -55,6 +56,10 @@ export interface UseAnnotationOverlayReturn {
 export function useAnnotationOverlay(): UseAnnotationOverlayReturn {
   const [isOverlayActive, setIsOverlayActive] = useState(false)
   const trackingIntervalRef = useRef<number | null>(null)
+
+  // Story 4.11: Bridge annotation events between main window and overlay
+  // This hook handles all annotation sync automatically when overlay is active
+  useOverlayAnnotationBridge(isOverlayActive)
 
   // Create the overlay window
   const createOverlay = useCallback(async (bounds: OverlayBounds) => {

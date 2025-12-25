@@ -21,6 +21,7 @@ tauri-build = { version = "2.5.1", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"
+url = "2.5"  # Story 4.11: Required for WebviewUrl::External parsing
 tauri = { version = "2.9.2", features = ["webview-data-url", "macos-private-api", "tray-icon"] }
 tauri-plugin-log = "2.0.0"
 tauri-plugin-shell = "2"

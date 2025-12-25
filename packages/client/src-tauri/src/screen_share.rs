@@ -503,77 +503,22 @@ pub async fn create_annotation_overlay(
     );
 
     // Build the overlay window
-    // Using a data URL for minimal content - just a transparent page
-    // Epic 4 will replace this with actual annotation canvas content
-    //
-    // DEBUG_OVERLAY=1 shows red debug overlay, otherwise shows subtle professional UI
-    let debug_mode = std::env::var("DEBUG_OVERLAY").map(|v| v == "1").unwrap_or(false);
-    log::info!("Overlay debug mode: {}", debug_mode);
+    // Story 4.11: Load React route for annotation overlay with Perfect Freehand rendering
+    // The /overlay route renders the AnnotationOverlayPage component which subscribes
+    // to the annotationStore and renders strokes using the same Perfect Freehand settings
+    // as the viewer canvas, ensuring visual consistency (AC-4.11.2, AC-4.11.3)
 
-    let overlay_html = if debug_mode {
-        // Debug mode: bright red overlay for visibility testing
-        r#"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                * { margin: 0; padding: 0; }
-                html, body {
-                    width: 100%;
-                    height: 100%;
-                    background: rgba(255, 0, 0, 0.3);
-                    overflow: hidden;
-                    border: 8px solid red;
-                    box-sizing: border-box;
-                }
-                #debug {
-                    position: fixed;
-                    top: 50%;
-                    left: 50%;
-                    transform: translate(-50%, -50%);
-                    font-size: 48px;
-                    color: white;
-                    text-shadow: 2px 2px 4px black;
-                    font-family: sans-serif;
-                }
-            </style>
-        </head>
-        <body>
-            <div id="debug">OVERLAY ACTIVE</div>
-        </body>
-        </html>
-        "#.to_string()
-    } else {
-        // Production mode: visible red border indicating sharing (Story 3.8)
-        r#"
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <style>
-                * { margin: 0; padding: 0; }
-                html, body {
-                    width: 100%;
-                    height: 100%;
-                    background: transparent;
-                    overflow: hidden;
-                    border: 4px solid rgba(239, 68, 68, 0.8);
-                    box-sizing: border-box;
-                }
-            </style>
-        </head>
-        <body></body>
-        </html>
-        "#.to_string()
-    };
+    // Determine the base URL (dev or production)
+    #[cfg(debug_assertions)]
+    let base_url = "http://localhost:5173";
+    #[cfg(not(debug_assertions))]
+    let base_url = "tauri://localhost";
 
-    let data_url = format!(
-        "data:text/html;base64,{}",
-        base64_encode(overlay_html.as_bytes())
-    );
+    let overlay_url = format!("{}/overlay", base_url);
+    log::info!("Creating overlay with URL: {}", overlay_url);
 
-    log::info!("Parsing data URL...");
-    let url = data_url.parse().map_err(|e| {
-        log::error!("Failed to parse data URL: {}", e);
+    let url: url::Url = overlay_url.parse().map_err(|e| {
+        log::error!("Failed to parse overlay URL: {}", e);
         format!("Invalid URL: {}", e)
     })?;
 
@@ -664,6 +609,106 @@ pub async fn update_overlay_bounds(app: AppHandle, bounds: OverlayBounds) -> Res
 #[tauri::command]
 pub fn is_overlay_active(app: AppHandle) -> bool {
     app.get_webview_window("annotation-overlay").is_some()
+}
+
+/// Set overlay click-through mode (AC-4.11.5)
+/// When enabled=true, overlay passes mouse events through to windows below
+/// When enabled=false, overlay captures mouse events for sharer drawing (AC-4.11.6)
+#[tauri::command]
+pub async fn set_overlay_click_through(app: AppHandle, enabled: bool) -> Result<(), String> {
+    const OVERLAY_LABEL: &str = "annotation-overlay";
+
+    let window = app
+        .get_webview_window(OVERLAY_LABEL)
+        .ok_or_else(|| "Annotation overlay does not exist".to_string())?;
+
+    log::info!("Setting overlay click-through: {}", enabled);
+
+    if enabled {
+        // Enable click-through (default behavior)
+        configure_click_through(&window)?;
+    } else {
+        // Disable click-through for drawing mode
+        disable_click_through(&window)?;
+    }
+
+    Ok(())
+}
+
+/// Disable click-through for sharer drawing mode
+fn disable_click_through(window: &tauri::WebviewWindow) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        disable_click_through_macos(window)?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        disable_click_through_windows(window)?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Linux: click-through configuration is limited
+        let _ = window;
+        log::info!("Linux: Click-through toggle limited by window manager");
+    }
+
+    Ok(())
+}
+
+/// macOS: Disable ignoresMouseEvents to capture clicks
+#[cfg(target_os = "macos")]
+fn disable_click_through_macos(window: &tauri::WebviewWindow) -> Result<(), String> {
+    use objc::runtime::Object;
+    use objc::{msg_send, sel, sel_impl};
+    use objc::runtime::NO;
+
+    let ns_window = window
+        .ns_window()
+        .map_err(|e| format!("Failed to get NSWindow: {}", e))?;
+
+    let ns_window_ptr = ns_window as usize;
+
+    dispatch::Queue::main().exec_sync(move || {
+        unsafe {
+            let ns_window = ns_window_ptr as *mut Object;
+            // Set ignoresMouseEvents to NO to capture clicks
+            let _: () = msg_send![ns_window, setIgnoresMouseEvents: NO];
+        }
+    });
+
+    log::info!("macOS: Disabled click-through for drawing mode");
+    Ok(())
+}
+
+/// Windows: Remove WS_EX_TRANSPARENT to capture clicks
+#[cfg(target_os = "windows")]
+fn disable_click_through_windows(window: &tauri::WebviewWindow) -> Result<(), String> {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_LAYERED, WS_EX_TRANSPARENT,
+        WS_EX_TOPMOST,
+    };
+
+    let hwnd = window
+        .hwnd()
+        .map_err(|e| format!("Failed to get HWND: {}", e))?;
+
+    let hwnd = HWND(hwnd.0 as *mut std::ffi::c_void);
+
+    unsafe {
+        let ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+        // Remove WS_EX_TRANSPARENT but keep LAYERED and TOPMOST
+        let new_style = (ex_style & !(WS_EX_TRANSPARENT.0 as isize))
+            | WS_EX_LAYERED.0 as isize
+            | WS_EX_TOPMOST.0 as isize;
+
+        SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new_style);
+    }
+
+    log::info!("Windows: Disabled click-through for drawing mode");
+    Ok(())
 }
 
 /// Get window bounds by title (for window tracking during window shares)

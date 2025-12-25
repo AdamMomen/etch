@@ -1918,6 +1918,7 @@ dependencies = [
  "tauri-build",
  "tauri-plugin-log",
  "tauri-plugin-shell",
+ "url",
  "windows 0.58.0",
 ]
 

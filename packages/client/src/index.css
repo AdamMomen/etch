@@ -112,3 +112,11 @@ html {
     box-shadow: 0 0 0 2px var(--speaking-color, rgba(139, 92, 246, 0.4));
   }
 }
+
+/* Story 4.11: Transparent overlay window styles */
+/* Applied when on /overlay route - requires transparent html/body for Tauri window transparency */
+.overlay-transparent,
+.overlay-transparent body {
+  background: transparent !important;
+  background-color: transparent !important;
+}
