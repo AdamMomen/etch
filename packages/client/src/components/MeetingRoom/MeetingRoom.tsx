@@ -17,10 +17,9 @@ import { MeetingControlsBar } from './MeetingControlsBar'
 import { ConnectionStatusIndicator } from './ConnectionStatusIndicator'
 import { LocalVideoPreview } from './LocalVideoPreview'
 import { ParticipantGrid } from './ParticipantGrid'
-import { ParticipantBubbles } from './ParticipantBubbles'
 import { LeaveConfirmDialog } from './LeaveConfirmDialog'
 import { InviteModal } from './InviteModal'
-import { ScreenShareViewer, SourcePickerDialog } from '@/components/ScreenShare'
+import { ScreenShareViewer, SourcePickerDialog, DraggableParticipantStack } from '@/components/ScreenShare'
 import { generateInviteLink, copyToClipboard } from '@/lib/invite'
 import { cn } from '@/lib/utils'
 
@@ -72,6 +71,7 @@ export function MeetingRoom() {
     isSharing: isScreenSharing,
     isLocalSharing,
     canShare,
+    isSupported: isScreenShareSupported,
     sharerName,
     remoteScreenTrack,
     startScreenShare,
@@ -85,6 +85,18 @@ export function MeetingRoom() {
     token: currentRoom?.token,
     screenShareToken: currentRoom?.screenShareToken,
   })
+
+  // Debug logging for screen share state changes
+  useEffect(() => {
+    console.log('[MeetingRoom] Screen share state changed:', {
+      isScreenSharing,
+      isLocalSharing,
+      hasRemoteTrack: remoteScreenTrack !== null,
+      trackSid: remoteScreenTrack?.sid,
+      shouldShowViewer: isScreenSharing && !isLocalSharing,
+      timestamp: Date.now(),
+    })
+  }, [isScreenSharing, isLocalSharing, remoteScreenTrack])
 
   // Annotation sync - runs at MeetingRoom level so both viewers AND sharers receive annotations
   // Story 4.11: Sharer needs to receive annotation DataTrack messages to display on overlay
@@ -384,7 +396,7 @@ export function MeetingRoom() {
         {/* Center Content */}
         <main className="relative flex flex-1 flex-col bg-background/50">
           {isScreenSharing && !isLocalSharing ? (
-            // Viewing remote screen share - display ScreenShareViewer with floating bubbles
+            // Viewing remote screen share - display ScreenShareViewer with draggable bubbles
             <>
               {/* Remote screen share viewer (AC-3.2.1, AC-3.2.2, AC-3.2.4) */}
               <ScreenShareViewer
@@ -399,21 +411,17 @@ export function MeetingRoom() {
                 className="flex-1"
               />
 
-              {/* Floating participant bubbles in corner (AC-3.2.3) */}
-              <ParticipantBubbles
-                room={room}
-                remoteParticipants={remoteParticipants}
-                className="absolute bottom-20 right-4"
-              />
-
-              {/* Local Video Preview - positioned above bubbles */}
+              {/* Draggable participant bubbles (AC-3.2.3) */}
               {localParticipant && (
-                <LocalVideoPreview
-                  videoTrack={videoTrack}
-                  isVideoOff={isVideoOff}
-                  participantName={localParticipant.name}
-                  participantColor={localParticipant.color}
-                  className="absolute bottom-4 right-4 h-24 w-32"
+                <DraggableParticipantStack
+                  room={room}
+                  localParticipant={{
+                    name: localParticipant.name,
+                    color: localParticipant.color,
+                    videoTrack: videoTrack,
+                    isVideoOff: isVideoOff,
+                  }}
+                  remoteParticipants={remoteParticipants}
                 />
               )}
             </>
@@ -437,21 +445,17 @@ export function MeetingRoom() {
                 </div>
               </div>
 
-              {/* Floating participant bubbles in corner */}
-              <ParticipantBubbles
-                room={room}
-                remoteParticipants={remoteParticipants}
-                className="absolute bottom-20 right-4"
-              />
-
-              {/* Local Video Preview */}
+              {/* Draggable participant bubbles */}
               {localParticipant && (
-                <LocalVideoPreview
-                  videoTrack={videoTrack}
-                  isVideoOff={isVideoOff}
-                  participantName={localParticipant.name}
-                  participantColor={localParticipant.color}
-                  className="absolute bottom-4 right-4 h-24 w-32"
+                <DraggableParticipantStack
+                  room={room}
+                  localParticipant={{
+                    name: localParticipant.name,
+                    color: localParticipant.color,
+                    videoTrack: videoTrack,
+                    isVideoOff: isVideoOff,
+                  }}
+                  remoteParticipants={remoteParticipants}
                 />
               )}
             </>
@@ -510,6 +514,7 @@ export function MeetingRoom() {
         onInvite={handleInvite}
         isLocalSharing={isLocalSharing}
         canShare={canShare}
+        isScreenShareSupported={isScreenShareSupported}
         sharerName={sharerName}
         onStartScreenShare={startScreenShare}
         onStopScreenShare={stopScreenShare}

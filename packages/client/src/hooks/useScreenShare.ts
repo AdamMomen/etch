@@ -935,7 +935,7 @@ export function useScreenShare({
     // This fires immediately when the sharer clicks stop, before TrackUnpublished
     const handleDataReceived = (
       payload: Uint8Array,
-      participant: RemoteParticipant | undefined,
+      _participant: RemoteParticipant | undefined,
       _kind: unknown,
       topic: string | undefined
     ) => {

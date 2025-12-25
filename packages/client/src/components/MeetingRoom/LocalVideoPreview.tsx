@@ -1,6 +1,12 @@
 import { useEffect, useRef } from 'react'
 import { Track } from 'livekit-client'
 import { cn } from '@/lib/utils'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 
 interface LocalVideoPreviewProps {
   videoTrack: Track | null
@@ -8,6 +14,14 @@ interface LocalVideoPreviewProps {
   participantName: string
   participantColor: string
   className?: string
+  variant?: 'rectangle' | 'circle'
+  size?: 'sm' | 'md' | 'lg'
+}
+
+const circleSizeClasses = {
+  sm: 'h-8 w-8 text-xs',
+  md: 'h-10 w-10 text-sm',
+  lg: 'h-12 w-12 text-base',
 }
 
 export function LocalVideoPreview({
@@ -16,6 +30,8 @@ export function LocalVideoPreview({
   participantName,
   participantColor,
   className,
+  variant = 'rectangle',
+  size = 'md',
 }: LocalVideoPreviewProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
 
@@ -35,6 +51,60 @@ export function LocalVideoPreview({
 
   const showVideo = !isVideoOff && videoTrack
 
+  // Circle variant - matches ParticipantBubble style
+  if (variant === 'circle') {
+    const content = (
+      <div
+        className={cn(
+          'relative rounded-full overflow-hidden',
+          'ring-2 ring-offset-1 ring-offset-background',
+          'transition-all duration-300 hover:scale-110',
+          circleSizeClasses[size],
+          className
+        )}
+        style={{
+          '--tw-ring-color': participantColor,
+        } as React.CSSProperties}
+      >
+        {/* Avatar with initial - visible when no video */}
+        <div
+          className={cn(
+            'absolute inset-0 flex items-center justify-center rounded-full font-medium text-white transition-opacity duration-300',
+            showVideo ? 'opacity-0' : 'opacity-100'
+          )}
+          style={{ backgroundColor: participantColor }}
+        >
+          {participantName.charAt(0).toUpperCase()}
+        </div>
+
+        {/* Video element - visible when video is available */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={cn(
+            'h-full w-full object-cover rounded-full transition-opacity duration-300',
+            showVideo ? 'opacity-100' : 'opacity-0'
+          )}
+          style={{ transform: 'scaleX(-1)' }}
+        />
+      </div>
+    )
+
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>{content}</TooltipTrigger>
+          <TooltipContent side="left" sideOffset={8}>
+            <p>{participantName} (You)</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    )
+  }
+
+  // Rectangle variant - original layout
   return (
     <div
       className={cn(
