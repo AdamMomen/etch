@@ -135,10 +135,11 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
   })
 
   describe('initial state', () => {
-    it('should start with syncState "idle" when not connected', () => {
+    it('should start with syncState "synced" when not connected (optimistic UI)', () => {
       const { result } = renderHook(() => useAnnotationSync(null))
 
-      expect(result.current.syncState).toBe('idle')
+      // Optimistic UI: always start as 'synced' to not block canvas
+      expect(result.current.syncState).toBe('synced')
       expect(result.current.isConnected).toBe(false)
     })
 
@@ -164,9 +165,9 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
       // Enable screen share
       rerender({ room: mockRoom, isScreenShareActive: true })
 
-      // Should send state_request and set syncState to 'requesting'
+      // Should send state_request (sync happens in background, state stays 'synced' for optimistic UI)
       expect(mockRoom.localParticipant.publishData).toHaveBeenCalled()
-      expect(result.current.syncState).toBe('requesting')
+      expect(result.current.syncState).toBe('synced')
 
       const publishCall = (mockRoom.localParticipant.publishData as any).mock.calls[0]
       const decodedMessage = JSON.parse(new TextDecoder().decode(publishCall[0]))
@@ -311,7 +312,8 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
     it('should bulk-load strokes when receiving state_snapshot', () => {
       const { result } = renderHook(() => useAnnotationSync(mockRoom, true))
 
-      expect(result.current.syncState).toBe('requesting')
+      // Optimistic UI: syncState is always 'synced'
+      expect(result.current.syncState).toBe('synced')
 
       const receivedStrokes = [
         createMockStroke({ id: 'received-1' }),
@@ -358,7 +360,8 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
 
       // Should NOT have called setStrokes
       expect(mockSetStrokes).not.toHaveBeenCalled()
-      expect(result.current.syncState).toBe('requesting')
+      // Optimistic UI: syncState is always 'synced'
+      expect(result.current.syncState).toBe('synced')
     })
 
     it('should ignore duplicate state_snapshots', () => {
@@ -427,8 +430,8 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
       expect(initialTimeout * Math.pow(backoffMultiplier, 2)).toBe(12000)
     })
 
-    it('should transition to synced after max retries are exhausted', () => {
-      // This tests the hook's behavior when max retries is reached
+    it('should use optimistic UI regardless of retry state', () => {
+      // This tests the hook's behavior - optimistic UI always shows 'synced'
       // We can verify the retry count logic by checking the config
       const maxAttempts = 3
       const retryCount = 3
@@ -436,9 +439,10 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
       // When retryCount >= maxAttempts, should stop retrying
       expect(retryCount >= maxAttempts).toBe(true)
 
-      // Render hook and verify initial state
+      // Render hook and verify optimistic UI state
       const { result } = renderHook(() => useAnnotationSync(mockRoom, true))
-      expect(result.current.syncState).toBe('requesting')
+      // Optimistic UI: syncState is always 'synced' to not block canvas
+      expect(result.current.syncState).toBe('synced')
     })
 
     it('should clear retry timeout when snapshot received', () => {
