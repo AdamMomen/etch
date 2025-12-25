@@ -6,14 +6,31 @@ import { cn } from '@/lib/utils'
 import { AnnotationCanvas } from '@/components/AnnotationCanvas'
 import { AnnotationToolbar } from '@/components/AnnotationToolbar'
 import { useAnnotations } from '@/hooks/useAnnotations'
-import { useAnnotationSync } from '@/hooks/useAnnotationSync'
 import { useAnnotationKeyboard } from '@/hooks/useAnnotationKeyboard'
+import type { SyncState } from '@/hooks/useAnnotationSync'
+import type { Stroke, Point } from '@nameless/shared'
 
 interface ScreenShareViewerProps {
   track: RemoteVideoTrack | null
   sharerName: string | null
   /** LiveKit room for DataTrack sync (Story 4.7) */
   room: Room | null
+  /** Sync state from parent (Story 4.11 - moved to MeetingRoom level) */
+  syncState: SyncState
+  /** Publish completed stroke */
+  publishStroke: (stroke: Stroke) => void
+  /** Publish incremental stroke updates */
+  publishStrokeUpdate: (
+    strokeId: string,
+    participantId: string,
+    tool: 'pen' | 'highlighter',
+    color: string,
+    points: Point[]
+  ) => void
+  /** Publish stroke deletion */
+  publishDelete: (strokeId: string) => void
+  /** Publish clear all */
+  publishClearAll: () => void
   className?: string
 }
 
@@ -30,22 +47,19 @@ export function ScreenShareViewer({
   track,
   sharerName,
   room,
+  syncState,
+  publishStroke,
+  publishStrokeUpdate,
+  publishDelete,
+  publishClearAll,
   className,
 }: ScreenShareViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const [isVideoReady, setIsVideoReady] = useState(false)
   const isScreenShareActive = track !== null
 
-  // Use annotation sync hook for DataTrack communication (Story 4.7, 4.8)
-  const {
-    syncState,
-    publishStroke,
-    publishStrokeUpdate,
-    publishDelete,
-    publishClearAll,
-  } = useAnnotationSync(room, isScreenShareActive)
-
   // Create sync callbacks object for useAnnotations
+  // Sync is now managed at MeetingRoom level (Story 4.11)
   const sync = useMemo(
     () =>
       room

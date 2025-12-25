@@ -178,11 +178,14 @@ export function AnnotationOverlayPage() {
     const ctx = ctxRef.current
     if (!canvas || !ctx) return
 
-    const width = canvas.width
-    const height = canvas.height
+    // Use LOGICAL dimensions for coordinate denormalization (matching viewer's AnnotationCanvas)
+    // canvas.width/height are physical pixels (scaled by DPR), but coordinates are normalized
+    // based on logical (CSS) dimensions, so we must denormalize using logical dimensions too
+    const width = window.innerWidth
+    const height = window.innerHeight
 
-    // Clear canvas
-    ctx.clearRect(0, 0, width, height)
+    // Clear canvas using physical dimensions
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     const totalStrokes = strokes.length + activeStrokes.size + (localActiveStroke ? 1 : 0)
     if (totalStrokes > 0) {

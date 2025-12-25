@@ -11,6 +11,7 @@ import { useVideo } from '@/hooks/useVideo'
 import { useScreenShare, showSharingTray, hideSharingTray } from '@/hooks/useScreenShare'
 import { useDevices } from '@/hooks/useDevices'
 import { useDeviceDisconnection } from '@/hooks/useDeviceDisconnection'
+import { useAnnotationSync } from '@/hooks/useAnnotationSync'
 import { Sidebar } from './Sidebar'
 import { MeetingControlsBar } from './MeetingControlsBar'
 import { ConnectionStatusIndicator } from './ConnectionStatusIndicator'
@@ -84,6 +85,17 @@ export function MeetingRoom() {
     token: currentRoom?.token,
     screenShareToken: currentRoom?.screenShareToken,
   })
+
+  // Annotation sync - runs at MeetingRoom level so both viewers AND sharers receive annotations
+  // Story 4.11: Sharer needs to receive annotation DataTrack messages to display on overlay
+  const isScreenShareActive = isScreenSharing || remoteScreenTrack !== null
+  const {
+    syncState,
+    publishStroke,
+    publishStrokeUpdate,
+    publishDelete,
+    publishClearAll,
+  } = useAnnotationSync(room, isScreenShareActive)
 
   // Get resetVolumes from volumeStore for cleanup on leave
   const resetVolumes = useVolumeStore((state) => state.resetVolumes)
@@ -379,6 +391,11 @@ export function MeetingRoom() {
                 track={remoteScreenTrack}
                 sharerName={sharerName}
                 room={room}
+                syncState={syncState}
+                publishStroke={publishStroke}
+                publishStrokeUpdate={publishStrokeUpdate}
+                publishDelete={publishDelete}
+                publishClearAll={publishClearAll}
                 className="flex-1"
               />
 
