@@ -19,6 +19,9 @@ export type {
   StateRequestMessage,
   StateSnapshotMessage,
   AnnotationMessage,
+  // Screen share message types
+  ScreenShareStopMessage,
+  ScreenShareMessage,
 } from './types'
 
 // Annotation constants and utilities (Story 4.7, 4.8)
@@ -34,6 +37,16 @@ export {
   isValidAnnotationMessage,
   encodeAnnotationMessage,
   decodeAnnotationMessage,
+} from './types'
+
+// Screen share constants and utilities
+export {
+  SCREEN_SHARE_MESSAGE_TYPES,
+  SCREEN_SHARE_TOPIC,
+  isScreenShareStopMessage,
+  isValidScreenShareMessage,
+  encodeScreenShareMessage,
+  decodeScreenShareMessage,
 } from './types'
 
 // Constants

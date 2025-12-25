@@ -17,6 +17,13 @@ import { getSidecarClient } from '@/lib/sidecar'
 import { getCoreClient, type ScreenInfo } from '@/lib/core'
 import { parseParticipantMetadata } from '@/utils/participantMetadata'
 import { useAnnotationOverlay, type OverlayBounds } from './useAnnotationOverlay'
+import {
+  SCREEN_SHARE_TOPIC,
+  SCREEN_SHARE_MESSAGE_TYPES,
+  encodeScreenShareMessage,
+  decodeScreenShareMessage,
+  type ScreenShareStopMessage,
+} from '@nameless/shared'
 
 // ============================================================================
 // System Tray API (Story 3.7 - ADR-011 Simple Menu Bar)
@@ -68,6 +75,8 @@ export interface UseScreenShareReturn {
   isSharing: boolean
   isLocalSharing: boolean
   canShare: boolean
+  /** Whether screen sharing is supported on this device (false on iOS) */
+  isSupported: boolean
   sharerName: string | null
   screenTrack: LocalVideoTrack | null
   remoteScreenTrack: RemoteVideoTrack | null
@@ -88,6 +97,17 @@ export interface UseScreenShareReturn {
 
 // Platform type from Tauri command
 type Platform = 'windows' | 'macos' | 'linux'
+
+// Check if running on iOS (Safari, Brave, Chrome all use WebKit)
+const isIOS = (): boolean => {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+}
+
+// Check if getDisplayMedia is supported
+const isScreenShareSupported = (): boolean => {
+  return typeof navigator.mediaDevices?.getDisplayMedia === 'function'
+}
 
 // Get platform from Tauri command
 const getPlatform = async (): Promise<Platform> => {
@@ -173,6 +193,11 @@ export const restoreMainWindow = async (): Promise<void> => {
 const startWindowsScreenShare = async (
   room: Room
 ): Promise<{ track: LocalVideoTrack; stream: MediaStream }> => {
+  // Double-check that getDisplayMedia is available (defensive check)
+  if (typeof navigator.mediaDevices?.getDisplayMedia !== 'function') {
+    throw new Error('Screen sharing is not supported on this device')
+  }
+
   const stream = await navigator.mediaDevices.getDisplayMedia({
     video: {
       width: { ideal: 1920 },
@@ -478,6 +503,13 @@ export function useScreenShare({
       return
     }
 
+    // Check if screen sharing is supported on this platform
+    // iOS browsers (Safari, Brave, Chrome) don't support getDisplayMedia
+    if (isIOS() || !isScreenShareSupported()) {
+      toast.error('Screen sharing is not supported on this device')
+      return
+    }
+
     // Check if someone else is already sharing (single share rule)
     if (isSharing && !isLocalSharing) {
       toast.error(`${sharerName || 'Another participant'} is already sharing`)
@@ -625,6 +657,24 @@ export function useScreenShare({
     if (!room) return
 
     try {
+      // IMMEDIATELY send custom DataTrack message to notify viewers
+      // This is faster than waiting for TrackUnpublished which requires server roundtrip
+      try {
+        const stopMessage: ScreenShareStopMessage = {
+          type: SCREEN_SHARE_MESSAGE_TYPES.SCREEN_SHARE_STOP,
+          sharerId: room.localParticipant.identity,
+          timestamp: Date.now(),
+        }
+        console.log('[ScreenShare] Sending screen_share_stop message', { timestamp: Date.now() })
+        await room.localParticipant.publishData(
+          encodeScreenShareMessage(stopMessage),
+          { topic: SCREEN_SHARE_TOPIC, reliable: true }
+        )
+      } catch (msgError) {
+        // Don't let message sending failure block cleanup
+        console.warn('[ScreenShare] Failed to send stop message:', msgError)
+      }
+
       // Unpublish the screen share track
       const screenPub = room.localParticipant.getTrackPublication(
         Track.Source.ScreenShare
@@ -758,7 +808,14 @@ export function useScreenShare({
       publication: RemoteTrackPublication,
       participant: RemoteParticipant
     ) => {
+      console.log('[ScreenShare] TrackUnpublished event received:', {
+        source: publication.source,
+        participantIdentity: participant.identity,
+        isScreenShare: publication.source === Track.Source.ScreenShare,
+        timestamp: Date.now(),
+      })
       if (publication.source === Track.Source.ScreenShare) {
+        console.log('[ScreenShare] Processing screen share unpublish - START', { timestamp: Date.now() })
         // Parse metadata to find the main participant
         const metadata = parseParticipantMetadata(participant.metadata || '')
 
@@ -780,8 +837,11 @@ export function useScreenShare({
           // Notify viewers that the sharer stopped (AC-3.3.8)
           toast.info(`${sharerDisplayName} stopped sharing`)
 
+          console.log('[ScreenShare] Clearing remoteScreenTrack (sidecar share)', { timestamp: Date.now() })
           setRemoteScreenTrack(null)
+          console.log('[ScreenShare] Called setRemoteScreenTrack(null)', { timestamp: Date.now() })
           setRemoteSharer(null, null)
+          console.log('[ScreenShare] Called setRemoteSharer(null, null) - isSharing should be false now', { timestamp: Date.now() })
           updateParticipant(metadata.parentId, { isScreenSharing: false })
           // Re-enable local share button when remote participant stops sharing (AC-3.4.3)
           setCanShare(true)
@@ -792,8 +852,11 @@ export function useScreenShare({
           // Notify viewers that the sharer stopped (AC-3.3.8)
           toast.info(`${sharerDisplayName} stopped sharing`)
 
+          console.log('[ScreenShare] Clearing remoteScreenTrack (direct share)', { timestamp: Date.now() })
           setRemoteScreenTrack(null)
+          console.log('[ScreenShare] Called setRemoteScreenTrack(null)', { timestamp: Date.now() })
           setRemoteSharer(null, null)
+          console.log('[ScreenShare] Called setRemoteSharer(null, null) - isSharing should be false now', { timestamp: Date.now() })
           updateParticipant(participant.identity, { isScreenSharing: false })
           // Re-enable local share button when remote participant stops sharing (AC-3.4.3)
           setCanShare(true)
@@ -838,10 +901,86 @@ export function useScreenShare({
       }
     }
 
+    // Handle remote participant disconnecting (fallback if TrackUnpublished didn't fire)
+    // This handles cases like: user closes app, loses connection, etc.
+    const handleParticipantDisconnected = (participant: RemoteParticipant) => {
+      console.log('[ScreenShare] ParticipantDisconnected event received:', {
+        participantIdentity: participant.identity,
+        timestamp: Date.now(),
+      })
+
+      // Parse metadata to find the main participant
+      const metadata = parseParticipantMetadata(participant.metadata || '')
+
+      if (metadata.isScreenShare && metadata.parentId) {
+        // This is a screen share sidecar participant disconnecting
+        const isOwnScreenShare =
+          metadata.parentId === room.localParticipant?.identity
+
+        if (isOwnScreenShare) {
+          // Our own sidecar - handled by LocalTrackUnpublished
+          return
+        }
+
+        // Another user's sidecar disconnected - clear their screen share
+        console.log('[ScreenShare] Screen share sidecar disconnected, clearing state', { timestamp: Date.now() })
+        setRemoteScreenTrack(null)
+        setRemoteSharer(null, null)
+        updateParticipant(metadata.parentId, { isScreenSharing: false })
+        setCanShare(true)
+      }
+    }
+
+    // Handle custom screen_share_stop message for INSTANT notification
+    // This fires immediately when the sharer clicks stop, before TrackUnpublished
+    const handleDataReceived = (
+      payload: Uint8Array,
+      participant: RemoteParticipant | undefined,
+      _kind: unknown,
+      topic: string | undefined
+    ) => {
+      // Only process screen share topic messages
+      if (topic !== SCREEN_SHARE_TOPIC) return
+
+      const message = decodeScreenShareMessage(payload)
+      if (!message) return
+
+      console.log('[ScreenShare] Received screen_share message:', {
+        type: message.type,
+        sharerId: message.sharerId,
+        timestamp: Date.now(),
+      })
+
+      if (message.type === SCREEN_SHARE_MESSAGE_TYPES.SCREEN_SHARE_STOP) {
+        // Ignore our own stop message
+        if (message.sharerId === room.localParticipant?.identity) {
+          return
+        }
+
+        console.log('[ScreenShare] Processing instant screen_share_stop', { timestamp: Date.now() })
+
+        // Get sharer name for toast
+        const sharerParticipant = room.remoteParticipants.get(message.sharerId)
+        const sharerDisplayName = sharerParticipant?.name || message.sharerId
+
+        // Show toast notification
+        toast.info(`${sharerDisplayName} stopped sharing`)
+
+        // IMMEDIATELY clear screen share state - don't wait for TrackUnpublished
+        console.log('[ScreenShare] Instantly clearing remoteScreenTrack', { timestamp: Date.now() })
+        setRemoteScreenTrack(null)
+        setRemoteSharer(null, null)
+        updateParticipant(message.sharerId, { isScreenSharing: false })
+        setCanShare(true)
+      }
+    }
+
     room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
     room.on(RoomEvent.TrackUnpublished, handleTrackUnpublished)
     room.on(RoomEvent.LocalTrackPublished, handleLocalTrackPublished)
     room.on(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished)
+    room.on(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected)
+    room.on(RoomEvent.DataReceived, handleDataReceived)
 
     // Scan for already-subscribed screen share tracks (late-joiner sync)
     // TrackSubscribed events fire during room.connect() before this effect runs,
@@ -868,6 +1007,8 @@ export function useScreenShare({
       room.off(RoomEvent.TrackUnpublished, handleTrackUnpublished)
       room.off(RoomEvent.LocalTrackPublished, handleLocalTrackPublished)
       room.off(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished)
+      room.off(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected)
+      room.off(RoomEvent.DataReceived, handleDataReceived)
     }
   }, [room, setRemoteSharer, stopSharingStore, updateParticipant, destroyOverlay, setSharedScreenBounds])
 
@@ -881,10 +1022,14 @@ export function useScreenShare({
     }
   }, [])
 
+  // Check support once (doesn't change during session)
+  const isSupported = !isIOS() && isScreenShareSupported()
+
   return {
     isSharing,
     isLocalSharing,
     canShare,
+    isSupported,
     sharerName,
     screenTrack,
     remoteScreenTrack,

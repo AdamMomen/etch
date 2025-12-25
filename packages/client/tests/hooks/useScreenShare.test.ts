@@ -29,9 +29,11 @@ vi.mock('sonner', () => ({
 // Mock Room from livekit-client
 const createMockRoom = () => ({
   localParticipant: {
+    identity: 'local-user-123',
     publishTrack: vi.fn().mockResolvedValue({ track: { id: 'screen-track-123' } }),
     unpublishTrack: vi.fn().mockResolvedValue(undefined),
     getTrackPublication: vi.fn().mockReturnValue(null),
+    publishData: vi.fn().mockResolvedValue(undefined),
   },
   remoteParticipants: new Map(),
   on: vi.fn(),
