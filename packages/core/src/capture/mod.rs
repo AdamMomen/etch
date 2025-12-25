@@ -564,6 +564,10 @@ fn run_capture_loop(
     let frame_count_cb = frame_count.clone();
     let last_fps_log_cb = last_fps_log.clone();
 
+    // Track consecutive temporary errors for debugging
+    let temp_error_count = Arc::new(Mutex::new(0u64));
+    let temp_error_count_cb = temp_error_count.clone();
+
     // Create capture callback
     let callback = move |result: CaptureResult, frame: DesktopFrame| {
         if *should_stop_cb.lock() {
@@ -572,27 +576,46 @@ fn run_capture_loop(
 
         match result {
             CaptureResult::ErrorTemporary => {
-                tracing::warn!("Capture temporary error");
+                let mut temp_count = temp_error_count_cb.lock();
+                *temp_count += 1;
+                // NOTE: Do NOT access frame properties here - frame may be null/invalid on error
+                tracing::warn!(
+                    source_id = source_id,
+                    temp_error_count = *temp_count,
+                    "Capture temporary error"
+                );
                 return;
             }
             CaptureResult::ErrorPermanent => {
-                tracing::error!("Capture permanent error");
                 let mut fail_count = failures_cb.lock();
                 *fail_count += 1;
-                if *fail_count > MAX_FAILURES {
-                    tracing::error!("Too many capture failures, stopping");
+                let current_fails = *fail_count;
+                // NOTE: Do NOT access frame properties here - frame may be null/invalid on error
+                tracing::error!(
+                    source_id = source_id,
+                    failure_count = current_fails,
+                    max_failures = MAX_FAILURES,
+                    "Capture permanent error"
+                );
+                if current_fails > MAX_FAILURES {
+                    tracing::error!(
+                        source_id = source_id,
+                        total_failures = current_fails,
+                        "Too many capture failures, stopping"
+                    );
                     *should_stop_cb.lock() = true;
                 }
                 return;
             }
             CaptureResult::ErrorUserStopped => {
-                tracing::info!("User stopped capture");
+                tracing::info!(source_id = source_id, "User stopped capture");
                 *should_stop_cb.lock() = true;
                 return;
             }
             _ => {
-                // Reset failure count on success
+                // Reset failure counts on success
                 *failures_cb.lock() = 0;
+                *temp_error_count_cb.lock() = 0;
             }
         }
 
@@ -683,9 +706,16 @@ fn run_capture_loop(
     };
 
     // Create the capturer
+    tracing::info!(
+        source_id = source_id,
+        "Creating DesktopCapturer for capture loop"
+    );
     let capturer = DesktopCapturer::new(callback, false, true);
     if capturer.is_none() {
-        tracing::error!("Failed to create DesktopCapturer");
+        tracing::error!(
+            source_id = source_id,
+            "Failed to create DesktopCapturer - this may indicate permission issues or system resource exhaustion"
+        );
         if let Some(proxy) = &event_proxy {
             let _ = proxy.send_event(UserEvent::Error {
                 code: "capture_failed".to_string(),
@@ -696,18 +726,37 @@ fn run_capture_loop(
     }
 
     let capturer = Arc::new(Mutex::new(capturer.unwrap()));
+    tracing::info!(source_id = source_id, "DesktopCapturer created successfully");
 
     // Find and select the source
     {
         let mut cap = capturer.lock();
         let sources = cap.get_source_list();
+        tracing::info!(
+            source_id = source_id,
+            available_sources = sources.len(),
+            source_ids = ?sources.iter().map(|s| s.id()).collect::<Vec<_>>(),
+            "Enumerating sources for capture"
+        );
         let source = sources.iter().find(|s| s.id() == source_id);
 
         if let Some(source) = source {
+            tracing::info!(
+                source_id = source_id,
+                source_title = source.title(),
+                "Found source, starting capture"
+            );
             cap.start_capture(source.clone());
-            tracing::info!("Started capture of source: {}", source_id);
+            tracing::info!(
+                source_id = source_id,
+                "start_capture() called successfully"
+            );
         } else {
-            tracing::error!("Source {} not found", source_id);
+            tracing::error!(
+                requested_source_id = source_id,
+                available_source_ids = ?sources.iter().map(|s| s.id()).collect::<Vec<_>>(),
+                "Source not found in available sources"
+            );
             if let Some(proxy) = &event_proxy {
                 let _ = proxy.send_event(UserEvent::Error {
                     code: "source_not_found".to_string(),
@@ -719,30 +768,62 @@ fn run_capture_loop(
     }
 
     // Capture loop
+    let loop_start = std::time::Instant::now();
+    let mut frame_requests: u64 = 0;
+    tracing::info!(source_id = source_id, "Entering capture loop");
+
     loop {
         // Check for stop signal
         match rx.recv_timeout(std::time::Duration::from_millis(FRAME_CAPTURE_INTERVAL_MS)) {
             Ok(StreamMessage::Stop) => {
-                tracing::info!("Received stop signal");
+                tracing::info!(
+                    source_id = source_id,
+                    frame_requests = frame_requests,
+                    loop_duration_secs = loop_start.elapsed().as_secs_f64(),
+                    "Received stop signal"
+                );
                 break;
             }
             Ok(StreamMessage::Failed) => {
-                tracing::error!("Stream failed");
+                tracing::error!(
+                    source_id = source_id,
+                    frame_requests = frame_requests,
+                    loop_duration_secs = loop_start.elapsed().as_secs_f64(),
+                    "Stream failed"
+                );
                 break;
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {
                 // Capture frame
                 if *should_stop.lock() {
+                    tracing::warn!(
+                        source_id = source_id,
+                        frame_requests = frame_requests,
+                        loop_duration_secs = loop_start.elapsed().as_secs_f64(),
+                        failure_count = *failures.lock(),
+                        "Breaking capture loop due to should_stop flag"
+                    );
                     break;
                 }
+                frame_requests += 1;
                 capturer.lock().capture_frame();
             }
             Err(mpsc::RecvTimeoutError::Disconnected) => {
-                tracing::info!("Channel disconnected");
+                tracing::info!(
+                    source_id = source_id,
+                    frame_requests = frame_requests,
+                    loop_duration_secs = loop_start.elapsed().as_secs_f64(),
+                    "Channel disconnected"
+                );
                 break;
             }
         }
     }
 
-    tracing::info!("Capture loop ended");
+    tracing::info!(
+        source_id = source_id,
+        total_frame_requests = frame_requests,
+        total_duration_secs = loop_start.elapsed().as_secs_f64(),
+        "Capture loop ended"
+    );
 }
