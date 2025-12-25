@@ -33,6 +33,7 @@ const createMockRoom = () => ({
     unpublishTrack: vi.fn().mockResolvedValue(undefined),
     getTrackPublication: vi.fn().mockReturnValue(null),
   },
+  remoteParticipants: new Map(),
   on: vi.fn(),
   off: vi.fn(),
 })
@@ -321,13 +322,13 @@ describe('useScreenShare', () => {
       expect(state.sharerName).toBe('Remote User')
     })
 
-    it('should clear remoteScreenTrack on TrackUnsubscribed event', async () => {
+    it('should clear remoteScreenTrack on TrackUnpublished event', async () => {
       const mockRoom = createMockRoom()
-      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+      let trackUnpublishedHandler: (publication: unknown, participant: unknown) => void
 
-      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
-        if (event === 'trackUnsubscribed') {
-          trackUnsubscribedHandler = handler
+      mockRoom.on.mockImplementation((event: string, handler: (publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackUnpublished') {
+          trackUnpublishedHandler = handler
         }
       })
 
@@ -343,15 +344,15 @@ describe('useScreenShare', () => {
         useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
       )
 
-      // Simulate remote screen share track unsubscription
-      const mockRemoteTrack = {
+      // Simulate remote screen share track unpublish (publication has source, not track)
+      const mockPublication = {
         source: 'screen_share',
         kind: 'video',
-        id: 'remote-screen-track-123',
+        trackSid: 'remote-screen-track-123',
       }
 
       await act(async () => {
-        trackUnsubscribedHandler?.(mockRemoteTrack, {}, { identity: 'remote-user-123', name: 'Remote User' })
+        trackUnpublishedHandler?.(mockPublication, { identity: 'remote-user-123', name: 'Remote User' })
       })
 
       // Store should be cleared
@@ -363,11 +364,11 @@ describe('useScreenShare', () => {
     it('should show toast notification when remote sharer stops (AC-3.3.8)', async () => {
       const { toast } = await import('sonner')
       const mockRoom = createMockRoom()
-      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+      let trackUnpublishedHandler: (publication: unknown, participant: unknown) => void
 
-      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
-        if (event === 'trackUnsubscribed') {
-          trackUnsubscribedHandler = handler
+      mockRoom.on.mockImplementation((event: string, handler: (publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackUnpublished') {
+          trackUnpublishedHandler = handler
         }
       })
 
@@ -383,15 +384,15 @@ describe('useScreenShare', () => {
         useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
       )
 
-      // Simulate remote screen share track unsubscription
-      const mockRemoteTrack = {
+      // Simulate remote screen share track unpublish
+      const mockPublication = {
         source: 'screen_share',
         kind: 'video',
-        id: 'remote-screen-track-123',
+        trackSid: 'remote-screen-track-123',
       }
 
       await act(async () => {
-        trackUnsubscribedHandler?.(mockRemoteTrack, {}, { identity: 'remote-user-123', name: 'Alice' })
+        trackUnpublishedHandler?.(mockPublication, { identity: 'remote-user-123', name: 'Alice' })
       })
 
       // Should show toast notification for viewers
@@ -401,11 +402,11 @@ describe('useScreenShare', () => {
     it('should use participant identity if name is not available (AC-3.3.8)', async () => {
       const { toast } = await import('sonner')
       const mockRoom = createMockRoom()
-      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+      let trackUnpublishedHandler: (publication: unknown, participant: unknown) => void
 
-      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
-        if (event === 'trackUnsubscribed') {
-          trackUnsubscribedHandler = handler
+      mockRoom.on.mockImplementation((event: string, handler: (publication: unknown, participant: unknown) => void) => {
+        if (event === 'trackUnpublished') {
+          trackUnpublishedHandler = handler
         }
       })
 
@@ -413,15 +414,15 @@ describe('useScreenShare', () => {
         useScreenShare({ room: mockRoom as unknown as Parameters<typeof useScreenShare>[0]['room'] })
       )
 
-      // Simulate remote screen share track unsubscription with no name
-      const mockRemoteTrack = {
+      // Simulate remote screen share track unpublish with no name
+      const mockPublication = {
         source: 'screen_share',
         kind: 'video',
-        id: 'remote-screen-track-123',
+        trackSid: 'remote-screen-track-123',
       }
 
       await act(async () => {
-        trackUnsubscribedHandler?.(mockRemoteTrack, {}, { identity: 'user-id-456', name: '' })
+        trackUnpublishedHandler?.(mockPublication, { identity: 'user-id-456', name: '' })
       })
 
       // Should fall back to identity
@@ -557,14 +558,14 @@ describe('useScreenShare', () => {
     it('should set canShare to true when remote participant stops sharing (AC-3.4.3)', async () => {
       const mockRoom = createMockRoom()
       let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
-      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+      let trackUnpublishedHandler: (publication: unknown, participant: unknown) => void
 
-      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+      mockRoom.on.mockImplementation((event: string, handler: (...args: unknown[]) => void) => {
         if (event === 'trackSubscribed') {
-          trackSubscribedHandler = handler
+          trackSubscribedHandler = handler as (track: unknown, publication: unknown, participant: unknown) => void
         }
-        if (event === 'trackUnsubscribed') {
-          trackUnsubscribedHandler = handler
+        if (event === 'trackUnpublished') {
+          trackUnpublishedHandler = handler as (publication: unknown, participant: unknown) => void
         }
       })
 
@@ -586,9 +587,10 @@ describe('useScreenShare', () => {
       // canShare should be false while remote is sharing
       expect(result.current.canShare).toBe(false)
 
-      // Simulate remote screen share stop
+      // Simulate remote screen share stop (publication has source, not track)
+      const mockPublication = { source: 'screen_share', kind: 'video', trackSid: 'remote-screen-track-123' }
       await act(async () => {
-        trackUnsubscribedHandler?.(mockRemoteTrack, {}, { identity: 'remote-user', name: 'Alice' })
+        trackUnpublishedHandler?.(mockPublication, { identity: 'remote-user', name: 'Alice' })
       })
 
       // canShare should be true again
@@ -598,14 +600,14 @@ describe('useScreenShare', () => {
     it('should handle rapid share/stop cycles without race conditions (AC-3.4.3)', async () => {
       const mockRoom = createMockRoom()
       let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
-      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+      let trackUnpublishedHandler: (publication: unknown, participant: unknown) => void
 
-      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
+      mockRoom.on.mockImplementation((event: string, handler: (...args: unknown[]) => void) => {
         if (event === 'trackSubscribed') {
-          trackSubscribedHandler = handler
+          trackSubscribedHandler = handler as (track: unknown, publication: unknown, participant: unknown) => void
         }
-        if (event === 'trackUnsubscribed') {
-          trackUnsubscribedHandler = handler
+        if (event === 'trackUnpublished') {
+          trackUnpublishedHandler = handler as (publication: unknown, participant: unknown) => void
         }
       })
 
@@ -618,17 +620,18 @@ describe('useScreenShare', () => {
         kind: 'video',
         id: 'remote-screen-track-123',
       }
+      const mockPublication = { source: 'screen_share', kind: 'video', trackSid: 'remote-screen-track-123' }
       const mockParticipant = { identity: 'remote-user', name: 'Alice' }
 
       // Rapid start/stop cycles
       await act(async () => {
         trackSubscribedHandler?.(mockRemoteTrack, {}, mockParticipant)
-        trackUnsubscribedHandler?.(mockRemoteTrack, {}, mockParticipant)
+        trackUnpublishedHandler?.(mockPublication, mockParticipant)
         trackSubscribedHandler?.(mockRemoteTrack, {}, mockParticipant)
-        trackUnsubscribedHandler?.(mockRemoteTrack, {}, mockParticipant)
+        trackUnpublishedHandler?.(mockPublication, mockParticipant)
       })
 
-      // After all events, canShare should be true (last event was unsubscribed)
+      // After all events, canShare should be true (last event was unpublished)
       expect(result.current.canShare).toBe(true)
 
       // Another rapid cycle ending with subscribe
@@ -646,10 +649,11 @@ describe('useScreenShare', () => {
       const mockRoom = createMockRoom()
       let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
 
-      // Add remoteParticipants Map to mock room
+      // Add remoteParticipants Map to mock room (with trackPublications for late-joiner scan)
       const mockMainParticipant = {
         identity: 'main-user-123',
         name: 'Alice',
+        trackPublications: new Map(),
       }
       const mockRemoteParticipants = new Map([['main-user-123', mockMainParticipant]])
       Object.assign(mockRoom, { remoteParticipants: mockRemoteParticipants })
@@ -694,7 +698,7 @@ describe('useScreenShare', () => {
       const mockRoom = createMockRoom()
       let trackSubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
 
-      const mockMainParticipant = { identity: 'main-user-123', name: 'Alice' }
+      const mockMainParticipant = { identity: 'main-user-123', name: 'Alice', trackPublications: new Map() }
       const mockRemoteParticipants = new Map([['main-user-123', mockMainParticipant]])
       Object.assign(mockRoom, { remoteParticipants: mockRemoteParticipants })
 
@@ -735,15 +739,15 @@ describe('useScreenShare', () => {
     it('should use main participant name in stop notification (AC-3.11.5)', async () => {
       const { toast } = await import('sonner')
       const mockRoom = createMockRoom()
-      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+      let trackUnpublishedHandler: (publication: unknown, participant: unknown) => void
 
-      const mockMainParticipant = { identity: 'main-user-123', name: 'Alice' }
+      const mockMainParticipant = { identity: 'main-user-123', name: 'Alice', trackPublications: new Map() }
       const mockRemoteParticipants = new Map([['main-user-123', mockMainParticipant]])
       Object.assign(mockRoom, { remoteParticipants: mockRemoteParticipants })
 
-      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
-        if (event === 'trackUnsubscribed') {
-          trackUnsubscribedHandler = handler
+      mockRoom.on.mockImplementation((event: string, handler: (...args: unknown[]) => void) => {
+        if (event === 'trackUnpublished') {
+          trackUnpublishedHandler = handler as (publication: unknown, participant: unknown) => void
         }
       })
 
@@ -752,7 +756,7 @@ describe('useScreenShare', () => {
       )
 
       // Simulate screen share stop from sidecar
-      const mockScreenShareTrack = { source: 'screen_share', kind: 'video', id: 'screen-track-123' }
+      const mockPublication = { source: 'screen_share', kind: 'video', trackSid: 'screen-track-123' }
       const mockScreenShareParticipant = {
         identity: 'main-user-123-screenshare',
         name: 'Alice (Screen)',
@@ -760,7 +764,7 @@ describe('useScreenShare', () => {
       }
 
       await act(async () => {
-        trackUnsubscribedHandler?.(mockScreenShareTrack, {}, mockScreenShareParticipant)
+        trackUnpublishedHandler?.(mockPublication, mockScreenShareParticipant)
       })
 
       // Toast should show main participant's name, not "Alice (Screen)"
@@ -864,7 +868,7 @@ describe('useScreenShare', () => {
     it('should NOT show toast when own sidecar screen share stops', async () => {
       const { toast } = await import('sonner')
       const mockRoom = createMockRoom()
-      let trackUnsubscribedHandler: (track: unknown, publication: unknown, participant: unknown) => void
+      let trackUnpublishedHandler: (publication: unknown, participant: unknown) => void
 
       // Set up local participant
       const localParticipantId = 'local-user-123'
@@ -876,9 +880,9 @@ describe('useScreenShare', () => {
         remoteParticipants: new Map(),
       })
 
-      mockRoom.on.mockImplementation((event: string, handler: (track: unknown, publication: unknown, participant: unknown) => void) => {
-        if (event === 'trackUnsubscribed') {
-          trackUnsubscribedHandler = handler
+      mockRoom.on.mockImplementation((event: string, handler: (...args: unknown[]) => void) => {
+        if (event === 'trackUnpublished') {
+          trackUnpublishedHandler = handler as (publication: unknown, participant: unknown) => void
         }
       })
 
@@ -899,8 +903,8 @@ describe('useScreenShare', () => {
       // Clear any previous toast calls
       vi.mocked(toast.info).mockClear()
 
-      // Simulate OWN sidecar screen share track being unsubscribed
-      const mockScreenShareTrack = { source: 'screen_share', kind: 'video', id: 'screen-track-123' }
+      // Simulate OWN sidecar screen share track being unpublished
+      const mockPublication = { source: 'screen_share', kind: 'video', trackSid: 'screen-track-123' }
       const mockOwnSidecarParticipant = {
         identity: `${localParticipantId}-screenshare`,
         name: 'Test User (Screen)',
@@ -912,7 +916,7 @@ describe('useScreenShare', () => {
       }
 
       await act(async () => {
-        trackUnsubscribedHandler?.(mockScreenShareTrack, {}, mockOwnSidecarParticipant)
+        trackUnpublishedHandler?.(mockPublication, mockOwnSidecarParticipant)
       })
 
       // Should NOT show "stopped sharing" toast for own screen share
@@ -1413,6 +1417,7 @@ describe('useScreenShare', () => {
           unpublishTrack: vi.fn().mockResolvedValue(undefined),
           getTrackPublication: vi.fn().mockReturnValue(null),
         },
+        remoteParticipants: new Map(),
         on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
           if (!eventHandlers[event]) {
             eventHandlers[event] = []

@@ -752,12 +752,13 @@ export function useScreenShare({
     }
 
     // Handle remote participant stopping screen share
-    const handleTrackUnsubscribed = (
-      track: Track,
-      _publication: RemoteTrackPublication,
+    // Use TrackUnpublished (not TrackUnsubscribed) for faster detection - fires immediately
+    // when the track is removed from the room, rather than waiting for WebRTC cleanup
+    const handleTrackUnpublished = (
+      publication: RemoteTrackPublication,
       participant: RemoteParticipant
     ) => {
-      if (track.source === Track.Source.ScreenShare) {
+      if (publication.source === Track.Source.ScreenShare) {
         // Parse metadata to find the main participant
         const metadata = parseParticipantMetadata(participant.metadata || '')
 
@@ -838,7 +839,7 @@ export function useScreenShare({
     }
 
     room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
-    room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
+    room.on(RoomEvent.TrackUnpublished, handleTrackUnpublished)
     room.on(RoomEvent.LocalTrackPublished, handleLocalTrackPublished)
     room.on(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished)
 
@@ -864,7 +865,7 @@ export function useScreenShare({
 
     return () => {
       room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed)
-      room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
+      room.off(RoomEvent.TrackUnpublished, handleTrackUnpublished)
       room.off(RoomEvent.LocalTrackPublished, handleLocalTrackPublished)
       room.off(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished)
     }
