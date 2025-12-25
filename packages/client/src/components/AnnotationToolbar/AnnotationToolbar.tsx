@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { MousePointer2, Pencil, Highlighter, Eraser, Trash2, Keyboard } from 'lucide-react'
+import { Hand, Pencil, Highlighter, Eraser, Trash2, Keyboard } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAnnotationStore, type Tool } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
@@ -44,7 +44,7 @@ interface ToolConfig {
  * Order matches the UX spec layout: Select, Pen, Highlighter, Eraser
  */
 const TOOLS: ToolConfig[] = [
-  { tool: 'select', icon: MousePointer2, label: 'Select', shortcut: '1 / V' },
+  { tool: 'select', icon: Hand, label: 'Hand', shortcut: '1 / V' },
   { tool: 'pen', icon: Pencil, label: 'Pen', shortcut: '2' },
   { tool: 'highlighter', icon: Highlighter, label: 'Highlighter', shortcut: '3' },
   { tool: 'eraser', icon: Eraser, label: 'Eraser', shortcut: '7' },

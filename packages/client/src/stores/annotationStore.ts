@@ -50,6 +50,9 @@ export interface AnnotationState {
   /** Clear all strokes (host only, via clear button) */
   clearAll: () => void
 
+  /** Clear strokes by a specific participant (clear my drawings) */
+  clearByParticipant: (participantId: string) => void
+
   // ─────────────────────────────────────────────────────────
   // TOOL ACTIONS
   // ─────────────────────────────────────────────────────────
@@ -167,6 +170,11 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
       activeStroke: null,
       remoteActiveStrokes: new Map(),
     }),
+
+  clearByParticipant: (participantId) =>
+    set((state) => ({
+      strokes: state.strokes.filter((stroke) => stroke.participantId !== participantId),
+    })),
 
   // ─────────────────────────────────────────────────────────
   // TOOL ACTIONS

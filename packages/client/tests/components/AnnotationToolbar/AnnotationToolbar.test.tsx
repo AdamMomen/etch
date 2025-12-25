@@ -57,7 +57,7 @@ describe('AnnotationToolbar', () => {
     it('renders tool buttons with correct aria-labels', () => {
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
-      expect(screen.getByLabelText('Select tool (1 / V)')).toBeInTheDocument()
+      expect(screen.getByLabelText('Hand tool (1 / V)')).toBeInTheDocument()
       expect(screen.getByLabelText('Pen tool (2)')).toBeInTheDocument()
       expect(screen.getByLabelText('Highlighter tool (3)')).toBeInTheDocument()
       expect(screen.getByLabelText('Eraser tool (7)')).toBeInTheDocument()
@@ -576,7 +576,7 @@ describe('AnnotationToolbar', () => {
       fireEvent.mouseEnter(selectButton)
 
       // Tooltip should appear
-      expect(await screen.findByText('Select (1 / V)')).toBeInTheDocument()
+      expect(await screen.findByText('Hand (1 / V)')).toBeInTheDocument()
     })
 
     it('shows tooltip on hover for pen tool', async () => {
