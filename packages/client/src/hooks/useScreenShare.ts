@@ -842,6 +842,26 @@ export function useScreenShare({
     room.on(RoomEvent.LocalTrackPublished, handleLocalTrackPublished)
     room.on(RoomEvent.LocalTrackUnpublished, handleLocalTrackUnpublished)
 
+    // Scan for already-subscribed screen share tracks (late-joiner sync)
+    // TrackSubscribed events fire during room.connect() before this effect runs,
+    // so we need to manually check for existing tracks
+    room.remoteParticipants.forEach((participant) => {
+      participant.trackPublications.forEach((publication) => {
+        if (
+          publication.track &&
+          publication.source === Track.Source.ScreenShare &&
+          publication.kind === Track.Kind.Video
+        ) {
+          // Simulate the TrackSubscribed event for this existing track
+          handleTrackSubscribed(
+            publication.track,
+            publication as RemoteTrackPublication,
+            participant
+          )
+        }
+      })
+    })
+
     return () => {
       room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed)
       room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
