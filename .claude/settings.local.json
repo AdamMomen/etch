@@ -25,7 +25,9 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git grep:*)",
-      "Bash(pnpm vitest:*)"
+      "Bash(pnpm vitest:*)",
+      "Bash(ssh:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

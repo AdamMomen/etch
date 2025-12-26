@@ -1,5 +1,6 @@
 import { useCallback, useState, useRef, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import { useOverlayAnnotationBridge } from './useOverlayAnnotationBridge'
 
 /**
@@ -173,6 +174,51 @@ export function useAnnotationOverlay(): UseAnnotationOverlayReturn {
     }
     checkOverlayStatus()
   }, [])
+
+  // Listen for Core capture errors and termination to destroy overlay
+  useEffect(() => {
+    let unlistenCaptureError: (() => void) | undefined
+    let unlistenTerminated: (() => void) | undefined
+
+    const setupListeners = async () => {
+      // Listen for capture errors
+      unlistenCaptureError = await listen<string>('core-capture-error', (event) => {
+        console.error('[Overlay] Core capture error detected:', event.payload)
+        console.log('[Overlay] Automatically destroying overlay due to capture error')
+
+        // Destroy overlay when capture fails
+        if (isOverlayActive) {
+          destroyOverlay().catch((err) => {
+            console.error('[Overlay] Failed to destroy overlay after capture error:', err)
+          })
+        }
+      })
+
+      // Listen for Core termination as fallback
+      unlistenTerminated = await listen<number | null>('core-terminated', (event) => {
+        console.warn('[Overlay] Core terminated with code:', event.payload)
+        console.log('[Overlay] Automatically destroying overlay due to Core termination')
+
+        // Destroy overlay when Core terminates unexpectedly
+        if (isOverlayActive && event.payload !== 0) {
+          destroyOverlay().catch((err) => {
+            console.error('[Overlay] Failed to destroy overlay after Core termination:', err)
+          })
+        }
+      })
+    }
+
+    setupListeners()
+
+    return () => {
+      if (unlistenCaptureError) {
+        unlistenCaptureError()
+      }
+      if (unlistenTerminated) {
+        unlistenTerminated()
+      }
+    }
+  }, [isOverlayActive, destroyOverlay])
 
   // Cleanup on unmount
   useEffect(() => {

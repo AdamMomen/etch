@@ -283,6 +283,13 @@ pub async fn spawn_core(app: AppHandle, state: State<'_, CoreState>) -> Result<S
                 CommandEvent::Stderr(line) => {
                     let line_str = String::from_utf8_lossy(&line);
                     log::info!("Core: {}", line_str);
+
+                    // Check for capture permanent error
+                    if line_str.contains("Capture permanent error") {
+                        log::error!("Core capture permanent error detected - emitting event to frontend");
+                        // Emit capture error event to frontend so it can clean up overlay
+                        let _ = app_handle.emit("core-capture-error", line_str.to_string());
+                    }
                 }
                 CommandEvent::Error(err) => {
                     log::error!("Core error: {}", err);
