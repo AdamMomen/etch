@@ -7,9 +7,16 @@ vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn(),
 }))
 
+// Mock Tauri event listener
+vi.mock('@tauri-apps/api/event', () => ({
+  listen: vi.fn(),
+}))
+
 import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 
 const mockInvoke = vi.mocked(invoke)
+const mockListen = vi.mocked(listen)
 
 describe('useAnnotationOverlay', () => {
   beforeEach(() => {
@@ -21,6 +28,8 @@ describe('useAnnotationOverlay', () => {
       }
       return undefined
     })
+    // Default mock: listen returns a no-op unlisten function
+    mockListen.mockResolvedValue(() => {})
   })
 
   afterEach(() => {
@@ -372,6 +381,213 @@ describe('useAnnotationOverlay', () => {
         'get_window_bounds_by_title',
         expect.anything()
       )
+    })
+  })
+
+  describe('error event handling', () => {
+    it('should destroy overlay when core-capture-error event fires', async () => {
+      // Store the event handler so we can trigger it
+      let captureErrorHandler: ((event: { payload: string }) => void) | null = null
+
+      mockListen.mockImplementation(async (eventName, handler) => {
+        if (eventName === 'core-capture-error') {
+          captureErrorHandler = handler as (event: { payload: string }) => void
+        }
+        return () => {} // Return unlisten function
+      })
+
+      mockInvoke.mockImplementation(async (cmd) => {
+        if (cmd === 'is_overlay_active') return false
+        if (cmd === 'create_annotation_overlay') return undefined
+        if (cmd === 'destroy_annotation_overlay') return undefined
+        return undefined
+      })
+
+      const { result } = renderHook(() => useAnnotationOverlay())
+
+      // Wait for listeners to be set up
+      await waitFor(() => {
+        expect(mockListen).toHaveBeenCalledWith('core-capture-error', expect.any(Function))
+      })
+
+      // Create overlay first
+      await act(async () => {
+        await result.current.createOverlay({ x: 0, y: 0, width: 1920, height: 1080 })
+      })
+      expect(result.current.isOverlayActive).toBe(true)
+
+      // Clear previous mocks
+      mockInvoke.mockClear()
+
+      // Trigger the capture error event
+      expect(captureErrorHandler).not.toBeNull()
+      await act(async () => {
+        captureErrorHandler!({ payload: 'Capture permanent error source_id=2' })
+        // Wait a tick for the async destroyOverlay to be called
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+
+      // Verify destroyOverlay was called
+      expect(mockInvoke).toHaveBeenCalledWith('destroy_annotation_overlay')
+    })
+
+    it('should destroy overlay when core-terminated event fires with non-zero code', async () => {
+      let terminatedHandler: ((event: { payload: number | null }) => void) | null = null
+
+      mockListen.mockImplementation(async (eventName, handler) => {
+        if (eventName === 'core-terminated') {
+          terminatedHandler = handler as (event: { payload: number | null }) => void
+        }
+        return () => {}
+      })
+
+      mockInvoke.mockImplementation(async (cmd) => {
+        if (cmd === 'is_overlay_active') return false
+        if (cmd === 'create_annotation_overlay') return undefined
+        if (cmd === 'destroy_annotation_overlay') return undefined
+        return undefined
+      })
+
+      const { result } = renderHook(() => useAnnotationOverlay())
+
+      await waitFor(() => {
+        expect(mockListen).toHaveBeenCalledWith('core-terminated', expect.any(Function))
+      })
+
+      // Create overlay first
+      await act(async () => {
+        await result.current.createOverlay({ x: 0, y: 0, width: 1920, height: 1080 })
+      })
+      expect(result.current.isOverlayActive).toBe(true)
+
+      mockInvoke.mockClear()
+
+      // Trigger termination with non-zero code
+      expect(terminatedHandler).not.toBeNull()
+      await act(async () => {
+        terminatedHandler!({ payload: 1 })
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+
+      // Verify destroyOverlay was called
+      expect(mockInvoke).toHaveBeenCalledWith('destroy_annotation_overlay')
+    })
+
+    it('should NOT destroy overlay when core-terminated fires with exit code 0', async () => {
+      let terminatedHandler: ((event: { payload: number | null }) => void) | null = null
+
+      mockListen.mockImplementation(async (eventName, handler) => {
+        if (eventName === 'core-terminated') {
+          terminatedHandler = handler as (event: { payload: number | null }) => void
+        }
+        return () => {}
+      })
+
+      mockInvoke.mockImplementation(async (cmd) => {
+        if (cmd === 'is_overlay_active') return false
+        if (cmd === 'create_annotation_overlay') return undefined
+        return undefined
+      })
+
+      const { result } = renderHook(() => useAnnotationOverlay())
+
+      await waitFor(() => {
+        expect(mockListen).toHaveBeenCalledWith('core-terminated', expect.any(Function))
+      })
+
+      // Create overlay first
+      await act(async () => {
+        await result.current.createOverlay({ x: 0, y: 0, width: 1920, height: 1080 })
+      })
+      expect(result.current.isOverlayActive).toBe(true)
+
+      mockInvoke.mockClear()
+
+      // Trigger termination with exit code 0 (graceful shutdown)
+      expect(terminatedHandler).not.toBeNull()
+      await act(async () => {
+        terminatedHandler!({ payload: 0 })
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+
+      // Verify destroyOverlay was NOT called
+      expect(mockInvoke).not.toHaveBeenCalledWith('destroy_annotation_overlay')
+    })
+
+    it('should cleanup event listeners on unmount', async () => {
+      const unlistenCaptureError = vi.fn()
+      const unlistenTerminated = vi.fn()
+
+      mockListen.mockImplementation(async (eventName) => {
+        if (eventName === 'core-capture-error') {
+          return unlistenCaptureError
+        }
+        if (eventName === 'core-terminated') {
+          return unlistenTerminated
+        }
+        return () => {}
+      })
+
+      const { unmount } = renderHook(() => useAnnotationOverlay())
+
+      await waitFor(() => {
+        expect(mockListen).toHaveBeenCalledWith('core-capture-error', expect.any(Function))
+        expect(mockListen).toHaveBeenCalledWith('core-terminated', expect.any(Function))
+      })
+
+      // Unmount the hook
+      unmount()
+
+      // Verify both unlisten functions were called
+      expect(unlistenCaptureError).toHaveBeenCalled()
+      expect(unlistenTerminated).toHaveBeenCalled()
+    })
+
+    it('should handle destroy failure gracefully in error event handler', async () => {
+      let captureErrorHandler: ((event: { payload: string }) => void) | null = null
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+      mockListen.mockImplementation(async (eventName, handler) => {
+        if (eventName === 'core-capture-error') {
+          captureErrorHandler = handler as (event: { payload: string }) => void
+        }
+        return () => {}
+      })
+
+      mockInvoke.mockImplementation(async (cmd) => {
+        if (cmd === 'is_overlay_active') return false
+        if (cmd === 'create_annotation_overlay') return undefined
+        if (cmd === 'destroy_annotation_overlay') {
+          throw new Error('Failed to destroy overlay')
+        }
+        return undefined
+      })
+
+      const { result } = renderHook(() => useAnnotationOverlay())
+
+      await waitFor(() => {
+        expect(mockListen).toHaveBeenCalledWith('core-capture-error', expect.any(Function))
+      })
+
+      // Create overlay first
+      await act(async () => {
+        await result.current.createOverlay({ x: 0, y: 0, width: 1920, height: 1080 })
+      })
+
+      // Trigger the capture error event
+      expect(captureErrorHandler).not.toBeNull()
+      await act(async () => {
+        captureErrorHandler!({ payload: 'Capture permanent error' })
+        await new Promise((resolve) => setTimeout(resolve, 0))
+      })
+
+      // Verify error was logged but didn't throw
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[Overlay] Failed to destroy overlay after capture error:',
+        expect.any(Error)
+      )
+
+      consoleErrorSpy.mockRestore()
     })
   })
 })

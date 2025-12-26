@@ -288,7 +288,9 @@ pub async fn spawn_core(app: AppHandle, state: State<'_, CoreState>) -> Result<S
                     if line_str.contains("Capture permanent error") {
                         log::error!("Core capture permanent error detected - emitting event to frontend");
                         // Emit capture error event to frontend so it can clean up overlay
-                        let _ = app_handle.emit("core-capture-error", line_str.to_string());
+                        if let Err(e) = app_handle.emit("core-capture-error", line_str.to_string()) {
+                            log::error!("Failed to emit core-capture-error event to frontend: {}", e);
+                        }
                     }
                 }
                 CommandEvent::Error(err) => {
@@ -297,7 +299,9 @@ pub async fn spawn_core(app: AppHandle, state: State<'_, CoreState>) -> Result<S
                 CommandEvent::Terminated(payload) => {
                     log::info!("Core terminated with code: {:?}", payload.code);
                     // Emit termination event to frontend
-                    let _ = app_handle.emit("core-terminated", payload.code);
+                    if let Err(e) = app_handle.emit("core-terminated", payload.code) {
+                        log::error!("Failed to emit core-terminated event to frontend: {}", e);
+                    }
                     break;
                 }
                 _ => {}

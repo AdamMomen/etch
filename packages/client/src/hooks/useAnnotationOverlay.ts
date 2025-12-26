@@ -57,10 +57,16 @@ export interface UseAnnotationOverlayReturn {
 export function useAnnotationOverlay(): UseAnnotationOverlayReturn {
   const [isOverlayActive, setIsOverlayActive] = useState(false)
   const trackingIntervalRef = useRef<number | null>(null)
+  const isOverlayActiveRef = useRef(false)
 
   // Story 4.11: Bridge annotation events between main window and overlay
   // This hook handles all annotation sync automatically when overlay is active
   useOverlayAnnotationBridge(isOverlayActive)
+
+  // Keep ref in sync with state for event handlers
+  useEffect(() => {
+    isOverlayActiveRef.current = isOverlayActive
+  }, [isOverlayActive])
 
   // Create the overlay window
   const createOverlay = useCallback(async (bounds: OverlayBounds) => {
@@ -176,6 +182,7 @@ export function useAnnotationOverlay(): UseAnnotationOverlayReturn {
   }, [])
 
   // Listen for Core capture errors and termination to destroy overlay
+  // Set up once on mount - uses ref to check current overlay state
   useEffect(() => {
     let unlistenCaptureError: (() => void) | undefined
     let unlistenTerminated: (() => void) | undefined
@@ -186,8 +193,8 @@ export function useAnnotationOverlay(): UseAnnotationOverlayReturn {
         console.error('[Overlay] Core capture error detected:', event.payload)
         console.log('[Overlay] Automatically destroying overlay due to capture error')
 
-        // Destroy overlay when capture fails
-        if (isOverlayActive) {
+        // Destroy overlay when capture fails (check current state via ref)
+        if (isOverlayActiveRef.current) {
           destroyOverlay().catch((err) => {
             console.error('[Overlay] Failed to destroy overlay after capture error:', err)
           })
@@ -199,8 +206,8 @@ export function useAnnotationOverlay(): UseAnnotationOverlayReturn {
         console.warn('[Overlay] Core terminated with code:', event.payload)
         console.log('[Overlay] Automatically destroying overlay due to Core termination')
 
-        // Destroy overlay when Core terminates unexpectedly
-        if (isOverlayActive && event.payload !== 0) {
+        // Destroy overlay when Core terminates unexpectedly (check current state via ref)
+        if (isOverlayActiveRef.current && event.payload !== 0) {
           destroyOverlay().catch((err) => {
             console.error('[Overlay] Failed to destroy overlay after Core termination:', err)
           })
@@ -218,7 +225,8 @@ export function useAnnotationOverlay(): UseAnnotationOverlayReturn {
         unlistenTerminated()
       }
     }
-  }, [isOverlayActive, destroyOverlay])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Only set up listeners once on mount
 
   // Cleanup on unmount
   useEffect(() => {
