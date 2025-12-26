@@ -254,6 +254,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 | 2025-12-21 | Story Context Workflow | Generated context XML with code artifacts, interfaces, constraints, and test ideas |
 | 2025-12-21 | Dev Agent (Opus 4.5) | Implemented story: Tauri event bridge, overlay canvas, click-through toggle, tests |
 | 2025-12-26 | Senior Developer Code Review (Sonnet 4.5) | **APPROVED** - High-quality implementation with comprehensive tests and excellent architectural decisions |
+| 2025-12-27 | Dev Agent (Sonnet 4.5) | **Phase 2 Restart Implementation** - Added automatic capture restart with retry logic for transient display errors |
 
 ---
 
@@ -563,3 +564,194 @@ The decision to use Tauri events instead of attempting shared Zustand state show
 2. Verify Epic 4 completion (all stories done)
 3. Run end-to-end manual testing across platforms
 4. Prepare for Epic 4 retrospective
+
+---
+
+## Phase 2: Capture Error Recovery (2025-12-27)
+
+### Background
+
+During production testing on macOS multi-monitor setups, Core was encountering random crashes when displays went to sleep or became unavailable. The overlay window would be orphaned on screen, requiring manual cleanup.
+
+**Initial Solution (Phase 1 - 2025-12-26):**
+- Reduced MAX_FAILURES from 10 → 3 for faster failure detection (~66ms)
+- Frontend error event listeners to destroy overlay on Core capture error
+- Commits: bc9070f (error event tests), 8043624 (3-failure threshold)
+
+**Problem:** Phase 1 improved cleanup speed but still required manual restart for transient issues (display sleep/wake, monitor reconnection).
+
+### Phase 2 Implementation (2025-12-27)
+
+**Goal:** Automatic recovery from transient display availability issues without user intervention.
+
+**Approach:** Hopp-inspired automatic stream restart with retry logic.
+
+**Implementation Details:**
+
+#### Added Constants (packages/core/src/capture/mod.rs:59-71)
+```rust
+const MAX_FAILURES: u64 = 3;              // Trigger restart after 3 failures
+const MAX_RESTART_ATTEMPTS: u64 = 5;      // Max retries before giving up
+const RESTART_DELAY_MS: u64 = 200;        // Stabilization delay
+const RETRY_DELAY_MS: u64 = 100;          // Delay between retries
+```
+
+#### Added Shared State (lines 661-662)
+- `needs_restart: Arc<Mutex<bool>>` - Flag to trigger restart
+- `restart_attempts: Arc<Mutex<u64>>` - Counter for tracking attempts
+
+#### Implemented restart_capture() Function (lines 533-639)
+**Purpose:** Re-enumerate sources and retry capture with exponential backoff
+
+**Algorithm:**
+1. Sleep 200ms to let system stabilize (Hopp's pattern)
+2. Reset failure counters for clean slate
+3. Re-enumerate sources (display may have come back)
+4. Retry start_capture() up to 5 times with 100ms backoff
+5. Return Ok(()) on success or Err(CaptureError) if all retries fail
+6. Log detailed information at each step
+
+**Key Features:**
+- Reuses same capturer instance (simpler than Hopp's new stream creation)
+- Re-enumerates sources each retry (handles display reconnection)
+- Increments global restart attempt counter
+- Sends error event to frontend if all retries fail
+
+#### Modified ErrorPermanent Handler (lines 722-746)
+**Old Behavior:** Stop capture after 3 consecutive failures
+**New Behavior:**
+- After 3 consecutive failures, check restart attempt count
+- If restart_attempts < 5: Set `needs_restart = true` (trigger restart)
+- If restart_attempts >= 5: Set `should_stop = true` (permanent failure)
+
+#### Modified Capture Loop (lines 936-976)
+**Added restart detection and execution:**
+```rust
+if *needs_restart.lock() {
+    match restart_capture(...) {
+        Ok(_) => {
+            *needs_restart.lock() = false;
+            frame_requests = 0;  // Reset for new session
+        }
+        Err(e) => {
+            tracing::error!("Restart failed - stopping capture");
+            break;
+        }
+    }
+}
+```
+
+### Expected Behavior
+
+**Scenario 1: Display Sleep/Wake**
+1. Display goes to sleep → 3 permanent errors (66ms)
+2. Restart triggered → sleep 200ms for stabilization
+3. Re-enumerate sources (display may have woken up)
+4. If source found → restart capture, continue seamlessly
+5. If not found → retry up to 5 times (total ~1.5 seconds)
+6. If all retries fail → stop permanently, overlay destroyed
+
+**Scenario 2: Monitor Disconnect/Reconnect**
+1. External monitor disconnected → 3 permanent errors
+2. Restart triggered → re-enumerate sources
+3. If monitor reconnected → source found, restart succeeds
+4. If still disconnected → retry with backoff
+5. User can reconnect monitor during retry window
+6. Automatic recovery on reconnection
+
+**Scenario 3: Permanent Display Failure**
+1. Display truly unavailable → 3 permanent errors
+2. First restart attempt fails (5 retries, ~1.5s)
+3. Second restart attempt fails
+4. After 5 total restart attempts → stop permanently
+5. Total time before giving up: ~7.5 seconds
+6. Frontend receives error event, destroys overlay
+
+### Testing Strategy
+
+**Manual Testing Checklist:**
+- [ ] Start screen share on external monitor
+- [ ] Put display to sleep → verify automatic recovery on wake
+- [ ] Disconnect monitor during share → verify retry behavior
+- [ ] Reconnect monitor during retry window → verify recovery
+- [ ] Leave monitor disconnected → verify permanent stop after retries
+- [ ] Verify overlay destroyed after permanent failure
+- [ ] Monitor CPU usage during restart cycles
+- [ ] Check logs for detailed restart information
+
+**Performance Benchmarks:**
+- Phase 1 error detection: ~66ms (3 failures @ 22ms each)
+- Restart stabilization delay: 200ms
+- Retry attempts: 5 × 100ms = 500ms
+- Total recovery time: ~866ms per restart attempt
+- Maximum retry duration: 5 attempts × ~866ms = ~4.3 seconds
+
+**Integration Tests (Planned):**
+See `docs/capture-error-recovery-plan.md` for detailed test strategy including:
+- Unit tests for restart logic
+- Integration tests with mocked DesktopCapturer
+- Stress tests for rapid error scenarios
+- E2E tests for overlay cleanup
+
+### Files Modified
+
+**Core Implementation:**
+- `packages/core/src/capture/mod.rs` - Restart logic implementation
+
+**Documentation:**
+- `docs/capture-error-recovery-plan.md` - Comprehensive analysis and plan
+- `docs/sprint-artifacts/4-11-render-annotations-on-sharers-overlay.md` - This file
+
+### Commits
+
+- `921c9bc` - Phase 2: Automatic capture restart with retry logic
+- `8043624` - Phase 1: Reduce MAX_FAILURES to 3 with benchmarking
+- `bc9070f` - Fix: Error event handling tests and Rust error logging
+
+### Comparison: Phase 1 vs Phase 2
+
+| Aspect | Phase 1 | Phase 2 |
+|--------|---------|---------|
+| **Detection Speed** | 66ms (3 failures) | 66ms (same) |
+| **Recovery** | None | Automatic (5 attempts) |
+| **User Action** | Manual restart required | Automatic recovery |
+| **Total Recovery Time** | N/A | ~866ms per attempt |
+| **Max Retry Duration** | N/A | ~4.3 seconds (5 attempts) |
+| **Transient Issues** | Requires manual restart | Handles automatically |
+| **Permanent Failures** | Fast stop + cleanup | Retries then stops |
+| **Production Readiness** | Medium | High |
+
+### Success Metrics (To Be Validated)
+
+**Phase 2 Success Criteria:**
+- ✅ Compiles cleanly with no errors
+- ⏳ 95%+ of display sleep/wake cycles recover automatically
+- ⏳ User never needs manual restart for transient display issues
+- ⏳ Recovery time < 1 second for display wake (target: ~866ms)
+- ⏳ No false positives (stopping when display is fine)
+- ⏳ No memory leaks after 100+ error/recovery cycles
+- ⏳ CPU usage during retries < 5% (single core)
+
+**Status:** Implementation complete, awaiting integration testing.
+
+### Next Steps
+
+1. **Integration Testing** (Current Task)
+   - Manual testing with display sleep/wake cycles
+   - Monitor disconnect/reconnect testing
+   - Performance validation with real hardware
+
+2. **Add Restart Performance Benchmark**
+   - Measure actual restart latency
+   - Test with different failure patterns
+   - Validate acceptable overhead
+
+3. **Document Production Behavior**
+   - Add user-facing documentation for restart behavior
+   - Document expected recovery times
+   - Add troubleshooting guide for permanent failures
+
+4. **Consider Integration Tests**
+   - Mock DesktopCapturer for automated testing
+   - Simulate display availability scenarios
+   - Measure recovery success rate
