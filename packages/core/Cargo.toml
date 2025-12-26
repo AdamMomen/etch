@@ -58,9 +58,16 @@ windows = { version = "0.58", features = [
 [target.'cfg(target_os = "linux")'.dependencies]
 ashpd = "0.9"
 
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+
 [[bin]]
 name = "nameless-core"
 path = "src/main.rs"
+
+[[bench]]
+name = "capture_performance"
+harness = false
 
 [lib]
 name = "nameless_core"

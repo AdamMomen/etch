@@ -57,7 +57,10 @@ fn get_display_bounds(_display_id: u64) -> Option<(i32, i32, u32, u32)> {
 }
 
 /// Maximum consecutive failures before giving up
-const MAX_FAILURES: u64 = 10;
+/// Reduced from 10 to 3 because on macOS multi-monitor setups,
+/// ErrorPermanent usually indicates display went to sleep or became unavailable.
+/// Continuing to retry just wastes resources and leaves overlay orphaned.
+const MAX_FAILURES: u64 = 3;
 
 /// Target thumbnail width
 const THUMBNAIL_WIDTH: u32 = 320;
@@ -595,13 +598,13 @@ fn run_capture_loop(
                     source_id = source_id,
                     failure_count = current_fails,
                     max_failures = MAX_FAILURES,
-                    "Capture permanent error"
+                    "Capture permanent error - display may be unavailable or went to sleep"
                 );
-                if current_fails > MAX_FAILURES {
+                if current_fails >= MAX_FAILURES {
                     tracing::error!(
                         source_id = source_id,
                         total_failures = current_fails,
-                        "Too many capture failures, stopping"
+                        "Too many consecutive capture failures - stopping capture (display likely unavailable)"
                     );
                     *should_stop_cb.lock() = true;
                 }
