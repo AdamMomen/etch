@@ -56,11 +56,19 @@ fn get_display_bounds(_display_id: u64) -> Option<(i32, i32, u32, u32)> {
     None
 }
 
-/// Maximum consecutive failures before giving up
-/// Reduced from 10 to 3 because on macOS multi-monitor setups,
-/// ErrorPermanent usually indicates display went to sleep or became unavailable.
-/// Continuing to retry just wastes resources and leaves overlay orphaned.
+/// Maximum consecutive failures before triggering stream restart
+/// Reduced from 10 to 3 for faster restart detection
 const MAX_FAILURES: u64 = 3;
+
+/// Maximum number of restart attempts before giving up completely
+/// Based on Hopp's MAX_STREAM_FAILURES_BEFORE_EXIT
+const MAX_RESTART_ATTEMPTS: u64 = 5;
+
+/// Delay before attempting restart (ms) - lets system stabilize
+const RESTART_DELAY_MS: u64 = 200;
+
+/// Delay between retry attempts within a restart (ms)
+const RETRY_DELAY_MS: u64 = 100;
 
 /// Target thumbnail width
 const THUMBNAIL_WIDTH: u32 = 320;
@@ -94,9 +102,10 @@ pub enum CaptureError {
 }
 
 /// Messages for stream runtime control
+#[derive(Debug, Clone, Copy)]
 enum StreamMessage {
     Stop,
-    #[allow(dead_code)]
+    /// Sent when capture encounters permanent errors and needs restart
     Failed,
 }
 
@@ -521,6 +530,114 @@ fn create_thumbnail_from_rgb(rgb_data: &[u8], width: u32, height: u32) -> Option
     Some(BASE64.encode(&jpeg_bytes))
 }
 
+/// Restart capture after permanent errors
+///
+/// Based on Hopp's restart_stream approach:
+/// - Sleeps to let system stabilize
+/// - Re-enumerates sources (in case display came back)
+/// - Retries start_capture on same capturer with backoff
+/// - Increments restart attempt counter
+/// - Returns success or error
+fn restart_capture(
+    source_id: u64,
+    capturer: &Arc<Mutex<DesktopCapturer>>,
+    _target_width: u32,
+    _target_height: u32,
+    _video_source: &Arc<Mutex<Option<NativeVideoSource>>>,
+    event_proxy: &Option<EventLoopProxy<UserEvent>>,
+    restart_attempts: &Arc<Mutex<u64>>,
+    failures: &Arc<Mutex<u64>>,
+    temp_error_count: &Arc<Mutex<u64>>,
+) -> Result<(), CaptureError> {
+    // Increment restart attempt counter
+    let mut restart_count = restart_attempts.lock();
+    *restart_count += 1;
+    let current_restart = *restart_count;
+    drop(restart_count);
+
+    tracing::info!(
+        source_id = source_id,
+        restart_attempt = current_restart,
+        max_restarts = MAX_RESTART_ATTEMPTS,
+        "Starting capture restart procedure"
+    );
+
+    // Sleep to let system stabilize (following Hopp's pattern)
+    std::thread::sleep(std::time::Duration::from_millis(RESTART_DELAY_MS));
+
+    // Reset failure counters for new attempt
+    *failures.lock() = 0;
+    *temp_error_count.lock() = 0;
+
+    // Retry start_capture up to MAX_RESTART_ATTEMPTS times (following Hopp's pattern)
+    for retry_num in 0..MAX_RESTART_ATTEMPTS {
+        tracing::info!(
+            source_id = source_id,
+            restart_attempt = current_restart,
+            retry_num = retry_num,
+            "Attempting to restart capture"
+        );
+
+        // Re-enumerate sources in case display came back
+        let mut cap = capturer.lock();
+        let sources = cap.get_source_list();
+        let source = sources.iter().find(|s| s.id() == source_id);
+
+        if let Some(source) = source {
+            tracing::info!(
+                source_id = source_id,
+                source_title = source.title(),
+                "Found source, restarting capture"
+            );
+
+            // Start capture again
+            cap.start_capture(source.clone());
+            drop(cap);
+
+            // Give it a moment to start
+            std::thread::sleep(std::time::Duration::from_millis(RETRY_DELAY_MS));
+
+            tracing::info!(
+                source_id = source_id,
+                restart_attempt = current_restart,
+                "Successfully restarted capture"
+            );
+
+            return Ok(());
+        } else {
+            tracing::warn!(
+                source_id = source_id,
+                retry_num = retry_num,
+                "Source not found, will retry"
+            );
+            drop(cap);
+
+            // Sleep before retry
+            if retry_num < MAX_RESTART_ATTEMPTS - 1 {
+                std::thread::sleep(std::time::Duration::from_millis(RETRY_DELAY_MS));
+            }
+        }
+    }
+
+    // All retries failed
+    tracing::error!(
+        source_id = source_id,
+        restart_attempt = current_restart,
+        "Failed to restart capture after all retry attempts"
+    );
+
+    if let Some(proxy) = event_proxy {
+        let _ = proxy.send_event(UserEvent::Error {
+            code: "restart_failed".to_string(),
+            message: format!("Failed to restart capture for source {}", source_id),
+        });
+    }
+
+    Err(CaptureError::CaptureFailed(
+        "Failed to restart after all retries".to_string(),
+    ))
+}
+
 /// Run the capture loop in a separate thread
 fn run_capture_loop(
     source_id: u64,
@@ -541,6 +658,8 @@ fn run_capture_loop(
     let video_source = Arc::new(Mutex::new(video_source));
     let failures = Arc::new(Mutex::new(0u64));
     let should_stop = Arc::new(Mutex::new(false));
+    let needs_restart = Arc::new(Mutex::new(false));
+    let restart_attempts = Arc::new(Mutex::new(0u64));
 
     // FPS counter state
     let frame_count = Arc::new(Mutex::new(0u64));
@@ -564,6 +683,8 @@ fn run_capture_loop(
     let buffer_dims_cb = buffer_dims.clone();
     let failures_cb = failures.clone();
     let should_stop_cb = should_stop.clone();
+    let needs_restart_cb = needs_restart.clone();
+    let restart_attempts_cb = restart_attempts.clone();
     let frame_count_cb = frame_count.clone();
     let last_fps_log_cb = last_fps_log.clone();
 
@@ -601,12 +722,27 @@ fn run_capture_loop(
                     "Capture permanent error - display may be unavailable or went to sleep"
                 );
                 if current_fails >= MAX_FAILURES {
+                    let restart_count = *restart_attempts_cb.lock();
                     tracing::error!(
                         source_id = source_id,
                         total_failures = current_fails,
-                        "Too many consecutive capture failures - stopping capture (display likely unavailable)"
+                        restart_attempts = restart_count,
+                        "Too many consecutive failures - triggering restart (display likely unavailable)"
                     );
-                    *should_stop_cb.lock() = true;
+
+                    // Check if we've exhausted restart attempts
+                    if restart_count >= MAX_RESTART_ATTEMPTS {
+                        tracing::error!(
+                            source_id = source_id,
+                            restart_attempts = restart_count,
+                            max_restarts = MAX_RESTART_ATTEMPTS,
+                            "Exhausted all restart attempts - stopping capture permanently"
+                        );
+                        *should_stop_cb.lock() = true;
+                    } else {
+                        // Trigger restart
+                        *needs_restart_cb.lock() = true;
+                    }
                 }
                 return;
             }
@@ -797,6 +933,46 @@ fn run_capture_loop(
                 break;
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {
+                // Check if restart is needed
+                if *needs_restart.lock() {
+                    tracing::warn!(
+                        source_id = source_id,
+                        frame_requests = frame_requests,
+                        restart_attempts = *restart_attempts.lock(),
+                        "Restart requested - attempting to restart capture"
+                    );
+
+                    // Perform restart
+                    match restart_capture(
+                        source_id,
+                        &capturer,
+                        target_width,
+                        target_height,
+                        &video_source,
+                        &event_proxy,
+                        &restart_attempts,
+                        &failures,
+                        &temp_error_count,
+                    ) {
+                        Ok(_) => {
+                            tracing::info!(source_id = source_id, "Restart successful");
+                            // Note: capturer is already updated in restart_capture
+                            // Clear restart flag
+                            *needs_restart.lock() = false;
+                            // Reset frame counter for this session
+                            frame_requests = 0;
+                        }
+                        Err(e) => {
+                            tracing::error!(
+                                source_id = source_id,
+                                error = ?e,
+                                "Restart failed - stopping capture"
+                            );
+                            break;
+                        }
+                    }
+                }
+
                 // Capture frame
                 if *should_stop.lock() {
                     tracing::warn!(
