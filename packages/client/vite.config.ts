@@ -20,7 +20,7 @@ export default defineConfig({
       // Workaround for Tauri hot reload
       ignored: ['**/src-tauri/**'],
     },
-    allowedHosts: ['latino-dance-citizen-touch.trycloudflare.com'],
+    allowedHosts: ['nameless.momen.earth'],
   },
   // Produce sourcemaps for better debugging
   build: {
