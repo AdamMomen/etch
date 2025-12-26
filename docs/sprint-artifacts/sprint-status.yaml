@@ -111,7 +111,8 @@ development_status:
   # Story 4.11 - Render annotations on sharer's overlay window
   # Implemented 2025-12-21: Tauri event bridge, overlay canvas, click-through toggle
   # REOPENED 2025-12-25: Bug fixes - annotations not appearing, sync loader stuck
-  4-11-render-annotations-on-sharers-overlay: in-progress
+  # CODE REVIEW 2025-12-26: APPROVED - All ACs met, 928 tests passing, excellent architecture
+  4-11-render-annotations-on-sharers-overlay: done
   epic-4-retrospective: optional
 
   # Epic 5: Permissions & Moderation (8 stories)
