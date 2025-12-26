@@ -12,7 +12,8 @@ app.use('*', logger())
 app.use(
   '*',
   cors({
-    origin: ['http://localhost:5173'],
+    // Allow all origins in development for local network access
+    origin: '*', //(origin) => origin || '*',
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   })

@@ -963,6 +963,9 @@ impl Default for SharingTrayState {
     }
 }
 
+/// Fixed tray ID to prevent duplicates during HMR
+const SHARING_TRAY_ID: &str = "nameless-sharing-tray";
+
 /// Show the sharing tray icon with menu (AC-3.7.1)
 /// Called when screen sharing starts
 #[tauri::command]
@@ -970,13 +973,24 @@ pub async fn show_sharing_tray(
     app: AppHandle,
     state: State<'_, SharingTrayState>,
 ) -> Result<(), String> {
-    // Check if tray already exists
+    // Check if tray already exists in state - if so, just make sure it's visible
     {
         let tray = state.tray.lock().map_err(|e| e.to_string())?;
-        if tray.is_some() {
-            log::info!("Sharing tray already exists");
+        if let Some(ref t) = *tray {
+            log::info!("Sharing tray already exists, ensuring visible");
+            let _ = t.set_visible(true);
             return Ok(());
         }
+    }
+
+    // Also check by ID - if one exists from a previous session, reuse it
+    if let Some(existing) = app.tray_by_id(SHARING_TRAY_ID) {
+        log::info!("Found existing tray by ID, reusing it");
+        let _ = existing.set_visible(true);
+        // Store it in state for future reference
+        let mut tray_state = state.tray.lock().map_err(|e| e.to_string())?;
+        *tray_state = Some(existing);
+        return Ok(());
     }
 
     log::info!("Creating sharing tray menu (ADR-011: 3 actions only)...");
@@ -989,7 +1003,7 @@ pub async fn show_sharing_tray(
         .ok_or_else(|| "No default icon".to_string())?
         .clone();
 
-    let tray = TrayIconBuilder::new()
+    let tray = TrayIconBuilder::with_id(SHARING_TRAY_ID)
         .menu(&menu)
         .icon(icon)
         .tooltip("NAMELESS - Sharing Screen")
@@ -1016,15 +1030,13 @@ pub async fn show_sharing_tray(
 pub async fn hide_sharing_tray(
     state: State<'_, SharingTrayState>,
 ) -> Result<(), String> {
-    let mut tray = state.tray.lock().map_err(|e| e.to_string())?;
-
-    if let Some(t) = tray.take() {
-        log::info!("Removing sharing tray");
-        // Tray is automatically removed when dropped
-        drop(t);
-        log::info!("Sharing tray removed");
+    // Hide the tray (don't destroy - allows reuse and prevents HMR issues)
+    let tray = state.tray.lock().map_err(|e| e.to_string())?;
+    if let Some(ref t) = *tray {
+        log::info!("Hiding sharing tray");
+        let _ = t.set_visible(false);
     } else {
-        log::info!("No sharing tray to remove");
+        log::info!("No sharing tray to hide");
     }
 
     Ok(())

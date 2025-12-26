@@ -57,6 +57,29 @@ function renderMeetingRoom(roomId: string = 'test-room-123') {
 describe('MeetingRoom', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    // Mock getDisplayMedia to make screen share appear supported in tests
+    // Create a full mock if mediaDevices doesn't exist (jsdom limitation)
+    if (!navigator.mediaDevices) {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        value: {
+          getDisplayMedia: vi.fn(),
+          getUserMedia: vi.fn(),
+          enumerateDevices: vi.fn().mockResolvedValue([]),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        },
+        writable: true,
+        configurable: true,
+      })
+    } else {
+      Object.defineProperty(navigator.mediaDevices, 'getDisplayMedia', {
+        value: vi.fn(),
+        writable: true,
+        configurable: true,
+      })
+    }
+
     // Reset stores to initial state with proper participant
     act(() => {
       useSettingsStore.setState({

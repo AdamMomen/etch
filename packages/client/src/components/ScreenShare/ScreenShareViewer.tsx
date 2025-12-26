@@ -97,24 +97,55 @@ export function ScreenShareViewer({
   // Attach screen share track to video element
   useEffect(() => {
     const videoElement = videoRef.current
+    console.log('[ScreenShareViewer] useEffect for track attachment:', {
+      hasVideoElement: !!videoElement,
+      hasTrack: !!track,
+      trackSid: track?.sid,
+      timestamp: Date.now(),
+    })
+
+    // If track is null, ensure video element is cleared
+    if (!track && videoElement) {
+      console.log('[ScreenShareViewer] Clearing video element (no track)', { timestamp: Date.now() })
+      videoElement.srcObject = null
+      videoElement.src = ''
+      setIsVideoReady(false)
+      return
+    }
+
     if (!videoElement || !track) {
       setIsVideoReady(false)
       return
     }
 
     if (track.kind === Track.Kind.Video) {
+      console.log('[ScreenShareViewer] Attaching track to video element', { trackSid: track.sid, timestamp: Date.now() })
       track.attach(videoElement)
       setIsVideoReady(true)
     }
 
     return () => {
+      console.log('[ScreenShareViewer] Cleanup - detaching track from video element', { trackSid: track.sid, timestamp: Date.now() })
       track.detach(videoElement)
+      // Also explicitly clear the video source to prevent showing last frame
+      videoElement.srcObject = null
+      videoElement.src = ''
       setIsVideoReady(false)
     }
   }, [track])
 
+  // Log track changes for debugging
+  useEffect(() => {
+    console.log('[ScreenShareViewer] Track changed:', {
+      hasTrack: track !== null,
+      trackSid: track?.sid,
+      timestamp: Date.now(),
+    })
+  }, [track])
+
   // Don't render if no track
   if (!track) {
+    console.log('[ScreenShareViewer] No track, returning null')
     return null
   }
 

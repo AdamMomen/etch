@@ -12,6 +12,8 @@ interface MeetingControlsBarProps {
   // Screen share state and handlers
   isLocalSharing: boolean
   canShare: boolean
+  /** Whether screen sharing is supported on this device (false on iOS) */
+  isScreenShareSupported: boolean
   sharerName: string | null
   onStartScreenShare: () => void
   onStopScreenShare: () => void
@@ -23,6 +25,7 @@ export function MeetingControlsBar({
   onInvite,
   isLocalSharing,
   canShare,
+  isScreenShareSupported,
   sharerName,
   onStartScreenShare,
   onStopScreenShare,
@@ -35,14 +38,16 @@ export function MeetingControlsBar({
       {/* Camera Toggle */}
       <CameraButton room={room} />
 
-      {/* Screen Share */}
-      <ScreenShareButton
-        isLocalSharing={isLocalSharing}
-        canShare={canShare}
-        sharerName={sharerName}
-        onStartShare={onStartScreenShare}
-        onStopShare={onStopScreenShare}
-      />
+      {/* Screen Share - hidden on unsupported devices (iOS) */}
+      {isScreenShareSupported && (
+        <ScreenShareButton
+          isLocalSharing={isLocalSharing}
+          canShare={canShare}
+          sharerName={sharerName}
+          onStartShare={onStartScreenShare}
+          onStopShare={onStopScreenShare}
+        />
+      )}
 
       {/* Invite Participants */}
       {onInvite && (

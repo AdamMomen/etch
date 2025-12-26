@@ -9,11 +9,11 @@ const isMainModule = process.env.NODE_ENV !== 'test'
 if (isMainModule) {
   const port = parseInt(process.env.PORT || '3000', 10)
 
-  serve({ fetch: app.fetch, port }, (info) => {
+  serve({ fetch: app.fetch, port, hostname: '0.0.0.0' }, (info) => {
     log({
       timestamp: new Date().toISOString(),
       level: 'info',
-      message: `Server started on port ${info.port}`,
+      message: `Server started on http://0.0.0.0:${info.port}`,
     })
   })
 }
