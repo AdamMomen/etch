@@ -973,24 +973,20 @@ pub async fn show_sharing_tray(
     app: AppHandle,
     state: State<'_, SharingTrayState>,
 ) -> Result<(), String> {
-    // Check if tray already exists in state - if so, just make sure it's visible
-    {
-        let tray = state.tray.lock().map_err(|e| e.to_string())?;
-        if let Some(ref t) = *tray {
-            log::info!("Sharing tray already exists, ensuring visible");
-            let _ = t.set_visible(true);
-            return Ok(());
-        }
+    // First, try to destroy any existing tray by ID to prevent duplicates
+    if let Some(existing) = app.tray_by_id(SHARING_TRAY_ID) {
+        log::info!("Found existing tray by ID, removing it first");
+        let _ = existing.set_visible(false);
+        drop(existing);
     }
 
-    // Also check by ID - if one exists from a previous session, reuse it
-    if let Some(existing) = app.tray_by_id(SHARING_TRAY_ID) {
-        log::info!("Found existing tray by ID, reusing it");
-        let _ = existing.set_visible(true);
-        // Store it in state for future reference
-        let mut tray_state = state.tray.lock().map_err(|e| e.to_string())?;
-        *tray_state = Some(existing);
-        return Ok(());
+    // Clear state if it exists
+    {
+        let mut tray = state.tray.lock().map_err(|e| e.to_string())?;
+        if tray.is_some() {
+            log::info!("Clearing stale tray from state");
+            *tray = None;
+        }
     }
 
     log::info!("Creating sharing tray menu (ADR-011: 3 actions only)...");
@@ -1030,13 +1026,15 @@ pub async fn show_sharing_tray(
 pub async fn hide_sharing_tray(
     state: State<'_, SharingTrayState>,
 ) -> Result<(), String> {
-    // Hide the tray (don't destroy - allows reuse and prevents HMR issues)
-    let tray = state.tray.lock().map_err(|e| e.to_string())?;
-    if let Some(ref t) = *tray {
-        log::info!("Hiding sharing tray");
-        let _ = t.set_visible(false);
+    let mut tray = state.tray.lock().map_err(|e| e.to_string())?;
+
+    if let Some(t) = tray.take() {
+        log::info!("Removing sharing tray");
+        // Tray is automatically removed when dropped
+        drop(t);
+        log::info!("Sharing tray removed");
     } else {
-        log::info!("No sharing tray to hide");
+        log::info!("No sharing tray to remove");
     }
 
     Ok(())
