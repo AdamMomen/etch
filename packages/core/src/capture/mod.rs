@@ -582,14 +582,32 @@ fn restart_capture(
         // Re-enumerate sources in case display came back
         let mut cap = capturer.lock();
         let sources = cap.get_source_list();
+
+        // Log ALL sources during restart for comparison with initial enumeration
+        tracing::warn!(
+            "=== RESTART SOURCE ENUMERATION === available_count={} retry={}",
+            sources.len(),
+            retry_num
+        );
+        for (idx, src) in sources.iter().enumerate() {
+            tracing::warn!(
+                idx = idx,
+                id = src.id(),
+                title = src.title(),
+                is_target = src.id() == source_id,
+                "Available source during restart"
+            );
+        }
+
         let source = sources.iter().find(|s| s.id() == source_id);
 
         if let Some(source) = source {
             tracing::warn!(
                 source_id = source_id,
                 source_title = source.title(),
-                "Found source '{}', stopping and restarting capture",
-                source.title()
+                "=== RESTARTING CAPTURE === title='{}' id={} (compare with initial)",
+                source.title(),
+                source.id()
             );
 
             // Restart capture (start_capture handles stopping existing capture internally)
@@ -873,19 +891,30 @@ fn run_capture_loop(
     {
         let mut cap = capturer.lock();
         let sources = cap.get_source_list();
-        tracing::info!(
-            source_id = source_id,
-            available_sources = sources.len(),
-            source_ids = ?sources.iter().map(|s| s.id()).collect::<Vec<_>>(),
-            "Enumerating sources for capture"
+
+        // Log ALL sources with detailed info for diagnostics
+        tracing::warn!(
+            "=== INITIAL SOURCE ENUMERATION === available_count={}",
+            sources.len()
         );
+        for (idx, src) in sources.iter().enumerate() {
+            tracing::warn!(
+                idx = idx,
+                id = src.id(),
+                title = src.title(),
+                "Available source"
+            );
+        }
+
         let source = sources.iter().find(|s| s.id() == source_id);
 
         if let Some(source) = source {
-            tracing::info!(
+            tracing::warn!(
                 source_id = source_id,
                 source_title = source.title(),
-                "Found source, starting capture"
+                "=== STARTING INITIAL CAPTURE === title='{}' id={}",
+                source.title(),
+                source.id()
             );
             cap.start_capture(source.clone());
             tracing::info!(
