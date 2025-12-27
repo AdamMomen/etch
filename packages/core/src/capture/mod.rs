@@ -869,7 +869,9 @@ fn run_capture_loop(
         source_id = source_id,
         "Creating DesktopCapturer for capture loop"
     );
-    let capturer = DesktopCapturer::new(callback, false, true);
+    // NOTE: Third parameter MUST be false (same as Hopp and LiveKit examples)
+    // Setting it to true causes source titles to be empty and capture to fail after 5 minutes
+    let capturer = DesktopCapturer::new(callback, false, false);
     if capturer.is_none() {
         tracing::error!(
             source_id = source_id,
