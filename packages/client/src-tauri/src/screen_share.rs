@@ -284,8 +284,8 @@ pub async fn spawn_core(app: AppHandle, state: State<'_, CoreState>) -> Result<S
                     let line_str = String::from_utf8_lossy(&line);
                     log::info!("Core: {}", line_str);
 
-                    // Check for capture permanent error
-                    if line_str.contains("Capture permanent error") {
+                    // Check for capture permanent error or exhausted restart attempts
+                    if line_str.contains("Capture permanent error") || line_str.contains("Exhausted all restart attempts") {
                         log::error!("Core capture permanent error detected - emitting event to frontend");
                         // Emit capture error event to frontend so it can clean up overlay
                         if let Err(e) = app_handle.emit("core-capture-error", line_str.to_string()) {

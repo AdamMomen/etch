@@ -555,11 +555,11 @@ fn restart_capture(
     let current_restart = *restart_count;
     drop(restart_count);
 
-    tracing::info!(
+    tracing::warn!(
         source_id = source_id,
         restart_attempt = current_restart,
         max_restarts = MAX_RESTART_ATTEMPTS,
-        "Starting capture restart procedure"
+        "=== STARTING CAPTURE RESTART PROCEDURE ==="
     );
 
     // Sleep to let system stabilize (following Hopp's pattern)
@@ -571,11 +571,12 @@ fn restart_capture(
 
     // Retry start_capture up to MAX_RESTART_ATTEMPTS times (following Hopp's pattern)
     for retry_num in 0..MAX_RESTART_ATTEMPTS {
-        tracing::info!(
+        tracing::warn!(
             source_id = source_id,
             restart_attempt = current_restart,
             retry_num = retry_num,
-            "Attempting to restart capture"
+            "Attempting to restart capture (retry {})",
+            retry_num
         );
 
         // Re-enumerate sources in case display came back
@@ -584,23 +585,24 @@ fn restart_capture(
         let source = sources.iter().find(|s| s.id() == source_id);
 
         if let Some(source) = source {
-            tracing::info!(
+            tracing::warn!(
                 source_id = source_id,
                 source_title = source.title(),
-                "Found source, restarting capture"
+                "Found source '{}', stopping and restarting capture",
+                source.title()
             );
 
-            // Start capture again
+            // Restart capture (start_capture handles stopping existing capture internally)
             cap.start_capture(source.clone());
             drop(cap);
 
             // Give it a moment to start
             std::thread::sleep(std::time::Duration::from_millis(RETRY_DELAY_MS));
 
-            tracing::info!(
+            tracing::warn!(
                 source_id = source_id,
                 restart_attempt = current_restart,
-                "Successfully restarted capture"
+                "Successfully restarted capture - VERIFY THIS LOG APPEARS"
             );
 
             return Ok(());
