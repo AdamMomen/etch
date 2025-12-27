@@ -1,6 +1,6 @@
 import { useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Video, Users, ArrowRight, Loader2, Settings } from 'lucide-react'
+import { Video, Users, ArrowRight, Loader2, Settings, Beaker } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,10 +10,14 @@ import { createRoom } from '@/lib/api'
 import { parseRoomId } from '@/utils/roomId'
 import { SettingsModal } from '@/components/Settings'
 
+// Dev mode constant - only show dev button in development
+const IS_DEV = import.meta.env.DEV
+
 export function HomeScreen() {
   const navigate = useNavigate()
   const [roomCode, setRoomCode] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [isJoiningDevRoom, setIsJoiningDevRoom] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { displayName, setDisplayName } = useSettingsStore()
   const { setCurrentRoom } = useRoomStore()
@@ -64,6 +68,12 @@ export function HomeScreen() {
     if (e.key === 'Enter' && roomCode.trim()) {
       handleJoinClick()
     }
+  }
+
+  const handleJoinDevRoom = () => {
+    setIsJoiningDevRoom(true)
+    // Navigate directly to the dev room
+    navigate('/join/dev')
   }
 
   const isJoinDisabled = !roomCode.trim()
@@ -141,6 +151,29 @@ export function HomeScreen() {
             <ArrowRight className="h-4 w-4" />
           </Button>
         </div>
+
+        {/* Dev Room Button - Only in Development */}
+        {IS_DEV && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2 text-muted-foreground hover:text-foreground"
+            onClick={handleJoinDevRoom}
+            disabled={isJoiningDevRoom}
+          >
+            {isJoiningDevRoom ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Joining Dev Room...
+              </>
+            ) : (
+              <>
+                <Beaker className="h-4 w-4" />
+                Join Dev Room
+              </>
+            )}
+          </Button>
+        )}
 
         {/* Feature Tags */}
         <div className="mt-8 flex gap-6 text-sm text-muted-foreground">
