@@ -13,7 +13,7 @@ So that **I get 60fps capture with low-latency annotation rendering**.
 ## Acceptance Criteria (REVISED)
 
 1. **AC-3.10.1: Core Binary Launches with App**
-   - Given I launch the NAMELESS desktop app
+   - Given I launch the Etch desktop app
    - When the app initializes
    - Then Core binary is spawned as a child process
    - And socket connection is established between Tauri and Core

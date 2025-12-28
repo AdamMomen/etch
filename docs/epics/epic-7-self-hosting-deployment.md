@@ -1,8 +1,8 @@
 # Epic 7: Self-Hosting & Deployment
 
-**Goal:** Enable teams to deploy and run their own NAMELESS instance with minimal friction - Docker Compose deployment, clear documentation, and production-ready configuration.
+**Goal:** Enable teams to deploy and run their own Etch instance with minimal friction - Docker Compose deployment, clear documentation, and production-ready configuration.
 
-**User Value:** After this epic, a developer can self-host NAMELESS and run a meeting within 30 minutes (per MVP success criteria).
+**User Value:** After this epic, a developer can self-host Etch and run a meeting within 30 minutes (per MVP success criteria).
 
 **FRs Addressed:** FR51, FR52, FR53, FR54, FR55, FR56
 
@@ -11,19 +11,19 @@
 ## Story 7.1: Create Docker Compose Deployment Configuration
 
 **As a** system administrator,
-**I want** to deploy NAMELESS with Docker Compose,
+**I want** to deploy Etch with Docker Compose,
 **So that** I can run the platform on my own infrastructure with minimal setup.
 
 **Acceptance Criteria:**
 
 **Given** a server with Docker and Docker Compose installed
 **When** I run `docker compose up -d`
-**Then** NAMELESS is running and accessible
+**Then** Etch is running and accessible
 
 **And** the Docker Compose file includes:
 ```yaml
 services:
-  nameless-server:    # Hono API server
+  etch-server:    # Hono API server
   livekit:            # LiveKit SFU
   redis:              # LiveKit state (if needed)
 ```
@@ -63,7 +63,7 @@ PUBLIC_URL=https://your-domain.com
 ## Story 7.2: Create Server Dockerfile with Multi-Stage Build
 
 **As a** developer,
-**I want** an optimized Docker image for the NAMELESS server,
+**I want** an optimized Docker image for the Etch server,
 **So that** deployments are fast and efficient.
 
 **Acceptance Criteria:**
@@ -85,7 +85,7 @@ PUBLIC_URL=https://your-domain.com
 
 **And** the build process:
 ```bash
-docker build -t nameless-server:latest ./packages/server
+docker build -t etch-server:latest ./packages/server
 ```
 
 **Prerequisites:** Story 1.2
@@ -160,11 +160,11 @@ Returns 503 if any check fails.
 
 **As a** developer wanting to self-host,
 **I want** clear documentation to guide me through deployment,
-**So that** I can set up NAMELESS without external support.
+**So that** I can set up Etch without external support.
 
 **Acceptance Criteria:**
 
-**Given** I want to deploy NAMELESS
+**Given** I want to deploy Etch
 **When** I read the documentation
 **Then** I have all information needed to succeed
 
@@ -213,7 +213,7 @@ Returns 503 if any check fails.
 
 **Acceptance Criteria:**
 
-**Given** I'm running the NAMELESS desktop app
+**Given** I'm running the Etch desktop app
 **When** a new version is available
 **Then** I see a notification about the update
 
@@ -237,7 +237,7 @@ Returns 503 if any check fails.
 **Prerequisites:** Story 2.3
 
 **Technical Notes:**
-- Use GitHub releases API: `https://api.github.com/repos/org/nameless/releases/latest`
+- Use GitHub releases API: `https://api.github.com/repos/org/etch/releases/latest`
 - Store dismissed version in settings
 - Tauri can handle auto-update, but start with notification only
 - Version comparison: semver
@@ -253,7 +253,7 @@ Returns 503 if any check fails.
 **Acceptance Criteria:**
 
 **Given** I've joined rooms in the past
-**When** I open the NAMELESS app
+**When** I open the Etch app
 **Then** I see my recent rooms on the home screen
 
 **And** recent rooms display:
@@ -326,13 +326,13 @@ Returns 503 if any check fails.
 ## Story 7.8: Implement LiveKit Integration Configuration
 
 **As a** system administrator,
-**I want** to configure NAMELESS to use my LiveKit instance,
+**I want** to configure Etch to use my LiveKit instance,
 **So that** media traffic stays within my infrastructure.
 
 **Acceptance Criteria:**
 
 **Given** I have a self-hosted LiveKit instance
-**When** I configure NAMELESS
+**When** I configure Etch
 **Then** all media flows through my LiveKit server
 
 **And** configuration options:

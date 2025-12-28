@@ -4,7 +4,7 @@ import { Track } from 'livekit-client'
 import { cn } from '@/lib/utils'
 import { ParticipantBubble } from './ParticipantBubble'
 import { RemoteParticipantAudio } from './RemoteParticipantAudio'
-import type { Participant } from '@nameless/shared'
+import type { Participant } from '@etch/shared'
 
 interface ParticipantBubblesProps {
   room: Room | null

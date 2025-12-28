@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils'
 import { RemoteParticipantVideo } from './RemoteParticipantVideo'
 import { RemoteParticipantAudio } from './RemoteParticipantAudio'
 import { LocalVideoPreview } from './LocalVideoPreview'
-import type { Participant } from '@nameless/shared'
+import type { Participant } from '@etch/shared'
 
 interface ParticipantGridProps {
   room: Room | null

@@ -1,4 +1,4 @@
-# Cloudflare Tunnel Setup for Nameless
+# Cloudflare Tunnel Setup for Etch
 
 ## Overview
 
@@ -6,14 +6,14 @@ Cloudflare Tunnel provides secure access to local development servers through pu
 
 ## Tunnel Details
 
-**Tunnel Name:** `nameless-dev`
+**Tunnel Name:** `etch-dev`
 **Tunnel ID:** `36f1d466-95cf-4508-8bcf-48c2a54a402c`
 **Config File:** `~/.cloudflared/config.yml`
 
 ## Routes
 
-- **Client:** https://nameless.momen.earth → localhost:5173
-- **API:** https://nameless-api.momen.earth → localhost:3000
+- **Client:** https://etch.momen.earth → localhost:5173
+- **API:** https://etch-api.momen.earth → localhost:3000
 
 ## Usage
 
@@ -28,7 +28,7 @@ This starts:
 - Server dev server (Hono) on localhost:3000
 - Cloudflare tunnel
 
-The client will have `VITE_API_URL=https://nameless-api.momen.earth/api` set, so it will use the tunneled API.
+The client will have `VITE_API_URL=https://etch-api.momen.earth/api` set, so it will use the tunneled API.
 
 ### Start Components Separately
 
@@ -46,10 +46,10 @@ Once `pnpm dev:tunnel` is running:
 
 ```bash
 # Test client
-curl -I https://nameless.momen.earth
+curl -I https://etch.momen.earth
 
 # Test API health endpoint
-curl https://nameless-api.momen.earth/api/health
+curl https://etch-api.momen.earth/api/health
 ```
 
 ## Troubleshooting
@@ -59,13 +59,13 @@ curl https://nameless-api.momen.earth/api/health
 - **Solution:** Make sure `pnpm dev` or `pnpm dev:tunnel` is running
 
 ### SSL Handshake Failure
-- **Old Issue:** Second-level subdomain `api.nameless.momen.earth` not covered by wildcard cert
-- **Fix:** Now using first-level subdomain `nameless-api.momen.earth`
+- **Old Issue:** Second-level subdomain `api.etch.momen.earth` not covered by wildcard cert
+- **Fix:** Now using first-level subdomain `etch-api.momen.earth`
 
 ### Tunnel Not Connecting
 ```bash
 # Check tunnel status
-cloudflared tunnel info nameless-dev
+cloudflared tunnel info etch-dev
 
 # View tunnel list
 cloudflared tunnel list
@@ -78,8 +78,8 @@ pnpm tunnel
 ### DNS Not Resolving
 ```bash
 # Check DNS records
-dig nameless.momen.earth +short
-dig nameless-api.momen.earth +short
+dig etch.momen.earth +short
+dig etch-api.momen.earth +short
 
 # Should return Cloudflare IPs like:
 # 104.21.83.46
@@ -108,7 +108,7 @@ cat ~/.cloudflared/config.yml
 ```
 Browser
   ↓
-https://nameless.momen.earth
+https://etch.momen.earth
   ↓
 Cloudflare Edge (SSL termination)
   ↓
@@ -122,7 +122,7 @@ localhost:5173 (Vite dev server)
 ```
 Browser/Client
   ↓
-https://nameless-api.momen.earth/api
+https://etch-api.momen.earth/api
   ↓
 Cloudflare Edge (SSL termination)
   ↓
@@ -144,8 +144,8 @@ localhost:3000 (Hono server)
 ```json
 {
   "scripts": {
-    "tunnel": "cloudflared tunnel run nameless-dev",
-    "dev:tunnel": "VITE_API_URL=https://nameless-api.momen.earth/api concurrently \"pnpm dev:client\" \"pnpm dev:server\" \"pnpm tunnel\""
+    "tunnel": "cloudflared tunnel run etch-dev",
+    "dev:tunnel": "VITE_API_URL=https://etch-api.momen.earth/api concurrently \"pnpm dev:client\" \"pnpm dev:server\" \"pnpm tunnel\""
   }
 }
 ```
@@ -153,7 +153,7 @@ localhost:3000 (Hono server)
 ## Environment Variables
 
 When running `pnpm dev:tunnel`, the following env var is set:
-- `VITE_API_URL=https://nameless-api.momen.earth/api`
+- `VITE_API_URL=https://etch-api.momen.earth/api`
 
 This allows the client to use the public tunnel URL for API calls instead of localhost.
 
@@ -175,16 +175,16 @@ pnpm dev:tunnel
 pkill -f "cloudflared tunnel run"
 
 # Check tunnel info
-cloudflared tunnel info nameless-dev
+cloudflared tunnel info etch-dev
 
 # List all tunnels
 cloudflared tunnel list
 
 # Test client endpoint
-curl https://nameless.momen.earth
+curl https://etch.momen.earth
 
 # Test API endpoint
-curl https://nameless-api.momen.earth/api/health
+curl https://etch-api.momen.earth/api/health
 ```
 
 ## Setup from Scratch
@@ -199,14 +199,14 @@ brew install cloudflared
 cloudflared tunnel login
 
 # 3. Create tunnel
-cloudflared tunnel create nameless-dev
+cloudflared tunnel create etch-dev
 
 # 4. Create config file at ~/.cloudflared/config.yml
 # (see current config for reference)
 
 # 5. Add DNS routes
-cloudflared tunnel route dns nameless-dev nameless.momen.earth
-cloudflared tunnel route dns nameless-dev nameless-api.momen.earth
+cloudflared tunnel route dns etch-dev etch.momen.earth
+cloudflared tunnel route dns etch-dev etch-api.momen.earth
 
 # 6. Run tunnel
 pnpm tunnel

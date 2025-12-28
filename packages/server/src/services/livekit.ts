@@ -1,6 +1,6 @@
 import { AccessToken } from 'livekit-server-sdk'
-import type { Role } from '@nameless/shared'
-import { TOKEN_EXPIRY_SECONDS } from '@nameless/shared'
+import type { Role } from '@etch/shared'
+import { TOKEN_EXPIRY_SECONDS } from '@etch/shared'
 
 /**
  * Configuration for LiveKit from environment variables.

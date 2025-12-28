@@ -217,7 +217,7 @@ fn generate_socket_path() -> String {
 
     #[cfg(unix)]
     {
-        format!("/tmp/nameless-core-{}.sock", pid)
+        format!("/tmp/etch-core-{}.sock", pid)
     }
     #[cfg(windows)]
     {
@@ -252,9 +252,9 @@ pub async fn spawn_core(app: AppHandle, state: State<'_, CoreState>) -> Result<S
     // Enable debug logging for LiveKit/WebRTC to diagnose connection issues
     let sidecar_command = app
         .shell()
-        .sidecar("nameless-core")
+        .sidecar("etch-core")
         .map_err(|e| format!("Failed to create sidecar command: {}", e))?
-        .env("RUST_LOG", "nameless_core=info,nameless_core::capture=warn,livekit=warn,webrtc=warn")
+        .env("RUST_LOG", "etch_core=info,etch_core::capture=warn,livekit=warn,webrtc=warn")
         .args([&socket_path]);
 
     let (mut rx, child) = sidecar_command

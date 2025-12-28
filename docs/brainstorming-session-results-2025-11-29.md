@@ -17,7 +17,7 @@
 
 **Topic:** Differentiation from existing tools (Zoom, Teams, Jitsi, Miro/Around)
 
-**Session Goals:** Find nameless's unique positioning and competitive advantages
+**Session Goals:** Find etch's unique positioning and competitive advantages
 
 **Techniques Used:** Alien Anthropologist, Assumption Reversal, First Principles Thinking, Resource Constraints
 
@@ -28,7 +28,7 @@
 1. **The Pointing Finger** - Humans' most natural gesture is ignored by collaboration tools
 2. **Writing on Glass** - Annotation should feel like a transparent overlay, not a separate whiteboard
 3. **Focus Over Features** - One thing done exceptionally well beats feature bloat
-4. **Open-Source First** - Self-hosted/data sovereignty is the #1 reason users will choose nameless
+4. **Open-Source First** - Self-hosted/data sovereignty is the #1 reason users will choose etch
 5. **Two Primitives Only** - Laser pointer + finger drawing = complete solution
 
 ## Technique Sessions
@@ -87,22 +87,22 @@
 
 **Strategic Clarity Emerged:**
 
-**What nameless IS:**
+**What etch IS:**
 - Real-time synchronized pointing and drawing
 - On actual work artifacts (code, designs, docs)
 - Persistent annotations during the session
 - Open, self-hosted, yours
 - One thing done exceptionally well
 
-**What nameless ISN'T:**
+**What etch ISN'T:**
 - An async collaboration tool
 - A whiteboard/canvas product (not a Miro competitor)
 - A feature-bloated Swiss army knife
 
 **Key Insight:**
-> nameless doesn't compete on features. It competes on **focus**.
+> etch doesn't compete on features. It competes on **focus**.
 >
-> While Zoom adds its 47th feature and Miro builds another template library, nameless stays razor-sharp on the "pointing finger moment."
+> While Zoom adds its 47th feature and Miro builds another template library, etch stays razor-sharp on the "pointing finger moment."
 
 **Ideas Generated:** 6
 
@@ -157,10 +157,10 @@
 
 ### Technique 4: Resource Constraints (Structured)
 
-**Goal:** Force absolute clarity - if nameless could only do ONE thing better than everyone, what is it?
+**Goal:** Force absolute clarity - if etch could only do ONE thing better than everyone, what is it?
 
 **The Constraint Question:**
-> "If nameless could only do ONE thing better than Zoom, Teams, Jitsi, AND Miro combined... what would it be?"
+> "If etch could only do ONE thing better than Zoom, Teams, Jitsi, AND Miro combined... what would it be?"
 
 **Competitive Gap Analysis:**
 
@@ -170,7 +170,7 @@
 | Teams | ❌ | ✅ | ❌ |
 | Jitsi | ✅ | ✅ | ❌ |
 | Miro | ❌ | ❌ | ✅ (separate canvas) |
-| **nameless** | ✅ | ✅ | ✅ |
+| **etch** | ✅ | ✅ | ✅ |
 
 **The One-Liner:**
 > **"Open-source screen sharing with real-time annotation"**
@@ -199,7 +199,7 @@
 - Annotation experience is why they STAY, not why they COME
 
 **Final Positioning Statement:**
-> **nameless: Open-source screen sharing with real-time annotation.**
+> **etch: Open-source screen sharing with real-time annotation.**
 >
 > Self-host your meetings. Own your data. Point at things together.
 
@@ -274,7 +274,7 @@ _Key realizations from the session_
 
 ```
 ┌────────────────────────────────────────┐
-│         nameless MVP                   │
+│         etch MVP                   │
 ├────────────────────────────────────────┤
 │  ● Laser pointer (glow + trail)        │
 │  ✏ Finger drawing (freehand)           │

@@ -46,7 +46,7 @@ so that **I can tell who drew what**.
   - [x] Update `packages/server/src/services/livekit.ts` to track room participant count
   - [x] When generating join token, determine participant index (0-based order)
   - [x] Add `color` to token metadata: `{ role, color: getParticipantColor(index) }`
-  - [x] Import `getParticipantColor` from `@nameless/shared`
+  - [x] Import `getParticipantColor` from `@etch/shared`
   - [x] Host (room creator) always gets index 0 (orange)
 
 - [x] **Task 4: Extract color from LiveKit participant metadata on client** (AC: 4.10.4, 4.10.5)
@@ -91,7 +91,7 @@ so that **I can tell who drew what**.
 ### Architecture Alignment
 
 - **ADR-002:** LiveKit DataTracks for Annotations - stroke messages include participantId and color
-- **Tech Spec:** Color palette defined in `@nameless/shared/constants/colors.ts`
+- **Tech Spec:** Color palette defined in `@etch/shared/constants/colors.ts`
 - **Architecture:** Token metadata carries participant color assigned server-side
 
 ### Color Palette (from Tech Spec)
@@ -148,7 +148,7 @@ export function getParticipantColorFromMetadata(participant: Participant): strin
 - **Coordinate utilities:** `packages/client/src/utils/coordinates.ts` pattern - follow same structure for color utilities
 - **Test patterns:** Comprehensive unit tests in `coordinates.test.ts` - follow same thoroughness
 - **useAnnotationSync:** Has validateNormalizedCoordinates - verify color is included in messages
-- **Stroke structure:** Strokes have `color` field already defined in `@nameless/shared/types/annotation.ts`
+- **Stroke structure:** Strokes have `color` field already defined in `@etch/shared/types/annotation.ts`
 
 **Key Files from Previous Story:**
 - `packages/client/src/hooks/useAnnotations.ts` - Update to use participant color
@@ -370,7 +370,7 @@ Story 4.10 implements participant color assignment for annotations. The implemen
 
 - ✅ **ADR-002 Compliance**: Color included in DataTrack annotation messages via stroke.color
 - ✅ **Server-side assignment**: Colors assigned in roomStore, included in token metadata
-- ✅ **Shared package pattern**: Color palette and utility in `@nameless/shared/constants`
+- ✅ **Shared package pattern**: Color palette and utility in `@etch/shared/constants`
 - ✅ **Zustand state management**: Color flows through roomStore to useAnnotations
 - ✅ **Code style**: No semicolons, 2-space indentation, TypeScript strict mode
 

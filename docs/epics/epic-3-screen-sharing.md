@@ -27,7 +27,7 @@
 
 **And** after selecting a screen/window:
   - Screen capture starts immediately
-  - **Main Nameless window automatically minimizes**
+  - **Main Etch window automatically minimizes**
   - **Selected window/screen is focused (brought to foreground)**
   - Screen share track is published to LiveKit at 1080p/VP9/4-6Mbps
   - Floating control bar appears (Story 3.7)
@@ -83,7 +83,7 @@
 
 **And** on macOS:
   - Screen recording permission is requested if not granted
-  - Permission dialog shows "NAMELESS wants to record this Mac's screen"
+  - Permission dialog shows "Etch wants to record this Mac's screen"
   - User can grant permission in System Preferences
 
 **And** the sidecar lifecycle is managed:
@@ -162,7 +162,7 @@
   - **Floating control bar is dismissed**
   - **Share border indicator is dismissed**
   - **Annotation overlay is dismissed**
-  - **Main Nameless window restores from minimized state**
+  - **Main Etch window restores from minimized state**
   - Button returns to "Share Screen" state (outline style)
   - "Sharing" badge removed from my participant entry
 
@@ -260,7 +260,7 @@
 ## Story 3.6: Create Sharer's Transparent Overlay Window
 
 **As a** screen sharer,
-**I want** to see annotations on my actual shared screen (not inside NAMELESS),
+**I want** to see annotations on my actual shared screen (not inside Etch),
 **So that** I can see what others are pointing at without switching windows.
 
 **Acceptance Criteria:**
@@ -316,7 +316,7 @@ Per Implementation Readiness assessment, Windows transparent overlay behavior ne
 
 **As a** screen sharer,
 **I want** a floating control bar that stays visible on top of all windows,
-**So that** I can access meeting controls (mic, camera, stop sharing, leave) without switching back to the minimized Nameless window.
+**So that** I can access meeting controls (mic, camera, stop sharing, leave) without switching back to the minimized Etch window.
 
 **Acceptance Criteria:**
 
@@ -352,7 +352,7 @@ Per Implementation Readiness assessment, Windows transparent overlay behavior ne
 
 **And** when I stop sharing:
   - Floating control bar is destroyed
-  - Main Nameless window restores from minimized state
+  - Main Etch window restores from minimized state
 
 **Prerequisites:** Story 3.1
 
@@ -415,20 +415,20 @@ Per Implementation Readiness assessment, Windows transparent overlay behavior ne
 ## Story 3.9: Implement Main Window Auto-Minimize and Restore
 
 **As a** screen sharer,
-**I want** the Nameless window to automatically minimize when I start sharing,
+**I want** the Etch window to automatically minimize when I start sharing,
 **So that** my shared content is visible and I can focus on presenting.
 
 **Acceptance Criteria:**
 
 **Given** I'm in a meeting and initiate screen share
 **When** I select a window/screen to share
-**Then** the main Nameless window automatically minimizes
+**Then** the main Etch window automatically minimizes
 
 **And** the shared window/screen is brought to focus (foreground)
 **And** the floating control bar, share border, and annotation overlay appear
 
 **And** when I stop sharing (via floating bar "Stop Share"):
-  - Main Nameless window restores from minimized state
+  - Main Etch window restores from minimized state
   - Window returns to its previous position and size
   - All native windows (floating bar, border, overlay) are dismissed
 

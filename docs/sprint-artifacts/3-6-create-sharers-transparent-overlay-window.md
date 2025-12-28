@@ -5,7 +5,7 @@ Status: done
 ## Story
 
 As a **screen sharer**,
-I want **to see annotations on my actual shared screen (not inside NAMELESS)**,
+I want **to see annotations on my actual shared screen (not inside Etch)**,
 So that **I can see what others are pointing at without switching windows**.
 
 ## Acceptance Criteria

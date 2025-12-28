@@ -9,9 +9,9 @@ Status: Draft
 
 ## Overview
 
-Epic 3 implements screen sharing functionality for NAMELESS, enabling users to share their entire screen or specific application windows during meetings. This is a foundational feature that enables the core value proposition of real-time annotations (Epic 4).
+Epic 3 implements screen sharing functionality for Etch, enabling users to share their entire screen or specific application windows during meetings. This is a foundational feature that enables the core value proposition of real-time annotations (Epic 4).
 
-The key differentiator is the **sharer experience**: when sharing, the main Nameless window minimizes, a floating control bar provides meeting controls, a share border indicates what's being captured, and a transparent overlay will display annotations (wired in Epic 4).
+The key differentiator is the **sharer experience**: when sharing, the main Etch window minimizes, a floating control bar provides meeting controls, a share border indicates what's being captured, and a transparent overlay will display annotations (wired in Epic 4).
 
 **Stories in this Epic (10 total):**
 
@@ -123,7 +123,7 @@ The key differentiator is the **sharer experience**: when sharing, the main Name
 2. **Share Border Indicator** - High (visible frame)
 3. **Annotation Overlay** - Medium (click-through)
 4. **Shared Content** - Normal (user's app)
-5. **Main Nameless Window** - Minimized
+5. **Main Etch Window** - Minimized
 
 ### Package Structure
 
@@ -816,7 +816,7 @@ Story 3.1 (Screen Share Initiation) ◄─── Epic 2 (LiveKit Room)
 ### Test Data Factories
 
 ```typescript
-// To be added to @nameless/shared
+// To be added to @etch/shared
 export const createMockScreenShareTrack = (overrides?: Partial<RemoteVideoTrack>) => ({
   source: Track.Source.ScreenShare,
   sid: 'screen-track-123',

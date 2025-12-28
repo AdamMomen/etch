@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Participant } from '@nameless/shared'
+import type { Participant } from '@etch/shared'
 
 export interface RoomInfo {
   roomId: string

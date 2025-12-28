@@ -23,7 +23,7 @@ import {
   encodeScreenShareMessage,
   decodeScreenShareMessage,
   type ScreenShareStopMessage,
-} from '@nameless/shared'
+} from '@etch/shared'
 
 // ============================================================================
 // System Tray API (Story 3.7 - ADR-011 Simple Menu Bar)

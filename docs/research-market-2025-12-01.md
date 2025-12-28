@@ -1,4 +1,4 @@
-# Market Research Report: NAMELESS
+# Market Research Report: Etch
 
 **Date:** 2025-12-01  
 **Prepared by:** BMad  
@@ -57,7 +57,7 @@ The video conferencing market has significant variance in estimates due to diffe
 
 ### Self-Hosted/On-Premise Segment (Your Sweet Spot)
 
-This is where it gets interesting for NAMELESS:
+This is where it gets interesting for Etch:
 
 | Metric | Value | Source |
 |--------|-------|--------|
@@ -124,13 +124,13 @@ The annotation feature could be your **differentiator** that justifies premium p
 
 ## 4. Monetization Models for Open Source
 
-Based on successful open-source companies, here are the viable models for NAMELESS:
+Based on successful open-source companies, here are the viable models for Etch:
 
 ### Model Comparison
 
 | Model | Description | Revenue Potential | Best For | Examples |
 |-------|-------------|-------------------|----------|----------|
-| **Open Core** | Free community edition + paid enterprise features | High ($$$) | NAMELESS | GitLab, Mattermost, HashiCorp |
+| **Open Core** | Free community edition + paid enterprise features | High ($$$) | Etch | GitLab, Mattermost, HashiCorp |
 | **SaaS/Hosted** | Managed cloud offering of open-source software | High ($$$) | Add-on to open core | WordPress.com, GitLab.com |
 | **Support & Services** | Paid support, training, consulting | Medium ($$) | Enterprise customers | Red Hat, Canonical |
 | **Dual Licensing** | GPL for open-source, commercial license for embedding | Medium ($$) | SDK/embeddable products | MySQL, Qt |
@@ -138,7 +138,7 @@ Based on successful open-source companies, here are the viable models for NAMELE
 
 Sources: [Wikipedia - OSS Business Models](https://en.wikipedia.org/wiki/Business_models_for_open-source_software), [Wingback](https://www.wingback.com/blog/5-proven-strategies-for-monetizing-open-source-software), [Reo.dev](https://www.reo.dev/blog/monetize-open-source-software)
 
-### Recommended Model for NAMELESS: **Open Core + Hosted Option**
+### Recommended Model for Etch: **Open Core + Hosted Option**
 
 **Why Open Core Works:**
 > "Open-core is best when enterprise customers need add-on enterprise ops features and you want to maintain your open-source community too." - [Reo.dev](https://www.reo.dev/blog/monetize-open-source-software)
@@ -154,7 +154,7 @@ Sources: [Wikipedia - OSS Business Models](https://en.wikipedia.org/wiki/Busines
 
 Sources: [Statista - GitLab Revenue](https://www.statista.com/statistics/1478273/total-revenue-gitlab/), [HashiCorp Wikipedia](https://en.wikipedia.org/wiki/HashiCorp), [GetLatka - Mattermost](https://getlatka.com/companies/mattermost)
 
-### NAMELESS Monetization Strategy
+### Etch Monetization Strategy
 
 **Tier 1: Community Edition (Free, Apache 2.0)**
 - Core meeting functionality
@@ -218,7 +218,7 @@ Sources: [8x8 JaaS Pricing](https://cpaas.8x8.vc/), [Mattermost Pricing](https:/
 
 Sources: [Tuple Pricing](https://tuple.app/pricing), [Capterra - Miro](https://www.getapp.com/collaboration-software/a/miro/)
 
-**Key Insight:** Developer-focused tools command **premium pricing** ($25-30/user/mo for Tuple). NAMELESS's annotation feature for code reviews could justify similar pricing.
+**Key Insight:** Developer-focused tools command **premium pricing** ($25-30/user/mo for Tuple). Etch's annotation feature for code reviews could justify similar pricing.
 
 ### Video API/SDK Pricing (If You Pivot to Platform)
 
@@ -233,7 +233,7 @@ Sources: [Dyte - Video SDK Pricing](https://dyte.io/blog/video-sdk-pricing/), [V
 
 ---
 
-## 6. Recommended Pricing for NAMELESS
+## 6. Recommended Pricing for Etch
 
 Based on competitive analysis and positioning:
 
@@ -293,7 +293,7 @@ Sources: [Zoom Support - Annotations](https://support.zoom.us/hc/en-us/articles/
 
 Based on user feedback and reviews ([Dyte - Jitsi](https://dyte.io/blog/jitsi-pricing/), [Capterra - Jitsi Reviews](https://www.capterra.com/p/162665/Jitsi/reviews/)):
 
-| Issue | Impact | NAMELESS Opportunity |
+| Issue | Impact | Etch Opportunity |
 |-------|--------|---------------------|
 | **No screen annotations** | Cannot draw on shared content | Core differentiator |
 | **Audio/video quality issues** | Sound lags, stability problems | Use LiveKit (battle-tested) |
@@ -322,7 +322,7 @@ Both Zoom and Teams **have** annotation features, but with limitations:
 - ❌ Requires Microsoft ecosystem
 - ❌ Not self-hosted
 
-**NAMELESS Differentiation:**
+**Etch Differentiation:**
 - ✅ Real-time annotation on ANY shared screen (<200ms latency)
 - ✅ Fully self-hosted
 - ✅ Open source (Apache 2.0)
@@ -406,13 +406,13 @@ Standalone annotation tools exist ([gInk](https://github.com/geovens/gInk), [Rit
 
 ### Positioning Statement
 
-> **NAMELESS** is the open-source meeting platform for teams who need to point at things. Unlike Zoom (cloud-only, privacy concerns) and Jitsi (no annotations), NAMELESS lets you draw on shared screens in real-time while keeping all your data on your own servers.
+> **Etch** is the open-source meeting platform for teams who need to point at things. Unlike Zoom (cloud-only, privacy concerns) and Jitsi (no annotations), Etch lets you draw on shared screens in real-time while keeping all your data on your own servers.
 
 ### Core Strategy: Premium Feel, $0 Price
 
 **"Make it a no-brainer to migrate."**
 
-| Competitor | Experience | Price | NAMELESS Strategy |
+| Competitor | Experience | Price | Etch Strategy |
 |------------|------------|-------|-------------------|
 | Tuple | Premium (5K, low latency) | $30/user/mo | Match quality, $0 |
 | Zoom | Good enough | $13-20/user/mo | Better annotations, $0 |
@@ -456,7 +456,7 @@ Standalone annotation tools exist ([gInk](https://github.com/geovens/gInk), [Rit
 | **CoScreen** (Datadog) | Unknown | Unknown | Strategic |
 | **Around** (Miro) | Unknown | Unknown | Strategic |
 
-**Realistic Exit Scenario for NAMELESS:**
+**Realistic Exit Scenario for Etch:**
 - At $5M ARR with 50% growth: **$30-60M acquisition value** (6-12x multiple)
 - At $10M ARR: **$60-120M**
 - Strategic premium possible if annotation tech is valuable (SDK licensing, embedding)

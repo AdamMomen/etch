@@ -2,7 +2,7 @@ import { useEffect, useRef, useCallback } from 'react'
 import { emit, listen } from '@tauri-apps/api/event'
 import { useAnnotationStore } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
-import type { Point, Stroke } from '@nameless/shared'
+import type { Point, Stroke } from '@etch/shared'
 
 /**
  * Bridge hook for synchronizing annotation state between the main window

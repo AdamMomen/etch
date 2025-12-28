@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Stroke, Point } from '@nameless/shared'
+import type { Stroke, Point } from '@etch/shared'
 
 /**
  * Tool type for annotation drawing.

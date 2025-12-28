@@ -303,7 +303,7 @@ serde_json = "1"
 ### Project Structure
 
 ```
-nameless/
+etch/
 ├── packages/
 │   ├── core/                          # NEW - Rust media engine
 │   │   ├── Cargo.toml
@@ -592,7 +592,7 @@ fn main() {
 
 ### 7.2 UserEvent Enum (Command Vocabulary)
 
-The `UserEvent` enum defines the complete vocabulary of commands that can flow through the system. This is NAMELESS-specific, adapted from Hopp's pattern:
+The `UserEvent` enum defines the complete vocabulary of commands that can flow through the system. This is Etch-specific, adapted from Hopp's pattern:
 
 ```rust
 // packages/core/src/lib.rs
@@ -1236,11 +1236,11 @@ impl CoreSocket {
     fn get_socket_path() -> String {
         #[cfg(unix)]
         {
-            format!("/tmp/nameless-core-{}.sock", std::process::id())
+            format!("/tmp/etch-core-{}.sock", std::process::id())
         }
         #[cfg(windows)]
         {
-            format!("\\\\.\\pipe\\nameless-core-{}", std::process::id())
+            format!("\\\\.\\pipe\\etch-core-{}", std::process::id())
         }
     }
 
@@ -1325,7 +1325,7 @@ impl CoreSocket {
 
 ### 7.6 Key Differences from Hopp
 
-| Aspect | Hopp | NAMELESS |
+| Aspect | Hopp | Etch |
 |--------|------|----------|
 | **Primary Feature** | Remote cursor sharing + input control | Annotation drawing |
 | **Input Handling** | Simulates keyboard/mouse on sharer's machine | No input simulation (annotations only) |
@@ -1359,7 +1359,7 @@ fn spawn_core(state: State<CoreProcess>) -> Result<String, String> {
         .spawn()
         .map_err(|e| e.to_string())?;
 
-    let socket_path = format!("/tmp/nameless-core-{}.sock", child.id());
+    let socket_path = format!("/tmp/etch-core-{}.sock", child.id());
     *guard = Some(child);
 
     Ok(socket_path)

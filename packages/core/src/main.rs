@@ -1,4 +1,4 @@
-//! NAMELESS Core - Entry point
+//! Etch Core - Entry point
 //!
 //! This binary is spawned by the Tauri app and communicates via Unix socket.
 //! It owns all media: screen capture, LiveKit connection.
@@ -6,7 +6,7 @@
 use std::env;
 use std::sync::Arc;
 
-use nameless_core::{Application, CoreSocket, UserEvent};
+use etch_core::{Application, CoreSocket, UserEvent};
 use parking_lot::Mutex;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 use winit::application::ApplicationHandler;
@@ -98,26 +98,26 @@ fn main() -> anyhow::Result<()> {
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "nameless_core=info".into()),
+                .unwrap_or_else(|_| "etch_core=info".into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    tracing::info!("NAMELESS Core starting...");
+    tracing::info!("Etch Core starting...");
 
     // Get socket path from command line or environment
     let socket_path = env::args()
         .nth(1)
-        .or_else(|| env::var("NAMELESS_SOCKET_PATH").ok())
+        .or_else(|| env::var("Etch_SOCKET_PATH").ok())
         .unwrap_or_else(|| {
             let pid = std::process::id();
             #[cfg(unix)]
             {
-                format!("/tmp/nameless-core-{}.sock", pid)
+                format!("/tmp/etch-core-{}.sock", pid)
             }
             #[cfg(windows)]
             {
-                format!("\\\\.\\pipe\\nameless-core-{}", pid)
+                format!("\\\\.\\pipe\\etch-core-{}", pid)
             }
         });
 
@@ -145,6 +145,6 @@ fn main() -> anyhow::Result<()> {
     tracing::info!("Starting event loop...");
     event_loop.run_app(&mut handler)?;
 
-    tracing::info!("NAMELESS Core exited");
+    tracing::info!("Etch Core exited");
     Ok(())
 }

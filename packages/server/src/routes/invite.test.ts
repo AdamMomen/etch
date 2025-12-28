@@ -21,7 +21,7 @@ describe('Invite Route', () => {
       const res = await app.request('/join/my-meeting')
       const html = await res.text()
 
-      expect(html).toContain('nameless://room/my-meeting')
+      expect(html).toContain('etch://room/my-meeting')
     })
 
     it('includes the web app fallback URL', async () => {
@@ -54,7 +54,7 @@ describe('Invite Route', () => {
 
         const html = await res.text()
         expect(html).toContain(roomId)
-        expect(html).toContain(`nameless://room/${roomId}`)
+        expect(html).toContain(`etch://room/${roomId}`)
       }
     })
   })

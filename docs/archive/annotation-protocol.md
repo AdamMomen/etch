@@ -1,6 +1,6 @@
-# NAMELESS Annotation Protocol
+# Etch Annotation Protocol
 
-This document defines the annotation protocol used in NAMELESS for synchronizing drawing events across participants.
+This document defines the annotation protocol used in Etch for synchronizing drawing events across participants.
 
 ## Overview
 

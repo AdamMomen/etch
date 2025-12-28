@@ -8,7 +8,7 @@ import { AnnotationToolbar } from '@/components/AnnotationToolbar'
 import { useAnnotations } from '@/hooks/useAnnotations'
 import { useAnnotationKeyboard } from '@/hooks/useAnnotationKeyboard'
 import type { SyncState } from '@/hooks/useAnnotationSync'
-import type { Stroke, Point } from '@nameless/shared'
+import type { Stroke, Point } from '@etch/shared'
 
 interface ScreenShareViewerProps {
   track: RemoteVideoTrack | null

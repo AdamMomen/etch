@@ -197,7 +197,7 @@ export const useSettingsStore = create<SettingsState>()(
       setPreferredCamera: (id) => set({ preferredCameraId: id }),
     }),
     {
-      name: 'nameless-settings',
+      name: 'etch-settings',
     }
   )
 );

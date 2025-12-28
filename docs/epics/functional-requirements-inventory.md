@@ -25,7 +25,7 @@
 - **FR18:** Only one participant can share screen at a time (MVP)
 - **FR19:** All participants can view the shared screen
 - **FR20:** Shared screen displays at appropriate quality for content visibility
-- **FR21:** When sharing begins, the main Nameless window automatically minimizes and the shared window/screen is focused
+- **FR21:** When sharing begins, the main Etch window automatically minimizes and the shared window/screen is focused
 - **FR22:** A visual border appears around the shared window/screen to indicate active sharing
 - **FR23:** A floating control bar appears on top of all windows showing sharing status, participant face circles, and meeting controls
 - **FR24:** The floating control bar remains visible across all screens/desktops when the main application is minimized

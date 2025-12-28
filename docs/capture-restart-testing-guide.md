@@ -24,7 +24,7 @@ cd ../..
 ### Enable Detailed Logging
 Add to your terminal before running:
 ```bash
-export RUST_LOG=nameless_core::capture=debug
+export RUST_LOG=etch_core::capture=debug
 ```
 
 ---
@@ -36,7 +36,7 @@ export RUST_LOG=nameless_core::capture=debug
 **Purpose:** Verify automatic restart when display goes to sleep and wakes up.
 
 **Setup:**
-1. Start NAMELESS client
+1. Start Etch client
 2. Share external monitor (Display 2)
 3. Verify annotation overlay is active on shared display
 4. Open terminal to monitor Core logs
@@ -64,13 +64,13 @@ export RUST_LOG=nameless_core::capture=debug
 
 **Log Pattern to Look For:**
 ```
-ERROR nameless_core::capture: Capture permanent error source_id=2 failure_count=1
-ERROR nameless_core::capture: Capture permanent error source_id=2 failure_count=2
-ERROR nameless_core::capture: Too many consecutive failures - triggering restart
-WARN nameless_core::capture: Restart requested - attempting to restart capture
-INFO nameless_core::capture: Starting capture restart procedure restart_attempt=1
-INFO nameless_core::capture: Found source, restarting capture source_title="Display 2"
-INFO nameless_core::capture: Successfully restarted capture
+ERROR etch_core::capture: Capture permanent error source_id=2 failure_count=1
+ERROR etch_core::capture: Capture permanent error source_id=2 failure_count=2
+ERROR etch_core::capture: Too many consecutive failures - triggering restart
+WARN etch_core::capture: Restart requested - attempting to restart capture
+INFO etch_core::capture: Starting capture restart procedure restart_attempt=1
+INFO etch_core::capture: Found source, restarting capture source_title="Display 2"
+INFO etch_core::capture: Successfully restarted capture
 ```
 
 ---
@@ -80,7 +80,7 @@ INFO nameless_core::capture: Successfully restarted capture
 **Purpose:** Verify retry behavior when monitor is physically disconnected.
 
 **Setup:**
-1. Start NAMELESS client
+1. Start Etch client
 2. Share external monitor (Display 2)
 3. Verify annotation overlay active
 
@@ -122,7 +122,7 @@ ERROR Exhausted all restart attempts - stopping capture permanently
 **Purpose:** Verify automatic recovery when monitor is reconnected during retry window.
 
 **Setup:**
-1. Start NAMELESS client
+1. Start Etch client
 2. Share external monitor
 3. Verify overlay active
 
@@ -289,7 +289,7 @@ tracing::debug!("Available sources during restart: {:?}", sources);
 
 **Enable Verbose Logging:**
 ```bash
-export RUST_LOG=nameless_core=trace
+export RUST_LOG=etch_core=trace
 ```
 
 ### If Overlay Not Destroyed
@@ -424,7 +424,7 @@ sleep 5
 caffeinate -u -t 1
 
 # Monitor logs
-tail -f /path/to/nameless.log | grep -E "Restart|permanent error"
+tail -f /path/to/etch.log | grep -E "Restart|permanent error"
 ```
 
 **Note:** Full automation difficult due to hardware dependency. Manual testing preferred.
@@ -436,4 +436,4 @@ tail -f /path/to/nameless.log | grep -E "Restart|permanent error"
 - **Implementation:** `packages/core/src/capture/mod.rs:533-976`
 - **Plan:** `docs/capture-error-recovery-plan.md`
 - **Story:** `docs/sprint-artifacts/4-11-render-annotations-on-sharers-overlay.md`
-- **Hopp Reference:** `/Users/adam/.ghq/github.com/adammomen/nameless/hopp-main/core/src/capture/capturer.rs:523-588`
+- **Hopp Reference:** `/Users/adam/.ghq/github.com/adammomen/etch/hopp-main/core/src/capture/capturer.rs:523-588`

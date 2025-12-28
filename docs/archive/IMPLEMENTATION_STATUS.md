@@ -1,4 +1,4 @@
-# NAMELESS Implementation Status
+# Etch Implementation Status
 
 ## ✅ Completed
 
@@ -106,7 +106,7 @@ pnpm dev:client
 ## 📁 Project Structure
 
 ```
-nameless/
+etch/
 ├── client/              # Electron desktop app
 │   ├── src/
 │   │   ├── main/        # Electron main process

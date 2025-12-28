@@ -1,4 +1,4 @@
-# User Research Report: NAMELESS
+# User Research Report: Etch
 
 **Date:** 2025-12-01  
 **Prepared by:** BMad (Analyst)  
@@ -117,7 +117,7 @@ Sources: [SEEK Blog - Pair Programming](https://medium.com/seek-blog/tips-for-re
 
 Based on research, ranked by frequency and severity:
 
-| Rank | Pain Point | Severity | NAMELESS Solution |
+| Rank | Pain Point | Severity | Etch Solution |
 |------|------------|----------|-------------------|
 | 1 | **Code unreadable** (compression) | Critical | High bitrate VP9 streaming |
 | 2 | **Latency/lag** | Critical | LiveKit infrastructure |
@@ -155,7 +155,7 @@ Developers are picky. "Premium" to them is NOT:
 - ✅ **Keyboard-friendly** - Shortcuts for everything
 - ✅ **Respectful** - No accounts, no tracking, no BS
 
-### Premium UX Attributes for NAMELESS
+### Premium UX Attributes for Etch
 
 | Attribute | Implementation | Why It Matters |
 |-----------|----------------|----------------|
@@ -198,7 +198,7 @@ Developers are picky. "Premium" to them is NOT:
 
 ### Supporting Jobs
 
-| Job | Current Solution | NAMELESS Advantage |
+| Job | Current Solution | Etch Advantage |
 |-----|-----------------|-------------------|
 | Show colleague where bug is | "Look at line 47... no, the other function" | Draw circle around it |
 | Review code together | Zoom screen share (blurry) | Crisp text, annotations |
@@ -208,7 +208,7 @@ Developers are picky. "Premium" to them is NOT:
 
 ### Emotional Jobs
 
-| Emotional Need | How NAMELESS Delivers |
+| Emotional Need | How Etch Delivers |
 |----------------|----------------------|
 | Feel competent | Tool doesn't fight you |
 | Not waste colleague's time | Instant communication |
@@ -254,7 +254,7 @@ Based on user research, prioritized for MVP:
 
 ## 7. Competitive Experience Comparison
 
-| Dimension | Zoom | Teams | Jitsi | Tuple | NAMELESS Target |
+| Dimension | Zoom | Teams | Jitsi | Tuple | Etch Target |
 |-----------|------|-------|-------|-------|-----------------|
 | **Startup time** | 5-10s | 10-20s | 3-5s | 2-3s | **< 2s** |
 | **Join friction** | Account optional | Account required | None | Account required | **None** |
@@ -268,7 +268,7 @@ Based on user research, prioritized for MVP:
 
 ## 8. The "No-Brainer Migration" Checklist
 
-For developers to switch from current tools to NAMELESS, they need:
+For developers to switch from current tools to Etch, they need:
 
 - [ ] **Better than Zoom/Teams** - Text actually readable
 - [ ] **Better than Jitsi** - Annotations + quality

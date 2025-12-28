@@ -12,7 +12,7 @@
 
 **As a** developer,
 **I want** a properly structured monorepo with a working Tauri desktop application,
-**So that** I have a foundation to build all NAMELESS features upon.
+**So that** I have a foundation to build all Etch features upon.
 
 **Acceptance Criteria:**
 
@@ -22,7 +22,7 @@
 
 **And** the project structure matches the architecture specification:
 ```
-nameless/
+etch/
 ├── packages/
 │   ├── client/          # Tauri desktop app
 │   │   ├── src/         # React frontend
@@ -33,7 +33,7 @@ nameless/
 └── package.json
 ```
 
-**And** TypeScript is configured with path aliases (`@/` for client, `@nameless/shared`)
+**And** TypeScript is configured with path aliases (`@/` for client, `@etch/shared`)
 **And** Tailwind CSS is configured with the design system tokens from UX spec
 **And** shadcn/ui is initialized with dark mode as default
 **And** ESLint and Prettier are configured for consistent code style
@@ -97,7 +97,7 @@ with status 200
 **Acceptance Criteria:**
 
 **Given** the monorepo structure
-**When** I import from `@nameless/shared` in client or server code
+**When** I import from `@etch/shared` in client or server code
 **Then** I have access to all shared types and constants
 
 **And** the following types are defined:
@@ -186,13 +186,13 @@ packages/
 └── vitest.workspace.ts       # Workspace config (runs all)
 ```
 
-**2. Test Data Factories (in `@nameless/shared`):**
+**2. Test Data Factories (in `@etch/shared`):**
 - [ ] `createMockStroke(overrides?)` - Creates stroke with sensible defaults
 - [ ] `createMockParticipant(overrides?)` - Creates participant with role
 - [ ] `createMockHost()`, `createMockViewer()` - Role-specific helpers
 - [ ] `createStrokeStartMessage()`, `createSyncResponseMessage()` - Message factories
 
-**3. Mock Infrastructure (in `@nameless/client`):**
+**3. Mock Infrastructure (in `@etch/client`):**
 - [ ] `MockLiveKitRoom` - Simulates room connection, data events, participants
 - [ ] `MockDataTrackSync` - Simulates publish/subscribe with test helpers
 - [ ] Store helpers: `resetAllStores()`, `seedStrokes()`, `getAnnotationState()`
@@ -232,8 +232,8 @@ thresholds: {
 - [ ] `vitest.workspace.ts` configured at root
 - [ ] Each package has `vitest.config.ts` with appropriate environment
 - [ ] Client test setup file with all mocks
-- [ ] Test factories created and exported from `@nameless/shared`
-- [ ] Mock infrastructure created in `@nameless/client`
+- [ ] Test factories created and exported from `@etch/shared`
+- [ ] Mock infrastructure created in `@etch/client`
 - [ ] Coverage thresholds configured (60% initial)
 - [ ] At least one passing test per package
 - [ ] `pnpm test:coverage` generates HTML report

@@ -28,7 +28,7 @@ So that **other participants can see what I'm working on**.
 3. **AC-3.1.3: Main Window Minimizes**
    - Given screen capture has started
    - When the track is successfully published
-   - Then the main Nameless window automatically minimizes
+   - Then the main Etch window automatically minimizes
    - And the selected window/screen is focused (brought to foreground)
 
 4. **AC-3.1.4: Sharing Badge Displayed**

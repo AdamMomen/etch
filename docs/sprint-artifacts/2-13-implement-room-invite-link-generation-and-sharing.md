@@ -37,7 +37,7 @@ So that **I can invite others to join my meeting**.
 5. **AC-2.13.5: Link Format**
    - Given a room with ID `abc-123-xyz`
    - When the invite link is generated
-   - Then the link format is `nameless://room/abc-123-xyz` (or configurable base URL)
+   - Then the link format is `etch://room/abc-123-xyz` (or configurable base URL)
    - And the link is valid and can be used to join the room
 
 [Source: docs/epics.md#Story-2.13, docs/sprint-artifacts/tech-spec-epic-2.md#AC-2.13]
@@ -80,7 +80,7 @@ So that **I can invite others to join my meeting**.
 - [x] **Task 7: Configure link format** (AC: 2.13.5)
   - [x] Create link generation utility function
   - [x] Support configurable base URL from settings/config
-  - [x] Default format: `nameless://room/{roomId}`
+  - [x] Default format: `etch://room/{roomId}`
   - [x] Alternative HTTP format for web sharing: `https://{domain}/join/{roomId}`
 
 - [x] **Task 8: Write tests** (AC: all)
@@ -154,16 +154,16 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 ```typescript
 // lib/invite.ts
 interface InviteLinkConfig {
-  protocol: 'nameless' | 'https';
+  protocol: 'etch' | 'https';
   domain?: string;  // For https links
 }
 
 export function generateInviteLink(
   roomId: string,
-  config: InviteLinkConfig = { protocol: 'nameless' }
+  config: InviteLinkConfig = { protocol: 'etch' }
 ): string {
-  if (config.protocol === 'nameless') {
-    return `nameless://room/${roomId}`;
+  if (config.protocol === 'etch') {
+    return `etch://room/${roomId}`;
   }
   return `https://${config.domain}/join/${roomId}`;
 }
@@ -265,7 +265,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - Added keyboard shortcut hint in modal UI
 - **Enhancement**: Implemented universal invite link flow (like Slack/Zoom):
   - Invite links are HTTP URLs (e.g., http://localhost:3000/join/abc-123-xyz)
-  - Landing page automatically tries to open desktop app via nameless:// deep link
+  - Landing page automatically tries to open desktop app via etch:// deep link
   - If app not installed, user can click "Join in Browser" to use web version
   - Configurable invite domain in settings store for custom deployments
 
@@ -314,7 +314,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 | **AC-2.13.2** | Copy Link Functionality | ✅ PASS | `InviteModal.tsx:36-50` - `copyToClipboard()` with toast "Link copied!" and button state change to "Copied!" for 2s |
 | **AC-2.13.3** | Auto-Copy on Room Creation | ✅ PASS | `MeetingRoom.tsx:243-260` - useEffect with host detection, `hasAutoCopiedRef` prevents duplicates, "Invite link copied!" toast |
 | **AC-2.13.4** | Keyboard Shortcut | ✅ PASS | `MeetingRoom.tsx:176-180` - ⌘I/Ctrl+I opens modal; lines 161-164 disable when typing |
-| **AC-2.13.5** | Link Format | ✅ PASS | `invite.ts:25-33` - HTTP URL `{protocol}://{domain}/join/{roomId}`; `invite.ts:40-42` - deep link `nameless://room/{roomId}` |
+| **AC-2.13.5** | Link Format | ✅ PASS | `invite.ts:25-33` - HTTP URL `{protocol}://{domain}/join/{roomId}`; `invite.ts:40-42` - deep link `etch://room/{roomId}` |
 
 ### Task Completion Validation
 

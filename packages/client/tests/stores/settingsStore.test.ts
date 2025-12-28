@@ -82,15 +82,15 @@ describe('settingsStore', () => {
   })
 
   describe('persist configuration', () => {
-    it('uses "nameless-settings" as storage key', () => {
-      // This test verifies the persist config - the key should be 'nameless-settings'
+    it('uses "etch-settings" as storage key', () => {
+      // This test verifies the persist config - the key should be 'etch-settings'
       // The persist middleware uses this key for localStorage
       // We can check by verifying the state persists across store resets
       const { setPreferredMicrophone } = useSettingsStore.getState()
       setPreferredMicrophone('persisted-mic-id')
 
-      // The persist middleware should have saved this to localStorage with key 'nameless-settings'
-      const stored = localStorage.getItem('nameless-settings')
+      // The persist middleware should have saved this to localStorage with key 'etch-settings'
+      const stored = localStorage.getItem('etch-settings')
       if (stored) {
         const parsed = JSON.parse(stored)
         expect(parsed.state?.preferredMicrophoneId).toBe('persisted-mic-id')
@@ -126,7 +126,7 @@ describe('settingsStore', () => {
 
       setTheme('light')
 
-      const stored = localStorage.getItem('nameless-settings')
+      const stored = localStorage.getItem('etch-settings')
       if (stored) {
         const parsed = JSON.parse(stored)
         expect(parsed.state?.theme).toBe('light')
@@ -218,7 +218,7 @@ describe('settingsStore', () => {
 
       setDisplayName('Bob')
 
-      const stored = localStorage.getItem('nameless-settings')
+      const stored = localStorage.getItem('etch-settings')
       if (stored) {
         const parsed = JSON.parse(stored)
         expect(parsed.state?.displayName).toBe('Bob')
@@ -232,7 +232,7 @@ describe('settingsStore', () => {
 
       toggleSidebar()
 
-      const stored = localStorage.getItem('nameless-settings')
+      const stored = localStorage.getItem('etch-settings')
       if (stored) {
         const parsed = JSON.parse(stored)
         expect(parsed.state?.sidebarCollapsed).toBe(true)

@@ -1,4 +1,4 @@
-# Competitive Intelligence Report: NAMELESS
+# Competitive Intelligence Report: Etch
 
 **Date:** 2025-12-01  
 **Prepared by:** BMad (Analyst)  
@@ -100,7 +100,7 @@ Sources: [Capterra Reviews](https://www.capterra.com/p/162665/Jitsi/reviews/), [
 
 ### Competitive Gap Analysis
 
-| Feature | Jitsi | Zoom | NAMELESS Opportunity |
+| Feature | Jitsi | Zoom | Etch Opportunity |
 |---------|-------|------|---------------------|
 | Screen Annotation | ❌ No | ✅ Yes | ✅ Core differentiator |
 | Self-Hosted | ✅ Yes | ❌ No | ✅ Match + better |
@@ -139,7 +139,7 @@ Freemium Trial → Paid Subscription ($25-30/user/month)
 - **Startup discount:** 90% off for 1 year (<2 years old, <50 employees)
 - **Open source discount:** Free licenses for OSS maintainers
 
-### Why Tuple Matters for NAMELESS
+### Why Tuple Matters for Etch
 
 Tuple proves that **developers will pay premium prices** ($25-30/user/mo) for:
 1. Low-latency, high-quality screen sharing
@@ -187,9 +187,9 @@ Sources: [Tuple Docs](https://docs.tuple.app/article/9-guest), [Tower Blog](http
 
 **Key Insight:** Tuple charges **2-3x more than Zoom** and developers pay it because the experience is worth it.
 
-### Competitive Position vs NAMELESS
+### Competitive Position vs Etch
 
-| Dimension | Tuple | NAMELESS |
+| Dimension | Tuple | Etch |
 |-----------|-------|----------|
 | Pricing | $30/user/mo | $12-20/user/mo |
 | Open Source | ❌ No | ✅ Yes (Apache 2.0) |
@@ -201,7 +201,7 @@ Sources: [Tuple Docs](https://docs.tuple.app/article/9-guest), [Tower Blog](http
 | Web Version | ❌ No | ✅ Yes |
 | Business Model | Bootstrapped SaaS | Open Core |
 
-**Opportunity:** NAMELESS can be the "open-source Tuple" at lower price point, with self-hosting option Tuple doesn't offer.
+**Opportunity:** Etch can be the "open-source Tuple" at lower price point, with self-hosting option Tuple doesn't offer.
 
 ---
 
@@ -232,11 +232,11 @@ Sources: [Tuple Docs](https://docs.tuple.app/article/9-guest), [Tower Blog](http
 
 **LiveKit is NOT a competitor - it's your enabler.**
 
-NAMELESS architecture already uses LiveKit. Here's why that's the right choice:
+Etch architecture already uses LiveKit. Here's why that's the right choice:
 
 1. **Battle-tested:** OpenAI uses LiveKit for voice AI
 2. **Scalable:** Millions of users in single session
-3. **Open source:** Same Apache 2.0 license as NAMELESS
+3. **Open source:** Same Apache 2.0 license as Etch
 4. **Self-hosted option:** Aligns with your value prop
 5. **Active development:** $83M funding, 87 GitHub repos
 
@@ -290,7 +290,7 @@ Sources: [LiveKit Pricing](https://livekit.io/pricing), [LiveKit Blog](https://b
 - Free community support (no SLA)
 - Ideal for compliance/sovereignty requirements
 
-**This is perfect for NAMELESS:** Your customers self-host NAMELESS, which self-hosts LiveKit. Maximum data sovereignty.
+**This is perfect for Etch:** Your customers self-host Etch, which self-hosts LiveKit. Maximum data sovereignty.
 
 ### Notable LiveKit Customers
 
@@ -300,12 +300,12 @@ Sources: [LiveKit Pricing](https://livekit.io/pricing), [LiveKit Blog](https://b
 | **Polymath** | Robotics, low-latency video streaming |
 | **Assort Health** | Healthcare AI agents |
 
-### Implications for NAMELESS
+### Implications for Etch
 
 1. **Don't rebuild WebRTC** - LiveKit already solved this
 2. **Leverage their funding** - $83M means continued development
 3. **Match their license** - Both Apache 2.0, no conflicts
-4. **Self-hosted story** - LiveKit self-hosting enables NAMELESS self-hosting
+4. **Self-hosted story** - LiveKit self-hosting enables Etch self-hosting
 5. **Scale with them** - They handle millions of users
 
 ---
@@ -323,7 +323,7 @@ Sources: [LiveKit Pricing](https://livekit.io/pricing), [LiveKit Blog](https://b
                         │
     ┌───────────────────┼───────────────────┐
     │                   │                   │
-    │    NAMELESS       │                   │
+    │    Etch       │                   │
     │    SWEET SPOT     │     Teams         │
     │  ($12-20/user)    │   ($4-22/user)    │
     │                   │                   │
@@ -339,7 +339,7 @@ Sources: [LiveKit Pricing](https://livekit.io/pricing), [LiveKit Blog](https://b
 
 ### Positioning Strategy
 
-| Axis | Where NAMELESS Sits |
+| Axis | Where Etch Sits |
 |------|---------------------|
 | **Price** | Mid-tier ($12-20) - cheaper than Tuple, similar to Zoom |
 | **Open Source** | Fully open (Apache 2.0) - only Jitsi compares |
@@ -399,7 +399,7 @@ Sources: [LiveKit Pricing](https://livekit.io/pricing), [LiveKit Blog](https://b
 ### Your Unique Position
 
 ```
-NAMELESS = Jitsi's openness + Tuple's features + LiveKit's quality
+Etch = Jitsi's openness + Tuple's features + LiveKit's quality
          = Open-source meeting platform with real-time annotations
          = Self-hosted data sovereignty
          = Developer-first experience

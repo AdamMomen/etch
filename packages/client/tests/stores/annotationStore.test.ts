@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { act } from '@testing-library/react'
 import { useAnnotationStore, type Tool } from '@/stores/annotationStore'
-import type { Stroke, Point } from '@nameless/shared'
+import type { Stroke, Point } from '@etch/shared'
 
 // ─────────────────────────────────────────────────────────
 // TEST HELPERS

@@ -1,4 +1,4 @@
-# NAMELESS - Product Requirements Document
+# Etch - Product Requirements Document
 
 **Author:** BMad
 **Date:** 2025-11-29
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-NAMELESS is an open-source, self-hosted meeting platform that brings real-time screen annotations to video collaboration. It fills a critical gap between proprietary platforms (Zoom, Teams) that are closed and expensive, and open alternatives (Jitsi) that lack annotation capabilities.
+Etch is an open-source, self-hosted meeting platform that brings real-time screen annotations to video collaboration. It fills a critical gap between proprietary platforms (Zoom, Teams) that are closed and expensive, and open alternatives (Jitsi) that lack annotation capabilities.
 
 The product enables distributed teams - developers doing code reviews, designers critiquing prototypes, support technicians guiding users - to draw directly on shared screens with imperceptible latency. All while maintaining complete control over their data through self-hosting.
 
@@ -33,16 +33,16 @@ Combined with:
 **Domain:** General (Collaboration/Communication)
 **Complexity:** Low (no regulated domain requirements)
 
-NAMELESS is a cross-platform desktop application with a real-time collaboration backend. The desktop client handles video rendering and annotation compositing, while the backend (LiveKit) manages WebRTC connections and data synchronization.
+Etch is a cross-platform desktop application with a real-time collaboration backend. The desktop client handles video rendering and annotation compositing, while the backend (LiveKit) manages WebRTC connections and data synchronization.
 
 **Reference Documents:**
-- Product Brief: `docs/product-brief-nameless-2025-11-29.md`
+- Product Brief: `docs/product-brief-etch-2025-11-29.md`
 
 ---
 
 ## Success Criteria
 
-Success for NAMELESS is measured by **community adoption and product quality**, not revenue.
+Success for Etch is measured by **community adoption and product quality**, not revenue.
 
 ### Primary Success Indicators
 
@@ -142,7 +142,7 @@ The long-term direction, not commitments:
 
 ### Architectural Innovation: Decoupled Annotation Layer
 
-Most collaboration tools embed annotation into their media pipeline - annotations are composited server-side or baked into the video stream. NAMELESS takes a different approach:
+Most collaboration tools embed annotation into their media pipeline - annotations are composited server-side or baked into the video stream. Etch takes a different approach:
 
 **The Pattern:**
 - Media transport (video/audio/screen) flows through LiveKit SFU unchanged
@@ -243,7 +243,7 @@ Desktop client technology is TBD, evaluated on:
 
 ### Offline Capabilities
 
-**Reality Check:** NAMELESS is inherently an online collaboration tool - no meeting without network.
+**Reality Check:** Etch is inherently an online collaboration tool - no meeting without network.
 
 **Graceful Degradation:**
 - Handle network interruptions without crashing
@@ -288,7 +288,7 @@ Desktop client technology is TBD, evaluated on:
 
 **Sharing screen:**
 - Click share → Pick window/display → Sharing begins
-- Main Nameless window is minimized - selected window/screen is focused (border indicates sharing)
+- Main Etch window is minimized - selected window/screen is focused (border indicates sharing)
 - Floating control bar appears on top of all windows & screens
 - Shows: sharing indicator, participant face circles, mic/camera toggles, stop share, leave
 - Annotation canvas auto-activates for all participants
@@ -339,7 +339,7 @@ Desktop client technology is TBD, evaluated on:
 - **FR18:** Only one participant can share screen at a time (MVP)
 - **FR19:** All participants can view the shared screen
 - **FR20:** Shared screen displays at 1080p resolution with VP9 codec at 4-6 Mbps bitrate, optimized for text clarity
-- **FR21:** When sharing begins, the main Nameless window automatically minimizes and the shared window/screen is focused
+- **FR21:** When sharing begins, the main Etch window automatically minimizes and the shared window/screen is focused
 - **FR22:** A visual border appears around the shared window/screen to indicate active sharing
 - **FR23:** A floating control bar appears on top of all windows showing sharing status, participant face circles, and meeting controls
 - **FR24:** The floating control bar remains visible across all screens/desktops when the main application is minimized
@@ -406,7 +406,7 @@ Desktop client technology is TBD, evaluated on:
 
 ### Performance
 
-Performance is central to NAMELESS's value proposition - annotations must feel instant.
+Performance is central to Etch's value proposition - annotations must feel instant.
 
 | Metric | Requirement | Rationale |
 |--------|-------------|-----------|
@@ -424,7 +424,7 @@ Performance is central to NAMELESS's value proposition - annotations must feel i
 
 ### Security
 
-Self-hosted means users are trusting NAMELESS with potentially sensitive screen content.
+Self-hosted means users are trusting Etch with potentially sensitive screen content.
 
 **Transport Security:**
 - All WebRTC traffic encrypted (DTLS-SRTP, standard)
@@ -485,7 +485,7 @@ MVP scope is modest - focus on correctness first, scale later.
 
 ## Summary
 
-**NAMELESS** is an open-source, self-hosted meeting platform that delivers real-time screen annotations - the "pointing finger" moment that makes remote collaboration feel natural.
+**Etch** is an open-source, self-hosted meeting platform that delivers real-time screen annotations - the "pointing finger" moment that makes remote collaboration feel natural.
 
 | Dimension | Summary |
 |-----------|---------|
@@ -501,6 +501,6 @@ MVP scope is modest - focus on correctness first, scale later.
 
 ---
 
-_This PRD captures the essence of NAMELESS - enabling teams to point at things on screen and have everyone see it instantly, without giving up control of their data._
+_This PRD captures the essence of Etch - enabling teams to point at things on screen and have everyone see it instantly, without giving up control of their data._
 
 _Created through collaborative discovery between BMad and AI facilitator._

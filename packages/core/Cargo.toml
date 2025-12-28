@@ -1,9 +1,9 @@
 [package]
-name = "nameless-core"
+name = "etch-core"
 version = "0.1.0"
 edition = "2021"
-description = "NAMELESS Core media engine - screen capture, LiveKit connection"
-authors = ["NAMELESS Team"]
+description = "Etch Core media engine - screen capture, LiveKit connection"
+authors = ["Etch Team"]
 
 [dependencies]
 # LiveKit with DesktopCapturer (Hopp's fork - main branch with M137)
@@ -62,7 +62,7 @@ ashpd = "0.9"
 criterion = { version = "0.5", features = ["html_reports"] }
 
 [[bin]]
-name = "nameless-core"
+name = "etch-core"
 path = "src/main.rs"
 
 [[bench]]
@@ -70,7 +70,7 @@ name = "capture_performance"
 harness = false
 
 [lib]
-name = "nameless_core"
+name = "etch_core"
 path = "src/lib.rs"
 
 [profile.release]

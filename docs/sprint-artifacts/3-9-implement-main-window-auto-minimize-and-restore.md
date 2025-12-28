@@ -5,7 +5,7 @@ Status: done
 ## Story
 
 As a **screen sharer**,
-I want **the Nameless window to automatically minimize when I start sharing and restore when I stop**,
+I want **the Etch window to automatically minimize when I start sharing and restore when I stop**,
 So that **my shared content is visible and I can focus on presenting without the meeting UI blocking my view**.
 
 ## Acceptance Criteria
@@ -13,7 +13,7 @@ So that **my shared content is visible and I can focus on presenting without the
 1. **AC-3.9.1: Main Window Minimizes on Share Start**
    - Given I'm in a meeting and initiate screen share
    - When I select a window/screen to share
-   - Then the main Nameless window automatically minimizes
+   - Then the main Etch window automatically minimizes
    - And the shared window/screen is brought to focus (foreground)
 
 2. **AC-3.9.2: Shared Content Focused**
@@ -25,7 +25,7 @@ So that **my shared content is visible and I can focus on presenting without the
 3. **AC-3.9.3: Main Window Restores on Share Stop**
    - Given I'm actively sharing my screen with main window minimized
    - When I stop sharing (via menu bar "Stop Sharing")
-   - Then the main Nameless window restores from minimized state
+   - Then the main Etch window restores from minimized state
    - And all native windows (border, overlay) are dismissed
 
 4. **AC-3.9.4: Window Returns to Previous Position/Size**

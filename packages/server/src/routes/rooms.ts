@@ -8,7 +8,7 @@ import type {
   CreateRoomResponse,
   JoinRoomResponse,
   ApiError,
-} from '@nameless/shared'
+} from '@etch/shared'
 
 /**
  * Zod schema for room creation request.

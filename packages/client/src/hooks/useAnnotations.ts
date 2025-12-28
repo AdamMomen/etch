@@ -3,8 +3,8 @@ import { useAnnotationStore, type Tool } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useScreenShareStore } from '@/stores/screenShareStore'
 import { findTopmostStrokeAtPoint } from '@/lib/canvas'
-import { PARTICIPANT_COLORS } from '@nameless/shared'
-import type { Point, Stroke } from '@nameless/shared'
+import { PARTICIPANT_COLORS } from '@etch/shared'
+import type { Point, Stroke } from '@etch/shared'
 
 /**
  * Sync callbacks for DataTrack annotation synchronization.

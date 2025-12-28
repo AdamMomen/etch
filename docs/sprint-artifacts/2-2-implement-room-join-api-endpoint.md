@@ -71,8 +71,8 @@ So that **I can participate in meetings others have created**.
 ## Tasks / Subtasks
 
 - [x] **Task 1: Add JoinRoomRequest and JoinRoomResponse types** (AC: 2.2.1, 2.2.2)
-  - [x] Add `JoinRoomRequest` type to `@nameless/shared` (participantName, optional role) - ALREADY EXISTS
-  - [x] Add `JoinRoomResponse` type to `@nameless/shared` (token, livekitUrl) - ALREADY EXISTS
+  - [x] Add `JoinRoomRequest` type to `@etch/shared` (participantName, optional role) - ALREADY EXISTS
+  - [x] Add `JoinRoomResponse` type to `@etch/shared` (token, livekitUrl) - ALREADY EXISTS
   - [x] Export new types from shared package index - ALREADY EXPORTED
 
 - [x] **Task 2: Implement color assignment logic** (AC: 2.2.3)
@@ -203,7 +203,7 @@ Following the pattern established in Story 2.1:
 
 ### Shared Types to Add
 
-Add to `@nameless/shared`:
+Add to `@etch/shared`:
 - `JoinRoomRequest` - `{ participantName: string; role?: Role }`
 - `JoinRoomResponse` - `{ token: string; livekitUrl: string }`
 

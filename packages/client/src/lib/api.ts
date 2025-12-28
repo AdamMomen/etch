@@ -1,4 +1,4 @@
-import type { CreateRoomResponse, JoinRoomResponse } from '@nameless/shared'
+import type { CreateRoomResponse, JoinRoomResponse } from '@etch/shared'
 
 /**
  * Validates and returns the API base URL.

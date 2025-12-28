@@ -7,7 +7,7 @@ import { useDraggablePosition } from '@/hooks/useDraggablePosition'
 import { LocalVideoPreview } from '@/components/MeetingRoom/LocalVideoPreview'
 import { ParticipantBubble } from '@/components/MeetingRoom/ParticipantBubble'
 import { RemoteParticipantAudio } from '@/components/MeetingRoom/RemoteParticipantAudio'
-import type { Participant } from '@nameless/shared'
+import type { Participant } from '@etch/shared'
 
 interface DraggableParticipantStackProps {
   room: Room | null

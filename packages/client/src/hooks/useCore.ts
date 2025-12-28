@@ -1,5 +1,5 @@
 /**
- * React hook for NAMELESS Core media engine
+ * React hook for Etch Core media engine
  *
  * Provides React integration for the Core client, including:
  * - Auto-start on mount

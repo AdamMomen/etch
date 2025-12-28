@@ -1,15 +1,15 @@
 {
-  "name": "nameless",
+  "name": "etch",
   "version": "0.1.0",
   "private": true,
   "description": "Open-source, self-hosted meeting platform with real-time screen annotations",
   "scripts": {
     "dev": "concurrently \"pnpm dev:client\" \"pnpm dev:server\"",
-    "dev:tunnel": "VITE_API_URL=https://nameless-api.momen.earth/api concurrently \"pnpm dev:client\" \"pnpm dev:server\" \"pnpm tunnel\"",
+    "dev:tunnel": "VITE_API_URL=https://etch-api.momen.earth/api concurrently \"pnpm dev:client\" \"pnpm dev:server\" \"pnpm tunnel\"",
     "dev:client": "pnpm --filter client dev",
     "dev:server": "pnpm --filter server dev",
     "dev:livekit": "cd packages/livekit-local-server && task start-server",
-    "tunnel": "cloudflared tunnel run nameless-dev",
+    "tunnel": "cloudflared tunnel run etch-dev",
     "build": "pnpm --filter client build && pnpm --filter server build",
     "build:client": "pnpm --filter client build",
     "build:server": "pnpm --filter server build",
@@ -17,7 +17,7 @@
     "lint:fix": "eslint packages/*/src --ext .ts,.tsx --fix",
     "format": "prettier --write \"packages/*/src/**/*.{ts,tsx}\"",
     "format:check": "prettier --check \"packages/*/src/**/*.{ts,tsx}\"",
-    "typecheck": "pnpm --filter client exec tsc --noEmit && pnpm --filter server exec tsc --noEmit && pnpm --filter @nameless/shared exec tsc --noEmit",
+    "typecheck": "pnpm --filter client exec tsc --noEmit && pnpm --filter server exec tsc --noEmit && pnpm --filter @etch/shared exec tsc --noEmit",
     "pretest": "pkill -f vitest 2>/dev/null || true",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -27,7 +27,7 @@
     "pretest:server": "pkill -f vitest 2>/dev/null || true",
     "test:server": "pnpm --filter server test run",
     "pretest:shared": "pkill -f vitest 2>/dev/null || true",
-    "test:shared": "pnpm --filter @nameless/shared test run"
+    "test:shared": "pnpm --filter @etch/shared test run"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.0.0",

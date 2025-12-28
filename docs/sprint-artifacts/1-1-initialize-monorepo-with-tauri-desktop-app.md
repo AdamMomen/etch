@@ -6,7 +6,7 @@ Status: done
 
 As a **developer**,
 I want **a properly structured monorepo with a working Tauri desktop application**,
-so that **I have a foundation to build all NAMELESS features upon**.
+so that **I have a foundation to build all Etch features upon**.
 
 ## Acceptance Criteria
 
@@ -15,7 +15,7 @@ so that **I have a foundation to build all NAMELESS features upon**.
    - When I examine the directory structure
    - Then it matches the architecture specification:
      ```
-     nameless/
+     etch/
      ├── packages/
      │   ├── client/          # Tauri desktop app
      │   │   ├── src/         # React frontend
@@ -76,7 +76,7 @@ so that **I have a foundation to build all NAMELESS features upon**.
 - [x] **Task 2: Create Tauri Desktop Application** (AC: 1.1.3)
   - [x] Run `npx create-tauri-ui@latest` in packages/client with Vite + React + pnpm
   - [x] Verify Tauri 2.0 is installed (check `src-tauri/Cargo.toml`)
-  - [x] Configure `tauri.conf.json` with app name "NAMELESS"
+  - [x] Configure `tauri.conf.json` with app name "Etch"
   - [x] Verify native window controls work via tauri-controls
   - [x] Test `pnpm dev` opens desktop window
 
@@ -135,7 +135,7 @@ Per `docs/architecture.md`:
 
 Per Architecture doc, use the official starter:
 ```bash
-npx create-tauri-ui@latest nameless-client
+npx create-tauri-ui@latest etch-client
 ```
 
 Select options:
@@ -169,7 +169,7 @@ Target structure aligns with Architecture doc Section "Project Structure":
 - `packages/server/` - Hono API server (Story 1.2)
 - `packages/shared/` - Shared types (Story 1.3)
 
-Path aliases use `@/` for client-internal imports, `@nameless/shared` for cross-package.
+Path aliases use `@/` for client-internal imports, `@etch/shared` for cross-package.
 
 ### TypeScript Configuration
 
@@ -222,7 +222,7 @@ Implementation followed story context and architecture specs. Used Vite + React 
 - Created pnpm monorepo with packages/client, packages/server (placeholder), packages/shared (placeholder)
 - Initialized Tauri 2.9.2 desktop app with Vite + React 19
 - Configured TypeScript with path aliases (@/ → ./src/*)
-- Set up Tailwind CSS with NAMELESS design system tokens (dark mode default)
+- Set up Tailwind CSS with Etch design system tokens (dark mode default)
 - Created Button component following shadcn/ui patterns with class-variance-authority
 - Added Lucide icons, Zustand for state management
 - Configured ESLint + Prettier at root level
@@ -258,7 +258,7 @@ Implementation followed story context and architecture specs. Used Vite + React 
   - `src/components/ui/button.tsx` - shadcn-style Button
   - `src/test/setup.ts` - Vitest setup
   - `src-tauri/Cargo.toml` - Rust config with Tauri 2.0
-  - `src-tauri/tauri.conf.json` - Tauri config (NAMELESS app)
+  - `src-tauri/tauri.conf.json` - Tauri config (Etch app)
   - `src-tauri/src/main.rs` - Rust entry point
   - `src-tauri/src/lib.rs` - Tauri run function
 
@@ -322,7 +322,7 @@ The monorepo structure is correctly established with Tauri 2.9.2 desktop applica
 | Task | Marked | Verified | Evidence |
 |------|--------|----------|----------|
 | Task 1: Initialize Monorepo Structure | ✅ | ✅ VERIFIED | All files present |
-| Task 2: Create Tauri Desktop Application | ✅ | ✅ VERIFIED | Tauri 2.9.2, NAMELESS config |
+| Task 2: Create Tauri Desktop Application | ✅ | ✅ VERIFIED | Tauri 2.9.2, Etch config |
 | Task 3: Configure TypeScript Path Aliases | ✅ | ⚠️ QUESTIONABLE | Works but doesn't extend base |
 | Task 4: Configure Tailwind CSS | ✅ | ✅ VERIFIED | darkMode: 'class', UX tokens |
 | Task 5: Initialize shadcn/ui | ✅ | ✅ VERIFIED | Button with CVA, Lucide icons |

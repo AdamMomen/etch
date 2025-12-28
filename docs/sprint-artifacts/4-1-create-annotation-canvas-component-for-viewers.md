@@ -178,7 +178,7 @@ useEffect(() => {
 - Framework: Vitest + React Testing Library
 - Location: Co-located `AnnotationCanvas.test.tsx`
 - Mock `annotationStore` for isolated testing
-- Use `createMockStroke()` from `@nameless/shared/test-utils`
+- Use `createMockStroke()` from `@etch/shared/test-utils`
 
 ### Performance Considerations
 
@@ -344,7 +344,7 @@ The component accepts strokes via props rather than direct store subscription, w
 - No security concerns identified
 - Component only renders data, doesn't collect user input
 - No external API calls
-- Uses trusted imports only (@nameless/shared, perfect-freehand)
+- Uses trusted imports only (@etch/shared, perfect-freehand)
 
 ### Best-Practices and References
 

@@ -240,7 +240,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 - Most scripts (dev, dev:client, dev:server, build, build:client, build:server, lint, lint:fix, format) were already implemented in previous stories
 - Only needed to add: typecheck script
-- typecheck script updated to use per-package approach: `pnpm --filter client exec tsc --noEmit && pnpm --filter server exec tsc --noEmit && pnpm --filter @nameless/shared exec tsc --noEmit`
+- typecheck script updated to use per-package approach: `pnpm --filter client exec tsc --noEmit && pnpm --filter server exec tsc --noEmit && pnpm --filter @etch/shared exec tsc --noEmit`
 - .vscode/settings.json updated with formatOnSave, defaultFormatter, codeActionsOnSave, TypeScript preferences
 - .vscode/extensions.json created with 5 recommended extensions
 - Fixed server build script (removed `&& node dist/index.js` which failed due to ESM resolution)

@@ -28,14 +28,14 @@ So that **I can stop sharing or leave the meeting without switching windows**.
    - Then a native menu appears with:
      - "Sharing Screen" status header (disabled, with red indicator)
      - Separator
-     - "Open Nameless" (⌘O)
+     - "Open Etch" (⌘O)
      - "Stop Sharing" (⌘S)
      - "Leave Meeting" (⌘Q)
 
-3. **AC-3.7.3: Open Nameless Works**
+3. **AC-3.7.3: Open Etch Works**
    - Given the menu is visible
-   - When I click "Open Nameless"
-   - Then the main Nameless window shows and focuses
+   - When I click "Open Etch"
+   - Then the main Etch window shows and focuses
    - And I can access full meeting controls (mic, camera, etc.)
 
 4. **AC-3.7.4: Stop Sharing Works**
@@ -60,7 +60,7 @@ So that **I can stop sharing or leave the meeting without switching windows**.
 7. **AC-3.7.7: Tray Icon Hidden When Not Sharing**
    - Given I am not sharing my screen
    - When I look at the menu bar
-   - Then no Nameless sharing indicator is visible
+   - Then no Etch sharing indicator is visible
 
 ## Visual Spec
 
@@ -77,7 +77,7 @@ So that **I can stop sharing or leave the meeting without switching windows**.
 ┌──────────────────────┐
 │ 🔴 Sharing Screen    │  ← status (disabled)
 │ ──────────────────── │  ← separator
-│ Open Nameless   ⌘O   │  ← show main window
+│ Open Etch   ⌘O   │  ← show main window
 │ Stop Sharing    ⌘S   │  ← stop screen share
 │ Leave Meeting   ⌘Q   │  ← leave meeting
 └──────────────────────┘
@@ -97,12 +97,12 @@ So that **I can stop sharing or leave the meeting without switching windows**.
   - [x] Build menu with `MenuBuilder`:
     - Disabled "Sharing Screen" status item
     - Separator
-    - "Open Nameless" with ⌘O accelerator
+    - "Open Etch" with ⌘O accelerator
     - "Stop Sharing" with ⌘S accelerator
     - "Leave Meeting" with ⌘Q accelerator
 
 - [x] **Task 3: Implement menu actions** (AC: 3.7.3, 3.7.4, 3.7.5, 3.7.6)
-  - [x] `open_nameless`: Show and focus main window
+  - [x] `open_etch`: Show and focus main window
   - [x] `stop_sharing`: Emit `tray://stop-sharing` event to frontend
   - [x] `leave_meeting`: Emit `tray://leave-meeting` event to frontend
   - [x] Frontend listens and handles events
@@ -159,7 +159,7 @@ pub fn create_share_tray(app: &AppHandle) -> Result<(), String> {
     let menu = MenuBuilder::new(app)
         .text("status", "🔴 Sharing Screen")
         .separator()
-        .item(&MenuItemBuilder::new("Open Nameless")
+        .item(&MenuItemBuilder::new("Open Etch")
             .id("open")
             .accelerator("CmdOrCtrl+O")
             .build(app)?)

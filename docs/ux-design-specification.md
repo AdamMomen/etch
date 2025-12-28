@@ -1,4 +1,4 @@
-# NAMELESS UX Design Specification
+# Etch UX Design Specification
 
 _Created on 2025-11-29 by BMad_
 _Generated using BMad Method - Create UX Design Workflow v1.0_
@@ -7,7 +7,7 @@ _Generated using BMad Method - Create UX Design Workflow v1.0_
 
 ## Executive Summary
 
-**NAMELESS** is an open-source, self-hosted meeting platform with real-time screen annotations. It fills the gap between proprietary tools (Zoom, Teams) and open alternatives (Jitsi) by enabling participants to draw directly on shared screens with < 200ms latency.
+**Etch** is an open-source, self-hosted meeting platform with real-time screen annotations. It fills the gap between proprietary tools (Zoom, Teams) and open alternatives (Jitsi) by enabling participants to draw directly on shared screens with < 200ms latency.
 
 **Target Users:** Developer teams (code reviews, debugging), Design teams (prototype feedback), and IT/Support technicians (remote troubleshooting)
 
@@ -111,7 +111,7 @@ Users should feel like they're truly collaborating in the same room, not just wa
 - Purple gradient aesthetic with depth
 - *Takeaway:* Don't reinvent the wheel; use familiar patterns
 
-**Synthesized UX Principles for NAMELESS:**
+**Synthesized UX Principles for Etch:**
 
 | Principle | Inspiration | Application |
 |-----------|-------------|-------------|
@@ -127,9 +127,9 @@ Users should feel like they're truly collaborating in the same room, not just wa
 
 **Pattern Classification:** Refined Standard Pattern
 
-The annotation-on-screen-share pattern exists (Zoom, Teams), but NAMELESS refines it with:
+The annotation-on-screen-share pattern exists (Zoom, Teams), but Etch refines it with:
 
-| Aspect | Standard (Zoom) | NAMELESS Refinement |
+| Aspect | Standard (Zoom) | Etch Refinement |
 |--------|-----------------|---------------------|
 | Latency | Noticeable delay | < 200ms (imperceptible) |
 | Rendering | Server-composited | Local compositing |
@@ -149,9 +149,9 @@ The annotation experience should feel like placing a transparent sheet of glass 
 
 **Sharer Experience: "Stay in Your Flow"**
 
-When you're sharing your screen, NAMELESS gets out of your way:
+When you're sharing your screen, Etch gets out of your way:
 
-1. **App minimizes** - Main Nameless window disappears, your shared content is front and center
+1. **App minimizes** - Main Etch window disappears, your shared content is front and center
 2. **Floating control bar** - Small, draggable bar stays on top with essential controls
 3. **Visual share border** - Clear indication of what's being captured
 4. **Annotation overlay** - See everyone's drawings on your actual screen, not in a separate window
@@ -164,7 +164,7 @@ The moment someone draws a circle around a button and says "this one" - and ever
 
 ### 2.4 Core Experience Principles
 
-These principles guide every UX decision in NAMELESS:
+These principles guide every UX decision in Etch:
 
 | Principle | Definition | Application |
 |-----------|------------|-------------|
@@ -313,7 +313,7 @@ Based on Direction #1 (Classic Sidebar) + #3 (Split View):
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  ○ ○ ○         NAMELESS — Room Name                         │
+│  ○ ○ ○         Etch — Room Name                         │
 ├──────────────┬──────────────────────────────────┬───────────┤
 │  Room Info   │  [P] [H] [E] | [C]    Connected  │ People    │
 │  ─────────── ├──────────────────────────────────┤ Chat      │
@@ -362,7 +362,7 @@ Based on Direction #6 - toggle with `F` key or double-click canvas. This is what
 
 #### Sharer's View (When You Are Sharing)
 
-When the user initiates screen sharing, the main Nameless window **minimizes** and a floating control bar appears. The sharer sees their actual shared content (VS Code, Figma, browser, etc.) with overlays:
+When the user initiates screen sharing, the main Etch window **minimizes** and a floating control bar appears. The sharer sees their actual shared content (VS Code, Figma, browser, etc.) with overlays:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -384,7 +384,7 @@ When the user initiates screen sharing, the main Nameless window **minimizes** a
 ```
 
 **Sharer's view characteristics:**
-- Main Nameless window is **minimized** (not visible)
+- Main Etch window is **minimized** (not visible)
 - Shared window/screen is **focused** and in foreground
 - **Visual border** around shared content indicates active sharing
 - **Floating control bar** stays on top of all windows & screens
@@ -486,7 +486,7 @@ Based on Direction #4 - available in any mode:
 
 ### 5.1 Critical User Paths
 
-Three primary user journeys define the NAMELESS experience:
+Three primary user journeys define the Etch experience:
 
 #### Journey 1: Create & Start Meeting (Host)
 
@@ -542,7 +542,7 @@ flowchart LR
 
 | Step | User Sees | User Does | System Response |
 |------|-----------|-----------|-----------------|
-| 1 | Invite link (in chat, email, etc.) | Clicks link | Opens NAMELESS app (or prompts install) |
+| 1 | Invite link (in chat, email, etc.) | Clicks link | Opens Etch app (or prompts install) |
 | 2 | Join screen with room name | Enters display name (pre-filled if returning) | Validates room exists |
 | 3 | Join screen | Clicks "Join" | Connects to room |
 | 4 | Meeting room with shared content | - | Assigned "Annotator" role by default |
@@ -631,7 +631,7 @@ flowchart LR
 |------|--------|----------|
 | 1 | Click "Share" or press `⌘S` | Screen/window picker appears |
 | 2 | Select screen or window | Sharing starts immediately |
-| 3 | - | Main Nameless window minimizes, selected window/screen is focused |
+| 3 | - | Main Etch window minimizes, selected window/screen is focused |
 | 4 | - | Visual border appears around shared content indicating active share |
 | 5 | - | Floating control bar appears on top of all windows & screens |
 | 6 | - | Annotation canvas activates for all participants |
@@ -871,7 +871,7 @@ flowchart LR
 
 #### Sharer Floating Control Bar
 
-**Purpose:** Persistent control bar for the sharer that stays visible on top of all windows when sharing screen, allowing meeting controls without switching back to the Nameless app.
+**Purpose:** Persistent control bar for the sharer that stays visible on top of all windows when sharing screen, allowing meeting controls without switching back to the Etch app.
 
 **Anatomy:**
 ```
@@ -920,7 +920,7 @@ flowchart LR
 **Behavior:**
 - Appears automatically when screen sharing starts
 - Stays on top of ALL windows (including fullscreen apps)
-- Main Nameless window minimizes when bar appears
+- Main Etch window minimizes when bar appears
 - Clicking "Stop Share" dismisses bar and restores main window
 - Clicking "Leave" shows confirmation, then exits meeting
 - Draggable via any non-interactive area
@@ -970,7 +970,7 @@ flowchart LR
 
 ### 7.1 Consistency Rules
 
-These patterns ensure NAMELESS behaves consistently across all screens and interactions.
+These patterns ensure Etch behaves consistently across all screens and interactions.
 
 ---
 
@@ -1056,7 +1056,7 @@ These patterns ensure NAMELESS behaves consistently across all screens and inter
 | **Active state** | Accent background or bottom border |
 | **Breadcrumbs** | Not used (flat navigation) |
 | **Back button** | Not applicable (single-page app) |
-| **Deep linking** | Room links only (`nameless://room/{id}`) |
+| **Deep linking** | Room links only (`etch://room/{id}`) |
 
 **Sidebar:**
 - Toggle with `⌘\` or button
@@ -1165,7 +1165,7 @@ These patterns ensure NAMELESS behaves consistently across all screens and inter
 
 **Window Size Considerations:**
 
-NAMELESS is a desktop app, but users will resize windows. The UI must adapt gracefully.
+Etch is a desktop app, but users will resize windows. The UI must adapt gracefully.
 
 | Window Size | Minimum | Recommended | Maximum |
 |-------------|---------|-------------|---------|
@@ -1214,7 +1214,7 @@ The shared screen content scales to fit available canvas space:
 
 **Target:** WCAG 2.1 Level AA compliance
 
-NAMELESS is a professional tool used in workplace settings. AA compliance is required for enterprise adoption and legal compliance.
+Etch is a professional tool used in workplace settings. AA compliance is required for enterprise adoption and legal compliance.
 
 ---
 
@@ -1334,7 +1334,7 @@ Desktop app, but laptop trackpads benefit from reasonable target sizes:
 
 **UX Design Specification Complete**
 
-This document defines the complete user experience for NAMELESS v1.
+This document defines the complete user experience for Etch v1.
 
 ---
 
@@ -1447,7 +1447,7 @@ High-fidelity mockups can be created from this foundation. The interactive HTML 
 ### Related Documents
 
 - Product Requirements: `docs/prd.md`
-- Product Brief: `docs/product-brief-nameless-2025-11-29.md`
+- Product Brief: `docs/product-brief-etch-2025-11-29.md`
 
 ### Core Interactive Deliverables
 

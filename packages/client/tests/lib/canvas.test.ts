@@ -8,7 +8,7 @@ import {
   findTopmostStrokeAtPoint,
   DEFAULT_HIT_THRESHOLD,
 } from '@/lib/canvas'
-import type { Point, Stroke } from '@nameless/shared'
+import type { Point, Stroke } from '@etch/shared'
 
 // ─────────────────────────────────────────────────────────
 // TEST HELPERS

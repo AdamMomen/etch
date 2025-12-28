@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { parseParticipantMetadata } from '@/utils/participantMetadata'
-import { PARTICIPANT_COLORS } from '@nameless/shared'
+import { PARTICIPANT_COLORS } from '@etch/shared'
 
 describe('parseParticipantMetadata', () => {
   describe('valid metadata parsing', () => {

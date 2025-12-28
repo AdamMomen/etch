@@ -132,9 +132,9 @@ describe('InviteModal', () => {
       expect(link).toContain('example.com/join/abc-123-xyz')
     })
 
-    it('generateDeepLink returns nameless:// protocol link', () => {
+    it('generateDeepLink returns etch:// protocol link', () => {
       const link = inviteUtils.generateDeepLink('abc-123-xyz')
-      expect(link).toBe('nameless://room/abc-123-xyz')
+      expect(link).toBe('etch://room/abc-123-xyz')
     })
   })
 

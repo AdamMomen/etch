@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import type { Stroke } from '@nameless/shared'
+import type { Stroke } from '@etch/shared'
 
 /**
  * Test harness for AnnotationOverlayPage

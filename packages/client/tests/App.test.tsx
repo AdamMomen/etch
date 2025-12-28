@@ -3,10 +3,10 @@ import { render, screen } from '@testing-library/react'
 import App from '@/App'
 
 describe('App', () => {
-  it('renders the NAMELESS heading', () => {
+  it('renders the Etch heading', () => {
     render(<App />)
 
-    expect(screen.getByText('NAMELESS')).toBeInTheDocument()
+    expect(screen.getByText('Etch')).toBeInTheDocument()
   })
 
   it('renders the tagline', () => {

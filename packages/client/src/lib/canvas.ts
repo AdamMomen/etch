@@ -9,7 +9,7 @@
  * @see docs/sprint-artifacts/tech-spec-epic-4.md
  */
 
-import type { Point, Stroke } from '@nameless/shared'
+import type { Point, Stroke } from '@etch/shared'
 
 /**
  * Bounding box interface for stroke hit-testing.

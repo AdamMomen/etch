@@ -18,7 +18,7 @@
 
 ## Executive Summary
 
-**Topic:** Features needed for BMad (nameless meeting platform)
+**Topic:** Features needed for BMad (etch meeting platform)
 
 **Session Goals:** Explore feature ideas with constraints: 60fps streaming, annotation latency < 200ms
 

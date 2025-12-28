@@ -1,19 +1,19 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "NAMELESS",
+  "productName": "Etch",
   "version": "0.1.0",
-  "identifier": "com.nameless.app",
+  "identifier": "com.etch.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "cd ../core && cargo build && mkdir -p ../client/src-tauri/binaries && TARGET=$(rustc -vV | grep host | cut -d' ' -f2) && cp ../../target/debug/nameless-core ../client/src-tauri/binaries/nameless-core-$TARGET && cd ../client && pnpm dev:web",
-    "beforeBuildCommand": "cd ../core && cargo build --release && mkdir -p ../client/src-tauri/binaries && TARGET=$(rustc -vV | grep host | cut -d' ' -f2) && ln -sf ../../../../target/release/nameless-core ../client/src-tauri/binaries/nameless-core-$TARGET && cd ../client && pnpm build:web"
+    "beforeDevCommand": "cd ../core && cargo build && mkdir -p ../client/src-tauri/binaries && TARGET=$(rustc -vV | grep host | cut -d' ' -f2) && cp ../../target/debug/etch-core ../client/src-tauri/binaries/etch-core-$TARGET && cd ../client && pnpm dev:web",
+    "beforeBuildCommand": "cd ../core && cargo build --release && mkdir -p ../client/src-tauri/binaries && TARGET=$(rustc -vV | grep host | cut -d' ' -f2) && ln -sf ../../../../target/release/etch-core ../client/src-tauri/binaries/etch-core-$TARGET && cd ../client && pnpm build:web"
   },
   "app": {
     "macOSPrivateApi": true,
     "windows": [
       {
-        "title": "NAMELESS",
+        "title": "Etch",
         "width": 800,
         "height": 600,
         "resizable": true,
@@ -35,7 +35,7 @@
       "icons/icon.ico"
     ],
     "externalBin": [
-      "binaries/nameless-core"
+      "binaries/etch-core"
     ],
     "macOS": {
       "infoPlist": "Info.plist"

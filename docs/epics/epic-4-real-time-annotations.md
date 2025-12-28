@@ -1,6 +1,6 @@
 # Epic 4: Real-Time Annotations
 
-**Goal:** Enable users to draw on shared screens in real-time with sub-200ms latency - THE CORE VALUE PROPOSITION of NAMELESS. This is the "pointing finger" moment.
+**Goal:** Enable users to draw on shared screens in real-time with sub-200ms latency - THE CORE VALUE PROPOSITION of Etch. This is the "pointing finger" moment.
 
 **User Value:** After this epic, users can draw circles, highlight areas, and point at things on shared screens - and everyone sees it instantly!
 
@@ -367,7 +367,7 @@ interface AnnotationState {
 - Color assigned server-side when generating join token
 - Stored in participant metadata: `{ color: '#f97316' }`
 - Extract from LiveKit participant object
-- Use same colors defined in `@nameless/shared` constants
+- Use same colors defined in `@etch/shared` constants
 
 ---
 
@@ -375,7 +375,7 @@ interface AnnotationState {
 
 **As a** screen sharer,
 **I want** to see annotations on my actual shared screen,
-**So that** I can see what others are pointing at without looking at NAMELESS.
+**So that** I can see what others are pointing at without looking at Etch.
 
 **Acceptance Criteria:**
 

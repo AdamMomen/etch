@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import type { Room, RemoteParticipant } from 'livekit-client'
 import { ParticipantGrid } from '@/components/MeetingRoom/ParticipantGrid'
-import type { Participant } from '@nameless/shared'
+import type { Participant } from '@etch/shared'
 
 // Mock livekit-client
 vi.mock('livekit-client', () => ({
