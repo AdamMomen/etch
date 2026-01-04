@@ -7,7 +7,7 @@
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "cd ../core && cargo build && mkdir -p ../client/src-tauri/binaries && TARGET=$(rustc -vV | grep host | cut -d' ' -f2) && cp ../../target/debug/etch-core ../client/src-tauri/binaries/etch-core-$TARGET && cd ../client && pnpm dev:web",
-    "beforeBuildCommand": "cd ../core && cargo build --release && mkdir -p ../client/src-tauri/binaries && TARGET=$(rustc -vV | grep host | cut -d' ' -f2) && ln -sf ../../../../target/release/etch-core ../client/src-tauri/binaries/etch-core-$TARGET && cd ../client && pnpm build:web"
+    "beforeBuildCommand": "cd ../core && cargo build --release --bin etch-core && mkdir -p ../client/src-tauri/binaries && TARGET=$(rustc -vV | grep host | cut -d' ' -f2) && rm -f ../client/src-tauri/binaries/etch-core-$TARGET && cp ../../target/release/etch-core ../client/src-tauri/binaries/etch-core-$TARGET && cd ../client && pnpm build:web"
   },
   "app": {
     "macOSPrivateApi": true,
