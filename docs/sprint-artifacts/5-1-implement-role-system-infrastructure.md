@@ -1,6 +1,6 @@
 # Story 5.1: Implement Role System Infrastructure
 
-Status: review
+Status: done
 
 ## Story
 
@@ -63,12 +63,12 @@ so that **permissions can be enforced consistently across the application**.
   - [x] Verify token payload contains role in metadata - VERIFIED ✅
 
 - [x] **Task 5: Update roomStore to parse and store roles** (AC: 5.1.4)
-  - [x] Modify `packages/client/src/stores/roomStore.ts` - DONE
+  - [x] Modify `packages/client/src/stores/roomStore.ts` - DONE (annotationsEnabled already existed)
   - [x] Parse `participant.metadata` JSON to extract role - ALREADY IMPLEMENTED via `parseParticipantMetadata()` ✅
   - [x] Store role in participant object - ALREADY IMPLEMENTED in `useLiveKit.ts` (line 76) ✅
   - [x] Add `annotationsEnabled: boolean` to store state (default: true) - DONE ✅
-  - [x] Listen for participant metadata updates (role changes from host) - ALREADY IMPLEMENTED (handleDataReceived, line 183-223) ✅
-  - [x] Test: Metadata update triggers store update - VERIFIED (40 tests in participantMetadata.test.ts) ✅
+  - [x] Listen for participant metadata updates (role changes from host) - DONE: Added `handleParticipantMetadataChanged` handler in `useLiveKit.ts:184-203` ✅
+  - [x] Test: Metadata update triggers store update - DONE: Added 5 new tests in `roomStore.test.ts` (Story 5.1 section) ✅
 
 - [x] **Task 6: Write comprehensive unit tests** (AC: 5.1.5, 5.1.6)
   - [x] Create `packages/shared/src/permissions.test.ts` - DONE
@@ -380,11 +380,18 @@ No debug logging required - all tasks completed successfully on first attempt.
 ### Completion Notes List
 
 **Story Implementation Summary:**
-- **Status**: All tasks COMPLETE ✅ - Ready for review
+- **Status**: All tasks COMPLETE ✅ - Story marked DONE
 - **Implementation Date**: 2026-01-05
 - **Test Results**: 933 client tests + 134 shared tests = 1,067 tests passing
 - **Coverage**: 100% on permissions.ts (exceeds 90% requirement)
 - **Breaking Changes**: None - backward compatible
+
+**Final Task 5 Completion (2026-01-05):**
+- Added `ParticipantMetadataChanged` event handler in `useLiveKit.ts:184-203`
+- Handler parses metadata updates and syncs role/color to roomStore via `updateParticipant()`
+- Added 5 new tests in `roomStore.test.ts` for annotationsEnabled and role syncing (AC-5.1.4)
+- All 933 client tests passing
+- Build verified successful
 
 **Task Completion Details:**
 
