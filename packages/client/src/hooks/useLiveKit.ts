@@ -179,6 +179,29 @@ export function useLiveKit({
       }
     }
 
+    // Handle participant metadata changes (e.g., role changes from host)
+    // AC-5.1.4: roomStore syncs roles from metadata
+    const handleParticipantMetadataChanged = (
+      _prevMetadata: string | undefined,
+      participant: LKParticipant
+    ) => {
+      if (cancelled) return
+
+      // Parse updated metadata
+      const metadata = parseParticipantMetadata(participant.metadata || '')
+
+      // Skip screen share participants
+      if (metadata.isScreenShare) {
+        return
+      }
+
+      // Update participant with new role and color from metadata
+      updateParticipant(participant.identity, {
+        role: metadata.role,
+        color: metadata.color,
+      })
+    }
+
     // Handle data messages (e.g., role transfer)
     const handleDataReceived = (
       payload: Uint8Array,
@@ -229,6 +252,7 @@ export function useLiveKit({
     room.on(RoomEvent.TrackSubscribed, handleTrackSubscribed)
     room.on(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
     room.on(RoomEvent.ActiveSpeakersChanged, handleActiveSpeakersChanged)
+    room.on(RoomEvent.ParticipantMetadataChanged, handleParticipantMetadataChanged)
     room.on(RoomEvent.DataReceived, handleDataReceived)
 
     // Async connection logic
@@ -289,6 +313,7 @@ export function useLiveKit({
       room.off(RoomEvent.TrackSubscribed, handleTrackSubscribed)
       room.off(RoomEvent.TrackUnsubscribed, handleTrackUnsubscribed)
       room.off(RoomEvent.ActiveSpeakersChanged, handleActiveSpeakersChanged)
+      room.off(RoomEvent.ParticipantMetadataChanged, handleParticipantMetadataChanged)
       room.off(RoomEvent.DataReceived, handleDataReceived)
       room.disconnect()
       clearParticipants()

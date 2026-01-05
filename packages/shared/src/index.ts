@@ -59,6 +59,15 @@ export {
   TOKEN_EXPIRY_SECONDS,
 } from './constants'
 
+// Permission utilities (Story 5.1)
+export {
+  canAnnotate,
+  canDeleteStroke,
+  canClearAll,
+  canModerateUsers,
+  canToggleRoomAnnotations,
+} from './permissions'
+
 // Test Utilities
 export {
   createMockStroke,
