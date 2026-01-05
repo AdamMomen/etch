@@ -10,6 +10,8 @@
     <string>Etch needs camera access for video calls</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Etch needs microphone access for audio calls</string>
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>Etch needs screen recording access to share your screen in meetings</string>
     <key>NSCameraUseContinuityCameraDeviceType</key>
     <true/>
 </dict>

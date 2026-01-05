@@ -38,7 +38,9 @@
       "binaries/etch-core"
     ],
     "macOS": {
-      "infoPlist": "Info.plist"
+      "infoPlist": "Info.plist",
+      "entitlements": "Entitlements.plist",
+      "minimumSystemVersion": "10.15"
     }
   }
 }
