@@ -21,38 +21,38 @@ so that **permissions can be enforced consistently across the application**.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Define Role types in @nameless/shared** (AC: 5.1.1)
-  - [ ] Create `packages/shared/src/types/permissions.ts`
-  - [ ] Define `Role` type as union: `'host' | 'sharer' | 'annotator' | 'viewer'`
-  - [ ] Export from `packages/shared/src/index.ts`
-  - [ ] Verify TypeScript compilation
+- [x] **Task 1: Define Role types in @nameless/shared** (AC: 5.1.1)
+  - [x] Create `packages/shared/src/types/permissions.ts` - ALREADY EXISTS in room.ts
+  - [x] Define `Role` type as union: `'host' | 'sharer' | 'annotator' | 'viewer'` - DONE
+  - [x] Export from `packages/shared/src/index.ts` - DONE
+  - [x] Verify TypeScript compilation - DONE
 
-- [ ] **Task 2: Implement permission utility functions** (AC: 5.1.2, 5.1.6)
-  - [ ] Create `packages/shared/src/permissions.ts`
-  - [ ] Implement `canAnnotate(role: Role, annotationsEnabled: boolean): boolean`
-    - Viewer: always false
-    - Host: always true (override room setting)
-    - Others: depends on `annotationsEnabled`
-  - [ ] Implement `canDeleteStroke(role: Role, stroke: Stroke, userId: string, isSharer: boolean): boolean`
-    - Host: always true
-    - Sharer (when actively sharing): true for any stroke
-    - Others: true only for own strokes
-  - [ ] Implement `canClearAll(role: Role): boolean`
-    - Host: true
-    - Others: false
-  - [ ] Implement `canModerateUsers(role: Role): boolean`
-    - Host: true
-    - Others: false
-  - [ ] Implement `canToggleRoomAnnotations(role: Role): boolean`
-    - Host: true
-    - Others: false
-  - [ ] Export all functions from `packages/shared/src/index.ts`
+- [x] **Task 2: Implement permission utility functions** (AC: 5.1.2, 5.1.6)
+  - [x] Create `packages/shared/src/permissions.ts` - DONE
+  - [x] Implement `canAnnotate(role: Role, annotationsEnabled: boolean): boolean` - DONE
+    - Viewer: always false ✅
+    - Host: always true (override room setting) ✅
+    - Others: depends on `annotationsEnabled` ✅
+  - [x] Implement `canDeleteStroke(role: Role, stroke: Stroke, userId: string, isSharer: boolean): boolean` - DONE
+    - Host: always true ✅
+    - Sharer (when actively sharing): true for any stroke ✅
+    - Others: true only for own strokes ✅
+  - [x] Implement `canClearAll(role: Role): boolean` - DONE
+    - Host: true ✅
+    - Others: false ✅
+  - [x] Implement `canModerateUsers(role: Role): boolean` - DONE
+    - Host: true ✅
+    - Others: false ✅
+  - [x] Implement `canToggleRoomAnnotations(role: Role): boolean` - DONE
+    - Host: true ✅
+    - Others: false ✅
+  - [x] Export all functions from `packages/shared/src/index.ts` - ALREADY DONE
 
-- [ ] **Task 3: Extend Participant interface with role** (AC: 5.1.1)
-  - [ ] Update `packages/shared/src/types/room.ts`
-  - [ ] Add `role: Role` field to `Participant` interface
-  - [ ] Add `annotationsEnabled: boolean` to `RoomState` interface (defaults to true)
-  - [ ] Verify no type errors in client/server
+- [x] **Task 3: Extend Participant interface with role** (AC: 5.1.1)
+  - [x] Update `packages/shared/src/types/room.ts` - ALREADY DONE
+  - [x] Add `role: Role` field to `Participant` interface - DONE
+  - [x] Add `annotationsEnabled: boolean` to `RoomState` interface (defaults to true) - DONE
+  - [x] Verify no type errors in client/server - DONE
 
 - [ ] **Task 4: Update server to embed role in token metadata** (AC: 5.1.3)
   - [ ] Modify `packages/server/src/services/livekit.ts`
@@ -70,24 +70,24 @@ so that **permissions can be enforced consistently across the application**.
   - [ ] Listen for participant metadata updates (role changes from host)
   - [ ] Test: Metadata update triggers store update
 
-- [ ] **Task 6: Write comprehensive unit tests** (AC: 5.1.5, 5.1.6)
-  - [ ] Create `packages/shared/tests/permissions.test.ts`
-  - [ ] Test matrix for `canAnnotate()`:
-    - Viewer: false (always)
-    - Host: true (even if annotationsEnabled=false)
-    - Annotator: true if annotationsEnabled, false otherwise
-    - Sharer: true if annotationsEnabled, false otherwise
-  - [ ] Test matrix for `canDeleteStroke()`:
-    - Host: true for any stroke
-    - Sharer (isSharer=true): true for any stroke
-    - Sharer (isSharer=false): true only for own strokes
-    - Annotator: true only for own strokes
-    - Viewer: false (always)
-  - [ ] Test `canClearAll()`: only host returns true
-  - [ ] Test `canModerateUsers()`: only host returns true
-  - [ ] Test `canToggleRoomAnnotations()`: only host returns true
-  - [ ] Achieve ≥ 90% code coverage for permissions.ts
-  - [ ] Run tests: `pnpm test:shared`
+- [x] **Task 6: Write comprehensive unit tests** (AC: 5.1.5, 5.1.6)
+  - [x] Create `packages/shared/src/permissions.test.ts` - DONE
+  - [x] Test matrix for `canAnnotate()`: - DONE
+    - Viewer: false (always) ✅
+    - Host: true (even if annotationsEnabled=false) ✅
+    - Annotator: true if annotationsEnabled, false otherwise ✅
+    - Sharer: true if annotationsEnabled, false otherwise ✅
+  - [x] Test matrix for `canDeleteStroke()`: - DONE
+    - Host: true for any stroke ✅
+    - Sharer (isSharer=true): true for any stroke ✅
+    - Sharer (isSharer=false): true only for own strokes ✅
+    - Annotator: true only for own strokes ✅
+    - Viewer: false (always) ✅
+  - [x] Test `canClearAll()`: only host returns true ✅
+  - [x] Test `canModerateUsers()`: only host returns true ✅
+  - [x] Test `canToggleRoomAnnotations()`: only host returns true ✅
+  - [x] Achieve ≥ 90% code coverage for permissions.ts - **100% coverage achieved!** ✅
+  - [x] Run tests: `pnpm test:shared` - **134 tests passing** ✅
 
 ## Dev Notes
 
