@@ -6,7 +6,7 @@ import {
   HIGHLIGHTER_OPTIONS,
   HIGHLIGHTER_OPACITY,
 } from '@/components/AnnotationCanvas'
-import type { Stroke, Point } from '@nameless/shared'
+import type { Stroke, Point } from '@etch/shared'
 
 // Mock requestAnimationFrame (not mocked in setup)
 let rafId = 1

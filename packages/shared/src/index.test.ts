@@ -22,7 +22,7 @@ import type {
   ParticipantColor,
 } from './index'
 
-describe('@nameless/shared exports', () => {
+describe('@etch/shared exports', () => {
   describe('constants', () => {
     it('should export PARTICIPANT_COLORS', () => {
       expect(PARTICIPANT_COLORS).toBeDefined()

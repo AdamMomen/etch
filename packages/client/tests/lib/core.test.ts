@@ -55,26 +55,26 @@ describe('CoreClient', () => {
 
   describe('start', () => {
     it('should spawn Core and set up listeners', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
 
       await client.start()
 
       expect(mockInvoke).toHaveBeenCalledWith('spawn_core')
       expect(client.isRunning()).toBe(true)
-      expect(client.getSocketPath()).toBe('/tmp/nameless-core-123.sock')
+      expect(client.getSocketPath()).toBe('/tmp/etch-core-123.sock')
       expect(mockListen).toHaveBeenCalledWith('core-message', expect.any(Function))
       expect(mockListen).toHaveBeenCalledWith('core-terminated', expect.any(Function))
     })
 
     it('should throw if already running', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       await expect(client.start()).rejects.toThrow('Core already running')
     })
 
     it('should reset restart attempts on successful start', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       // Internal state - verify through behavior
@@ -89,7 +89,7 @@ describe('CoreClient', () => {
     })
 
     it('should kill Core and clean up', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       mockInvoke.mockClear()
@@ -101,7 +101,7 @@ describe('CoreClient', () => {
     })
 
     it('should unsubscribe from events', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       expect(mockListeners.size).toBe(2) // core-message and core-terminated
@@ -115,7 +115,7 @@ describe('CoreClient', () => {
 
   describe('message handling', () => {
     it('should invoke message handlers when messages arrive', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       const handler = vi.fn()
@@ -135,7 +135,7 @@ describe('CoreClient', () => {
     })
 
     it('should allow unsubscribing from messages', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       const handler = vi.fn()
@@ -155,7 +155,7 @@ describe('CoreClient', () => {
     })
 
     it('should handle multiple message handlers', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       const handler1 = vi.fn()
@@ -172,7 +172,7 @@ describe('CoreClient', () => {
     })
 
     it('should not crash on invalid JSON', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       const handler = vi.fn()
@@ -193,7 +193,7 @@ describe('CoreClient', () => {
 
   describe('termination handling', () => {
     it('should invoke termination handlers on crash', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       const handler: TerminationHandler = vi.fn()
@@ -208,13 +208,13 @@ describe('CoreClient', () => {
     })
 
     it('should attempt restart on crash (non-zero exit)', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       const terminationListener = mockListeners.get('core-terminated')
 
       // Mock successful restart
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-456.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-456.sock')
 
       // Give restart time to complete
       await new Promise<void>((resolve) => {
@@ -228,7 +228,7 @@ describe('CoreClient', () => {
     })
 
     it('should not restart on graceful shutdown (code 0)', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       const terminationListener = mockListeners.get('core-terminated')
@@ -251,7 +251,7 @@ describe('CoreClient', () => {
     })
 
     it('should send JSON message via invoke', async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
 
       mockInvoke.mockClear()
@@ -271,7 +271,7 @@ describe('CoreClient', () => {
 
   describe('room operations', () => {
     beforeEach(async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
       mockInvoke.mockClear()
     })
@@ -297,7 +297,7 @@ describe('CoreClient', () => {
 
   describe('screen share operations', () => {
     beforeEach(async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
       mockInvoke.mockClear()
     })
@@ -350,7 +350,7 @@ describe('CoreClient', () => {
 
   describe('permission operations', () => {
     beforeEach(async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
       mockInvoke.mockClear()
     })
@@ -376,7 +376,7 @@ describe('CoreClient', () => {
 
   describe('annotation operations', () => {
     beforeEach(async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
       mockInvoke.mockClear()
     })
@@ -419,7 +419,7 @@ describe('CoreClient', () => {
 
   describe('media controls', () => {
     beforeEach(async () => {
-      mockInvoke.mockResolvedValueOnce('/tmp/nameless-core-123.sock')
+      mockInvoke.mockResolvedValueOnce('/tmp/etch-core-123.sock')
       await client.start()
       mockInvoke.mockClear()
     })

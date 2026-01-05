@@ -2,12 +2,12 @@ import { describe, it, expect } from 'vitest'
 import { parseRoomId } from '@/utils/roomId'
 
 describe('parseRoomId', () => {
-  it('extracts room ID from nameless:// protocol URL', () => {
-    expect(parseRoomId('nameless://room/abc-123-xyz')).toBe('abc-123-xyz')
+  it('extracts room ID from etch:// protocol URL', () => {
+    expect(parseRoomId('etch://room/abc-123-xyz')).toBe('abc-123-xyz')
   })
 
-  it('extracts room ID from nameless:// URL with mixed case', () => {
-    expect(parseRoomId('nameless://room/ABC-123-XYZ')).toBe('ABC-123-XYZ')
+  it('extracts room ID from etch:// URL with mixed case', () => {
+    expect(parseRoomId('etch://room/ABC-123-XYZ')).toBe('ABC-123-XYZ')
   })
 
   it('extracts room ID from https:// URL', () => {
@@ -34,7 +34,7 @@ describe('parseRoomId', () => {
 
   it('trims whitespace from input', () => {
     expect(parseRoomId('  abc-123-xyz  ')).toBe('abc-123-xyz')
-    expect(parseRoomId('  nameless://room/abc-123-xyz  ')).toBe('abc-123-xyz')
+    expect(parseRoomId('  etch://room/abc-123-xyz  ')).toBe('abc-123-xyz')
   })
 
   it('handles empty string', () => {
@@ -51,6 +51,6 @@ describe('parseRoomId', () => {
 
   it('handles room IDs with only numbers', () => {
     expect(parseRoomId('123456789')).toBe('123456789')
-    expect(parseRoomId('nameless://room/123456789')).toBe('123456789')
+    expect(parseRoomId('etch://room/123456789')).toBe('123456789')
   })
 })

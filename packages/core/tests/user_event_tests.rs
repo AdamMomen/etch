@@ -3,7 +3,7 @@
 //! These tests verify that the socket message handling correctly
 //! translates IncomingMessages to UserEvents.
 
-use nameless_core::{
+use etch_core::{
     AnnotationTool, CaptureConfig, Color, SourceType, UserEvent,
 };
 
@@ -94,7 +94,7 @@ fn test_user_event_variants_exist() {
 
 #[test]
 fn test_screen_share_message_creation() {
-    use nameless_core::ScreenShareMessage;
+    use etch_core::ScreenShareMessage;
 
     let msg = ScreenShareMessage {
         source_id: "screen-0".to_string(),
@@ -115,7 +115,7 @@ fn test_screen_share_message_creation() {
 
 #[test]
 fn test_connection_state_variants() {
-    use nameless_core::ConnectionState;
+    use etch_core::ConnectionState;
 
     let states = [
         ConnectionState::Disconnected,
@@ -138,7 +138,7 @@ fn test_connection_state_variants() {
 
 #[test]
 fn test_frame_format_variants() {
-    use nameless_core::FrameFormat;
+    use etch_core::FrameFormat;
 
     let formats = [
         FrameFormat::Jpeg,
@@ -154,7 +154,7 @@ fn test_frame_format_variants() {
 
 #[test]
 fn test_cursor_style_variants() {
-    use nameless_core::CursorStyle;
+    use etch_core::CursorStyle;
 
     let styles = [
         CursorStyle::Default,
@@ -171,7 +171,7 @@ fn test_cursor_style_variants() {
 
 #[test]
 fn test_participant_role_variants() {
-    use nameless_core::ParticipantRole;
+    use etch_core::ParticipantRole;
 
     let host = ParticipantRole::Host;
     let participant = ParticipantRole::Participant;
@@ -183,7 +183,7 @@ fn test_participant_role_variants() {
 
 #[test]
 fn test_permission_status_variants() {
-    use nameless_core::PermissionStatus;
+    use etch_core::PermissionStatus;
 
     let statuses = [
         PermissionStatus::Granted,
@@ -206,7 +206,7 @@ fn test_permission_status_variants() {
 
 #[test]
 fn test_point_default_pressure() {
-    use nameless_core::Point;
+    use etch_core::Point;
 
     // Deserialize a point without pressure - should default to 1.0
     let json = r#"{"x": 0.5, "y": 0.75}"#;
@@ -219,7 +219,7 @@ fn test_point_default_pressure() {
 
 #[test]
 fn test_point_with_pressure() {
-    use nameless_core::Point;
+    use etch_core::Point;
 
     // Deserialize a point with explicit pressure
     let json = r#"{"x": 0.5, "y": 0.75, "pressure": 0.5}"#;
@@ -236,7 +236,7 @@ fn test_point_with_pressure() {
 
 #[test]
 fn test_screen_info_thumbnail_field() {
-    use nameless_core::ScreenInfo;
+    use etch_core::ScreenInfo;
 
     // ScreenInfo with thumbnail
     let screen_with_thumb = ScreenInfo {
@@ -267,7 +267,7 @@ fn test_screen_info_thumbnail_field() {
 
 #[test]
 fn test_screen_info_serialization_with_thumbnail() {
-    use nameless_core::ScreenInfo;
+    use etch_core::ScreenInfo;
 
     let screen = ScreenInfo {
         id: "screen:1".to_string(),
@@ -288,7 +288,7 @@ fn test_screen_info_serialization_with_thumbnail() {
 
 #[test]
 fn test_screen_info_serialization_without_thumbnail() {
-    use nameless_core::ScreenInfo;
+    use etch_core::ScreenInfo;
 
     let screen = ScreenInfo {
         id: "screen:1".to_string(),
@@ -309,7 +309,7 @@ fn test_screen_info_serialization_without_thumbnail() {
 
 #[test]
 fn test_screen_info_deserialization_with_thumbnail() {
-    use nameless_core::ScreenInfo;
+    use etch_core::ScreenInfo;
 
     let json = r#"{
         "id": "screen:1",
@@ -328,7 +328,7 @@ fn test_screen_info_deserialization_with_thumbnail() {
 
 #[test]
 fn test_screen_info_deserialization_without_thumbnail() {
-    use nameless_core::ScreenInfo;
+    use etch_core::ScreenInfo;
 
     // JSON without thumbnail field - should default to None
     let json = r#"{

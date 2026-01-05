@@ -201,7 +201,7 @@ LIVEKIT_API_SECRET=secret
 
 ### Shared Types to Use
 
-From `@nameless/shared`:
+From `@etch/shared`:
 - `CreateRoomRequest`, `CreateRoomResponse` - API types
 - `Role` - 'host' | 'sharer' | 'annotator' | 'viewer'
 - `PARTICIPANT_COLORS` - Color array for assignment
@@ -304,7 +304,7 @@ N/A - No errors encountered during implementation.
 **Strengths:**
 1. **Architecture compliance** - Follows Hono API pattern with zValidator as specified in architecture.md
 2. **Error handling** - Consistent `{error:{code,message}}` format per spec
-3. **Type safety** - Uses shared types from @nameless/shared (Role, PARTICIPANT_COLORS, TOKEN_EXPIRY_SECONDS)
+3. **Type safety** - Uses shared types from @etch/shared (Role, PARTICIPANT_COLORS, TOKEN_EXPIRY_SECONDS)
 4. **Test coverage** - 54 tests for story 2.1 alone (9+19+13+13), comprehensive edge cases
 5. **Clean separation** - Utils, services, routes cleanly separated
 6. **Proper logging** - Extended LogEntry with roomId, participantId, error fields for observability

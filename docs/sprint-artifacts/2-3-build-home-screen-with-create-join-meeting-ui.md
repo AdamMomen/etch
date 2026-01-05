@@ -6,15 +6,15 @@ Status: done
 
 As a **user**,
 I want **a home screen where I can create a new meeting or join an existing one**,
-So that **I have a clear entry point to start using NAMELESS**.
+So that **I have a clear entry point to start using Etch**.
 
 ## Acceptance Criteria
 
 1. **AC-2.3.1: Home Screen Layout**
-   - Given I launch the NAMELESS application
+   - Given I launch the Etch application
    - When the app opens
    - Then I see the home screen with:
-     - NAMELESS logo/title
+     - Etch logo/title
      - "Start Meeting" primary button
      - "Join Meeting" input field with room code/link
      - "Join" button (enabled when input has value)
@@ -41,7 +41,7 @@ So that **I have a clear entry point to start using NAMELESS**.
    - Given I enter a room code in various formats
    - When the app parses the input
    - Then it extracts the room ID correctly from:
-     - Full URL: `nameless://room/abc-123-xyz` → `abc-123-xyz`
+     - Full URL: `etch://room/abc-123-xyz` → `abc-123-xyz`
      - HTTPS URL: `https://*/room/abc-123-xyz` → `abc-123-xyz`
      - Direct room ID: `abc-123-xyz` → `abc-123-xyz`
 
@@ -71,7 +71,7 @@ So that **I have a clear entry point to start using NAMELESS**.
   - [x] Add route for home screen in App.tsx (root path `/`)
 
 - [x] **Task 2: Implement visual layout** (AC: 2.3.1, 2.3.6)
-  - [x] Add NAMELESS logo/title centered at top
+  - [x] Add Etch logo/title centered at top
   - [x] Create centered card container for meeting actions
   - [x] Add "Start Meeting" button with primary/accent styling
   - [x] Add divider with "or" text
@@ -82,7 +82,7 @@ So that **I have a clear entry point to start using NAMELESS**.
 - [x] **Task 3: Implement room code input logic** (AC: 2.3.3, 2.3.5, 2.3.7)
   - [x] Create controlled input state for room code
   - [x] Implement `parseRoomId(input: string): string` utility function
-  - [x] Handle `nameless://room/{id}` format
+  - [x] Handle `etch://room/{id}` format
   - [x] Handle `https://*.*/room/{id}` format
   - [x] Handle direct room ID format
   - [x] Enable/disable Join button based on input value
@@ -192,7 +192,7 @@ export const useSettingsStore = create<SettingsState>()(
       setDisplayName: (name) => set({ displayName: name }),
       setApiBaseUrl: (url) => set({ apiBaseUrl: url }),
     }),
-    { name: 'nameless-settings' }
+    { name: 'etch-settings' }
   )
 );
 ```
@@ -206,16 +206,16 @@ Create utility in `packages/client/src/utils/roomId.ts`:
 ```typescript
 /**
  * Extract room ID from various input formats:
- * - nameless://room/abc-123-xyz
+ * - etch://room/abc-123-xyz
  * - https://example.com/room/abc-123-xyz
  * - abc-123-xyz (direct ID)
  */
 export function parseRoomId(input: string): string {
   const trimmed = input.trim();
 
-  // Try nameless:// protocol
-  const namelessMatch = trimmed.match(/^nameless:\/\/room\/([a-z0-9-]+)$/i);
-  if (namelessMatch) return namelessMatch[1];
+  // Try etch:// protocol
+  const etchMatch = trimmed.match(/^etch:\/\/room\/([a-z0-9-]+)$/i);
+  if (etchMatch) return etchMatch[1];
 
   // Try https:// URL
   const httpsMatch = trimmed.match(/^https?:\/\/[^/]+\/room\/([a-z0-9-]+)$/i);
@@ -243,7 +243,7 @@ Additional dependencies if needed:
 1. **Test setup**: Environment variables configured in test setup
 2. **API URL**: Use `VITE_API_URL` environment variable for API base URL
 3. **Error handling**: Return structured errors to client for user-friendly messages
-4. **Types**: Reuse `CreateRoomRequest`, `CreateRoomResponse` from `@nameless/shared`
+4. **Types**: Reuse `CreateRoomRequest`, `CreateRoomResponse` from `@etch/shared`
 
 [Source: docs/sprint-artifacts/2-2-implement-room-join-api-endpoint.md#Learnings]
 
@@ -285,11 +285,11 @@ Additional dependencies if needed:
 
 Story 2.3 implementation complete. All 8 acceptance criteria satisfied:
 
-1. **AC-2.3.1** - Home screen renders NAMELESS logo, Start Meeting button, room code input, and Join button
+1. **AC-2.3.1** - Home screen renders Etch logo, Start Meeting button, room code input, and Join button
 2. **AC-2.3.2** - Start Meeting shows loading state, prompts for name if not set, navigates to room on success
 3. **AC-2.3.3** - Join button is disabled when input empty, enabled when has value
 4. **AC-2.3.4** - Join button navigates to `/join/:roomId` (placeholder for Story 2.4)
-5. **AC-2.3.5** - parseRoomId correctly extracts room ID from nameless://, https://, and direct formats
+5. **AC-2.3.5** - parseRoomId correctly extracts room ID from etch://, https://, and direct formats
 6. **AC-2.3.6** - Dark theme CSS already configured; uses accent color for primary button
 7. **AC-2.3.7** - Enter key in input triggers join action
 8. **AC-2.3.8** - API errors show toast and reset button state

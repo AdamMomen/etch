@@ -103,8 +103,8 @@ so that **I can point at and mark up content visually**.
   - Actions available: `addStroke`, `updateStroke`, `completeStroke`, `deleteStroke`, `clearAll`, `setActiveTool`, `setActiveStroke`, `setStrokes`
   - Selectors: `getStrokesByParticipant`, `getCompletedStrokes`
   - Default `activeTool` is already `'pen'` (AC-4.3.9 partially satisfied)
-- **Type Change:** `Stroke` type in `@nameless/shared` now includes `isComplete: boolean` field
-- **Test Utilities:** `createMockStroke()` and `createMockPoint()` available in `@nameless/shared/test-utils`
+- **Type Change:** `Stroke` type in `@etch/shared` now includes `isComplete: boolean` field
+- **Test Utilities:** `createMockStroke()` and `createMockPoint()` available in `@etch/shared/test-utils`
 - **Pattern:** Follow Zustand subscription model for selective re-renders
 
 [Source: docs/sprint-artifacts/4-2-implement-annotation-store-with-zustand.md#Dev-Agent-Record]
@@ -202,7 +202,7 @@ User clicks canvas
 - **Framework:** Vitest + React Testing Library
 - **Location:** Co-located tests in `tests/` directory following existing pattern
 - **Mocking:** Mock annotationStore using Zustand's test utilities or direct mocking
-- **Use:** `createMockStroke()`, `createMockPoint()` from `@nameless/shared/test-utils`
+- **Use:** `createMockStroke()`, `createMockPoint()` from `@etch/shared/test-utils`
 
 ### References
 

@@ -44,7 +44,7 @@ importers:
 
   packages/client:
     dependencies:
-      '@nameless/shared':
+      '@etch/shared':
         specifier: workspace:*
         version: link:../shared
       '@radix-ui/react-alert-dialog':
@@ -177,15 +177,15 @@ importers:
 
   packages/server:
     dependencies:
+      '@etch/shared':
+        specifier: workspace:*
+        version: link:../shared
       '@hono/node-server':
         specifier: ^1.13.0
         version: 1.19.6(hono@4.10.7)
       '@hono/zod-validator':
         specifier: ^0.7.5
         version: 0.7.5(hono@4.10.7)(zod@3.25.76)
-      '@nameless/shared':
-        specifier: workspace:*
-        version: link:../shared
       dotenv:
         specifier: ^17.2.3
         version: 17.2.3

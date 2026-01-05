@@ -1,4 +1,4 @@
-//! NAMELESS Core - Media engine for screen sharing and annotations
+//! Etch Core - Media engine for screen sharing and annotations
 //!
 //! This crate implements the Core-centric architecture where a dedicated Rust binary
 //! owns all media: screen capture, audio, camera, LiveKit connection, and DataTracks.

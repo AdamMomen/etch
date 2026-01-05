@@ -1,17 +1,17 @@
 [package]
-name = "nameless"
+name = "etch"
 version = "0.1.0"
 description = "Open-source, self-hosted meeting platform with real-time screen annotations"
-authors = ["NAMELESS Contributors"]
+authors = ["Etch Contributors"]
 license = "MIT"
-repository = "https://github.com/adammomen/nameless"
+repository = "https://github.com/adammomen/etch"
 edition = "2021"
 rust-version = "1.77.2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [lib]
-name = "nameless_lib"
+name = "etch_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]

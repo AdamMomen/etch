@@ -3,13 +3,15 @@
 <plist version="1.0">
 <dict>
     <key>CFBundleName</key>
-    <string>NAMELESS</string>
+    <string>Etch</string>
     <key>CFBundleDisplayName</key>
-    <string>NAMELESS</string>
+    <string>Etch</string>
     <key>NSCameraUsageDescription</key>
-    <string>NAMELESS needs camera access for video calls</string>
+    <string>Etch needs camera access for video calls</string>
     <key>NSMicrophoneUsageDescription</key>
-    <string>NAMELESS needs microphone access for audio calls</string>
+    <string>Etch needs microphone access for audio calls</string>
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>Etch needs screen recording access to share your screen in meetings</string>
     <key>NSCameraUseContinuityCameraDeviceType</key>
     <true/>
 </dict>

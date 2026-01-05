@@ -1,5 +1,5 @@
-import type { Role } from '@nameless/shared'
-import { PARTICIPANT_COLORS } from '@nameless/shared'
+import type { Role } from '@etch/shared'
+import { PARTICIPANT_COLORS } from '@etch/shared'
 
 /**
  * Metadata structure stored in LiveKit participant metadata field.

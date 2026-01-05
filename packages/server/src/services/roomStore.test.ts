@@ -9,7 +9,7 @@ import {
   clearRooms,
   getRoomCount,
 } from './roomStore'
-import { PARTICIPANT_COLORS } from '@nameless/shared'
+import { PARTICIPANT_COLORS } from '@etch/shared'
 
 describe('roomStore', () => {
   beforeEach(() => {

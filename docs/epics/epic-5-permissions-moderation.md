@@ -43,7 +43,7 @@ canModerateUsers(role: Role): boolean
 **Prerequisites:** Story 1.3, 2.6
 
 **Technical Notes:**
-- Implement in `@nameless/shared` for use in both client and server
+- Implement in `@etch/shared` for use in both client and server
 - Role is set at token generation time (server-side)
 - Role changes require new token or DataTrack message from host
 - Add unit tests for all permission checks

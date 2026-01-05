@@ -12,7 +12,7 @@ import {
 import { toast } from 'sonner'
 import { useRoomStore } from '@/stores/roomStore'
 import { parseParticipantMetadata } from '@/utils/participantMetadata'
-import type { Participant } from '@nameless/shared'
+import type { Participant } from '@etch/shared'
 
 // Role transfer message type
 interface RoleTransferMessage {

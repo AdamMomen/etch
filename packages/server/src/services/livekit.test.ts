@@ -5,7 +5,7 @@ import {
   getLiveKitConfig,
   getLiveKitUrl,
 } from './livekit'
-import { TOKEN_EXPIRY_SECONDS } from '@nameless/shared'
+import { TOKEN_EXPIRY_SECONDS } from '@etch/shared'
 
 // We need to test the actual token generation to verify structure
 // Token is a JWT that can be decoded to verify claims

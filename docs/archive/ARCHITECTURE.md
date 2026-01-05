@@ -1,8 +1,8 @@
-# NAMELESS Architecture
+# Etch Architecture
 
 ## Overview
 
-NAMELESS uses a modular architecture that separates media transport from annotation logic, enabling scalability, extensibility, and low latency.
+Etch uses a modular architecture that separates media transport from annotation logic, enabling scalability, extensibility, and low latency.
 
 ## Core Components
 

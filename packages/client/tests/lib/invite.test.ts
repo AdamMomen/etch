@@ -44,15 +44,15 @@ describe('invite utilities', () => {
   })
 
   describe('generateDeepLink', () => {
-    it('generates nameless:// protocol link', () => {
+    it('generates etch:// protocol link', () => {
       const link = generateDeepLink('abc-123-xyz')
-      expect(link).toBe('nameless://room/abc-123-xyz')
+      expect(link).toBe('etch://room/abc-123-xyz')
     })
 
     it('handles various room ID formats', () => {
-      expect(generateDeepLink('aaa-bbb-ccc')).toBe('nameless://room/aaa-bbb-ccc')
-      expect(generateDeepLink('123-456-789')).toBe('nameless://room/123-456-789')
-      expect(generateDeepLink('simple')).toBe('nameless://room/simple')
+      expect(generateDeepLink('aaa-bbb-ccc')).toBe('etch://room/aaa-bbb-ccc')
+      expect(generateDeepLink('123-456-789')).toBe('etch://room/123-456-789')
+      expect(generateDeepLink('simple')).toBe('etch://room/simple')
     })
   })
 
@@ -93,9 +93,9 @@ describe('invite utilities', () => {
     it('calls clipboard API with exact text', async () => {
       mockWriteText.mockResolvedValue(undefined)
 
-      await copyToClipboard('nameless://room/abc-123-xyz')
+      await copyToClipboard('etch://room/abc-123-xyz')
 
-      expect(mockWriteText).toHaveBeenCalledWith('nameless://room/abc-123-xyz')
+      expect(mockWriteText).toHaveBeenCalledWith('etch://room/abc-123-xyz')
     })
 
     it('handles empty string', async () => {

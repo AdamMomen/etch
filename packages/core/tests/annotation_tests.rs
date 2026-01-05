@@ -1,7 +1,7 @@
 //! Tests for annotation storage and management
 
-use nameless_core::annotation::AnnotationStore;
-use nameless_core::{AnnotationTool, Color, Point};
+use etch_core::annotation::AnnotationStore;
+use etch_core::{AnnotationTool, Color, Point};
 
 #[test]
 fn test_stroke_lifecycle() {

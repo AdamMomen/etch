@@ -31,7 +31,7 @@ so that **strokes can be managed consistently across the application**.
 - [x] **Task 1: Create annotation store file** (AC: 4.2.1-4.2.3)
   - [x] Create `packages/client/src/stores/annotationStore.ts`
   - [x] Define `AnnotationState` interface with all required fields
-  - [x] Define `Stroke` interface (import from `@nameless/shared`)
+  - [x] Define `Stroke` interface (import from `@etch/shared`)
   - [x] Define `Tool` type: `'select' | 'pen' | 'highlighter' | 'eraser'`
   - [x] Initialize store with `create<AnnotationState>()` from Zustand
 
@@ -67,7 +67,7 @@ so that **strokes can be managed consistently across the application**.
   - [x] Test coordinate values are in [0,1] range (validation)
 
 - [x] **Task 6: Update shared types if needed** (AC: 4.2.12)
-  - [x] Verify `Stroke` interface in `@nameless/shared` has `isComplete` field
+  - [x] Verify `Stroke` interface in `@etch/shared` has `isComplete` field
   - [x] Add `isComplete: boolean` to Stroke type if missing
   - [x] Ensure `Tool` type is exported from shared (or define locally)
 
@@ -91,7 +91,7 @@ so that **strokes can be managed consistently across the application**.
 - Framework: Vitest (configured in Epic 1)
 - Location: Co-located with source file (`annotationStore.test.ts`)
 - Pattern: Test each action independently, verify state mutations
-- Use `createMockStroke()` and `createMockPoint()` from `@nameless/shared/test-utils`
+- Use `createMockStroke()` and `createMockPoint()` from `@etch/shared/test-utils`
 
 ### Performance Considerations
 
@@ -129,7 +129,7 @@ interface AnnotationState {
 }
 ```
 
-### Stroke Interface (from @nameless/shared)
+### Stroke Interface (from @etch/shared)
 
 ```typescript
 interface Stroke {
@@ -169,7 +169,7 @@ Claude Opus 4.5 (via Cursor)
 
 ### Completion Notes List
 
-- ✅ Added `isComplete: boolean` field to Stroke interface in `@nameless/shared`
+- ✅ Added `isComplete: boolean` field to Stroke interface in `@etch/shared`
 - ✅ Created annotationStore with full Zustand pattern following roomStore.ts
 - ✅ Implemented all 10 actions: addStroke, updateStroke, completeStroke, deleteStroke, clearAll, setActiveTool, setActiveStroke, setStrokes
 - ✅ Implemented 2 selectors: getStrokesByParticipant, getCompletedStrokes (using get() for derived state)

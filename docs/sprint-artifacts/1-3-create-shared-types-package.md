@@ -12,7 +12,7 @@ so that **type safety is maintained across the entire codebase**.
 
 1. **AC-1.3.1: Package Import**
    - Given the monorepo structure
-   - When I import from `@nameless/shared` in client or server code
+   - When I import from `@etch/shared` in client or server code
    - Then I have access to all shared types and constants
    - And TypeScript recognizes the types without errors
 
@@ -310,7 +310,7 @@ BMad
 
 ### Summary
 
-The shared types package (`@nameless/shared`) has been correctly implemented with all required types, constants, and exports. The package builds successfully and all 24 unit tests pass. **However**, a critical integration issue exists: the `@nameless/shared` package **cannot be imported** from the server or client packages because it is not added as a workspace dependency. This represents a falsely marked complete task (Task 8: "Verify Package Integration").
+The shared types package (`@etch/shared`) has been correctly implemented with all required types, constants, and exports. The package builds successfully and all 24 unit tests pass. **However**, a critical integration issue exists: the `@etch/shared` package **cannot be imported** from the server or client packages because it is not added as a workspace dependency. This represents a falsely marked complete task (Task 8: "Verify Package Integration").
 
 ### Key Findings
 
@@ -318,8 +318,8 @@ The shared types package (`@nameless/shared`) has been correctly implemented wit
 
 | Finding | Description | Evidence |
 |---------|-------------|----------|
-| **Task 8 Falsely Marked Complete** | Task 8 claims "Verify types can be imported in server package" and "Verify types can be imported in client package" as complete, but imports fail with `TS2307: Cannot find module '@nameless/shared'` | Tested via TypeScript: `import type { Point } from '@nameless/shared'` fails |
-| **AC-1.3.1 NOT MET** | AC states "When I import from `@nameless/shared` in client or server code, Then I have access to all shared types" - this is NOT working | `@nameless/shared` not in server/package.json or client/package.json dependencies |
+| **Task 8 Falsely Marked Complete** | Task 8 claims "Verify types can be imported in server package" and "Verify types can be imported in client package" as complete, but imports fail with `TS2307: Cannot find module '@etch/shared'` | Tested via TypeScript: `import type { Point } from '@etch/shared'` fails |
+| **AC-1.3.1 NOT MET** | AC states "When I import from `@etch/shared` in client or server code, Then I have access to all shared types" - this is NOT working | `@etch/shared` not in server/package.json or client/package.json dependencies |
 
 #### MEDIUM Severity
 
@@ -336,7 +336,7 @@ The shared types package (`@nameless/shared`) has been correctly implemented wit
 
 | AC # | Description | Status | Evidence |
 |------|-------------|--------|----------|
-| AC-1.3.1 | Package Import | **MISSING** | Server/client cannot import `@nameless/shared` - workspace dependency not configured |
+| AC-1.3.1 | Package Import | **MISSING** | Server/client cannot import `@etch/shared` - workspace dependency not configured |
 | AC-1.3.2 | Point and Stroke Types | IMPLEMENTED | `packages/shared/src/types/stroke.ts:6-32` |
 | AC-1.3.3 | Room and Participant Types | IMPLEMENTED | `packages/shared/src/types/room.ts:8-40` |
 | AC-1.3.4 | API Types | IMPLEMENTED | `packages/shared/src/types/api.ts:6-63` |
@@ -381,16 +381,16 @@ No security concerns identified. Package contains only type definitions and cons
 
 ### Best-Practices and References
 
-- [pnpm workspace protocol](https://pnpm.io/workspaces#workspace-protocol-workspace) - Use `"@nameless/shared": "workspace:*"` in dependencies
+- [pnpm workspace protocol](https://pnpm.io/workspaces#workspace-protocol-workspace) - Use `"@etch/shared": "workspace:*"` in dependencies
 - [TypeScript Project References](https://www.typescriptlang.org/docs/handbook/project-references.html) - Consider for monorepo type checking
 
 ### Action Items
 
 **Code Changes Required:**
-- [x] [High] Add `@nameless/shared` as workspace dependency to server package (AC #1.3.1) [file: packages/server/package.json] ✅ FIXED
-- [x] [High] Add `@nameless/shared` as workspace dependency to client package (AC #1.3.1) [file: packages/client/package.json] ✅ FIXED
+- [x] [High] Add `@etch/shared` as workspace dependency to server package (AC #1.3.1) [file: packages/server/package.json] ✅ FIXED
+- [x] [High] Add `@etch/shared` as workspace dependency to client package (AC #1.3.1) [file: packages/client/package.json] ✅ FIXED
 - [x] [High] Actually verify imports work after adding dependencies [file: packages/server/src/*.ts, packages/client/src/*.ts] ✅ VERIFIED
 
 **Advisory Notes:**
-- Note: Consider adding integration test that imports from `@nameless/shared` in server/client packages to prevent future regression
+- Note: Consider adding integration test that imports from `@etch/shared` in server/client packages to prevent future regression
 - Note: TOKEN_EXPIRY_SECONDS and ParticipantColor are useful additions beyond spec (keep them)

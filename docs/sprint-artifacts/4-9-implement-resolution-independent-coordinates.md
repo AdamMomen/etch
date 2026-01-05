@@ -364,7 +364,7 @@ Story 4.9 implements resolution-independent coordinates for the annotation syste
 ### Best-Practices and References
 
 - ✅ Good JSDoc documentation with examples on all utility functions
-- ✅ Proper TypeScript typing using `@nameless/shared` Point type
+- ✅ Proper TypeScript typing using `@etch/shared` Point type
 - ✅ Edge case handling (zero dimensions, clamping, empty arrays)
 - ✅ Batch conversion functions for performance optimization
 

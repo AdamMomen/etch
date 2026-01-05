@@ -1,4 +1,4 @@
-# Architecture Comparison: Hopp vs Nameless
+# Architecture Comparison: Hopp vs Etch
 
 ## Overview
 
@@ -31,7 +31,7 @@ Both systems use a similar high-level architecture but differ significantly in h
                      - Spawns event handlers
 ```
 
-### Nameless (Current)
+### Etch (Current)
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ Main Thread (winit event loop)                              │
@@ -100,7 +100,7 @@ async fn room_service_commands(...) {
 - ✅ No `block_on()` needed
 - ✅ Clean separation: blocking API, async implementation
 
-#### Nameless: block_on() Pattern (Current - Problematic)
+#### Etch: block_on() Pattern (Current - Problematic)
 ```rust
 // RoomService creation
 let runtime = tokio::runtime::Builder::new_multi_thread().build()?;
@@ -136,7 +136,7 @@ let mut socket = CursorSocket::new(&socket_path)?;
 let message = socket.read_message()?;  // Blocks
 ```
 
-#### Nameless: Async Socket
+#### Etch: Async Socket
 ```rust
 // Async socket server
 pub struct CoreSocket {
@@ -155,7 +155,7 @@ tokio::spawn(async move {
 
 **Comparison:**
 - Hopp: Simpler, blocking I/O in dedicated thread
-- Nameless: More modern, async I/O, but requires runtime
+- Etch: More modern, async I/O, but requires runtime
 
 ### 3. Event Flow
 
@@ -183,7 +183,7 @@ Background Task (in runtime)
 Main Thread (winit event loop)
 ```
 
-#### Nameless
+#### Etch
 ```
 Tauri Client
     │ (async socket)
@@ -207,7 +207,7 @@ RoomService Runtime
 
 ## The Core Problem
 
-**Nameless's issue:** Using `block_on()` on a multi-threaded runtime from an external thread.
+**Etch's issue:** Using `block_on()` on a multi-threaded runtime from an external thread.
 
 When you call `block_on()` on a multi-threaded runtime from a thread that's not part of that runtime:
 1. The runtime's worker threads may not be actively polling
@@ -222,7 +222,7 @@ When you call `block_on()` on a multi-threaded runtime from a thread that's not 
 4. Results are sent back via blocking channel
 5. Public API blocks waiting for result, but async work happens in runtime
 
-## Recommended Fix for Nameless
+## Recommended Fix for Etch
 
 Refactor `RoomService` to match Hopp's pattern:
 

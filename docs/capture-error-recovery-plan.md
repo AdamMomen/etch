@@ -320,7 +320,7 @@ test('overlay destroyed on Core capture error', async ({ page }) => {
 
 ## References
 
-- Hopp Implementation: `/Users/adam/.ghq/github.com/adammomen/nameless/hopp-main/core/src/capture/`
-- Our Implementation: `/Users/adam/.ghq/github.com/adammomen/nameless/packages/core/src/capture/mod.rs`
+- Hopp Implementation: `/Users/adam/.ghq/github.com/adammomen/etch/hopp-main/core/src/capture/`
+- Our Implementation: `/Users/adam/.ghq/github.com/adammomen/etch/packages/core/src/capture/mod.rs`
 - Test Suite: TBD (to be created)
 - Benchmarks: TBD (to be created)

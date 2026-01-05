@@ -8,7 +8,7 @@
 | **Epic 4** | Real-Time Annotations | Users can draw on shared screens (CORE VALUE) | 11 | FR27-30, FR33-36 |
 | **Epic 5** | Permissions & Moderation | Hosts can manage meetings and control annotations | 8 | FR5, FR31-32, FR37-43 |
 | **Epic 6** | Connection Resilience | Users stay connected and recover from network issues | 7 | FR48-52 |
-| **Epic 7** | Self-Hosting & Deployment | Teams can deploy their own NAMELESS instance | 9 | FR57-62 |
+| **Epic 7** | Self-Hosting & Deployment | Teams can deploy their own Etch instance | 9 | FR57-62 |
 
 **Total: 7 Epics, 64 Stories, 62 Functional Requirements**
 

@@ -57,7 +57,7 @@ so that **I can write and run tests for all packages**.
    - And it orchestrates all package tests
 
 8. **AC-1.4.8: Test Data Factories**
-   - Given the `@nameless/shared` package
+   - Given the `@etch/shared` package
    - When I write tests
    - Then test data factories are available:
      - `createMockStroke(overrides?)` - Creates Stroke with sensible defaults
@@ -199,7 +199,7 @@ thresholds: {
 
 **Review Findings Applied:**
 - Integration tests important - previous story had gap where package integration wasn't truly tested
-- Consider adding integration test that imports from `@nameless/shared` in server/client packages
+- Consider adding integration test that imports from `@etch/shared` in server/client packages
 
 [Source: docs/sprint-artifacts/1-3-create-shared-types-package.md#Dev-Agent-Record]
 
@@ -281,7 +281,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 - vitest.workspace.ts already existed and was properly configured - leveraged existing setup
 - Enhanced client test setup with afterEach cleanup, window.matchMedia mock, and ResizeObserver mock
-- Created comprehensive test data factories in @nameless/shared: createMockStroke, createMockPoint, createMockParticipant, createMockHost, createMockViewer, createMockSharer (bonus)
+- Created comprehensive test data factories in @etch/shared: createMockStroke, createMockPoint, createMockParticipant, createMockHost, createMockViewer, createMockSharer (bonus)
 - Added 12 factory tests to verify default values and override behavior
 - Created App.test.tsx with 4 React component tests using RTL
 - Configured root package.json with test:client, test:server, test:shared, test:watch, and test:coverage scripts

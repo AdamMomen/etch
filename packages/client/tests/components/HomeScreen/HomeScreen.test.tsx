@@ -47,9 +47,9 @@ describe('HomeScreen', () => {
   })
 
   describe('Layout (AC-2.3.1)', () => {
-    it('renders NAMELESS logo/title', () => {
+    it('renders Etch logo/title', () => {
       renderHomeScreen()
-      expect(screen.getByText('NAMELESS')).toBeInTheDocument()
+      expect(screen.getByText('Etch')).toBeInTheDocument()
     })
 
     it('renders Start Meeting button', () => {
@@ -113,12 +113,12 @@ describe('HomeScreen', () => {
       expect(mockNavigate).toHaveBeenCalledWith('/join/abc-123-xyz')
     })
 
-    it('parses nameless:// URL and navigates with extracted room ID', async () => {
+    it('parses etch:// URL and navigates with extracted room ID', async () => {
       const user = userEvent.setup()
       renderHomeScreen()
 
       const input = screen.getByPlaceholderText(/enter room code or link/i)
-      await user.type(input, 'nameless://room/my-room-id')
+      await user.type(input, 'etch://room/my-room-id')
 
       const joinButton = screen.getByRole('button', { name: /join/i })
       await user.click(joinButton)

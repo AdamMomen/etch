@@ -3,8 +3,8 @@
 //! These tests verify that IncomingMessage and OutgoingMessage types
 //! serialize/deserialize correctly according to the socket protocol specification.
 
-use nameless_core::socket::{IncomingMessage, OutgoingMessage};
-use nameless_core::{
+use etch_core::socket::{IncomingMessage, OutgoingMessage};
+use etch_core::{
     AnnotationTool, ConnectionState, FrameFormat, ParticipantData,
     ParticipantRole, PermissionState, PermissionStatus, ScreenInfo, SourceType,
 };

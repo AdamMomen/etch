@@ -1,4 +1,4 @@
-# NAMELESS Quick Start Guide
+# Etch Quick Start Guide
 
 ## Current Status
 

@@ -15,7 +15,7 @@ export interface InviteLinkConfig {
  * Generate an invite link for a room
  *
  * The link points to a landing page that:
- * 1. Attempts to open the desktop app via deep link (nameless://room/{roomId})
+ * 1. Attempts to open the desktop app via deep link (etch://room/{roomId})
  * 2. Falls back to the web app if the desktop app isn't installed
  *
  * @param roomId - The room ID to generate link for
@@ -35,10 +35,10 @@ export function generateInviteLink(
 /**
  * Generate the deep link for the desktop app
  * @param roomId - The room ID
- * @returns The nameless:// deep link
+ * @returns The etch:// deep link
  */
 export function generateDeepLink(roomId: string): string {
-  return `nameless://room/${roomId}`
+  return `etch://room/${roomId}`
 }
 
 /**

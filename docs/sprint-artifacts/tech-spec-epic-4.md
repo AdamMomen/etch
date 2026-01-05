@@ -9,7 +9,7 @@ Status: Draft
 
 ## Overview
 
-Epic 4 implements real-time annotations for NAMELESS - **THE CORE VALUE PROPOSITION** of the product. This is the "pointing finger" moment: users draw on shared screens and everyone sees it instantly with < 200ms latency.
+Epic 4 implements real-time annotations for Etch - **THE CORE VALUE PROPOSITION** of the product. This is the "pointing finger" moment: users draw on shared screens and everyone sees it instantly with < 200ms latency.
 
 The annotation system uses a **decoupled architecture** where annotation events flow through LiveKit DataTracks as lightweight vector data, while each client reconstructs the canvas locally. This separation enables sub-200ms latency through local-first rendering with network sync.
 
@@ -1030,7 +1030,7 @@ User clicks/drags on canvas
 ### Test Data Factories
 
 ```typescript
-// @nameless/shared test utilities
+// @etch/shared test utilities
 export const createMockPoint = (overrides?: Partial<Point>): Point => ({
   x: 0.5,
   y: 0.5,

@@ -35,7 +35,7 @@ So that **I can regain privacy when done presenting**.
    - *(Note: Overlay created in Story 3.6 - this AC may be placeholder)*
 
 5. **AC-3.3.5: Main Window Restores**
-   - Given the main Nameless window was minimized when sharing started
+   - Given the main Etch window was minimized when sharing started
    - When I stop sharing
    - Then the main window is restored (unminimized)
    - And the window returns to its previous position and size

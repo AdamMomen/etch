@@ -1,4 +1,4 @@
-# Deep Research Prompts: NAMELESS
+# Deep Research Prompts: Etch
 
 **Generated:** 2025-12-01
 **Created by:** BMad (Analyst)
@@ -31,7 +31,7 @@ You need to implement the native sidecar for screen capture on macOS/Windows/Lin
 I'm building a cross-platform desktop app (Tauri + Rust) that needs high-quality screen capture for a video conferencing application. I need to understand:
 
 CONTEXT:
-- Building an open-source Zoom/Tuple alternative called NAMELESS
+- Building an open-source Zoom/Tuple alternative called Etch
 - Using Tauri 2.0 for the desktop shell
 - LiveKit for WebRTC infrastructure
 - Target: 1080p minimum, 4K stretch goal
@@ -218,7 +218,7 @@ RESEARCH QUESTIONS:
 3. Content marketing for developers
    - What types of technical blog posts drive adoption?
    - Video content: demos, tutorials, or both?
-   - Comparison posts (NAMELESS vs Zoom vs Jitsi) - do they work?
+   - Comparison posts (Etch vs Zoom vs Jitsi) - do they work?
    - SEO keywords worth targeting
 
 4. Product Hunt and similar launches

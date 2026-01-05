@@ -2,14 +2,14 @@
 
 **Date:** 2025-11-30
 **Author:** BMad
-**Project:** NAMELESS - Open-Source Meeting Platform with Annotations
+**Project:** Etch - Open-Source Meeting Platform with Annotations
 **Status:** Approved for Implementation
 
 ---
 
 ## Executive Summary
 
-This document defines the system-level testability assessment and test strategy for NAMELESS before entering Phase 3 (Implementation). It ensures the architecture supports comprehensive testing and identifies any concerns that could impede quality assurance.
+This document defines the system-level testability assessment and test strategy for Etch before entering Phase 3 (Implementation). It ensures the architecture supports comprehensive testing and identifies any concerns that could impede quality assurance.
 
 **Assessment Result:** **PASS** - Architecture is testable with minor concerns noted.
 
@@ -104,9 +104,9 @@ Based on architecture: Tauri desktop app, React UI, Hono API, LiveKit WebRTC, re
 
 | Package | Unit | Integration | Component | E2E |
 |---------|------|-------------|-----------|-----|
-| `@nameless/shared` | 30 | - | - | - |
-| `@nameless/server` | 40 | 60 | - | - |
-| `@nameless/client` | 80 | 30 | 15 | 45 |
+| `@etch/shared` | 30 | - | - | - |
+| `@etch/server` | 40 | 60 | - | - |
+| `@etch/client` | 80 | 30 | 15 | 45 |
 
 ### Framework Selection
 

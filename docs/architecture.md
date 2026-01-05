@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-NAMELESS is an open-source, self-hosted meeting platform with real-time screen annotations. The architecture follows a **decoupled annotation layer** pattern where media transport (video/audio/screen) flows through LiveKit SFU unchanged, while annotation events flow through LiveKit DataTracks as lightweight vector data. Each client reconstructs the annotation canvas locally from the event stream, enabling sub-200ms annotation latency.
+Etch is an open-source, self-hosted meeting platform with real-time screen annotations. The architecture follows a **decoupled annotation layer** pattern where media transport (video/audio/screen) flows through LiveKit SFU unchanged, while annotation events flow through LiveKit DataTracks as lightweight vector data. Each client reconstructs the annotation canvas locally from the event stream, enabling sub-200ms annotation latency.
 
 **Key Architectural Decisions:**
 - **Desktop Client:** Tauri 2.0 (Rust + WebView) for cross-platform with minimal bundle size
@@ -16,7 +16,7 @@ NAMELESS is an open-source, self-hosted meeting platform with real-time screen a
 **First implementation story should execute:**
 
 ```bash
-npx create-tauri-ui@latest nameless-client
+npx create-tauri-ui@latest etch-client
 ```
 
 Select options:
@@ -70,7 +70,7 @@ pnpm add livekit-client @livekit/components-react
 ## Project Structure
 
 ```
-nameless/
+etch/
 ├── .github/
 │   └── workflows/
 │       ├── ci.yaml                 # Lint, test, typecheck
@@ -107,7 +107,7 @@ nameless/
 │   │   │   │   ├── colors.ts       # Participant color assignment
 │   │   │   │   └── logger.ts
 │   │   │   ├── types/
-│   │   │   │   └── index.ts        # Re-export from @nameless/shared
+│   │   │   │   └── index.ts        # Re-export from @etch/shared
 │   │   │   ├── App.tsx
 │   │   │   ├── main.tsx
 │   │   │   └── index.css           # Tailwind imports
@@ -259,11 +259,11 @@ return token.toJwt();
 
 ### Overview
 
-NAMELESS separates annotation from media transport - annotations flow as lightweight vector events via DataTracks, not embedded in video. Each client reconstructs the canvas locally, enabling sub-200ms latency.
+Etch separates annotation from media transport - annotations flow as lightweight vector events via DataTracks, not embedded in video. Each client reconstructs the canvas locally, enabling sub-200ms latency.
 
 **Key Innovations:**
-1. **Annotation Overlay:** The sharer sees annotations on their actual screen (VS Code, Figma, etc.), not inside NAMELESS - via a native transparent overlay window.
-2. **Floating Control Bar:** When sharing, the main Nameless window minimizes and a floating control bar appears on top of all windows, giving the sharer access to meeting controls (mic, camera, participant faces, stop share, leave) without switching apps.
+1. **Annotation Overlay:** The sharer sees annotations on their actual screen (VS Code, Figma, etc.), not inside Etch - via a native transparent overlay window.
+2. **Floating Control Bar:** When sharing, the main Etch window minimizes and a floating control bar appears on top of all windows, giving the sharer access to meeting controls (mic, camera, participant faces, stop share, leave) without switching apps.
 3. **Share Border Indicator:** A visual border around the shared window/screen shows exactly what's being captured.
 
 ### Component Architecture
@@ -582,7 +582,7 @@ export function AnnotationToolbar({
 ```typescript
 // Typed store with actions
 import { create } from 'zustand';
-import type { Stroke, Point } from '@nameless/shared';
+import type { Stroke, Point } from '@etch/shared';
 
 interface AnnotationState {
   strokes: Stroke[];
@@ -830,7 +830,7 @@ interface ApiError {
 
 ### Core Data Models
 
-**No persistent database** - NAMELESS is session-based. All data exists in memory during meetings.
+**No persistent database** - Etch is session-based. All data exists in memory during meetings.
 
 ```typescript
 // packages/shared/src/types/stroke.ts
@@ -897,7 +897,7 @@ Response (201):
 {
   "roomId": "abc-123-xyz",
   "token": "eyJhbGciOiJIUzI1NiIs...",
-  "livekitUrl": "wss://nameless.example.com/livekit"
+  "livekitUrl": "wss://etch.example.com/livekit"
 }
 ```
 
@@ -917,7 +917,7 @@ Response (200):
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIs...",
-  "livekitUrl": "wss://nameless.example.com/livekit"
+  "livekitUrl": "wss://etch.example.com/livekit"
 }
 ```
 
@@ -1032,7 +1032,7 @@ Single domain deployment with reverse proxy handling SSL and routing:
 ├─────────────────────────────────────────────────────────────┤
 │                                                              │
 │  ┌─────────────┐     ┌──────────────┐    ┌──────────────┐   │
-│  │    Caddy    │────▶│ nameless-api │    │   LiveKit    │   │
+│  │    Caddy    │────▶│ etch-api │    │   LiveKit    │   │
 │  │   (proxy)   │────▶│   (Hono)     │    │   Server     │   │
 │  │  auto SSL   │     └──────────────┘    └──────────────┘   │
 │  └─────────────┘                                             │
@@ -1048,14 +1048,14 @@ Single domain deployment with reverse proxy handling SSL and routing:
 
 | Path | Service | Purpose |
 |------|---------|---------|
-| `/api/*` | nameless-api:3000 | Token generation, room management |
+| `/api/*` | etch-api:3000 | Token generation, room management |
 | `/livekit/*` | livekit:7880 | WebRTC signaling (WebSocket) |
 
 ### Caddyfile
 
 ```
 {$DOMAIN} {
-    reverse_proxy /api/* nameless-api:3000
+    reverse_proxy /api/* etch-api:3000
     reverse_proxy /livekit/* livekit:7880
 }
 ```
@@ -1076,10 +1076,10 @@ services:
     environment:
       - DOMAIN=${DOMAIN}
     depends_on:
-      - nameless-api
+      - etch-api
       - livekit
 
-  nameless-api:
+  etch-api:
     build: ./packages/server
     environment:
       - LIVEKIT_URL=ws://livekit:7880
@@ -1105,7 +1105,7 @@ volumes:
 ### User Configuration (.env)
 
 ```bash
-DOMAIN=nameless.mycompany.com
+DOMAIN=etch.mycompany.com
 LIVEKIT_API_KEY=devkey
 LIVEKIT_API_SECRET=your-secret-here
 ```
@@ -1114,12 +1114,12 @@ LIVEKIT_API_SECRET=your-secret-here
 
 Users set ONE value in the desktop client:
 ```
-Server: nameless.mycompany.com
+Server: etch.mycompany.com
 ```
 
 Client derives:
-- API: `https://nameless.mycompany.com/api`
-- LiveKit: `wss://nameless.mycompany.com/livekit`
+- API: `https://etch.mycompany.com/api`
+- LiveKit: `wss://etch.mycompany.com/livekit`
 
 ### Deployment Commands
 
@@ -1162,8 +1162,8 @@ curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 
 ```bash
 # Clone repository
-git clone https://github.com/your-org/nameless.git
-cd nameless
+git clone https://github.com/your-org/etch.git
+cd etch
 
 # Install dependencies
 pnpm install
@@ -1211,7 +1211,7 @@ PORT=3000
 
 **Production (.env):**
 ```bash
-DOMAIN=nameless.example.com
+DOMAIN=etch.example.com
 LIVEKIT_API_KEY=your-production-key
 LIVEKIT_API_SECRET=your-production-secret
 ```
@@ -1294,7 +1294,7 @@ LIVEKIT_API_SECRET=your-production-secret
    - **Share Border Indicator:** Transparent window showing visual frame around captured area
 
 **Rationale:**
-- Sharer needs to see annotations on their actual screen (VS Code, Figma, etc.), not inside NAMELESS
+- Sharer needs to see annotations on their actual screen (VS Code, Figma, etc.), not inside Etch
 - Sharer needs meeting controls accessible without switching apps (main window minimizes during share)
 - Floating control bar provides: sharing indicator, mic/camera toggles, participant faces, stop share, leave
 - Share border shows exactly what's being captured
@@ -1305,14 +1305,14 @@ LIVEKIT_API_SECRET=your-production-secret
 **Architecture:**
 ```
 Sharer's machine (during screen share):
-├── NAMELESS main window (WebView) - MINIMIZED
+├── Etch main window (WebView) - MINIMIZED
 ├── Floating Control Bar (Tauri native) - always on top, draggable
 ├── Share Border Indicator (Tauri transparent) - frames captured area
 ├── Annotation Overlay (Tauri transparent) - annotations on shared content
 └── Screen capture via getDisplayMedia() - sent to LiveKit
 
 Viewer's machine:
-├── NAMELESS main window (WebView)
+├── Etch main window (WebView)
 │   ├── <video> element - shared screen from LiveKit
 │   └── <canvas> overlay - annotations
 ```
@@ -1669,7 +1669,7 @@ Tray Icon + Menu (when sharing):
 ┌──────────────────────┐
 │ 🔴 Sharing Screen    │  ← Status (disabled item)
 │ ──────────────────── │
-│ Open Nameless   ⌘O   │  ← Show main window
+│ Open Etch   ⌘O   │  ← Show main window
 │ Stop Sharing    ⌘S   │  ← Stop screen share
 │ Leave Meeting   ⌘Q   │  ← Leave meeting
 └──────────────────────┘
@@ -1679,7 +1679,7 @@ Tray Icon + Menu (when sharing):
 
 **Key Features:**
 1. **Native menu:** Uses Tauri `TrayIconBuilder` + `MenuBuilder`
-2. **3 actions only:** Open Nameless, Stop Sharing, Leave Meeting
+2. **3 actions only:** Open Etch, Stop Sharing, Leave Meeting
 3. **Keyboard shortcuts:** ⌘O, ⌘S, ⌘Q
 4. **Red dot badge:** Tray icon shows red dot when sharing (like recording indicator)
 5. **No custom UI:** Zero React components for floating controls
@@ -1692,7 +1692,7 @@ pub fn create_share_tray(app: &AppHandle) -> Result<(), String> {
     let menu = MenuBuilder::new(app)
         .text("status", "🔴 Sharing Screen")
         .separator()
-        .item(&MenuItemBuilder::new("Open Nameless").id("open").accelerator("CmdOrCtrl+O").build(app)?)
+        .item(&MenuItemBuilder::new("Open Etch").id("open").accelerator("CmdOrCtrl+O").build(app)?)
         .item(&MenuItemBuilder::new("Stop Sharing").id("stop").accelerator("CmdOrCtrl+S").build(app)?)
         .item(&MenuItemBuilder::new("Leave Meeting").id("leave").accelerator("CmdOrCtrl+Q").build(app)?)
         .build()?;
@@ -1731,7 +1731,7 @@ pub fn create_share_tray(app: &AppHandle) -> Result<(), String> {
 - ✅ Native macOS look and feel
 - ✅ Keyboard shortcuts built-in
 - ✅ No custom window management
-- ⚠️ No video preview in menu (use "Open Nameless" for that)
+- ⚠️ No video preview in menu (use "Open Etch" for that)
 - ⚠️ Less visually prominent than floating bar
 - ⚠️ Platform-specific appearance (Windows tray bottom-right)
 

@@ -2,7 +2,7 @@ import { Users, UserPlus, ChevronLeft, ChevronRight, Crown, Video, VideoOff, Mon
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { VolumePopover } from './VolumePopover'
-import type { Participant } from '@nameless/shared'
+import type { Participant } from '@etch/shared'
 
 interface SidebarProps {
   isCollapsed: boolean

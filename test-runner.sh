@@ -1,17 +1,17 @@
 #!/bin/bash
 # Test Runner for Phase 1 + Phase 2 Hypothesis Testing
-# Run this BEFORE starting NAMELESS screen share
+# Run this BEFORE starting Etch screen share
 
 set -e
 
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  NAMELESS Capture Failure Hypothesis Testing                ║"
+echo "║  Etch Capture Failure Hypothesis Testing                ║"
 echo "║  Phase 1: Quick Diagnostic + Phase 2: Permission Monitoring ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
 
 # Create logs directory
-LOGS_DIR="$HOME/nameless-test-logs-$(date +%Y%m%d-%H%M%S)"
+LOGS_DIR="$HOME/etch-test-logs-$(date +%Y%m%d-%H%M%S)"
 mkdir -p "$LOGS_DIR"
 
 echo "📁 Logs directory: $LOGS_DIR"
@@ -48,11 +48,11 @@ echo "📝 [1/4] Capturing TCC permission logs..."
 if [ "$EUID" -eq 0 ]; then
     log stream --predicate 'subsystem == "com.apple.TCC"' --level debug 2>&1 | \
         tee "$LOGS_DIR/tcc-logs.txt" | \
-        grep --line-buffered -i "screen\|recording\|nameless\|denied\|revok" &
+        grep --line-buffered -i "screen\|recording\|etch\|denied\|revok" &
 else
     log stream --predicate 'subsystem == "com.apple.TCC"' --level info 2>&1 | \
         tee "$LOGS_DIR/tcc-logs-limited.txt" | \
-        grep --line-buffered -i "screen\|recording\|nameless\|denied\|revok" &
+        grep --line-buffered -i "screen\|recording\|etch\|denied\|revok" &
 fi
 
 # Terminal 2: Window Server Logs
@@ -75,7 +75,7 @@ echo ""
 echo "✅ All monitoring started!"
 echo ""
 echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  NOW: Start NAMELESS and begin screen share                 ║"
+echo "║  NOW: Start Etch and begin screen share                 ║"
 echo "║                                                               ║"
 echo "║  WATCH FOR:                                                  ║"
 echo "║  • Initial source enumeration (should show display titles)   ║"
@@ -87,7 +87,7 @@ echo "║  KEEP THIS TERMINAL OPEN                                     ║"
 echo "║  Press Ctrl+C when test is complete                          ║"
 echo "╚══════════════════════════════════════════════════════════════╝"
 echo ""
-echo "⏱️  Waiting for NAMELESS logs..."
+echo "⏱️  Waiting for Etch logs..."
 echo "   (Logs will appear here as events occur)"
 echo ""
 

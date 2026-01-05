@@ -104,14 +104,14 @@
 
 **As a** user,
 **I want** a home screen where I can create a new meeting or join an existing one,
-**So that** I have a clear entry point to start using NAMELESS.
+**So that** I have a clear entry point to start using Etch.
 
 **Acceptance Criteria:**
 
-**Given** I launch the NAMELESS application
+**Given** I launch the Etch application
 **When** the app opens
 **Then** I see the home screen with:
-  - NAMELESS logo/title
+  - Etch logo/title
   - "Start Meeting" primary button
   - "Join Meeting" input field with room code/link
   - "Join" button (enabled when input has value)
@@ -128,7 +128,7 @@
 - Use shadcn/ui Button, Input components
 - Store API base URL in settings (defaults to localhost:3000 for dev)
 - Room code input accepts both full URLs and just the room ID
-- Parse room ID from URL format: `nameless://room/{id}` or `https://*/room/{id}`
+- Parse room ID from URL format: `etch://room/{id}` or `https://*/room/{id}`
 
 ---
 
@@ -166,7 +166,7 @@
 
 **Technical Notes:**
 - Use shadcn/ui Dialog, Input, Button components
-- localStorage key: `nameless_display_name`
+- localStorage key: `etch_display_name`
 - Error toast duration: 5 seconds per UX spec
 - Loading state disables button and shows spinner
 
@@ -471,7 +471,7 @@
 **Given** I'm in a meeting (as host or participant)
 **When** I click the "Invite" button in the sidebar
 **Then** I see an invite modal with:
-  - Room link displayed (e.g., `nameless://room/abc-123-xyz`)
+  - Room link displayed (e.g., `etch://room/abc-123-xyz`)
   - "Copy Link" button
   - QR code (optional, nice-to-have)
 
@@ -501,7 +501,7 @@
 
 **Acceptance Criteria:**
 
-**Given** I've used NAMELESS before
+**Given** I've used Etch before
 **When** I launch the app again
 **Then** my preferences are restored:
   - Display name (pre-filled in join dialog)

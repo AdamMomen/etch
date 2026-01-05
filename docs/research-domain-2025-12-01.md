@@ -1,4 +1,4 @@
-# Domain Research Report: NAMELESS
+# Domain Research Report: Etch
 
 **Date:** 2025-12-01
 **Prepared by:** BMad (Analyst)
@@ -157,7 +157,7 @@ Sources: [LiveKit Docs](https://docs.livekit.io/home/client/tracks/screenshare/)
 
 ---
 
-## 5. Architecture Options for NAMELESS
+## 5. Architecture Options for Etch
 
 ### Option A: Pure Browser WebRTC (Current Plan)
 
@@ -235,7 +235,7 @@ Custom C++ Engine → Native APIs → Custom WebRTC
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                   NAMELESS Desktop                   │
+│                   Etch Desktop                   │
 │                                                      │
 │  ┌────────────────────────────────────────────────┐ │
 │  │              Tauri WebView (UI)                │ │

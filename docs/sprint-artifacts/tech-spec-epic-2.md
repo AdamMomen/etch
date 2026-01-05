@@ -9,7 +9,7 @@ Status: Draft
 
 ## Overview
 
-Epic 2 delivers the core video conferencing functionality for NAMELESS - enabling users to create and join meeting rooms with real-time audio/video communication. This epic establishes the fundamental meeting infrastructure that all subsequent features (screen sharing, annotations, permissions) will build upon.
+Epic 2 delivers the core video conferencing functionality for Etch - enabling users to create and join meeting rooms with real-time audio/video communication. This epic establishes the fundamental meeting infrastructure that all subsequent features (screen sharing, annotations, permissions) will build upon.
 
 This epic implements the meeting room lifecycle: room creation with unique IDs and shareable links, participant joining with token-based authentication, audio/video publishing and subscription via LiveKit, device selection, participant management, and user preferences persistence. Upon completion, users will be able to hold functional video meetings with up to 10 participants.
 
@@ -62,7 +62,7 @@ This epic implements the meeting room lifecycle: room creation with unique IDs a
 
 ## System Architecture Alignment
 
-This epic implements the meeting infrastructure layer of the NAMELESS architecture:
+This epic implements the meeting infrastructure layer of the Etch architecture:
 
 **Components Being Built:**
 
@@ -522,7 +522,7 @@ VITE_API_URL=http://localhost:3000/api # API base URL
 ### AC-2.13: Invite Link
 - "Invite" button/shortcut shows modal with room link
 - "Copy Link" copies to clipboard with toast confirmation
-- Link format: `nameless://room/{roomId}` or configurable
+- Link format: `etch://room/{roomId}` or configurable
 
 ### AC-2.14: User Preferences
 - Display name persisted across sessions

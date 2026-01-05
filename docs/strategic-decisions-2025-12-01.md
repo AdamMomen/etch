@@ -1,4 +1,4 @@
-# Strategic Decisions & Updated Roadmap: NAMELESS
+# Strategic Decisions & Updated Roadmap: Etch
 
 **Date:** 2025-12-01
 **Based on:** Market, Competitive, User, and Domain Research

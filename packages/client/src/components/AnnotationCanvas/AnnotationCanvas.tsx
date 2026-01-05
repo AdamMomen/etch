@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react'
 import { getStroke } from 'perfect-freehand'
-import type { Point, Stroke } from '@nameless/shared'
+import type { Point, Stroke } from '@etch/shared'
 import { getPointerCoordinates, denormalizeStrokePoints } from '@/utils/coordinates'
 import type { Tool } from '@/stores/annotationStore'
 import type { SyncState } from '@/hooks/useAnnotationSync'

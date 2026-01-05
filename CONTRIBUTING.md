@@ -1,4 +1,4 @@
-# Contributing to NAMELESS
+# Contributing to Etch
 
 ## Development Setup
 

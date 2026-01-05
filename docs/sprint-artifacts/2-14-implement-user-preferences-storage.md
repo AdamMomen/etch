@@ -181,7 +181,7 @@ export const useSettingsStore = create<SettingsState>()(
       clearPreferences: () => set(defaultSettings),
     }),
     {
-      name: 'nameless-settings',
+      name: 'etch-settings',
     }
   )
 );
@@ -310,7 +310,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - Created `SettingsModal` component with display name field, theme toggle (Sun/Moon icons), and clear preferences button with confirmation
 - Created `ThemeToggle` component for reusable theme switching
 - Added settings button (gear icon) to HomeScreen that opens SettingsModal
-- All preferences now persist to localStorage under key `nameless-settings`
+- All preferences now persist to localStorage under key `etch-settings`
 
 **Acceptance Criteria Verification:**
 - AC-2.14.1: ✅ Display name pre-fills from store (JoinRoom.tsx:20)
@@ -385,7 +385,7 @@ Story 2.14 successfully implements user preferences storage with Zustand persist
 
 | Task | Marked As | Verified As | Evidence |
 |------|-----------|-------------|----------|
-| Task 1: Enhance settingsStore with persist | [x] Complete | VERIFIED | `settingsStore.ts:2,40,55` (persist import, middleware, storage key 'nameless-settings') |
+| Task 1: Enhance settingsStore with persist | [x] Complete | VERIFIED | `settingsStore.ts:2,40,55` (persist import, middleware, storage key 'etch-settings') |
 | Task 2: Display name persistence | [x] Complete | VERIFIED | `JoinRoom.tsx:16,20,63` (read from store, pre-fill, save) |
 | Task 3: Device preference persistence | [x] Complete | VERIFIED | `useAudio.ts:86,139`, `useVideo.ts:106,179` (save + fallback) |
 | Task 4: Sidebar state persistence | [x] Complete | VERIFIED | `MeetingRoom.tsx:28,292` (reads state, passes to Sidebar) |
@@ -413,7 +413,7 @@ Story 2.14 successfully implements user preferences storage with Zustand persist
 ### Architectural Alignment
 
 - ✅ Uses Zustand persist middleware per architecture docs
-- ✅ Storage key `nameless-settings` per tech spec
+- ✅ Storage key `etch-settings` per tech spec
 - ✅ Theme applied via `document.documentElement.classList` per UX spec
 - ✅ Toast notifications use sonner per existing pattern
 - ✅ Modal follows existing pattern (Dialog, DialogContent, DialogHeader)

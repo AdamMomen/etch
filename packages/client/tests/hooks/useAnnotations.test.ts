@@ -4,8 +4,8 @@ import { useAnnotations } from '@/hooks/useAnnotations'
 import { useAnnotationStore } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useScreenShareStore } from '@/stores/screenShareStore'
-import { PARTICIPANT_COLORS } from '@nameless/shared'
-import type { Stroke, Point } from '@nameless/shared'
+import { PARTICIPANT_COLORS } from '@etch/shared'
+import type { Stroke, Point } from '@etch/shared'
 
 // Mock crypto.randomUUID for deterministic testing
 const mockUUID = 'test-uuid-12345'

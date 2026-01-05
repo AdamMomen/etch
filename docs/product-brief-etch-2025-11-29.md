@@ -1,4 +1,4 @@
-# Product Brief: NAMELESS
+# Product Brief: Etch
 
 **Date:** 2025-11-29
 **Author:** BMad
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-NAMELESS is an open-source, self-hosted meeting platform with real-time screen annotations. It addresses the gap between proprietary tools like Zoom (feature-rich but closed) and open alternatives like Jitsi (open but lacking annotation capabilities).
+Etch is an open-source, self-hosted meeting platform with real-time screen annotations. It addresses the gap between proprietary tools like Zoom (feature-rich but closed) and open alternatives like Jitsi (open but lacking annotation capabilities).
 
 **Core value proposition:** Draw directly on shared screens during meetings with sub-200ms latency, fully self-hosted under Apache 2.0.
 
@@ -54,7 +54,7 @@ Developers, designers, educators, and enterprises increasingly demand self-hoste
 
 ### Proposed Solution
 
-NAMELESS is an open-source, self-hosted meeting platform with real-time screen annotations built on modern WebRTC infrastructure. The architecture separates media transport from interaction logic:
+Etch is an open-source, self-hosted meeting platform with real-time screen annotations built on modern WebRTC infrastructure. The architecture separates media transport from interaction logic:
 
 - **LiveKit backend** handles all WebRTC media and data transport
 - **Annotation system** synchronizes lightweight vector events (not pixel data)
@@ -156,7 +156,7 @@ This separation enables modularity, scalability, and future portability while de
 
 ### MVP Success Criteria
 
-- [ ] A developer can self-host NAMELESS and run a meeting within 30 minutes
+- [ ] A developer can self-host Etch and run a meeting within 30 minutes
 - [ ] Screen share with annotation works reliably between 2-10 participants
 - [ ] Annotation latency is imperceptible (< 200ms)
 - [ ] Late joiners see existing annotations immediately
@@ -217,7 +217,7 @@ This separation enables modularity, scalability, and future portability while de
 
 **Competitive Landscape:**
 
-| Solution | Strengths | Gaps | NAMELESS Advantage |
+| Solution | Strengths | Gaps | Etch Advantage |
 |----------|-----------|------|-------------------|
 | **Zoom** | Market leader, polished UX | Proprietary, expensive, no self-host | Open-source, self-hostable |
 | **Microsoft Teams** | Enterprise integration | Microsoft lock-in, limited annotations | Platform agnostic |
@@ -227,7 +227,7 @@ This separation enables modularity, scalability, and future portability while de
 
 **Market Position:**
 
-NAMELESS sits at the intersection of:
+Etch sits at the intersection of:
 - **Jitsi's openness** (self-hosted, open-source)
 - **Zoom's interactivity** (real-time annotations)
 - **Developer tooling ethos** (embeddable, extensible)
@@ -279,7 +279,7 @@ NAMELESS sits at the intersection of:
 
 ---
 
-_This Product Brief captures the vision and requirements for NAMELESS._
+_This Product Brief captures the vision and requirements for Etch._
 
 _It was created through collaborative discovery and reflects the unique needs of this open-source developer tool project._
 

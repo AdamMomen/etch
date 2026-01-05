@@ -6,7 +6,7 @@ Status: done
 
 As a **screen sharer**,
 I want **to see annotations on my actual shared screen**,
-so that **I can see what others are pointing at without looking at NAMELESS**.
+so that **I can see what others are pointing at without looking at Etch**.
 
 ## Acceptance Criteria
 
@@ -125,7 +125,7 @@ From Story 4.1-4.10 (Annotation Infrastructure):
 
 **From Story 4-10-assign-unique-colors-per-participant (Status: done)**
 
-- **Color palette:** `getParticipantColor(index)` in `@nameless/shared/constants/colors.ts` - use for sharer strokes
+- **Color palette:** `getParticipantColor(index)` in `@etch/shared/constants/colors.ts` - use for sharer strokes
 - **Metadata parsing:** `parseParticipantMetadata()` extracts color from LiveKit participant
 - **Stroke creation:** `useAnnotations.ts:181` - uses `myColor` from localParticipant
 - **All 1011 tests pass** - comprehensive test coverage established

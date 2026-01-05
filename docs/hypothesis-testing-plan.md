@@ -45,7 +45,7 @@ macOS Ventura/Sonoma has a known bug where Screen Recording permission can be:
 2. Open System Settings → Privacy & Security → Screen Recording
 3. Keep this window visible
 4. **Watch the checkbox** when capture fails (~3-5 mins)
-5. Note if NAMELESS becomes unchecked
+5. Note if Etch becomes unchecked
 
 **Expected if hypothesis true:** Checkbox unchecks when capture fails
 
@@ -81,8 +81,8 @@ log stream --predicate 'eventMessage CONTAINS "screen" OR eventMessage CONTAINS 
 **Test with manual re-grant:**
 1. Start screen share
 2. After 2 minutes, go to Screen Recording settings
-3. Uncheck NAMELESS
-4. Recheck NAMELESS
+3. Uncheck Etch
+4. Recheck Etch
 5. See if this extends the capture time
 
 **Expected if hypothesis true:** Capture continues after permission refresh
@@ -137,7 +137,7 @@ open "https://github.com/hoprnet/hopr/issues?q=is%3Aissue+desktop+capturer"
 **Try creating capturer with different options:**
 
 Check if there are alternative DesktopCapturer initialization flags in Hopp's code at:
-`/Users/adam/.ghq/github.com/adammomen/nameless/hopp-main/core/src/capture/`
+`/Users/adam/.ghq/github.com/adammomen/etch/hopp-main/core/src/capture/`
 
 **Expected if hypothesis true:** Different settings avoid the bug
 
@@ -256,7 +256,7 @@ log show --predicate 'eventMessage CONTAINS "capture"' --last 1h --info
 
 ### Phase 2: Permission Monitoring (10 minutes)
 1. ⏳ Terminal 1: `sudo log stream --predicate 'subsystem == "com.apple.TCC"' --level debug`
-2. ⏳ Terminal 2: Run NAMELESS with screen share
+2. ⏳ Terminal 2: Run Etch with screen share
 3. ⏳ Terminal 3: Open System Settings → Screen Recording (keep visible)
 4. ⏳ Wait for failure
 5. ⏳ Check all three sources for permission events
@@ -287,7 +287,7 @@ log show --predicate 'eventMessage CONTAINS "capture"' --last 1h --info
 ### Configuration
 - macOS Version:
 - Display: Built-in / External
-- NAMELESS Version: greenfield@b1cc913
+- Etch Version: greenfield@b1cc913
 
 ### Initial Source Enumeration
 - Source Count:
@@ -330,7 +330,7 @@ log show --predicate 'eventMessage CONTAINS "capture"' --last 1h --info
 
 ### If Hypothesis 1 (Permission) is TRUE:
 **Solutions:**
-1. Code-sign the NAMELESS app properly
+1. Code-sign the Etch app properly
 2. Request elevated permissions
 3. Use newer ScreenCaptureKit API (if available)
 4. File bug report with Apple
@@ -371,8 +371,8 @@ log stream --predicate 'subsystem == "com.apple.WindowServer"' --level debug | t
 # Terminal 3: All Screen Recording Events
 log stream --predicate 'eventMessage CONTAINS "screen" OR eventMessage CONTAINS "recording" OR eventMessage CONTAINS "capture"' --level debug | tee ~/capture-logs.txt
 
-# Terminal 4: Run NAMELESS
-cd /Users/adam/.ghq/github.com/adammomen/nameless
+# Terminal 4: Run Etch
+cd /Users/adam/.ghq/github.com/adammomen/etch
 # [start your app]
 ```
 
@@ -383,7 +383,7 @@ cd /Users/adam/.ghq/github.com/adammomen/nameless
 ## Critical Logs to Capture
 
 When failure occurs, immediately save:
-1. NAMELESS Core logs (already saved)
+1. Etch Core logs (already saved)
 2. TCC logs (`~/tcc-logs.txt`)
 3. Window Server logs (`~/windowserver-logs.txt`)
 4. Capture logs (`~/capture-logs.txt`)

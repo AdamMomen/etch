@@ -127,7 +127,7 @@ So that **other participants can identify me**.
 Add to `packages/client/src/lib/api.ts`:
 
 ```typescript
-import type { JoinRoomRequest, JoinRoomResponse } from '@nameless/shared';
+import type { JoinRoomRequest, JoinRoomResponse } from '@etch/shared';
 
 export async function joinRoom(roomId: string, participantName: string): Promise<JoinRoomResponse> {
   const response = await fetch(`${API_BASE_URL}/rooms/${roomId}/join`, {

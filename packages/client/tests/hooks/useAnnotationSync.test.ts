@@ -12,7 +12,7 @@ import {
   type StateRequestMessage,
   type StateSnapshotMessage,
   type Stroke,
-} from '@nameless/shared'
+} from '@etch/shared'
 
 // Mock stores
 vi.mock('@/stores/roomStore', () => ({

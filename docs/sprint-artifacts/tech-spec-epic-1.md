@@ -9,7 +9,7 @@ Status: Draft
 
 ## Overview
 
-Epic 1 establishes the foundational development infrastructure for NAMELESS - an open-source, self-hosted meeting platform with real-time screen annotations. This epic creates the monorepo structure, initializes the Tauri desktop application shell, sets up the Hono API server, defines shared types, configures the testing framework, and establishes development tooling.
+Epic 1 establishes the foundational development infrastructure for Etch - an open-source, self-hosted meeting platform with real-time screen annotations. This epic creates the monorepo structure, initializes the Tauri desktop application shell, sets up the Hono API server, defines shared types, configures the testing framework, and establishes development tooling.
 
 This foundation is critical as all subsequent epics (Basic Meeting, Screen Sharing, Annotations, Permissions, Connection Resilience, Self-Hosting) depend on the infrastructure established here. The architecture follows a **decoupled annotation layer** pattern where media transport flows through LiveKit SFU while annotation events synchronize through LiveKit DataTracks.
 
@@ -19,7 +19,7 @@ This foundation is critical as all subsequent epics (Basic Meeting, Screen Shari
 - Initialize pnpm monorepo with workspace configuration
 - Create Tauri 2.0 desktop application shell with React + Vite
 - Configure Hono API server with health endpoint
-- Define shared TypeScript types package (`@nameless/shared`)
+- Define shared TypeScript types package (`@etch/shared`)
 - Set up Vitest testing framework across all packages
 - Configure development scripts for concurrent client/server development
 - Establish ESLint, Prettier, and TypeScript configuration
@@ -49,7 +49,7 @@ This epic implements the foundational layer of the architecture defined in `docs
 
 **Project Structure Target:**
 ```
-nameless/
+etch/
 ├── packages/
 │   ├── client/                     # Tauri desktop application
 │   │   ├── src/                    # React frontend
@@ -299,7 +299,7 @@ This epic establishes security foundations:
 - Repository contains `packages/client`, `packages/server`, `packages/shared`
 - `pnpm-workspace.yaml` correctly defines workspace packages
 - `pnpm install` succeeds from clean state
-- Path aliases (`@/`, `@nameless/shared`) resolve correctly
+- Path aliases (`@/`, `@etch/shared`) resolve correctly
 
 ### AC-1.2: Tauri Desktop Application
 - `pnpm dev:client` opens a Tauri window
@@ -316,7 +316,7 @@ This epic establishes security foundations:
 - CORS configured for local development
 
 ### AC-1.4: Shared Types Package
-- `@nameless/shared` exports all defined types (Point, Stroke, Participant, etc.)
+- `@etch/shared` exports all defined types (Point, Stroke, Participant, etc.)
 - Types are importable in both client and server
 - Constants (PARTICIPANT_COLORS, MAX_STROKE_POINTS) are exported
 - Package builds to CommonJS and ESM
@@ -396,7 +396,7 @@ packages/
 └── vitest.workspace.ts          # workspace orchestration
 ```
 
-**Test Factories (in @nameless/shared):**
+**Test Factories (in @etch/shared):**
 - `createMockStroke(overrides?)` - Stroke with defaults
 - `createMockParticipant(overrides?)` - Participant with role
 - `createMockHost()`, `createMockViewer()` - Role-specific helpers

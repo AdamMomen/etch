@@ -1066,6 +1066,33 @@ dependencies = [
 ]
 
 [[package]]
+name = "etch-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "ashpd",
+ "base64 0.22.1",
+ "core-graphics 0.24.0",
+ "criterion",
+ "image",
+ "livekit",
+ "objc2 0.5.2",
+ "objc2-app-kit",
+ "objc2-core-graphics",
+ "objc2-foundation 0.2.2",
+ "parking_lot",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+ "windows",
+ "winit",
+]
+
+[[package]]
 name = "event-listener"
 version = "2.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2128,33 +2155,6 @@ name = "multimap"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1d87ecb2933e8aeadb3e3a02b828fed80a7528047e68b4f424523a0981a3a084"
-
-[[package]]
-name = "nameless-core"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "ashpd",
- "base64 0.22.1",
- "core-graphics 0.24.0",
- "criterion",
- "image",
- "livekit",
- "objc2 0.5.2",
- "objc2-app-kit",
- "objc2-core-graphics",
- "objc2-foundation 0.2.2",
- "parking_lot",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "uuid",
- "windows",
- "winit",
-]
 
 [[package]]
 name = "native-tls"

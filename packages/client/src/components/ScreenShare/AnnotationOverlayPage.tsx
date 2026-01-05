@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react
 import { listen, emit } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { getStroke } from 'perfect-freehand'
-import type { Stroke } from '@nameless/shared'
+import type { Stroke } from '@etch/shared'
 import { denormalizeStrokePoints, normalizeCoordinates } from '@/utils/coordinates'
 import {
   PEN_OPTIONS,

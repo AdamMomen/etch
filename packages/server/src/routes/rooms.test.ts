@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { app } from '../app'
 import { clearRooms, getRoom } from '../services/roomStore'
-import { PARTICIPANT_COLORS } from '@nameless/shared'
+import { PARTICIPANT_COLORS } from '@etch/shared'
 
 describe('POST /api/rooms', () => {
   const originalEnv = process.env

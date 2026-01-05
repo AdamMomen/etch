@@ -3,7 +3,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { useOverlayAnnotationBridge } from '@/hooks/useOverlayAnnotationBridge'
 import { useAnnotationStore } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
-import type { Stroke } from '@nameless/shared'
+import type { Stroke } from '@etch/shared'
 
 // Mock Tauri event APIs
 let mockListeners: Map<string, (event: { payload: unknown }) => void>

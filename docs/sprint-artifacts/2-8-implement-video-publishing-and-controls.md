@@ -344,7 +344,7 @@ BMad (AI Code Review)
 **✅ APPROVE** - All acceptance criteria implemented and verified, all tasks completed, comprehensive test coverage, clean implementation following established patterns.
 
 ### Summary
-Story 2.8 implements video publishing and controls for the NAMELESS meeting application. The implementation follows the patterns established in Story 2.7 (audio) and delivers all 8 acceptance criteria. The code is well-structured, properly tested with 201 tests passing, and aligns with architectural decisions.
+Story 2.8 implements video publishing and controls for the Etch meeting application. The implementation follows the patterns established in Story 2.7 (audio) and delivers all 8 acceptance criteria. The code is well-structured, properly tested with 201 tests passing, and aligns with architectural decisions.
 
 ### Key Findings
 

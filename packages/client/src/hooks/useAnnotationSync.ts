@@ -16,7 +16,7 @@ import {
   type StateSnapshotMessage,
   type Point,
   type Stroke,
-} from '@nameless/shared'
+} from '@etch/shared'
 
 /**
  * Sync state for late-joiner annotation sync.

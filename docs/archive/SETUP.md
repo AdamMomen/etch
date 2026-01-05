@@ -1,4 +1,4 @@
-# NAMELESS Setup Guide
+# Etch Setup Guide
 
 ## Prerequisites
 
@@ -74,7 +74,7 @@ cd client && pnpm dev
 ## Project Structure
 
 ```
-nameless/
+etch/
 ├── client/          # Electron + React desktop app
 ├── server/          # Node.js Express App Server
 ├── shared/          # Shared TypeScript types

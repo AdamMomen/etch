@@ -1,5 +1,5 @@
 /**
- * Core client for NAMELESS Core media engine
+ * Core client for Etch Core media engine
  *
  * This module provides a TypeScript interface to the nameless-core binary
  * which handles screen capture, LiveKit connection, and annotations.
@@ -120,7 +120,7 @@ type IncomingMessage =
 export type MessageHandler = (message: CoreMessage) => void
 
 /**
- * Client for the NAMELESS Core media engine.
+ * Client for the Etch Core media engine.
  *
  * Core handles:
  * - Screen capture (via LiveKit DesktopCapturer)

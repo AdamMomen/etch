@@ -1,4 +1,4 @@
-import type { Point } from '@nameless/shared'
+import type { Point } from '@etch/shared'
 
 /**
  * Normalizes pixel coordinates to [0, 1] range relative to canvas dimensions.

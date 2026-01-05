@@ -1,6 +1,6 @@
-import type { Role } from '@nameless/shared'
+import type { Role } from '@etch/shared'
 import { generateRoomId } from '../utils/roomId'
-import { PARTICIPANT_COLORS } from '@nameless/shared'
+import { PARTICIPANT_COLORS } from '@etch/shared'
 
 /**
  * Record representing a participant stored server-side.
