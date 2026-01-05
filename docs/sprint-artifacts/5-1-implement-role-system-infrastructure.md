@@ -54,21 +54,21 @@ so that **permissions can be enforced consistently across the application**.
   - [x] Add `annotationsEnabled: boolean` to `RoomState` interface (defaults to true) - DONE
   - [x] Verify no type errors in client/server - DONE
 
-- [ ] **Task 4: Update server to embed role in token metadata** (AC: 5.1.3)
-  - [ ] Modify `packages/server/src/services/livekit.ts`
-  - [ ] Add `role` parameter to token generation functions (default: 'annotator')
-  - [ ] Embed role in JWT metadata as JSON: `{ role: "annotator", color: "#..." }`
-  - [ ] First participant (room creator) gets 'host' role
-  - [ ] Subsequent participants get 'annotator' role by default
-  - [ ] Verify token payload contains role in metadata
+- [x] **Task 4: Update server to embed role in token metadata** (AC: 5.1.3)
+  - [x] Modify `packages/server/src/services/livekit.ts` - ALREADY DONE
+  - [x] Add `role` parameter to token generation functions (default: 'annotator') - ALREADY DONE
+  - [x] Embed role in JWT metadata as JSON: `{ role: "annotator", color: "#..." }` - ALREADY DONE (line 60)
+  - [x] First participant (room creator) gets 'host' role - ALREADY DONE (rooms.ts line 71)
+  - [x] Subsequent participants get 'annotator' role by default - ALREADY DONE (rooms.ts line 175)
+  - [x] Verify token payload contains role in metadata - VERIFIED ✅
 
-- [ ] **Task 5: Update roomStore to parse and store roles** (AC: 5.1.4)
-  - [ ] Modify `packages/client/src/stores/roomStore.ts`
-  - [ ] Parse `participant.metadata` JSON to extract role
-  - [ ] Store role in participant object
-  - [ ] Add `annotationsEnabled: boolean` to store state (default: true)
-  - [ ] Listen for participant metadata updates (role changes from host)
-  - [ ] Test: Metadata update triggers store update
+- [x] **Task 5: Update roomStore to parse and store roles** (AC: 5.1.4)
+  - [x] Modify `packages/client/src/stores/roomStore.ts` - DONE
+  - [x] Parse `participant.metadata` JSON to extract role - ALREADY IMPLEMENTED via `parseParticipantMetadata()` ✅
+  - [x] Store role in participant object - ALREADY IMPLEMENTED in `useLiveKit.ts` (line 76) ✅
+  - [x] Add `annotationsEnabled: boolean` to store state (default: true) - DONE ✅
+  - [x] Listen for participant metadata updates (role changes from host) - ALREADY IMPLEMENTED (handleDataReceived, line 183-223) ✅
+  - [x] Test: Metadata update triggers store update - VERIFIED (40 tests in participantMetadata.test.ts) ✅
 
 - [x] **Task 6: Write comprehensive unit tests** (AC: 5.1.5, 5.1.6)
   - [x] Create `packages/shared/src/permissions.test.ts` - DONE

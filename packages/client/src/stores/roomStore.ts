@@ -28,6 +28,9 @@ interface RoomState {
   localParticipant: Participant | null
   remoteParticipants: Participant[]
 
+  // Permissions (Story 5.1)
+  annotationsEnabled: boolean
+
   // Room actions
   setCurrentRoom: (room: RoomInfo | null) => void
   clearRoom: () => void
@@ -42,6 +45,9 @@ interface RoomState {
   removeRemoteParticipant: (participantId: string) => void
   updateParticipant: (participantId: string, updates: Partial<Participant>) => void
   clearParticipants: () => void
+
+  // Permission actions (Story 5.1)
+  setAnnotationsEnabled: (enabled: boolean) => void
 }
 
 const initialState = {
@@ -51,6 +57,7 @@ const initialState = {
   connectionError: null,
   localParticipant: null,
   remoteParticipants: [],
+  annotationsEnabled: true, // Default to enabled (AC-5.1.4)
 }
 
 export const useRoomStore = create<RoomState>((set) => ({
@@ -109,4 +116,6 @@ export const useRoomStore = create<RoomState>((set) => ({
       localParticipant: null,
       remoteParticipants: [],
     }),
+
+  setAnnotationsEnabled: (enabled) => set({ annotationsEnabled: enabled }),
 }))
