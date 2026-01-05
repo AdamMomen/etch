@@ -28,7 +28,7 @@ describe('App', () => {
   it('renders Join button', () => {
     render(<App />)
 
-    expect(screen.getByRole('button', { name: /join/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^join$/i })).toBeInTheDocument()
   })
 
   it('renders room code input', () => {

@@ -1,7 +1,7 @@
 /**
  * Core client for Etch Core media engine
  *
- * This module provides a TypeScript interface to the nameless-core binary
+ * This module provides a TypeScript interface to the etch-core binary
  * which handles screen capture, LiveKit connection, and annotations.
  * Communication is via socket IPC (Unix socket on macOS/Linux, TCP on Windows).
  */
@@ -40,9 +40,18 @@ export interface ParticipantData {
   role: 'host' | 'participant'
 }
 
-export type ConnectionState = 'disconnected' | 'connecting' | 'connected' | 'reconnecting'
+export type ConnectionState =
+  | 'disconnected'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
 
-export type PermissionStatus = 'granted' | 'denied' | 'not_determined' | 'restricted' | 'not_applicable'
+export type PermissionStatus =
+  | 'granted'
+  | 'denied'
+  | 'not_determined'
+  | 'restricted'
+  | 'not_applicable'
 
 export interface PermissionState {
   screen_recording: PermissionStatus
@@ -83,7 +92,16 @@ export type CoreMessage =
   | { type: 'connection_state_changed'; state: ConnectionState }
   | { type: 'screen_share_started'; sharer_id: string }
   | { type: 'screen_share_stopped' }
-  | { type: 'video_frame'; participant_id: string; track_id: string; width: number; height: number; timestamp: number; format: FrameFormat; frame_data: string }
+  | {
+      type: 'video_frame'
+      participant_id: string
+      track_id: string
+      width: number
+      height: number
+      timestamp: number
+      format: FrameFormat
+      frame_data: string
+    }
   | { type: 'permission_state'; state: PermissionState }
   | { type: 'pong' }
   | { type: 'error'; code: string; message: string }
@@ -96,9 +114,20 @@ type IncomingMessage =
   | { type: 'join_room'; server_url: string; token: string }
   | { type: 'leave_room' }
   | { type: 'get_available_content' }
-  | { type: 'start_screen_share'; source_id: string; source_type: SourceType; config?: CaptureConfig }
+  | {
+      type: 'start_screen_share'
+      source_id: string
+      source_type: SourceType
+      config?: CaptureConfig
+    }
   | { type: 'stop_screen_share' }
-  | { type: 'send_annotation'; stroke_id: string; tool: string; color: { r: number; g: number; b: number; a: number }; points: { x: number; y: number; pressure?: number }[] }
+  | {
+      type: 'send_annotation'
+      stroke_id: string
+      tool: string
+      color: { r: number; g: number; b: number; a: number }
+      points: { x: number; y: number; pressure?: number }[]
+    }
   | { type: 'delete_annotation'; stroke_id: string }
   | { type: 'clear_annotations' }
   | { type: 'cursor_move'; x: number; y: number }
@@ -140,11 +169,14 @@ export class CoreClient {
   private terminationHandlers: TerminationHandler[] = []
   private unlisten: UnlistenFn | null = null
   private unlistenTermination: UnlistenFn | null = null
-  private pendingRequests = new Map<string, {
-    resolve: (value: unknown) => void
-    reject: (reason: Error) => void
-    timeout: ReturnType<typeof setTimeout>
-  }>()
+  private pendingRequests = new Map<
+    string,
+    {
+      resolve: (value: unknown) => void
+      reject: (reason: Error) => void
+      timeout: ReturnType<typeof setTimeout>
+    }
+  >()
   private restartAttempts = 0
   private maxRestartAttempts = 3
   private restartDelayMs = 1000
@@ -173,9 +205,12 @@ export class CoreClient {
     })
 
     // Listen for Core termination events
-    this.unlistenTermination = await listen<number | null>('core-terminated', (event) => {
-      this.handleTermination(event.payload)
-    })
+    this.unlistenTermination = await listen<number | null>(
+      'core-terminated',
+      (event) => {
+        this.handleTermination(event.payload)
+      }
+    )
   }
 
   /**
@@ -199,12 +234,18 @@ export class CoreClient {
 
     // Attempt restart if it was an unexpected termination (non-zero code or signal)
     // Code 0 means graceful shutdown, null means killed by signal
-    if (wasRunning && code !== 0 && this.restartAttempts < this.maxRestartAttempts) {
+    if (
+      wasRunning &&
+      code !== 0 &&
+      this.restartAttempts < this.maxRestartAttempts
+    ) {
       this.restartAttempts++
-      console.log(`Attempting Core restart (attempt ${this.restartAttempts}/${this.maxRestartAttempts})...`)
+      console.log(
+        `Attempting Core restart (attempt ${this.restartAttempts}/${this.maxRestartAttempts})...`
+      )
 
       // Wait before restart
-      await new Promise(resolve => setTimeout(resolve, this.restartDelayMs))
+      await new Promise((resolve) => setTimeout(resolve, this.restartDelayMs))
 
       try {
         // Clean up old listeners
@@ -293,7 +334,12 @@ export class CoreClient {
     }
 
     const json = JSON.stringify(message)
-    console.log('%c[Core ←]', 'color: #4CAF50; font-weight: bold', message.type, message)
+    console.log(
+      '%c[Core ←]',
+      'color: #4CAF50; font-weight: bold',
+      message.type,
+      message
+    )
     await invoke('send_core_message', { message: json })
   }
 
@@ -303,7 +349,12 @@ export class CoreClient {
   private handleMessage(message: CoreMessage): void {
     // Log incoming message with color coding
     const color = message.type === 'error' ? '#f44336' : '#2196F3'
-    console.log(`%c[Core →]`, `color: ${color}; font-weight: bold`, message.type, message)
+    console.log(
+      `%c[Core →]`,
+      `color: ${color}; font-weight: bold`,
+      message.type,
+      message
+    )
 
     // Notify all handlers
     for (const handler of this.messageHandlers) {
@@ -503,14 +554,20 @@ export class CoreClient {
    * Set audio input device
    */
   async setAudioInputDevice(deviceId: string): Promise<void> {
-    await this.sendMessage({ type: 'set_audio_input_device', device_id: deviceId })
+    await this.sendMessage({
+      type: 'set_audio_input_device',
+      device_id: deviceId,
+    })
   }
 
   /**
    * Set video input device
    */
   async setVideoInputDevice(deviceId: string): Promise<void> {
-    await this.sendMessage({ type: 'set_video_input_device', device_id: deviceId })
+    await this.sendMessage({
+      type: 'set_video_input_device',
+      device_id: deviceId,
+    })
   }
 
   // ========================================================================

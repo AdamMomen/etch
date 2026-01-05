@@ -68,6 +68,7 @@ describe('@etch/shared exports', () => {
           { x: 1, y: 1 },
         ],
         createdAt: Date.now(),
+        isComplete: false,
       }
       expect(stroke.id).toBe('stroke-1')
       expect(stroke.tool).toBe('pen')
@@ -105,6 +106,7 @@ describe('@etch/shared exports', () => {
       const createRes: CreateRoomResponse = {
         roomId: 'room-1',
         token: 'jwt-token',
+        screenShareToken: 'screenshare-jwt-token',
         livekitUrl: 'wss://livekit.example.com',
       }
       const joinReq: JoinRoomRequest = {
@@ -113,6 +115,7 @@ describe('@etch/shared exports', () => {
       }
       const joinRes: JoinRoomResponse = {
         token: 'jwt-token',
+        screenShareToken: 'screenshare-jwt-token',
         livekitUrl: 'wss://livekit.example.com',
       }
 

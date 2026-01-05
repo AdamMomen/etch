@@ -64,14 +64,14 @@ describe('HomeScreen', () => {
 
     it('renders Join button', () => {
       renderHomeScreen()
-      expect(screen.getByRole('button', { name: /join/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /^join$/i })).toBeInTheDocument()
     })
   })
 
   describe('Join Meeting Input (AC-2.3.3)', () => {
     it('disables Join button when input is empty', () => {
       renderHomeScreen()
-      const joinButton = screen.getByRole('button', { name: /join/i })
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
       expect(joinButton).toBeDisabled()
     })
 
@@ -82,7 +82,7 @@ describe('HomeScreen', () => {
       const input = screen.getByPlaceholderText(/enter room code or link/i)
       await user.type(input, 'abc-123-xyz')
 
-      const joinButton = screen.getByRole('button', { name: /join/i })
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
       expect(joinButton).not.toBeDisabled()
     })
 
@@ -94,7 +94,7 @@ describe('HomeScreen', () => {
       await user.type(input, 'abc')
       await user.clear(input)
 
-      const joinButton = screen.getByRole('button', { name: /join/i })
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
       expect(joinButton).toBeDisabled()
     })
   })
@@ -107,7 +107,7 @@ describe('HomeScreen', () => {
       const input = screen.getByPlaceholderText(/enter room code or link/i)
       await user.type(input, 'abc-123-xyz')
 
-      const joinButton = screen.getByRole('button', { name: /join/i })
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
       await user.click(joinButton)
 
       expect(mockNavigate).toHaveBeenCalledWith('/join/abc-123-xyz')
@@ -120,7 +120,7 @@ describe('HomeScreen', () => {
       const input = screen.getByPlaceholderText(/enter room code or link/i)
       await user.type(input, 'etch://room/my-room-id')
 
-      const joinButton = screen.getByRole('button', { name: /join/i })
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
       await user.click(joinButton)
 
       expect(mockNavigate).toHaveBeenCalledWith('/join/my-room-id')
@@ -133,7 +133,7 @@ describe('HomeScreen', () => {
       const input = screen.getByPlaceholderText(/enter room code or link/i)
       await user.type(input, 'https://example.com/room/test-room')
 
-      const joinButton = screen.getByRole('button', { name: /join/i })
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
       await user.click(joinButton)
 
       expect(mockNavigate).toHaveBeenCalledWith('/join/test-room')

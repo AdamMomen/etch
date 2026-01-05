@@ -20,7 +20,7 @@ export default defineConfig({
       // Workaround for Tauri hot reload
       ignored: ['**/src-tauri/**'],
     },
-    allowedHosts: ['nameless.momen.earth'],
+    allowedHosts: ['etch.momen.earth'],
   },
   // Produce sourcemaps for better debugging
   build: {

@@ -25,7 +25,7 @@ interface UseDraggablePositionReturn {
   }
 }
 
-const STORAGE_PREFIX = 'nameless:'
+const STORAGE_PREFIX = 'etch:'
 
 function loadPosition(key: string, defaultPos: Position): Position {
   try {
@@ -160,8 +160,14 @@ export function useDraggablePosition(
       const containerHeight = containerRef.current?.offsetHeight ?? 200
 
       return {
-        x: Math.max(padding, Math.min(x, viewportWidth - containerWidth - padding)),
-        y: Math.max(padding, Math.min(y, viewportHeight - containerHeight - padding)),
+        x: Math.max(
+          padding,
+          Math.min(x, viewportWidth - containerWidth - padding)
+        ),
+        y: Math.max(
+          padding,
+          Math.min(y, viewportHeight - containerHeight - padding)
+        ),
       }
     },
     [padding]
@@ -177,51 +183,54 @@ export function useDraggablePosition(
     return () => window.removeEventListener('resize', handleResize)
   }, [constrainPosition])
 
-  const handlePointerDown = useCallback((e: React.PointerEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
 
-    const target = e.currentTarget as HTMLElement
-    target.setPointerCapture(e.pointerId)
+      const target = e.currentTarget as HTMLElement
+      target.setPointerCapture(e.pointerId)
 
-    dragState.current = {
-      startX: e.clientX,
-      startY: e.clientY,
-      startPosX: position.x,
-      startPosY: position.y,
-      pointerId: e.pointerId,
-    }
-    setIsDragging(true)
-
-    const handlePointerMove = (moveEvent: PointerEvent) => {
-      if (!dragState.current) return
-
-      const deltaX = moveEvent.clientX - dragState.current.startX
-      const deltaY = moveEvent.clientY - dragState.current.startY
-
-      const newPos = constrainPosition(
-        dragState.current.startPosX + deltaX,
-        dragState.current.startPosY + deltaY
-      )
-      setPosition(newPos)
-    }
-
-    const handlePointerUp = () => {
-      if (dragState.current) {
-        target.releasePointerCapture(dragState.current.pointerId)
-        // Save position to localStorage
-        savePosition(storageKey, position)
+      dragState.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        startPosX: position.x,
+        startPosY: position.y,
+        pointerId: e.pointerId,
       }
-      dragState.current = null
-      setIsDragging(false)
+      setIsDragging(true)
 
-      document.removeEventListener('pointermove', handlePointerMove)
-      document.removeEventListener('pointerup', handlePointerUp)
-    }
+      const handlePointerMove = (moveEvent: PointerEvent) => {
+        if (!dragState.current) return
 
-    document.addEventListener('pointermove', handlePointerMove)
-    document.addEventListener('pointerup', handlePointerUp)
-  }, [position, constrainPosition, storageKey])
+        const deltaX = moveEvent.clientX - dragState.current.startX
+        const deltaY = moveEvent.clientY - dragState.current.startY
+
+        const newPos = constrainPosition(
+          dragState.current.startPosX + deltaX,
+          dragState.current.startPosY + deltaY
+        )
+        setPosition(newPos)
+      }
+
+      const handlePointerUp = () => {
+        if (dragState.current) {
+          target.releasePointerCapture(dragState.current.pointerId)
+          // Save position to localStorage
+          savePosition(storageKey, position)
+        }
+        dragState.current = null
+        setIsDragging(false)
+
+        document.removeEventListener('pointermove', handlePointerMove)
+        document.removeEventListener('pointerup', handlePointerUp)
+      }
+
+      document.addEventListener('pointermove', handlePointerMove)
+      document.addEventListener('pointerup', handlePointerUp)
+    },
+    [position, constrainPosition, storageKey]
+  )
 
   // Save position when it changes (debounced by drag end)
   useEffect(() => {

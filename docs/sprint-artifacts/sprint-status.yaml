@@ -116,8 +116,8 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Permissions & Moderation (8 stories)
-  epic-5: backlog
-  5-1-implement-role-system-infrastructure: backlog
+  epic-5: contexted
+  5-1-implement-role-system-infrastructure: ready-for-dev
   5-2-display-user-role-in-ui: backlog
   5-3-enforce-annotation-permissions: backlog
   5-4-implement-host-clear-all-annotations: backlog

@@ -43,7 +43,8 @@ export const useSettingsStore = create<SettingsState>()(
       setDisplayName: (name) => set({ displayName: name }),
       setApiBaseUrl: (url) => set({ apiBaseUrl: url }),
       setInviteDomain: (domain) => set({ inviteDomain: domain }),
-      toggleSidebar: () => set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
+      toggleSidebar: () =>
+        set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
       setMuted: (muted) => set({ isMuted: muted }),
       setVideoOff: (videoOff) => set({ isVideoOff: videoOff }),
@@ -52,6 +53,6 @@ export const useSettingsStore = create<SettingsState>()(
       setTheme: (theme) => set({ theme }),
       clearPreferences: () => set(defaultSettings),
     }),
-    { name: 'nameless-settings' }
+    { name: 'etch-settings' }
   )
 )
