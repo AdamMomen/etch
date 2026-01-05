@@ -13,8 +13,8 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@nameless/shared": ["./packages/shared/src/index.ts"],
-      "@nameless/shared/*": ["./packages/shared/src/*"]
+      "@etch/shared": ["./packages/shared/src/index.ts"],
+      "@etch/shared/*": ["./packages/shared/src/*"]
     }
   }
 }
