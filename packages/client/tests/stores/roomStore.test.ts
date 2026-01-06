@@ -303,4 +303,74 @@ describe('roomStore', () => {
       expect(state.remoteParticipants).toEqual([])
     })
   })
+
+  describe('permissions - Story 5.1', () => {
+    it('annotationsEnabled defaults to true (AC-5.1.4)', () => {
+      const state = useRoomStore.getState()
+      expect(state.annotationsEnabled).toBe(true)
+    })
+
+    it('sets annotationsEnabled to false', () => {
+      act(() => {
+        useRoomStore.getState().setAnnotationsEnabled(false)
+      })
+
+      expect(useRoomStore.getState().annotationsEnabled).toBe(false)
+    })
+
+    it('sets annotationsEnabled to true', () => {
+      // First set to false
+      act(() => {
+        useRoomStore.setState({ annotationsEnabled: false })
+      })
+
+      // Then set to true
+      act(() => {
+        useRoomStore.getState().setAnnotationsEnabled(true)
+      })
+
+      expect(useRoomStore.getState().annotationsEnabled).toBe(true)
+    })
+
+    it('syncs role from metadata updates (AC-5.1.4)', () => {
+      // Set up a participant with initial role
+      act(() => {
+        useRoomStore.setState({
+          remoteParticipants: [
+            { id: 'remote-1', name: 'Alice', role: 'annotator', color: '#06b6d4', isLocal: false },
+          ],
+        })
+      })
+
+      // Simulate metadata change that updates role
+      act(() => {
+        useRoomStore.getState().updateParticipant('remote-1', { role: 'viewer' })
+      })
+
+      expect(useRoomStore.getState().remoteParticipants[0].role).toBe('viewer')
+    })
+
+    it('syncs role and color from metadata updates', () => {
+      // Set up a participant
+      act(() => {
+        useRoomStore.setState({
+          remoteParticipants: [
+            { id: 'remote-1', name: 'Alice', role: 'annotator', color: '#06b6d4', isLocal: false },
+          ],
+        })
+      })
+
+      // Simulate metadata change that updates both role and color
+      act(() => {
+        useRoomStore.getState().updateParticipant('remote-1', {
+          role: 'sharer',
+          color: '#f97316'
+        })
+      })
+
+      const participant = useRoomStore.getState().remoteParticipants[0]
+      expect(participant.role).toBe('sharer')
+      expect(participant.color).toBe('#f97316')
+    })
+  })
 })

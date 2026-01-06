@@ -1,0 +1,235 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>2</storyId>
+    <title>Display User Role in UI</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2026-01-06</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/5-2-display-user-role-in-ui.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to see my current role and other participants' roles</iWant>
+    <soThat>I understand what actions I can take</soThat>
+    <tasks>
+      <task id="1" status="pending">
+        <name>Create RoleBadge component</name>
+        <description>Create packages/client/src/components/RoleBadge.tsx with icon + text mapping, color styling, and tooltips for all role types</description>
+        <acceptanceCriteria>AC-5.2.1, AC-5.2.2, AC-5.2.3, AC-5.2.4, AC-5.2.5, AC-5.2.8, AC-5.2.9</acceptanceCriteria>
+        <files>
+          <create>packages/client/src/components/RoleBadge.tsx</create>
+          <modify>packages/client/src/components/index.ts</modify>
+        </files>
+      </task>
+      <task id="2" status="pending">
+        <name>Update ParticipantListItem to display role badges</name>
+        <description>Modify packages/client/src/components/ParticipantListItem.tsx (or equivalent) to display RoleBadge component with participant role and isSharingScreen props</description>
+        <acceptanceCriteria>AC-5.2.1</acceptanceCriteria>
+        <files>
+          <create>packages/client/src/components/ParticipantListItem.tsx</create>
+        </files>
+        <note>ParticipantListItem.tsx does not exist yet - needs to be created or refactored from existing Sidebar/ParticipantBubble components</note>
+      </task>
+      <task id="3" status="pending">
+        <name>Update Sidebar header to show user's own role</name>
+        <description>Modify packages/client/src/components/MeetingRoom/Sidebar.tsx to display local participant role in header and show "View only mode" banner for viewers</description>
+        <acceptanceCriteria>AC-5.2.6, AC-5.2.7</acceptanceCriteria>
+        <files>
+          <modify>packages/client/src/components/MeetingRoom/Sidebar.tsx</modify>
+        </files>
+      </task>
+      <task id="4" status="pending">
+        <name>Handle dynamic sharer role badge</name>
+        <description>Ensure RoleBadge shows "Sharing" badge when participant.isSharingScreen is true, regardless of role value</description>
+        <acceptanceCriteria>AC-5.2.3</acceptanceCriteria>
+        <files>
+          <modify>packages/client/src/components/RoleBadge.tsx</modify>
+        </files>
+      </task>
+      <task id="5" status="pending">
+        <name>Add unit tests for RoleBadge component</name>
+        <description>Create packages/client/tests/components/RoleBadge.test.tsx with tests for all role types, tooltips, colors, and dynamic sharer badge</description>
+        <acceptanceCriteria>AC-5.2.8</acceptanceCriteria>
+        <files>
+          <create>packages/client/tests/components/RoleBadge.test.tsx</create>
+        </files>
+        <coverage>≥ 90%</coverage>
+      </task>
+      <task id="6" status="pending">
+        <name>Add integration tests for role display</name>
+        <description>Update ParticipantListItem and Sidebar test files to verify role badge rendering and header role display</description>
+        <acceptanceCriteria>AC-5.2.1, AC-5.2.6</acceptanceCriteria>
+        <files>
+          <modify>packages/client/tests/components/ParticipantListItem.test.tsx</modify>
+          <modify>packages/client/tests/components/Sidebar.test.tsx</modify>
+        </files>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-5.2.1" priority="must">Participant list shows role badges for each participant</criterion>
+    <criterion id="AC-5.2.2" priority="must">Host badge displays crown icon + "Host" label with accent color</criterion>
+    <criterion id="AC-5.2.3" priority="must">Sharer badge displays screen icon + "Sharing" label (when actively sharing)</criterion>
+    <criterion id="AC-5.2.4" priority="must">Viewer badge displays eye icon + "View only" label with muted color</criterion>
+    <criterion id="AC-5.2.5" priority="must">Annotator displays pen icon (subtle, default role)</criterion>
+    <criterion id="AC-5.2.6" priority="must">My own role is prominently displayed in sidebar header</criterion>
+    <criterion id="AC-5.2.7" priority="must">Clear indication if user cannot annotate</criterion>
+    <criterion id="AC-5.2.8" priority="must">Role badges use appropriate colors per design system</criterion>
+    <criterion id="AC-5.2.9" priority="must">Tooltip on badge shows full role description</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics/epic-5-permissions-moderation.md</path>
+        <title>Epic 5: Permissions & Moderation</title>
+        <section>Story 5.2: Display User Role in UI</section>
+        <snippet>Role badges show in participant list: Host (crown + "Host"), Sharer (screen + "Sharing"), Annotator (pen icon), Viewer (eye + "View only"). User's own role displayed in sidebar header with "View only mode" for viewers.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-5.md</path>
+        <title>Epic Technical Specification: Permissions & Moderation</title>
+        <section>AC-2: Display User Role in UI</section>
+        <snippet>UI Components: ParticipantListItem (add role badge display), Sidebar (show user's role in header). Role badge specifications with icon, text, color, and tooltip for each role type. Dynamic sharer badge appears when isSharingScreen=true.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Project Structure - UI Components</section>
+        <snippet>Component structure with shadcn/ui components in ui/ folder, MeetingRoom components for meeting features, lucide-react for icons, Tailwind CSS for styling.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/Sidebar.tsx</path>
+        <kind>component</kind>
+        <symbol>Sidebar</symbol>
+        <lines>1-50</lines>
+        <reason>Existing sidebar component that needs to display local participant role in header. Current implementation shows participant list with collapse/expand toggle.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/ParticipantBubbles.tsx</path>
+        <kind>component</kind>
+        <symbol>ParticipantBubbles</symbol>
+        <lines>1-50</lines>
+        <reason>Existing participant display component pattern. Shows how to iterate over participants and display participant data. May need ParticipantListItem component extracted or created.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/shared/src/types/room.ts</path>
+        <kind>types</kind>
+        <symbol>Role, Participant</symbol>
+        <lines>1-46</lines>
+        <reason>Defines Role type ('host' | 'sharer' | 'annotator' | 'viewer') and Participant interface with role, color, isSharingScreen fields. Source of truth for role data structure.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/shared/src/permissions.ts</path>
+        <kind>utilities</kind>
+        <symbol>canAnnotate</symbol>
+        <lines>1-75</lines>
+        <reason>Permission utility functions for checking role capabilities. Use canAnnotate(role, annotationsEnabled) to determine if user should see "View only mode" banner.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/stores/roomStore.ts</path>
+        <kind>store</kind>
+        <symbol>roomStore</symbol>
+        <lines>N/A</lines>
+        <reason>Zustand store managing participant state including roles. Use to retrieve local participant and participant list for role display.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="lucide-react" version="^0.555.0" usage="Icons for role badges: Crown, Monitor, Pen, Eye" />
+        <package name="@radix-ui/react-slot" version="^1.2.4" usage="Base primitives for shadcn/ui components" />
+        <package name="@radix-ui/react-dropdown-menu" version="^2.1.16" usage="Potential future use for role context menu in Story 5.6" />
+        <package name="zustand" version="^5.0.9" usage="roomStore for participant data access" />
+        <package name="react" version="^19.2.0" usage="Component framework" />
+        <package name="tailwind-merge" version="^3.4.0" usage="Merge Tailwind classes with cn() utility" />
+        <package name="class-variance-authority" version="^0.7.1" usage="Variant-based styling for components" />
+        <package name="@etch/shared" version="workspace:*" usage="Role types and permission utilities" />
+      </node>
+      <dev>
+        <package name="vitest" version="^2.0.0" usage="Test runner" />
+        <package name="@testing-library/react" version="^16.3.0" usage="Component testing utilities" />
+        <package name="@testing-library/jest-dom" version="^6.9.1" usage="DOM matchers for assertions" />
+        <package name="@testing-library/user-event" version="^14.6.1" usage="User interaction simulation" />
+      </dev>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Use existing Sidebar.tsx component structure - extend, don't replace</constraint>
+    <constraint type="architecture">Follow shadcn/ui component pattern: create RoleBadge.tsx in components/, export from index.ts</constraint>
+    <constraint type="architecture">Import Role type from @etch/shared, not local definitions</constraint>
+    <constraint type="design">Use CSS variables for colors: --accent (host), --info (sharer), --text-muted (viewer), --text-primary (annotator)</constraint>
+    <constraint type="design">Icons from lucide-react: Crown, Monitor, Pen, Eye</constraint>
+    <constraint type="design">Badge layout: inline icon + text, appropriate sizing for participant list</constraint>
+    <constraint type="logic">Dynamic sharer badge logic: show "Sharing" when isSharingScreen=true OR role='sharer'</constraint>
+    <constraint type="logic">Use canAnnotate(role, annotationsEnabled) from @etch/shared/permissions to determine view-only mode</constraint>
+    <constraint type="testing">Target ≥ 90% code coverage for RoleBadge component</constraint>
+    <constraint type="testing">Follow existing test patterns from ParticipantBubble/Sidebar component tests</constraint>
+    <constraint type="accessibility">Role badges must have aria-label for screen readers</constraint>
+    <constraint type="accessibility">Tooltips must be keyboard accessible (Tab navigation)</constraint>
+    <constraint type="accessibility">Minimum 4.5:1 color contrast ratio for viewer badge (muted color)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Role</name>
+      <kind>TypeScript type</kind>
+      <signature>export type Role = 'host' | 'sharer' | 'annotator' | 'viewer'</signature>
+      <path>packages/shared/src/types/room.ts</path>
+    </interface>
+    <interface>
+      <name>Participant</name>
+      <kind>TypeScript interface</kind>
+      <signature>export interface Participant { id: string; name: string; role: Role; color: string; isLocal: boolean; isSpeaking?: boolean; hasVideo?: boolean; isScreenSharing?: boolean }</signature>
+      <path>packages/shared/src/types/room.ts</path>
+    </interface>
+    <interface>
+      <name>canAnnotate</name>
+      <kind>Function signature</kind>
+      <signature>export function canAnnotate(role: Role, annotationsEnabled: boolean): boolean</signature>
+      <path>packages/shared/src/permissions.ts</path>
+      <usage>Determine if user should see "View only mode" banner (canAnnotate returns false for viewers)</usage>
+    </interface>
+    <interface>
+      <name>RoleBadge (to be created)</name>
+      <kind>React component props</kind>
+      <signature>interface RoleBadgeProps { role: Role; isSharingScreen?: boolean; className?: string }</signature>
+      <path>packages/client/src/components/RoleBadge.tsx</path>
+      <usage>New component to display role badge with icon, text, color, and tooltip</usage>
+    </interface>
+    <interface>
+      <name>Sidebar</name>
+      <kind>React component props</kind>
+      <signature>interface SidebarProps { isCollapsed: boolean; participants: Participant[]; localParticipantId: string; onInviteClick: () => void; onToggle: () => void }</signature>
+      <path>packages/client/src/components/MeetingRoom/Sidebar.tsx</path>
+      <usage>Existing component to extend with role display in header</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      The project uses Vitest as the test runner with React Testing Library for component testing. Tests are colocated in tests/components/ directory mirroring the src/components/ structure. All tests use @testing-library/react for rendering, screen queries, and user interactions. Component tests target ≥ 90% coverage. Integration tests verify cross-component behavior and store interactions.
+    </standards>
+    <locations>
+      <location>packages/client/tests/components/*.test.tsx</location>
+      <location>packages/client/tests/stores/*.test.ts</location>
+    </locations>
+    <ideas>
+      <idea criterion="AC-5.2.1, AC-5.2.2, AC-5.2.3, AC-5.2.4, AC-5.2.5">Test RoleBadge component renders correct icon and text for each role type (host: Crown + "Host", sharer: Monitor + "Sharing", annotator: Pen only, viewer: Eye + "View only")</idea>
+      <idea criterion="AC-5.2.8">Test RoleBadge applies correct CSS classes or styles for color coding (host: accent, sharer: info, viewer: muted, annotator: primary)</idea>
+      <idea criterion="AC-5.2.9">Test RoleBadge tooltip shows correct description on hover (use fireEvent.mouseOver and check tooltip text)</idea>
+      <idea criterion="AC-5.2.3">Test dynamic sharer badge: renders "Sharing" when isSharingScreen=true, even if role is not 'sharer'</idea>
+      <idea criterion="AC-5.2.1">Test ParticipantListItem displays RoleBadge component with participant's role prop</idea>
+      <idea criterion="AC-5.2.6">Test Sidebar header displays local participant role as "You (Host)" or "You (Annotator)"</idea>
+      <idea criterion="AC-5.2.7">Test Sidebar shows "View only mode" banner when local participant role is 'viewer' and canAnnotate returns false</idea>
+      <idea criterion="AC-5.2.7">Test Sidebar does NOT show "View only mode" banner when local participant role is 'annotator' or 'host'</idea>
+    </ideas>
+  </tests>
+</story-context>

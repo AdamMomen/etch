@@ -145,9 +145,10 @@ describe('ScreenShareButton', () => {
       const button = screen.getByRole('button', { name: /share screen/i })
       expect(button).toBeDisabled()
 
-      // The tooltip wrapper should exist (relative inline-block div wrapping the button)
-      const tooltipWrapper = button.closest('.relative.inline-block')
-      expect(tooltipWrapper).toBeInTheDocument()
+      // The tooltip wrapper should exist (span.inline-block wrapping the button for Radix)
+      const spanWrapper = button.parentElement
+      expect(spanWrapper?.tagName).toBe('SPAN')
+      expect(spanWrapper?.className).toContain('inline-block')
     })
 
     it('should show tooltip content on hover when disabled', async () => {
@@ -170,7 +171,8 @@ describe('ScreenShareButton', () => {
       }
 
       // Tooltip should show sharer name
-      expect(screen.getByText('Alice is sharing. Ask them to stop first.')).toBeInTheDocument()
+      const tooltip = await screen.findByRole('tooltip', { hidden: true })
+      expect(tooltip).toHaveTextContent('Alice is sharing. Ask them to stop first.')
     })
 
     it('should not have tooltip wrapper when button is enabled', () => {
@@ -183,9 +185,9 @@ describe('ScreenShareButton', () => {
 
       const button = screen.getByRole('button', { name: /share screen/i })
 
-      // Button should not have tooltip wrapper when enabled
-      const tooltipWrapper = button.closest('.relative.inline-block')
-      expect(tooltipWrapper).not.toBeInTheDocument()
+      // Button should not have TooltipButton wrapper when enabled (no tooltip prop)
+      // Just verify the button exists without span wrapper
+      expect(button.parentElement?.tagName).not.toBe('SPAN')
     })
 
     it('should not have tooltip wrapper when user is sharing themselves', () => {
@@ -200,8 +202,8 @@ describe('ScreenShareButton', () => {
       const button = screen.getByRole('button', { name: /stop sharing/i })
 
       // Button should not have tooltip wrapper when user is local sharer
-      const tooltipWrapper = button.closest('.relative.inline-block')
-      expect(tooltipWrapper).not.toBeInTheDocument()
+      // Just verify the button exists without span wrapper
+      expect(button.parentElement?.tagName).not.toBe('SPAN')
     })
   })
 })

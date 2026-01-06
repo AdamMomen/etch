@@ -1,7 +1,10 @@
-import { Users, UserPlus, ChevronLeft, ChevronRight, Crown, Video, VideoOff, MonitorUp } from 'lucide-react'
+import { Users, UserPlus, ChevronLeft, ChevronRight, Video, VideoOff, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { VolumePopover } from './VolumePopover'
+import { RoleBadge } from '@/components/RoleBadge'
+import { useRoomStore } from '@/stores/roomStore'
+import { canAnnotate } from '@etch/shared'
 import type { Participant } from '@etch/shared'
 
 interface SidebarProps {
@@ -19,6 +22,12 @@ export function Sidebar({
   onInviteClick,
   onToggle,
 }: SidebarProps) {
+  const annotationsEnabled = useRoomStore((state) => state.annotationsEnabled)
+  const localParticipant = participants.find((p) => p.id === localParticipantId)
+
+  // Determine if user is in view-only mode
+  const isViewOnly = localParticipant ? !canAnnotate(localParticipant.role, annotationsEnabled) : false
+
   return (
     <aside
       className={cn(
@@ -52,14 +61,37 @@ export function Sidebar({
         )}
       >
         {/* Header */}
-        <div className="flex items-center gap-2 border-b px-4 py-3">
-          <Users className="h-4 w-4 text-muted-foreground" />
-          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-            Participants
-          </span>
-          <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-            {participants.length}
-          </span>
+        <div className="border-b">
+          <div className="flex items-center gap-2 px-4 py-3">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Participants
+            </span>
+            <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              {participants.length}
+            </span>
+          </div>
+          {/* Local participant role display */}
+          {localParticipant && (
+            <div className="px-4 pb-2">
+              <span className="text-xs text-muted-foreground">
+                You ({localParticipant.role.charAt(0).toUpperCase() + localParticipant.role.slice(1)})
+              </span>
+            </div>
+          )}
+          {/* View only mode banner */}
+          {isViewOnly && (
+            <aside
+              role="alert"
+              className="mx-2 mb-2 flex items-center gap-2 rounded-md border border-muted bg-muted/30 px-3 py-2"
+            >
+              <Eye className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <div className="text-xs">
+                <div className="font-medium text-muted-foreground">View only mode</div>
+                <div className="text-muted-foreground/80">You cannot annotate</div>
+              </div>
+            </aside>
+          )}
         </div>
 
         {/* Participant List */}
@@ -129,20 +161,10 @@ function ParticipantListItem({ participant, isLocal }: ParticipantListItemProps)
             <span className="ml-1 text-muted-foreground">(You)</span>
           )}
         </span>
-        <div className="flex items-center gap-2">
-          {participant.role === 'host' && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Crown className="h-3 w-3 text-yellow-500" />
-              Host
-            </span>
-          )}
-          {participant.isScreenSharing && (
-            <span className="flex items-center gap-1 rounded bg-primary/10 px-1.5 py-0.5 text-xs text-primary">
-              <MonitorUp className="h-3 w-3" />
-              Sharing
-            </span>
-          )}
-        </div>
+        <RoleBadge
+          role={participant.role}
+          isSharingScreen={participant.isScreenSharing}
+        />
       </div>
 
       {/* Volume control - only show for remote participants on hover */}

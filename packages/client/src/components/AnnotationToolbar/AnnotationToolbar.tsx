@@ -8,6 +8,7 @@ import {
   Tooltip,
   TooltipTrigger,
   TooltipContent,
+  TooltipProvider,
 } from '@/components/ui/tooltip'
 import {
   AlertDialog,
@@ -143,16 +144,17 @@ export function AnnotationToolbar({
   }, [])
 
   return (
-    <div
-      role="toolbar"
-      aria-label="Annotation tools"
-      className={cn(
-        'flex items-center gap-1 rounded-lg bg-card/80 p-1 backdrop-blur-sm',
-        !isScreenShareActive && 'pointer-events-none opacity-50',
-        className
-      )}
-      data-testid="annotation-toolbar"
-    >
+    <TooltipProvider>
+      <div
+        role="toolbar"
+        aria-label="Annotation tools"
+        className={cn(
+          'flex items-center gap-1 rounded-lg bg-card/80 p-1 backdrop-blur-sm',
+          !isScreenShareActive && 'pointer-events-none opacity-50',
+          className
+        )}
+        data-testid="annotation-toolbar"
+      >
       {/* Tool buttons */}
       {TOOLS.map(({ tool, icon: Icon, label, shortcut }) => {
         const isActive = activeTool === tool
@@ -286,6 +288,7 @@ export function AnnotationToolbar({
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+      </div>
+    </TooltipProvider>
   )
 }

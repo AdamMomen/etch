@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { Button, type ButtonProps } from './button'
-import { Tooltip, TooltipTrigger, TooltipContent } from './tooltip'
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip'
 
 export interface TooltipButtonProps extends ButtonProps {
   /**
@@ -55,21 +55,25 @@ export const TooltipButton = React.forwardRef<HTMLButtonElement, TooltipButtonPr
     // since disabled buttons have pointer-events: none
     if (disabled) {
       return (
-        <Tooltip>
-          <TooltipTrigger>
-            <span className="inline-block">{button}</span>
-          </TooltipTrigger>
-          <TooltipContent side={tooltipSide}>{tooltipContent}</TooltipContent>
-        </Tooltip>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span className="inline-block">{button}</span>
+            </TooltipTrigger>
+            <TooltipContent side={tooltipSide}>{tooltipContent}</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       )
     }
 
     // For enabled buttons, use asChild to avoid extra wrapper
     return (
-      <Tooltip>
-        <TooltipTrigger asChild>{button}</TooltipTrigger>
-        <TooltipContent side={tooltipSide}>{tooltipContent}</TooltipContent>
-      </Tooltip>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>{button}</TooltipTrigger>
+          <TooltipContent side={tooltipSide}>{tooltipContent}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     )
   }
 )

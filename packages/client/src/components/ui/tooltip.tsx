@@ -1,100 +1,34 @@
 import * as React from 'react'
+import * as TooltipPrimitive from '@radix-ui/react-tooltip'
 import { cn } from '@/lib/utils'
 
-interface TooltipProps {
-  children: React.ReactNode
-}
+const TooltipProvider = TooltipPrimitive.Provider
 
-interface TooltipTriggerProps {
-  children: React.ReactNode
-  asChild?: boolean
-}
+const TooltipRoot = TooltipPrimitive.Root
 
-interface TooltipContentProps {
-  children: React.ReactNode
-  side?: 'top' | 'right' | 'bottom' | 'left'
-  sideOffset?: number
-  className?: string
-}
+const TooltipTrigger = TooltipPrimitive.Trigger
 
-const TooltipContext = React.createContext<{
-  open: boolean
-  setOpen: (open: boolean) => void
-}>({
-  open: false,
-  setOpen: () => {},
-})
-
-export function TooltipProvider({ children }: { children: React.ReactNode }) {
-  return <>{children}</>
-}
-
-export function Tooltip({ children }: TooltipProps) {
-  const [open, setOpen] = React.useState(false)
-
-  return (
-    <TooltipContext.Provider value={{ open, setOpen }}>
-      <div className="relative inline-block">{children}</div>
-    </TooltipContext.Provider>
-  )
-}
-
-export function TooltipTrigger({ children, asChild }: TooltipTriggerProps) {
-  const { setOpen } = React.useContext(TooltipContext)
-
-  const handleMouseEnter = () => setOpen(true)
-  const handleMouseLeave = () => setOpen(false)
-  const handleFocus = () => setOpen(true)
-  const handleBlur = () => setOpen(false)
-
-  if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(children as React.ReactElement<any>, {
-      onMouseEnter: handleMouseEnter,
-      onMouseLeave: handleMouseLeave,
-      onFocus: handleFocus,
-      onBlur: handleBlur,
-    })
-  }
-
-  return (
-    <span
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-    >
-      {children}
-    </span>
-  )
-}
-
-export function TooltipContent({
-  children,
-  side = 'top',
-  sideOffset = 4,
-  className,
-}: TooltipContentProps) {
-  const { open } = React.useContext(TooltipContext)
-
-  if (!open) return null
-
-  const positionClasses = {
-    top: 'bottom-full left-1/2 -translate-x-1/2 mb-1',
-    bottom: 'top-full left-1/2 -translate-x-1/2 mt-1',
-    left: 'right-full top-1/2 -translate-y-1/2 mr-1',
-    right: 'left-full top-1/2 -translate-y-1/2 ml-1',
-  }
-
-  return (
-    <div
+const TooltipContent = React.forwardRef<
+  React.ElementRef<typeof TooltipPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
+>(({ className, sideOffset = 4, ...props }, ref) => (
+  <TooltipPrimitive.Portal>
+    <TooltipPrimitive.Content
+      ref={ref}
+      sideOffset={sideOffset}
       className={cn(
-        'absolute z-50 overflow-hidden rounded-md bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95',
-        positionClasses[side],
+        'z-50 overflow-hidden rounded-md bg-popover px-3 py-1.5 text-xs text-popover-foreground shadow-md animate-in fade-in-0 zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
         className
       )}
-      style={{ marginBottom: side === 'top' ? sideOffset : undefined }}
-    >
-      {children}
-    </div>
-  )
+      {...props}
+    />
+  </TooltipPrimitive.Portal>
+))
+TooltipContent.displayName = TooltipPrimitive.Content.displayName
+
+// Backwards-compatible wrapper
+export function Tooltip({ children }: { children: React.ReactNode }) {
+  return <TooltipRoot>{children}</TooltipRoot>
 }
+
+export { TooltipProvider, TooltipTrigger, TooltipContent }

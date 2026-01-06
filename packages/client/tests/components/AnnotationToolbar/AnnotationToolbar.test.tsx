@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent, act } from '@testing-library/react'
+import { userEvent } from '@testing-library/user-event'
 import { AnnotationToolbar } from '@/components/AnnotationToolbar'
 import { useAnnotationStore } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
@@ -570,40 +571,48 @@ describe('AnnotationToolbar', () => {
 
   describe('tooltips (AC-4.6.5)', () => {
     it('shows tooltip on hover for select tool', async () => {
+      const user = userEvent.setup()
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
       const selectButton = screen.getByTestId('tool-button-select')
-      fireEvent.mouseEnter(selectButton)
+      await user.hover(selectButton)
 
       // Tooltip should appear
-      expect(await screen.findByText('Hand (1 / V)')).toBeInTheDocument()
+      const tooltip = await screen.findByRole('tooltip', { hidden: true })
+      expect(tooltip).toHaveTextContent('Hand (1 / V)')
     })
 
     it('shows tooltip on hover for pen tool', async () => {
+      const user = userEvent.setup()
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
       const penButton = screen.getByTestId('tool-button-pen')
-      fireEvent.mouseEnter(penButton)
+      await user.hover(penButton)
 
-      expect(await screen.findByText('Pen (2)')).toBeInTheDocument()
+      const tooltip = await screen.findByRole('tooltip', { hidden: true })
+      expect(tooltip).toHaveTextContent('Pen (2)')
     })
 
     it('shows tooltip on hover for highlighter tool', async () => {
+      const user = userEvent.setup()
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
       const highlighterButton = screen.getByTestId('tool-button-highlighter')
-      fireEvent.mouseEnter(highlighterButton)
+      await user.hover(highlighterButton)
 
-      expect(await screen.findByText('Highlighter (3)')).toBeInTheDocument()
+      const tooltip = await screen.findByRole('tooltip', { hidden: true })
+      expect(tooltip).toHaveTextContent('Highlighter (3)')
     })
 
     it('shows tooltip on hover for eraser tool', async () => {
+      const user = userEvent.setup()
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
       const eraserButton = screen.getByTestId('tool-button-eraser')
-      fireEvent.mouseEnter(eraserButton)
+      await user.hover(eraserButton)
 
-      expect(await screen.findByText('Eraser (7)')).toBeInTheDocument()
+      const tooltip = await screen.findByRole('tooltip', { hidden: true })
+      expect(tooltip).toHaveTextContent('Eraser (7)')
     })
 
     it('shows tooltip on hover for Clear All (host only)', async () => {
@@ -633,12 +642,14 @@ describe('AnnotationToolbar', () => {
         })
       })
 
+      const user = userEvent.setup()
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
       const clearAllButton = screen.getByTestId('tool-button-clear-all')
-      fireEvent.mouseEnter(clearAllButton)
+      await user.hover(clearAllButton)
 
-      expect(await screen.findByText('Clear All (0)')).toBeInTheDocument()
+      const tooltip = await screen.findByRole('tooltip', { hidden: true })
+      expect(tooltip).toHaveTextContent('Clear All (0)')
     })
   })
 
@@ -757,12 +768,14 @@ describe('AnnotationToolbar', () => {
     })
 
     it('shows tooltip on hover for help button', async () => {
+      const user = userEvent.setup()
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
       const helpButton = screen.getByTestId('tool-button-help')
-      fireEvent.mouseEnter(helpButton)
+      await user.hover(helpButton)
 
-      expect(await screen.findByText('Keyboard Shortcuts (?)')).toBeInTheDocument()
+      const tooltip = await screen.findByRole('tooltip', { hidden: true })
+      expect(tooltip).toHaveTextContent('Keyboard Shortcuts (?)')
     })
   })
 
