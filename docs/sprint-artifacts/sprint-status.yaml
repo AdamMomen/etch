@@ -45,7 +45,7 @@ development_status:
   1-5-configure-development-scripts-and-tooling: done
   epic-1-retrospective: optional
 
-  # Epic 2: Basic Meeting Experience (14 stories)
+  # Epic 2: Basic Meeting Experience (17 stories)
   epic-2: contexted
   2-1-implement-room-creation-api-endpoint: done
   2-2-implement-room-join-api-endpoint: done
@@ -61,6 +61,10 @@ development_status:
   2-12-implement-leave-meeting-flow: done
   2-13-implement-room-invite-link-generation-and-sharing: done
   2-14-implement-user-preferences-storage: done
+  # Sprint Change Proposal 2026-01-06: Demo-blocking bug fixes
+  2-15-fix-production-room-join: done
+  2-16-fix-retry-button-closed-rooms: ready-for-dev
+  2-17-validate-room-existence: done
   epic-2-retrospective: optional
 
   # Epic 3: Screen Sharing (10 stories)
