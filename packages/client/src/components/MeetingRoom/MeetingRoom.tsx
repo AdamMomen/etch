@@ -417,6 +417,45 @@ export function MeetingRoom() {
       {/* Top Toolbar */}
       <header className="flex h-12 shrink-0 items-center justify-between border-b px-4">
         <div className="flex items-center gap-3">
+          {/* Sidebar Toggle Button - Only visible when collapsed */}
+          {sidebarCollapsed && (
+            <button
+              onClick={toggleSidebar}
+              className="group flex h-6 w-6 items-center justify-center rounded transition-colors hover:bg-white/[0.08]"
+              aria-label="Open sidebar"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 20 20"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                className="text-foreground/60 transition-colors group-hover:text-foreground/80"
+              >
+                {/* Outer rounded rectangle */}
+                <rect
+                  x="3"
+                  y="4"
+                  width="14"
+                  height="12"
+                  rx="2"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  fill="none"
+                />
+                {/* Vertical divider - positioned to show left sidebar panel */}
+                <line
+                  x1="8"
+                  y1="4"
+                  x2="8"
+                  y2="16"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                />
+              </svg>
+            </button>
+          )}
+
           {/* Connection status indicator */}
           <ConnectionStatusIndicator
             isConnecting={isConnecting}
