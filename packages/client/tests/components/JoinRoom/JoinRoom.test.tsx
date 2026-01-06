@@ -10,6 +10,7 @@ import { useRoomStore } from '@/stores/roomStore'
 // Mock the API module
 vi.mock('@/lib/api', () => ({
   joinRoom: vi.fn(),
+  validateRoomExists: vi.fn(),
 }))
 
 // Mock navigation
@@ -41,6 +42,15 @@ describe('JoinRoom', () => {
       apiBaseUrl: 'http://localhost:3000/api',
     })
     useRoomStore.setState({ currentRoom: null })
+
+    // Default: room exists (AC-2.17.1)
+    vi.mocked(api.validateRoomExists).mockResolvedValue(true)
+    // Setup joinRoom mock with success response
+    vi.mocked(api.joinRoom).mockResolvedValue({
+      token: 'test-token',
+      screenShareToken: 'test-screen-share-token',
+      livekitUrl: 'ws://test-livekit:7880',
+    })
   })
 
   describe('Layout (AC-2.4.1)', () => {
@@ -417,4 +427,5 @@ describe('JoinRoom', () => {
       expect(state.displayName).toBe('')
     })
   })
+
 })

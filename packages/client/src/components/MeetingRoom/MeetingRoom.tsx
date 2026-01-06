@@ -12,6 +12,7 @@ import { useScreenShare, showSharingTray, hideSharingTray } from '@/hooks/useScr
 import { useDevices } from '@/hooks/useDevices'
 import { useDeviceDisconnection } from '@/hooks/useDeviceDisconnection'
 import { useAnnotationSync } from '@/hooks/useAnnotationSync'
+import { validateRoomExists, joinRoom } from '@/lib/api'
 import { Sidebar } from './Sidebar'
 import { MeetingControlsBar } from './MeetingControlsBar'
 import { ConnectionStatusIndicator } from './ConnectionStatusIndicator'
@@ -28,9 +29,10 @@ const RESPONSIVE_BREAKPOINT = 1000
 export function MeetingRoom() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
-  const { sidebarCollapsed, toggleSidebar, setSidebarCollapsed } = useSettingsStore()
+  const { sidebarCollapsed, toggleSidebar, setSidebarCollapsed, displayName } = useSettingsStore()
   const {
     currentRoom,
+    setCurrentRoom,
     clearRoom,
     isConnecting,
     isConnected,
@@ -39,8 +41,62 @@ export function MeetingRoom() {
     remoteParticipants,
   } = useRoomStore()
 
+  // Track if we're attempting auto-rejoin to prevent multiple attempts
+  const autoRejoinAttemptedRef = useRef(false)
+
+  // Handle page refresh or direct navigation to /room/xxx
+  // If no room credentials exist, attempt to rejoin automatically
+  useEffect(() => {
+    if (!currentRoom && roomId && !autoRejoinAttemptedRef.current) {
+      autoRejoinAttemptedRef.current = true
+
+      const attemptAutoRejoin = async () => {
+        // If no display name, redirect to join flow to collect it
+        if (!displayName) {
+          console.log('[MeetingRoom] No display name found, redirecting to join flow')
+          navigate(`/join/${roomId}`)
+          return
+        }
+
+        console.log('[MeetingRoom] Attempting auto-rejoin after refresh')
+
+        try {
+          // Validate room still exists first (Story 2.17)
+          const exists = await validateRoomExists(roomId)
+
+          if (!exists) {
+            console.log('[MeetingRoom] Room no longer exists, redirecting to home')
+            toast.error(`Room "${roomId}" no longer exists`)
+            navigate('/')
+            return
+          }
+
+          // Room exists - rejoin it
+          const response = await joinRoom(roomId, displayName)
+
+          // Store new credentials
+          setCurrentRoom({
+            roomId,
+            token: response.token,
+            screenShareToken: response.screenShareToken,
+            livekitUrl: response.livekitUrl,
+          })
+
+          console.log('[MeetingRoom] Auto-rejoin successful')
+        } catch (error) {
+          console.error('[MeetingRoom] Auto-rejoin failed:', error)
+          const message = error instanceof Error ? error.message : 'Failed to rejoin room'
+          toast.error(message)
+          navigate('/')
+        }
+      }
+
+      attemptAutoRejoin()
+    }
+  }, [currentRoom, roomId, displayName, navigate, setCurrentRoom])
+
   // Connect to LiveKit using room info
-  const { room, retry, leaveRoom } = useLiveKit({
+  const { room, isRetrying, retry, leaveRoom } = useLiveKit({
     token: currentRoom?.token ?? null,
     livekitUrl: currentRoom?.livekitUrl ?? null,
   })
@@ -366,6 +422,7 @@ export function MeetingRoom() {
             isConnecting={isConnecting}
             isConnected={isConnected}
             error={connectionError}
+            isRetrying={isRetrying}
             onRetry={retry}
           />
           {/* Room ID */}

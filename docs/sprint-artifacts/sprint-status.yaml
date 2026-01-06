@@ -63,7 +63,7 @@ development_status:
   2-14-implement-user-preferences-storage: done
   # Sprint Change Proposal 2026-01-06: Demo-blocking bug fixes
   2-15-fix-production-room-join: done
-  2-16-fix-retry-button-closed-rooms: ready-for-dev
+  2-16-fix-retry-button-closed-rooms: done
   2-17-validate-room-existence: done
   epic-2-retrospective: optional
 

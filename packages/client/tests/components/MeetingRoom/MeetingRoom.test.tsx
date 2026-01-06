@@ -5,6 +5,13 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { MeetingRoom } from '@/components/MeetingRoom/MeetingRoom'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useRoomStore } from '@/stores/roomStore'
+import * as api from '@/lib/api'
+
+// Mock API functions
+vi.mock('@/lib/api', () => ({
+  validateRoomExists: vi.fn(),
+  joinRoom: vi.fn(),
+}))
 
 // Mock navigation
 const mockNavigate = vi.fn()
@@ -662,6 +669,197 @@ describe('MeetingRoom', () => {
       // Host should be first
       expect(participantItems[0]).toHaveTextContent('Host User')
       expect(participantItems[1]).toHaveTextContent('Test User')
+    })
+  })
+
+  describe('Page Refresh / Auto-Rejoin Handling', () => {
+    it('automatically rejoins room when credentials lost (e.g., after refresh)', async () => {
+      // Mock successful room validation and rejoin
+      vi.mocked(api.validateRoomExists).mockResolvedValue(true)
+      vi.mocked(api.joinRoom).mockResolvedValue({
+        token: 'new-token',
+        screenShareToken: 'new-screen-share-token',
+        livekitUrl: 'wss://livekit.example.com',
+      })
+
+      // Simulate page refresh: no room credentials in store, but displayName persists
+      act(() => {
+        useSettingsStore.setState({
+          displayName: 'Test User',
+          apiBaseUrl: 'http://localhost:3000/api',
+          sidebarCollapsed: false,
+          isMuted: true,
+        })
+        useRoomStore.setState({
+          currentRoom: null,
+          isConnecting: false,
+          isConnected: false,
+          connectionError: null,
+          localParticipant: null,
+          remoteParticipants: [],
+        })
+      })
+
+      renderMeetingRoom('refreshed-room-123')
+
+      // Should validate room exists
+      await waitFor(() => {
+        expect(api.validateRoomExists).toHaveBeenCalledWith('refreshed-room-123')
+      })
+
+      // Should call joinRoom API with saved display name
+      await waitFor(() => {
+        expect(api.joinRoom).toHaveBeenCalledWith('refreshed-room-123', 'Test User')
+      })
+
+      // Should update room store with new credentials
+      await waitFor(() => {
+        const state = useRoomStore.getState()
+        expect(state.currentRoom).toEqual({
+          roomId: 'refreshed-room-123',
+          token: 'new-token',
+          screenShareToken: 'new-screen-share-token',
+          livekitUrl: 'wss://livekit.example.com',
+        })
+      })
+
+      // Should NOT navigate away
+      expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('redirects to join flow when no display name exists', async () => {
+      // Simulate first-time user: no display name saved
+      act(() => {
+        useSettingsStore.setState({
+          displayName: '',
+          apiBaseUrl: 'http://localhost:3000/api',
+          sidebarCollapsed: false,
+          isMuted: true,
+        })
+        useRoomStore.setState({
+          currentRoom: null,
+          isConnecting: false,
+          isConnected: false,
+          connectionError: null,
+          localParticipant: null,
+          remoteParticipants: [],
+        })
+      })
+
+      renderMeetingRoom('some-room')
+
+      // Should redirect to join flow to collect display name
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/join/some-room')
+      })
+
+      // Should NOT call API
+      expect(api.validateRoomExists).not.toHaveBeenCalled()
+      expect(api.joinRoom).not.toHaveBeenCalled()
+    })
+
+    it('redirects home when room no longer exists', async () => {
+      // Mock: room doesn't exist anymore
+      vi.mocked(api.validateRoomExists).mockResolvedValue(false)
+
+      act(() => {
+        useSettingsStore.setState({
+          displayName: 'Test User',
+          apiBaseUrl: 'http://localhost:3000/api',
+          sidebarCollapsed: false,
+          isMuted: true,
+        })
+        useRoomStore.setState({
+          currentRoom: null,
+          isConnecting: false,
+          isConnected: false,
+          connectionError: null,
+          localParticipant: null,
+          remoteParticipants: [],
+        })
+      })
+
+      renderMeetingRoom('closed-room')
+
+      // Should validate room
+      await waitFor(() => {
+        expect(api.validateRoomExists).toHaveBeenCalledWith('closed-room')
+      })
+
+      // Should redirect home since room doesn't exist
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/')
+      })
+
+      // Should NOT call joinRoom
+      expect(api.joinRoom).not.toHaveBeenCalled()
+    })
+
+    it('redirects home when rejoin API fails', async () => {
+      // Mock: room exists but join fails
+      vi.mocked(api.validateRoomExists).mockResolvedValue(true)
+      vi.mocked(api.joinRoom).mockRejectedValue(new Error('Server error'))
+
+      act(() => {
+        useSettingsStore.setState({
+          displayName: 'Test User',
+          apiBaseUrl: 'http://localhost:3000/api',
+          sidebarCollapsed: false,
+          isMuted: true,
+        })
+        useRoomStore.setState({
+          currentRoom: null,
+          isConnecting: false,
+          isConnected: false,
+          connectionError: null,
+          localParticipant: null,
+          remoteParticipants: [],
+        })
+      })
+
+      renderMeetingRoom('error-room')
+
+      // Should attempt join
+      await waitFor(() => {
+        expect(api.joinRoom).toHaveBeenCalledWith('error-room', 'Test User')
+      })
+
+      // Should redirect home on error
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/')
+      })
+    })
+
+    it('does not auto-rejoin when room credentials already exist', () => {
+      // Room credentials present - normal case (not a refresh)
+      act(() => {
+        useRoomStore.setState({
+          currentRoom: {
+            roomId: 'existing-room',
+            token: 'existing-token',
+            livekitUrl: 'wss://livekit.example.com',
+            screenShareToken: 'existing-screen-share-token',
+          },
+          isConnecting: false,
+          isConnected: true,
+          connectionError: null,
+          localParticipant: {
+            id: 'user-123',
+            name: 'Test User',
+            role: 'host',
+            color: '#06b6d4',
+            isLocal: true,
+          },
+          remoteParticipants: [],
+        })
+      })
+
+      renderMeetingRoom('existing-room')
+
+      // Should NOT call API or navigate
+      expect(api.validateRoomExists).not.toHaveBeenCalled()
+      expect(api.joinRoom).not.toHaveBeenCalled()
+      expect(mockNavigate).not.toHaveBeenCalled()
     })
   })
 })

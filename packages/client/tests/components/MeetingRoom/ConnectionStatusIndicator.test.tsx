@@ -11,6 +11,7 @@ describe('ConnectionStatusIndicator', () => {
           isConnecting={false}
           isConnected={true}
           error={null}
+          isRetrying={false}
           onRetry={() => {}}
         />
       )
@@ -30,6 +31,7 @@ describe('ConnectionStatusIndicator', () => {
           isConnecting={true}
           isConnected={false}
           error={null}
+          isRetrying={false}
           onRetry={() => {}}
         />
       )
@@ -42,6 +44,59 @@ describe('ConnectionStatusIndicator', () => {
     })
   })
 
+  describe('retrying state (AC-2.16.4)', () => {
+    it('shows amber dot and Retrying text when isRetrying is true', () => {
+      render(
+        <ConnectionStatusIndicator
+          isConnecting={false}
+          isConnected={false}
+          error="Connection failed"
+          isRetrying={true}
+          onRetry={() => {}}
+        />
+      )
+
+      expect(screen.getByText('Retrying...')).toBeInTheDocument()
+      expect(screen.getByLabelText('Retrying')).toBeInTheDocument()
+
+      // Should not show retry button during retry
+      expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument()
+    })
+
+    it('takes priority over connecting state', () => {
+      render(
+        <ConnectionStatusIndicator
+          isConnecting={true}
+          isConnected={false}
+          error={null}
+          isRetrying={true}
+          onRetry={() => {}}
+        />
+      )
+
+      // Retrying should take priority
+      expect(screen.getByText('Retrying...')).toBeInTheDocument()
+      expect(screen.queryByText('Connecting...')).not.toBeInTheDocument()
+    })
+
+    it('takes priority over disconnected state', () => {
+      render(
+        <ConnectionStatusIndicator
+          isConnecting={false}
+          isConnected={false}
+          error="Connection failed"
+          isRetrying={true}
+          onRetry={() => {}}
+        />
+      )
+
+      // Retrying should take priority
+      expect(screen.getByText('Retrying...')).toBeInTheDocument()
+      expect(screen.queryByText('Disconnected')).not.toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument()
+    })
+  })
+
   describe('disconnected state', () => {
     it('shows red dot and Disconnected text when error', () => {
       render(
@@ -49,6 +104,7 @@ describe('ConnectionStatusIndicator', () => {
           isConnecting={false}
           isConnected={false}
           error="Connection failed"
+          isRetrying={false}
           onRetry={() => {}}
         />
       )
@@ -63,6 +119,7 @@ describe('ConnectionStatusIndicator', () => {
           isConnecting={false}
           isConnected={false}
           error={null}
+          isRetrying={false}
           onRetry={() => {}}
         />
       )
@@ -76,11 +133,27 @@ describe('ConnectionStatusIndicator', () => {
           isConnecting={false}
           isConnected={false}
           error="Connection failed"
+          isRetrying={false}
           onRetry={() => {}}
         />
       )
 
       expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument()
+    })
+
+    it('disables retry button when isRetrying is true', () => {
+      render(
+        <ConnectionStatusIndicator
+          isConnecting={false}
+          isConnected={false}
+          error="Connection failed"
+          isRetrying={true}
+          onRetry={() => {}}
+        />
+      )
+
+      // Should show retrying state (no button visible at all)
+      expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument()
     })
 
     it('calls onRetry when retry button clicked', async () => {
@@ -92,6 +165,7 @@ describe('ConnectionStatusIndicator', () => {
           isConnecting={false}
           isConnected={false}
           error="Connection failed"
+          isRetrying={false}
           onRetry={onRetry}
         />
       )
@@ -110,12 +184,31 @@ describe('ConnectionStatusIndicator', () => {
           isConnecting={true}
           isConnected={true}
           error={null}
+          isRetrying={false}
           onRetry={() => {}}
         />
       )
 
       // Connecting should take priority
       expect(screen.getByText('Connecting...')).toBeInTheDocument()
+    })
+
+    it('shows retrying state over all other states', () => {
+      render(
+        <ConnectionStatusIndicator
+          isConnecting={true}
+          isConnected={true}
+          error="Some error"
+          isRetrying={true}
+          onRetry={() => {}}
+        />
+      )
+
+      // Retrying should take highest priority
+      expect(screen.getByText('Retrying...')).toBeInTheDocument()
+      expect(screen.queryByText('Connected')).not.toBeInTheDocument()
+      expect(screen.queryByText('Connecting...')).not.toBeInTheDocument()
+      expect(screen.queryByText('Disconnected')).not.toBeInTheDocument()
     })
   })
 })

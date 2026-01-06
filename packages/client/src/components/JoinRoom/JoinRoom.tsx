@@ -57,6 +57,7 @@ export function JoinRoom() {
 
     setIsJoining(true)
     try {
+      // Room existence already validated on home screen - proceed with join
       const response = await joinRoom(roomId, name.trim())
 
       // Save name for next time

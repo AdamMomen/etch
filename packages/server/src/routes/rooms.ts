@@ -128,6 +128,46 @@ const joinRoomSchema = z.object({
 })
 
 /**
+ * GET /rooms/:roomId/exists - Check if a room exists
+ *
+ * Lightweight validation endpoint to check room existence before join attempt.
+ * Returns { exists: boolean }
+ */
+roomsRouter.get('/:roomId/exists', async (c) => {
+  try {
+    const roomId = c.req.param('roomId')
+
+    // Check if room exists
+    const room = getRoom(roomId)
+
+    log({
+      level: 'info',
+      timestamp: new Date().toISOString(),
+      message: 'Room existence check',
+      roomId,
+      exists: !!room,
+    })
+
+    return c.json({ exists: !!room }, 200)
+  } catch (error) {
+    log({
+      level: 'error',
+      timestamp: new Date().toISOString(),
+      message: 'Failed to check room existence',
+      error: error instanceof Error ? error.message : String(error),
+    })
+
+    const errorResponse: ApiError = {
+      error: {
+        code: 'CHECK_FAILED',
+        message: 'Failed to check room existence',
+      },
+    }
+    return c.json(errorResponse, 500)
+  }
+})
+
+/**
  * POST /rooms/:roomId/join - Join an existing meeting room
  *
  * Joins an existing room as a participant.

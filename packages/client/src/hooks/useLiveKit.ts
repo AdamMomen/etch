@@ -11,7 +11,9 @@ import {
 } from 'livekit-client'
 import { toast } from 'sonner'
 import { useRoomStore } from '@/stores/roomStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { parseParticipantMetadata } from '@/utils/participantMetadata'
+import { validateRoomExists, createRoom } from '@/lib/api'
 import type { Participant } from '@etch/shared'
 
 // Role transfer message type
@@ -33,7 +35,8 @@ export interface UseLiveKitReturn {
   isConnecting: boolean
   isConnected: boolean
   error: string | null
-  retry: () => void
+  isRetrying: boolean
+  retry: () => Promise<void>
   leaveRoom: () => Promise<void>
 }
 
@@ -46,10 +49,13 @@ export function useLiveKit({
     ConnectionState.Disconnected
   )
   const [error, setError] = useState<string | null>(null)
+  const [isRetrying, setIsRetrying] = useState(false)
   const retryCounterRef = useRef(0)
   const [retryTrigger, setRetryTrigger] = useState(0)
 
   const {
+    currentRoom,
+    setCurrentRoom,
     setConnectionState: setStoreConnectionState,
     setLocalParticipant,
     addRemoteParticipant,
@@ -57,6 +63,8 @@ export function useLiveKit({
     updateParticipant,
     clearParticipants,
   } = useRoomStore()
+
+  const { displayName } = useSettingsStore()
 
   const isConnecting = connectionState === ConnectionState.Connecting
   const isConnected = connectionState === ConnectionState.Connected
@@ -321,11 +329,60 @@ export function useLiveKit({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, livekitUrl, retryTrigger])
 
-  const retry = useCallback(() => {
-    // Increment retry counter to trigger effect re-run
-    retryCounterRef.current += 1
-    setRetryTrigger(retryCounterRef.current)
-  }, [])
+  const retry = useCallback(async () => {
+    // AC-2.16.1: Detect room state before retry
+    // AC-2.16.4: Show feedback during retry process
+    setIsRetrying(true)
+
+    try {
+      const roomId = currentRoom?.roomId
+
+      if (!roomId) {
+        toast.error('No room ID found')
+        setIsRetrying(false)
+        return
+      }
+
+      // Check if room still exists
+      const exists = await validateRoomExists(roomId)
+
+      if (exists) {
+        // AC-2.16.3: Room exists - attempt to rejoin
+        toast.info('Rejoining room...')
+        retryCounterRef.current += 1
+        setRetryTrigger(retryCounterRef.current)
+      } else {
+        // AC-2.16.2: Room closed - create new room
+        toast.info('Room closed. Creating new room...')
+
+        // Get host name (default to 'User' if not set)
+        const hostName = displayName || 'User'
+
+        // Create a new room
+        const response = await createRoom(hostName)
+
+        // Update room store with new credentials
+        setCurrentRoom({
+          roomId: response.roomId,
+          token: response.token,
+          screenShareToken: response.screenShareToken,
+          livekitUrl: response.livekitUrl,
+        })
+
+        // Trigger reconnection with new credentials
+        retryCounterRef.current += 1
+        setRetryTrigger(retryCounterRef.current)
+
+        toast.success('New room created')
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Retry failed'
+      toast.error(message)
+      setError(message)
+    } finally {
+      setIsRetrying(false)
+    }
+  }, [currentRoom?.roomId, displayName, setCurrentRoom])
 
   const leaveRoom = useCallback(async () => {
     if (!room) return
@@ -354,6 +411,7 @@ export function useLiveKit({
     isConnecting,
     isConnected,
     error,
+    isRetrying,
     retry,
     leaveRoom,
   }

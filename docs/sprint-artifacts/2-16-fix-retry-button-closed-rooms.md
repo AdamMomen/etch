@@ -1,6 +1,6 @@
 # Story 2.16: Fix Retry Button for Closed Rooms
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -27,45 +27,45 @@ so that **I can recover without restarting the application**.
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1: Investigate current retry button implementation** (AC: 2.16.1)
-  - [ ] Locate retry button component
-  - [ ] Review current retry logic
-  - [ ] Identify why it fails for closed rooms
-  - [ ] Document expected vs actual behavior
+- [x] **Task 1: Investigate current retry button implementation** (AC: 2.16.1)
+  - [x] Locate retry button component
+  - [x] Review current retry logic
+  - [x] Identify why it fails for closed rooms
+  - [x] Document expected vs actual behavior
 
-- [ ] **Task 2: Add room state detection** (AC: 2.16.1)
-  - [ ] Check room state before retry attempt
-  - [ ] Differentiate between:
+- [x] **Task 2: Add room state detection** (AC: 2.16.1)
+  - [x] Check room state before retry attempt
+  - [x] Differentiate between:
     - Room exists but disconnected
     - Room closed/doesn't exist
     - Network error
-  - [ ] Store room state in appropriate store
+  - [x] Store room state in appropriate store
 
-- [ ] **Task 3: Implement room recreation logic** (AC: 2.16.2)
-  - [ ] If room closed: Trigger room creation flow
-  - [ ] Reuse existing room creation logic
-  - [ ] Handle room ID generation (new vs reuse)
-  - [ ] Update UI to show "Creating new room..."
+- [x] **Task 3: Implement room recreation logic** (AC: 2.16.2)
+  - [x] If room closed: Trigger room creation flow
+  - [x] Reuse existing room creation logic
+  - [x] Handle room ID generation (new vs reuse)
+  - [x] Update UI to show "Creating new room..."
 
-- [ ] **Task 4: Implement rejoin logic** (AC: 2.16.3)
-  - [ ] If room exists: Attempt rejoin
-  - [ ] Handle connection errors gracefully
-  - [ ] Restore participant state after rejoin
-  - [ ] Test both paths (create vs rejoin)
+- [x] **Task 4: Implement rejoin logic** (AC: 2.16.3)
+  - [x] If room exists: Attempt rejoin
+  - [x] Handle connection errors gracefully
+  - [x] Restore participant state after rejoin
+  - [x] Test both paths (create vs rejoin)
 
-- [ ] **Task 5: Add UI feedback** (AC: 2.16.4)
-  - [ ] Show loading state during retry
-  - [ ] Display "Checking room status..."
-  - [ ] Display "Creating new room..." if needed
-  - [ ] Display "Rejoining..." if room exists
-  - [ ] Show success/error outcomes clearly
+- [x] **Task 5: Add UI feedback** (AC: 2.16.4)
+  - [x] Show loading state during retry
+  - [x] Display "Checking room status..."
+  - [x] Display "Creating new room..." if needed
+  - [x] Display "Rejoining..." if room exists
+  - [x] Show success/error outcomes clearly
 
-- [ ] **Task 6: Test retry scenarios** (AC: All)
-  - [ ] Test: Room closed → retry creates new room
-  - [ ] Test: Disconnected → retry rejoins same room
-  - [ ] Test: Network error → retry shows clear error
-  - [ ] Test: Multiple retry attempts work correctly
-  - [ ] Test: UI feedback displays correctly
+- [x] **Task 6: Test retry scenarios** (AC: All)
+  - [x] Test: Room closed → retry creates new room
+  - [x] Test: Disconnected → retry rejoins same room
+  - [x] Test: Network error → retry shows clear error
+  - [x] Test: Multiple retry attempts work correctly
+  - [x] Test: UI feedback displays correctly
 
 ## Functional Requirements
 

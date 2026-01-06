@@ -10,6 +10,7 @@ import { useRoomStore } from '@/stores/roomStore'
 // Mock the API module
 vi.mock('@/lib/api', () => ({
   createRoom: vi.fn(),
+  validateRoomExists: vi.fn(),
 }))
 
 // Mock navigation
@@ -40,6 +41,9 @@ describe('HomeScreen', () => {
     useSettingsStore.setState({ displayName: '', apiBaseUrl: 'http://localhost:3000/api' })
     useRoomStore.setState({ currentRoom: null })
     window.prompt = originalPrompt
+
+    // Default mock: room exists (AC-2.17.1)
+    vi.mocked(api.validateRoomExists).mockResolvedValue(true)
   })
 
   afterEach(() => {
@@ -261,6 +265,156 @@ describe('HomeScreen', () => {
 
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /start meeting/i })).not.toBeDisabled()
+      })
+    })
+  })
+
+  describe('Room Validation (AC-2.17)', () => {
+    it('validates room exists before navigating to join screen (AC-2.17.1)', async () => {
+      const user = userEvent.setup()
+
+      renderHomeScreen()
+      const input = screen.getByPlaceholderText(/enter room code or link/i)
+      await user.type(input, 'test-room-123')
+
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
+      await user.click(joinButton)
+
+      await waitFor(() => {
+        expect(api.validateRoomExists).toHaveBeenCalledWith('test-room-123')
+      })
+    })
+
+    it('shows checking state during validation (AC-2.17.4)', async () => {
+      const user = userEvent.setup()
+
+      // Mock slow validation to observe loading state
+      vi.mocked(api.validateRoomExists).mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve(true), 100))
+      )
+
+      renderHomeScreen()
+      const input = screen.getByPlaceholderText(/enter room code or link/i)
+      await user.type(input, 'test-room')
+
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
+      await user.click(joinButton)
+
+      // Should show "Checking..." during validation
+      await waitFor(() => {
+        expect(screen.getByText(/checking/i)).toBeInTheDocument()
+      })
+
+      // Should complete and navigate
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/join/test-room')
+      })
+    })
+
+    it('shows error for non-existent room (AC-2.17.2)', async () => {
+      const user = userEvent.setup()
+
+      // Mock: room doesn't exist
+      vi.mocked(api.validateRoomExists).mockResolvedValue(false)
+
+      renderHomeScreen()
+      const input = screen.getByPlaceholderText(/enter room code or link/i)
+      await user.type(input, 'invalid-room')
+
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
+      await user.click(joinButton)
+
+      await waitFor(() => {
+        expect(api.validateRoomExists).toHaveBeenCalledWith('invalid-room')
+      })
+
+      // Should not navigate - error shown via toast
+      expect(mockNavigate).not.toHaveBeenCalled()
+
+      // Button should be re-enabled
+      expect(joinButton).not.toBeDisabled()
+    })
+
+    it('shows actionable error message (AC-2.17.3)', async () => {
+      const user = userEvent.setup()
+
+      vi.mocked(api.validateRoomExists).mockResolvedValue(false)
+
+      renderHomeScreen()
+      const input = screen.getByPlaceholderText(/enter room code or link/i)
+      await user.type(input, 'invalid-room')
+
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
+      await user.click(joinButton)
+
+      await waitFor(() => {
+        expect(api.validateRoomExists).toHaveBeenCalledWith('invalid-room')
+      })
+
+      // Should not navigate - error includes actionable guidance (via toast)
+      expect(mockNavigate).not.toHaveBeenCalled()
+
+      // User can retry - button is re-enabled
+      expect(joinButton).not.toBeDisabled()
+    })
+
+    it('navigates to join screen if room exists', async () => {
+      const user = userEvent.setup()
+
+      // Mock: room exists
+      vi.mocked(api.validateRoomExists).mockResolvedValue(true)
+
+      renderHomeScreen()
+      const input = screen.getByPlaceholderText(/enter room code or link/i)
+      await user.type(input, 'valid-room')
+
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
+      await user.click(joinButton)
+
+      await waitFor(() => {
+        expect(api.validateRoomExists).toHaveBeenCalledWith('valid-room')
+        expect(mockNavigate).toHaveBeenCalledWith('/join/valid-room')
+      })
+    })
+
+    it('handles validation network errors gracefully', async () => {
+      const user = userEvent.setup()
+
+      // Mock: validation fails with network error
+      vi.mocked(api.validateRoomExists).mockRejectedValue(
+        new Error('Cannot connect to server')
+      )
+
+      renderHomeScreen()
+      const input = screen.getByPlaceholderText(/enter room code or link/i)
+      await user.type(input, 'test-room')
+
+      const joinButton = screen.getByRole('button', { name: /^join$/i })
+      await user.click(joinButton)
+
+      await waitFor(() => {
+        expect(api.validateRoomExists).toHaveBeenCalledWith('test-room')
+      })
+
+      // Should not navigate - network error shown via toast
+      expect(mockNavigate).not.toHaveBeenCalled()
+
+      // User can retry - button is re-enabled after error
+      expect(joinButton).not.toBeDisabled()
+    })
+
+    it('handles Enter key with room validation', async () => {
+      const user = userEvent.setup()
+
+      vi.mocked(api.validateRoomExists).mockResolvedValue(true)
+
+      renderHomeScreen()
+      const input = screen.getByPlaceholderText(/enter room code or link/i)
+      await user.type(input, 'test-room{Enter}')
+
+      await waitFor(() => {
+        expect(api.validateRoomExists).toHaveBeenCalledWith('test-room')
+        expect(mockNavigate).toHaveBeenCalledWith('/join/test-room')
       })
     })
   })

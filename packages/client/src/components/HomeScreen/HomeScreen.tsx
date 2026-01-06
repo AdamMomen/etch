@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useRoomStore } from '@/stores/roomStore'
-import { createRoom } from '@/lib/api'
+import { createRoom, validateRoomExists } from '@/lib/api'
 import { parseRoomId } from '@/utils/roomId'
 import { SettingsModal } from '@/components/Settings'
 
@@ -17,6 +17,7 @@ export function HomeScreen() {
   const navigate = useNavigate()
   const [roomCode, setRoomCode] = useState('')
   const [isCreating, setIsCreating] = useState(false)
+  const [isValidatingRoom, setIsValidatingRoom] = useState(false)
   const [isJoiningDevRoom, setIsJoiningDevRoom] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const { displayName, setDisplayName } = useSettingsStore()
@@ -54,14 +55,36 @@ export function HomeScreen() {
     }
   }
 
-  const handleJoinClick = () => {
+  const handleJoinClick = async () => {
     const parsedRoomId = parseRoomId(roomCode)
     if (!parsedRoomId) {
       toast.error('Please enter a valid room code or link')
       return
     }
-    // Navigate to join flow - Story 2.4 will implement the dialog
-    navigate(`/join/${parsedRoomId}`)
+
+    // AC-2.17.1: Validate room exists before navigating to join screen
+    setIsValidatingRoom(true)
+    try {
+      const exists = await validateRoomExists(parsedRoomId)
+
+      if (!exists) {
+        // AC-2.17.2 & AC-2.17.3: Clear error with actionable guidance
+        toast.error(
+          `Room "${parsedRoomId}" does not exist. Please check the room code or invitation link.`,
+          { duration: 5000 }
+        )
+        return
+      }
+
+      // Room exists - navigate to join screen for name entry
+      navigate(`/join/${parsedRoomId}`)
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Failed to validate room'
+      toast.error(message)
+    } finally {
+      setIsValidatingRoom(false)
+    }
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -76,7 +99,7 @@ export function HomeScreen() {
     navigate('/join/dev')
   }
 
-  const isJoinDisabled = !roomCode.trim()
+  const isJoinDisabled = !roomCode.trim() || isValidatingRoom
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center p-8">
@@ -147,8 +170,17 @@ export function HomeScreen() {
             onClick={handleJoinClick}
             disabled={isJoinDisabled}
           >
-            Join
-            <ArrowRight className="h-4 w-4" />
+            {isValidatingRoom ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Checking...
+              </>
+            ) : (
+              <>
+                Join
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
           </Button>
         </div>
 

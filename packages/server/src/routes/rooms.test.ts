@@ -3,7 +3,7 @@ import { app } from '../app'
 import { clearRooms, getRoom } from '../services/roomStore'
 import { PARTICIPANT_COLORS } from '@etch/shared'
 
-describe('POST /api/rooms', () => {
+describe('Room API', () => {
   const originalEnv = process.env
 
   beforeEach(() => {
@@ -19,6 +19,8 @@ describe('POST /api/rooms', () => {
   afterEach(() => {
     process.env = originalEnv
   })
+
+describe('POST /api/rooms', () => {
 
   describe('successful room creation', () => {
     it('should return 201 with roomId, token, and livekitUrl', async () => {
@@ -228,22 +230,80 @@ describe('POST /api/rooms', () => {
   })
 })
 
+describe('GET /api/rooms/:roomId/exists', () => {
+  // Helper to create a room and return roomId
+  async function createTestRoom(hostName = 'Host'): Promise<string> {
+    const response = await app.request('/api/rooms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ hostName }),
+    })
+    const body = await response.json()
+    return body.roomId
+  }
+
+  describe('room existence validation', () => {
+    it('should return exists: true for existing room', async () => {
+      const roomId = await createTestRoom()
+
+      const response = await app.request(`/api/rooms/${roomId}/exists`, {
+        method: 'GET',
+      })
+
+      expect(response.status).toBe(200)
+
+      const body = await response.json()
+      expect(body.exists).toBe(true)
+    })
+
+    it('should return exists: false for non-existent room', async () => {
+      const response = await app.request('/api/rooms/non-existent-room/exists', {
+        method: 'GET',
+      })
+
+      expect(response.status).toBe(200)
+
+      const body = await response.json()
+      expect(body.exists).toBe(false)
+    })
+
+    it('should complete validation quickly (< 2 seconds)', async () => {
+      const roomId = await createTestRoom()
+
+      const startTime = Date.now()
+      await app.request(`/api/rooms/${roomId}/exists`, {
+        method: 'GET',
+      })
+      const duration = Date.now() - startTime
+
+      // AC-2.17.4: Validation should complete within 2 seconds
+      expect(duration).toBeLessThan(2000)
+    })
+
+    it('should handle multiple validation requests correctly', async () => {
+      const roomId1 = await createTestRoom('Host1')
+      const roomId2 = await createTestRoom('Host2')
+
+      const [response1, response2, response3] = await Promise.all([
+        app.request(`/api/rooms/${roomId1}/exists`, { method: 'GET' }),
+        app.request(`/api/rooms/${roomId2}/exists`, { method: 'GET' }),
+        app.request('/api/rooms/invalid-id/exists', { method: 'GET' }),
+      ])
+
+      const [body1, body2, body3] = await Promise.all([
+        response1.json(),
+        response2.json(),
+        response3.json(),
+      ])
+
+      expect(body1.exists).toBe(true)
+      expect(body2.exists).toBe(true)
+      expect(body3.exists).toBe(false)
+    })
+  })
+})
+
 describe('POST /api/rooms/:roomId/join', () => {
-  const originalEnv = process.env
-
-  beforeEach(() => {
-    clearRooms()
-    vi.resetModules()
-    process.env = { ...originalEnv }
-    process.env.LIVEKIT_API_KEY = 'test-api-key'
-    process.env.LIVEKIT_API_SECRET = 'test-api-secret-that-is-at-least-32-chars'
-    process.env.LIVEKIT_URL = 'ws://test-livekit:7880'
-  })
-
-  afterEach(() => {
-    process.env = originalEnv
-  })
-
   // Helper to create a room and return roomId
   async function createTestRoom(hostName = 'Host'): Promise<string> {
     const response = await app.request('/api/rooms', {
@@ -518,3 +578,5 @@ describe('POST /api/rooms/:roomId/join', () => {
     })
   })
 })
+
+}) // Close outer describe('Room API')
