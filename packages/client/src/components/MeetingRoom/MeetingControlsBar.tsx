@@ -17,6 +17,8 @@ interface MeetingControlsBarProps {
   sharerName: string | null
   onStartScreenShare: () => void
   onStopScreenShare: () => void
+  // Connection state
+  isConnecting: boolean
 }
 
 export function MeetingControlsBar({
@@ -29,14 +31,15 @@ export function MeetingControlsBar({
   sharerName,
   onStartScreenShare,
   onStopScreenShare,
+  isConnecting,
 }: MeetingControlsBarProps) {
   return (
     <footer className="flex h-16 shrink-0 items-center justify-center gap-3 border-t bg-background px-4">
       {/* Microphone Toggle */}
-      <MicrophoneButton room={room} />
+      <MicrophoneButton room={room} disabled={isConnecting} />
 
       {/* Camera Toggle */}
-      <CameraButton room={room} />
+      <CameraButton room={room} disabled={isConnecting} />
 
       {/* Screen Share - hidden on unsupported devices (iOS) */}
       {isScreenShareSupported && (
@@ -46,6 +49,7 @@ export function MeetingControlsBar({
           sharerName={sharerName}
           onStartShare={onStartScreenShare}
           onStopShare={onStopScreenShare}
+          isConnecting={isConnecting}
         />
       )}
 
@@ -55,6 +59,7 @@ export function MeetingControlsBar({
           variant="outline"
           size="icon"
           onClick={onInvite}
+          disabled={isConnecting}
           className="h-12 w-12 rounded-full"
           aria-label="Invite participants"
         >
@@ -67,6 +72,7 @@ export function MeetingControlsBar({
         variant="destructive"
         size="icon"
         onClick={onLeave}
+        disabled={isConnecting}
         className="h-12 w-12 rounded-full"
         aria-label="Leave meeting"
       >

@@ -11,9 +11,10 @@ import { cn } from '@/lib/utils'
 interface MicrophoneButtonProps {
   room: Room | null
   className?: string
+  disabled?: boolean
 }
 
-export function MicrophoneButton({ room, className }: MicrophoneButtonProps) {
+export function MicrophoneButton({ room, className, disabled }: MicrophoneButtonProps) {
   const { isMuted, toggleMute, switchDevice, currentDeviceId } = useAudio({ room })
   const { audioDevices } = useDevices()
 
@@ -56,6 +57,7 @@ export function MicrophoneButton({ room, className }: MicrophoneButtonProps) {
         variant={isMuted ? 'secondary' : 'outline'}
         size="icon"
         onClick={() => toggleMute()}
+        disabled={disabled}
         className={cn('h-12 w-12 rounded-full', isMuted && 'text-destructive')}
         aria-label={isMuted ? 'Unmute microphone' : 'Mute microphone'}
         aria-pressed={!isMuted}
@@ -67,7 +69,7 @@ export function MicrophoneButton({ room, className }: MicrophoneButtonProps) {
         selectedDeviceId={currentDeviceId}
         onSelect={handleDeviceSelect}
         type="audio"
-        disabled={!room}
+        disabled={!room || disabled}
       />
     </div>
   )

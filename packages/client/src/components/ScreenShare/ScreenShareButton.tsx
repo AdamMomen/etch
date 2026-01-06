@@ -9,6 +9,7 @@ interface ScreenShareButtonProps {
   onStartShare: () => void
   onStopShare: () => void
   className?: string
+  isConnecting?: boolean
 }
 
 export function ScreenShareButton({
@@ -18,6 +19,7 @@ export function ScreenShareButton({
   onStartShare,
   onStopShare,
   className,
+  isConnecting = false,
 }: ScreenShareButtonProps) {
   const handleClick = () => {
     if (isLocalSharing) {
@@ -27,7 +29,7 @@ export function ScreenShareButton({
     }
   }
 
-  const isDisabled = !canShare && !isLocalSharing
+  const isDisabled = isConnecting || (!canShare && !isLocalSharing)
 
   // Build disabled tooltip message (AC-3.4.2)
   const disabledTooltip = sharerName

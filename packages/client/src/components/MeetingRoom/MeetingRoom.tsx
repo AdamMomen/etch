@@ -575,6 +575,7 @@ export function MeetingRoom() {
         sharerName={sharerName}
         onStartScreenShare={startScreenShare}
         onStopScreenShare={stopScreenShare}
+        isConnecting={isConnecting}
       />
 
       {/* Host Leave Confirmation Dialog */}

@@ -11,9 +11,10 @@ import { cn } from '@/lib/utils'
 interface CameraButtonProps {
   room: Room | null
   className?: string
+  disabled?: boolean
 }
 
-export function CameraButton({ room, className }: CameraButtonProps) {
+export function CameraButton({ room, className, disabled }: CameraButtonProps) {
   const { isVideoOff, toggleVideo, switchDevice, currentDeviceId } = useVideo({ room })
   const { videoDevices } = useDevices()
 
@@ -56,6 +57,7 @@ export function CameraButton({ room, className }: CameraButtonProps) {
         variant={isVideoOff ? 'secondary' : 'outline'}
         size="icon"
         onClick={() => toggleVideo()}
+        disabled={disabled}
         className={cn('h-12 w-12 rounded-full', isVideoOff && 'text-destructive')}
         aria-label={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
         aria-pressed={!isVideoOff}
@@ -67,7 +69,7 @@ export function CameraButton({ room, className }: CameraButtonProps) {
         selectedDeviceId={currentDeviceId}
         onSelect={handleDeviceSelect}
         type="video"
-        disabled={!room}
+        disabled={!room || disabled}
       />
     </div>
   )
