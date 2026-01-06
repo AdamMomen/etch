@@ -1,0 +1,97 @@
+{
+  "name": "Nameless Video Conference",
+  "description": "Self-hosted video conferencing with LiveKit - True one-click deployment",
+  "version": "1.0.0",
+  "type": "docker-compose",
+  "compose_file": "docker-compose.yml",
+  "icon": "https://raw.githubusercontent.com/adammomen/nameless/main/.coolify/icon.png",
+  "documentation": "https://github.com/adammomen/nameless/blob/main/DEPLOYMENT.md",
+  "repository": "https://github.com/adammomen/nameless",
+  "tags": ["video-conference", "livekit", "webrtc", "self-hosted", "meetings"],
+  "minimum_requirements": {
+    "cpu": "2 cores",
+    "ram": "2GB",
+    "disk": "10GB"
+  },
+  "recommended_requirements": {
+    "cpu": "4 cores",
+    "ram": "8GB",
+    "disk": "50GB"
+  },
+  "services": [
+    {
+      "name": "app",
+      "description": "Nameless web application",
+      "port": 3000,
+      "health_check": "/api/health",
+      "public": true
+    },
+    {
+      "name": "livekit",
+      "description": "LiveKit media server",
+      "port": 7880,
+      "health_check": "/",
+      "public": false
+    },
+    {
+      "name": "redis",
+      "description": "Redis for LiveKit",
+      "port": 6379,
+      "public": false
+    }
+  ],
+  "environment_variables": [
+    {
+      "key": "APP_URL",
+      "description": "Public URL of your application (e.g., https://meet.yourdomain.com)",
+      "required": false,
+      "default": "http://localhost:3000"
+    },
+    {
+      "key": "APP_PORT",
+      "description": "Port for the web application",
+      "required": false,
+      "default": "3000"
+    },
+    {
+      "key": "DATABASE_URL",
+      "description": "Database connection string (default: SQLite)",
+      "required": false,
+      "default": "sqlite:///app/data/nameless.db"
+    },
+    {
+      "key": "LIVEKIT_WS_URL",
+      "description": "Internal LiveKit WebSocket URL (leave default)",
+      "required": false,
+      "default": "ws://livekit:7880"
+    }
+  ],
+  "volumes": [
+    {
+      "name": "livekit-config",
+      "description": "LiveKit configuration and auto-generated API keys",
+      "mount": "/config"
+    },
+    {
+      "name": "app-data",
+      "description": "Application data and database",
+      "mount": "/app/data"
+    },
+    {
+      "name": "redis-data",
+      "description": "Redis persistence",
+      "mount": "/data"
+    }
+  ],
+  "auto_update": {
+    "enabled": true,
+    "interval": "24h",
+    "tag": "latest"
+  },
+  "post_deployment": [
+    "Visit your application URL to see auto-generated API credentials",
+    "Save the credentials in a secure password manager",
+    "Configure your domain for SSL/TLS access",
+    "Share your meeting URL with users!"
+  ]
+}

@@ -1,0 +1,73 @@
+# LiveKit Server Configuration
+# Auto-generated for one-click Coolify deployment
+
+port: 7880
+bind_addresses:
+  - "0.0.0.0"
+
+rtc:
+  # Port range for WebRTC media (limited for Coolify compatibility)
+  port_range_start: 50000
+  port_range_end: 50100
+
+  # Use ICE Lite mode (server only provides candidates)
+  use_ice_lite: true
+
+  # Public IP discovery via STUN
+  # LiveKit will automatically discover public IP
+  use_external_ip: true
+
+  # Use public STUN servers for NAT traversal
+  stun_servers:
+    - stun.l.google.com:19302
+    - stun1.l.google.com:19302
+
+  # TCP fallback for restrictive networks
+  tcp_port: 7881
+
+  # Node IP will be auto-discovered
+  # If behind NAT, LiveKit uses STUN to find public IP
+
+# Redis for scalability (optional but recommended)
+redis:
+  address: redis:6379
+
+# Room settings
+room:
+  # Auto-create rooms
+  auto_create: true
+
+  # Empty rooms timeout after 5 minutes
+  empty_timeout: 300
+
+  # Max participants per room (adjust as needed)
+  max_participants: 50
+
+# Logging
+logging:
+  level: info
+  # Enable for debugging
+  # level: debug
+
+  sample: false
+
+# API keys loaded from environment variable
+# LIVEKIT_KEYS format: "APIKey: secret"
+
+# WebHooks (optional - configure if you want events)
+# webhook:
+#   api_key: ${LIVEKIT_API_KEY}
+#   urls:
+#     - http://app:3000/webhooks/livekit
+
+# Turn settings (for NAT traversal)
+turn:
+  enabled: true
+  # Use embedded TURN server
+  # External TURN server can be configured here if needed
+  # external_tls: false
+
+# Signal relay (for better connectivity)
+signal_relay:
+  # Retry failed connections
+  retry_timeout: 15s
