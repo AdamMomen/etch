@@ -18,10 +18,18 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
-  const { displayName, setDisplayName, theme, setTheme, clearPreferences } =
-    useSettingsStore()
+  const {
+    displayName,
+    setDisplayName,
+    apiBaseUrl,
+    setApiBaseUrl,
+    theme,
+    setTheme,
+    clearPreferences,
+  } = useSettingsStore()
 
   const [localDisplayName, setLocalDisplayName] = useState(displayName)
+  const [localApiBaseUrl, setLocalApiBaseUrl] = useState(apiBaseUrl)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
 
   const handleDisplayNameChange = (value: string) => {
@@ -34,6 +42,18 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
     }
   }
 
+  const handleApiBaseUrlChange = (value: string) => {
+    setLocalApiBaseUrl(value)
+  }
+
+  const handleApiBaseUrlBlur = () => {
+    const trimmed = localApiBaseUrl.trim()
+    if (trimmed !== apiBaseUrl) {
+      setApiBaseUrl(trimmed)
+      toast.success('API URL updated. Changes will apply to new connections.')
+    }
+  }
+
   const handleThemeToggle = () => {
     setTheme(theme === 'dark' ? 'light' : 'dark')
   }
@@ -41,20 +61,26 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const handleClearPreferences = () => {
     clearPreferences()
     setLocalDisplayName('')
+    setLocalApiBaseUrl(import.meta.env.VITE_API_URL || 'http://localhost:3000/api')
     setShowClearConfirm(false)
     toast.success('All preferences have been reset to defaults')
   }
 
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
-      // Save display name when closing
+      // Save settings when closing
       if (localDisplayName.trim() !== displayName) {
         setDisplayName(localDisplayName.trim())
+      }
+      const trimmedUrl = localApiBaseUrl.trim()
+      if (trimmedUrl !== apiBaseUrl) {
+        setApiBaseUrl(trimmedUrl)
       }
       setShowClearConfirm(false)
     } else {
       // Sync local state when opening
       setLocalDisplayName(displayName)
+      setLocalApiBaseUrl(apiBaseUrl)
     }
     onOpenChange(isOpen)
   }
@@ -89,6 +115,27 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             />
             <p className="text-xs text-muted-foreground">
               This name will be shown to other participants in meetings
+            </p>
+          </div>
+
+          {/* API Server URL */}
+          <div className="space-y-2">
+            <label
+              htmlFor="settings-api-url"
+              className="text-sm font-medium"
+            >
+              API Server URL
+            </label>
+            <Input
+              id="settings-api-url"
+              type="text"
+              placeholder="http://localhost:3000/api"
+              value={localApiBaseUrl}
+              onChange={(e) => handleApiBaseUrlChange(e.target.value)}
+              onBlur={handleApiBaseUrlBlur}
+            />
+            <p className="text-xs text-muted-foreground">
+              The server URL for creating and joining rooms. Required for production builds.
             </p>
           </div>
 

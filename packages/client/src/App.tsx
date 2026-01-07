@@ -6,6 +6,9 @@ import { MeetingRoom } from '@/components/MeetingRoom'
 import { JoinRoom } from '@/components/JoinRoom'
 import { AnnotationOverlayPage } from '@/components/ScreenShare/AnnotationOverlayPage'
 import { AnnotationOverlayTest } from '@/components/ScreenShare/AnnotationOverlayTest'
+import { ParticipantsWindow } from '@/pages/ParticipantsWindow'
+import { ToolbarWindow } from '@/pages/ToolbarWindow'
+import { SetupBanner } from '@/components/Setup/SetupBanner'
 import { useSettingsStore } from '@/stores/settingsStore'
 
 function App() {
@@ -19,6 +22,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <SetupBanner />
       <Routes>
         <Route path="/" element={<HomeScreen />} />
         <Route path="/room/:roomId" element={<MeetingRoom />} />
