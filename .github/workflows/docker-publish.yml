@@ -17,9 +17,10 @@ on:
   workflow_dispatch:  # Allow manual triggering
 
 # Cancel in-progress runs when a new workflow with the same group is triggered
-# Uses head_ref (PR branch) or ref (push branch) to group both push and PR events together
+# For workflow_run: use the branch that triggered the CI workflow
+# For direct triggers (tags/manual): use ref_name
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.workflow_run.head_branch || github.ref_name }}
   cancel-in-progress: true
 
 env:

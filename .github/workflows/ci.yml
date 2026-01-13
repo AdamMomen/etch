@@ -12,9 +12,9 @@ on:
   workflow_dispatch:
 
 # Cancel in-progress runs when a new workflow with the same group is triggered
-# Uses head_ref (PR branch) or ref (push branch) to group both push and PR events together
+# Uses head_ref (PR source branch) or ref_name (push branch name) to ensure same branch groups together
 concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
