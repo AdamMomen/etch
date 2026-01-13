@@ -23,8 +23,8 @@ RUN pnpm install --frozen-lockfile
 COPY packages ./packages
 COPY tsconfig.base.json ./
 
-# Build all packages
-RUN pnpm build:shared && pnpm build:client && pnpm build:server
+# Build all packages (use build:web for client - web version with type checking)
+RUN pnpm build:shared && pnpm --filter client build:web && pnpm build:server
 
 # Stage 2: Production
 FROM node:20-alpine AS production

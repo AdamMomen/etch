@@ -12,7 +12,7 @@ interface LogEntry {
   roomId?: string
   participantId?: string
   error?: string
-  [key: string]: string | number | undefined
+  [key: string]: string | number | boolean | undefined
 }
 
 function log(entry: LogEntry): void {

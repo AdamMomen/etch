@@ -1,10 +1,5 @@
 import { useEffect, useState, useMemo } from 'react'
 import { listen } from '@tauri-apps/api/event'
-import type { RemoteParticipant, Track as LKTrack } from 'livekit-client'
-import { Track } from 'livekit-client'
-import { LocalVideoPreview } from '@/components/MeetingRoom/LocalVideoPreview'
-import { ParticipantBubble } from '@/components/MeetingRoom/ParticipantBubble'
-import { RemoteParticipantAudio } from '@/components/MeetingRoom/RemoteParticipantAudio'
 import type { Participant } from '@etch/shared'
 import { cn } from '@/lib/utils'
 
@@ -55,7 +50,7 @@ export function ParticipantsWindow() {
         id: 'local',
         name: state.localParticipant.name,
         color: state.localParticipant.color,
-        role: 'participant',
+        role: 'viewer',
         isSpeaking: false,
         isLocal: true,
       })
