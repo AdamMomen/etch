@@ -63,7 +63,10 @@ logging:
 # Turn settings (for NAT traversal)
 turn:
   enabled: true
-  # Use embedded TURN server
+  # Use embedded TURN server on UDP port
+  udp_port: 7882
+  # Use embedded TURN server on TCP (optional)
+  # tcp_port: 7883
   # External TURN server can be configured here if needed
   # external_tls: false
 

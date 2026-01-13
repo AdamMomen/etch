@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   # Init container - generates API keys on first run
   init:
@@ -36,8 +34,6 @@ services:
     volumes:
       - livekit-config:/config
       - ./livekit.yaml:/livekit.yaml:ro
-    environment:
-      - LIVEKIT_CONFIG=/livekit.yaml
     env_file:
       - livekit-config/api-keys.env
     command: --config /livekit.yaml
