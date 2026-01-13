@@ -205,29 +205,11 @@ jobs:
   rust-format:
     name: Rust Format Check
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tauri-apps/tauri-linux:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libglib2.0-dev \
-            libgtk-3-dev \
-            libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libwebkit2gtk-4.1-dev \
-            libdrm-dev \
-            libgbm-dev \
-            libasound2-dev \
-            libpulse-dev \
-            libx11-dev \
-            libxext-dev \
-            libxfixes-dev \
-            libxrandr-dev \
-            libxcomposite-dev \
-            libxdamage-dev
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -247,29 +229,11 @@ jobs:
   rust-clippy:
     name: Rust Clippy Linting
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tauri-apps/tauri-linux:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libglib2.0-dev \
-            libgtk-3-dev \
-            libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libwebkit2gtk-4.1-dev \
-            libdrm-dev \
-            libgbm-dev \
-            libasound2-dev \
-            libpulse-dev \
-            libx11-dev \
-            libxext-dev \
-            libxfixes-dev \
-            libxrandr-dev \
-            libxcomposite-dev \
-            libxdamage-dev
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -289,29 +253,11 @@ jobs:
   rust-test:
     name: Rust Tests
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tauri-apps/tauri-linux:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libglib2.0-dev \
-            libgtk-3-dev \
-            libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libwebkit2gtk-4.1-dev \
-            libdrm-dev \
-            libgbm-dev \
-            libasound2-dev \
-            libpulse-dev \
-            libx11-dev \
-            libxext-dev \
-            libxfixes-dev \
-            libxrandr-dev \
-            libxcomposite-dev \
-            libxdamage-dev
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -333,29 +279,11 @@ jobs:
   rust-build:
     name: Rust Build Check
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/tauri-apps/tauri-linux:latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libglib2.0-dev \
-            libgtk-3-dev \
-            libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libwebkit2gtk-4.1-dev \
-            libdrm-dev \
-            libgbm-dev \
-            libasound2-dev \
-            libpulse-dev \
-            libx11-dev \
-            libxext-dev \
-            libxfixes-dev \
-            libxrandr-dev \
-            libxcomposite-dev \
-            libxdamage-dev
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
