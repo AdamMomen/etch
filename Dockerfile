@@ -15,7 +15,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/client/package.json ./packages/client/
 COPY packages/server/package.json ./packages/server/
 COPY packages/shared/package.json ./packages/shared/
-COPY packages/core/package.json ./packages/core/
 
 # Install dependencies
 RUN pnpm install --frozen-lockfile
@@ -44,7 +43,6 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/client/package.json ./packages/client/
 COPY packages/server/package.json ./packages/server/
 COPY packages/shared/package.json ./packages/shared/
-COPY packages/core/package.json ./packages/core/
 
 # Install production dependencies only
 RUN pnpm install --frozen-lockfile --prod
