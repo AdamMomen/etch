@@ -15,17 +15,23 @@ interface CameraButtonProps {
 }
 
 export function CameraButton({ room, className, disabled }: CameraButtonProps) {
-  const { isVideoOff, toggleVideo, switchDevice, currentDeviceId } = useVideo({ room })
+  const { isVideoOff, toggleVideo, switchDevice, currentDeviceId } = useVideo({
+    room,
+  })
   const { videoDevices } = useDevices()
 
-  const handleDeviceSelect = useCallback(async (deviceId: string) => {
-    const success = await switchDevice(deviceId)
-    if (success) {
-      const device = videoDevices.find((d) => d.deviceId === deviceId)
-      const deviceName = deviceId === 'default' ? 'System Default' : device?.label || 'camera'
-      toast.success(`Switched to ${deviceName}`)
-    }
-  }, [switchDevice, videoDevices])
+  const handleDeviceSelect = useCallback(
+    async (deviceId: string) => {
+      const success = await switchDevice(deviceId)
+      if (success) {
+        const device = videoDevices.find((d) => d.deviceId === deviceId)
+        const deviceName =
+          deviceId === 'default' ? 'System Default' : device?.label || 'camera'
+        toast.success(`Switched to ${deviceName}`)
+      }
+    },
+    [switchDevice, videoDevices]
+  )
 
   // Handle keyboard shortcut (V key)
   const handleKeyDown = useCallback(
@@ -58,11 +64,18 @@ export function CameraButton({ room, className, disabled }: CameraButtonProps) {
         size="icon"
         onClick={() => toggleVideo()}
         disabled={disabled}
-        className={cn('h-12 w-12 rounded-full', isVideoOff && 'text-destructive')}
+        className={cn(
+          'h-12 w-12 rounded-full',
+          isVideoOff && 'text-destructive'
+        )}
         aria-label={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
         aria-pressed={!isVideoOff}
       >
-        {isVideoOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
+        {isVideoOff ? (
+          <VideoOff className="h-5 w-5" />
+        ) : (
+          <Video className="h-5 w-5" />
+        )}
       </Button>
       <DeviceSelector
         devices={videoDevices}

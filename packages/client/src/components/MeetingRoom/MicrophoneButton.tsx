@@ -14,18 +14,30 @@ interface MicrophoneButtonProps {
   disabled?: boolean
 }
 
-export function MicrophoneButton({ room, className, disabled }: MicrophoneButtonProps) {
-  const { isMuted, toggleMute, switchDevice, currentDeviceId } = useAudio({ room })
+export function MicrophoneButton({
+  room,
+  className,
+  disabled,
+}: MicrophoneButtonProps) {
+  const { isMuted, toggleMute, switchDevice, currentDeviceId } = useAudio({
+    room,
+  })
   const { audioDevices } = useDevices()
 
-  const handleDeviceSelect = useCallback(async (deviceId: string) => {
-    const success = await switchDevice(deviceId)
-    if (success) {
-      const device = audioDevices.find((d) => d.deviceId === deviceId)
-      const deviceName = deviceId === 'default' ? 'System Default' : device?.label || 'microphone'
-      toast.success(`Switched to ${deviceName}`)
-    }
-  }, [switchDevice, audioDevices])
+  const handleDeviceSelect = useCallback(
+    async (deviceId: string) => {
+      const success = await switchDevice(deviceId)
+      if (success) {
+        const device = audioDevices.find((d) => d.deviceId === deviceId)
+        const deviceName =
+          deviceId === 'default'
+            ? 'System Default'
+            : device?.label || 'microphone'
+        toast.success(`Switched to ${deviceName}`)
+      }
+    },
+    [switchDevice, audioDevices]
+  )
 
   // Handle keyboard shortcut (M key)
   const handleKeyDown = useCallback(

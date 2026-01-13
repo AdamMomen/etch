@@ -67,7 +67,8 @@ export function useDevices(): UseDevicesReturn {
     } catch (err) {
       if (!isMountedRef.current) return
 
-      const message = err instanceof Error ? err.message : 'Failed to enumerate devices'
+      const message =
+        err instanceof Error ? err.message : 'Failed to enumerate devices'
       setError(message)
       console.error('Failed to enumerate devices:', err)
     } finally {
@@ -92,7 +93,10 @@ export function useDevices(): UseDevicesReturn {
 
     return () => {
       isMountedRef.current = false
-      navigator.mediaDevices?.removeEventListener('devicechange', handleDeviceChange)
+      navigator.mediaDevices?.removeEventListener(
+        'devicechange',
+        handleDeviceChange
+      )
     }
   }, [enumerateDevices])
 

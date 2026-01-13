@@ -1,5 +1,10 @@
 import { Crown, MonitorUp, Pen, Eye } from 'lucide-react'
-import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import type { Role } from '@etch/shared'
 
@@ -9,7 +14,11 @@ interface RoleBadgeProps {
   className?: string
 }
 
-export function RoleBadge({ role, isSharingScreen, className }: RoleBadgeProps) {
+export function RoleBadge({
+  role,
+  isSharingScreen,
+  className,
+}: RoleBadgeProps) {
   // Dynamic sharer badge: show when actively sharing, regardless of role
   const isActiveSharer = isSharingScreen === true
 

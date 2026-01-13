@@ -20,11 +20,14 @@ export interface UseAudioReturn {
 }
 
 export function useAudio({ room }: UseAudioOptions): UseAudioReturn {
-  const { isMuted, setMuted, preferredMicrophoneId, setPreferredMicrophone } = useSettingsStore()
+  const { isMuted, setMuted, preferredMicrophoneId, setPreferredMicrophone } =
+    useSettingsStore()
   const { updateParticipant, localParticipant } = useRoomStore()
   const [isPublishing, setIsPublishing] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
-  const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(preferredMicrophoneId)
+  const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(
+    preferredMicrophoneId
+  )
 
   // Enable microphone (requests permission if needed)
   const enableMicrophone = useCallback(async () => {
@@ -77,20 +80,23 @@ export function useAudio({ room }: UseAudioOptions): UseAudioReturn {
   }, [isMuted, enableMicrophone, disableMicrophone])
 
   // Switch audio input device
-  const switchDevice = useCallback(async (deviceId: string): Promise<boolean> => {
-    if (!room) return false
+  const switchDevice = useCallback(
+    async (deviceId: string): Promise<boolean> => {
+      if (!room) return false
 
-    try {
-      await room.switchActiveDevice('audioinput', deviceId)
-      setCurrentDeviceId(deviceId)
-      setPreferredMicrophone(deviceId)
-      return true
-    } catch (error) {
-      console.error('Failed to switch microphone:', error)
-      toast.error('Failed to switch microphone')
-      return false
-    }
-  }, [room, setPreferredMicrophone])
+      try {
+        await room.switchActiveDevice('audioinput', deviceId)
+        setCurrentDeviceId(deviceId)
+        setPreferredMicrophone(deviceId)
+        return true
+      } catch (error) {
+        console.error('Failed to switch microphone:', error)
+        toast.error('Failed to switch microphone')
+        return false
+      }
+    },
+    [room, setPreferredMicrophone]
+  )
 
   // Listen for speaking state changes
   useEffect(() => {
@@ -105,10 +111,16 @@ export function useAudio({ room }: UseAudioOptions): UseAudioReturn {
       }
     }
 
-    room.localParticipant.on(ParticipantEvent.IsSpeakingChanged, handleSpeakingChanged)
+    room.localParticipant.on(
+      ParticipantEvent.IsSpeakingChanged,
+      handleSpeakingChanged
+    )
 
     return () => {
-      room.localParticipant.off(ParticipantEvent.IsSpeakingChanged, handleSpeakingChanged)
+      room.localParticipant.off(
+        ParticipantEvent.IsSpeakingChanged,
+        handleSpeakingChanged
+      )
     }
   }, [room, localParticipant?.id, updateParticipant])
 
@@ -130,7 +142,9 @@ export function useAudio({ room }: UseAudioOptions): UseAudioReturn {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices()
         const audioDevices = devices.filter((d) => d.kind === 'audioinput')
-        const currentDeviceExists = audioDevices.some((d) => d.deviceId === currentDeviceId)
+        const currentDeviceExists = audioDevices.some(
+          (d) => d.deviceId === currentDeviceId
+        )
 
         if (!currentDeviceExists) {
           // Current device was disconnected, fall back to default
@@ -147,7 +161,10 @@ export function useAudio({ room }: UseAudioOptions): UseAudioReturn {
     navigator.mediaDevices?.addEventListener('devicechange', handleDeviceChange)
 
     return () => {
-      navigator.mediaDevices?.removeEventListener('devicechange', handleDeviceChange)
+      navigator.mediaDevices?.removeEventListener(
+        'devicechange',
+        handleDeviceChange
+      )
     }
   }, [room, currentDeviceId, setPreferredMicrophone])
 

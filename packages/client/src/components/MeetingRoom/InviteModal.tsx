@@ -31,7 +31,10 @@ export function InviteModal({ open, onOpenChange, roomId }: InviteModalProps) {
   }, [open])
 
   // Generate the invite link using configurable domain from settings
-  const inviteLink = generateInviteLink(roomId, inviteDomain ? { domain: inviteDomain } : undefined)
+  const inviteLink = generateInviteLink(
+    roomId,
+    inviteDomain ? { domain: inviteDomain } : undefined
+  )
 
   const handleCopy = useCallback(async () => {
     const success = await copyToClipboard(inviteLink)
@@ -48,7 +51,6 @@ export function InviteModal({ open, onOpenChange, roomId }: InviteModalProps) {
       toast.error('Failed to copy link')
     }
   }, [inviteLink])
-
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

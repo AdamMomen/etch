@@ -53,7 +53,12 @@ interface ToolConfig {
 const TOOLS: ToolConfig[] = [
   { tool: 'select', icon: Hand, label: 'Hand', shortcut: '1 / V' },
   { tool: 'pen', icon: Pencil, label: 'Pen', shortcut: '2' },
-  { tool: 'highlighter', icon: Highlighter, label: 'Highlighter', shortcut: '3' },
+  {
+    tool: 'highlighter',
+    icon: Highlighter,
+    label: 'Highlighter',
+    shortcut: '3',
+  },
   { tool: 'eraser', icon: Eraser, label: 'Eraser', shortcut: '7' },
 ]
 
@@ -226,14 +231,12 @@ export function ToolbarWindow() {
                 </Tooltip>
                 <AlertDialogContent>
                   <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Clear all annotations?
-                    </AlertDialogTitle>
+                    <AlertDialogTitle>Clear all annotations?</AlertDialogTitle>
                     <AlertDialogDescription>
                       This will permanently delete {state.strokeCount}{' '}
                       annotation
-                      {state.strokeCount !== 1 ? 's' : ''} from the canvas.
-                      This action cannot be undone.
+                      {state.strokeCount !== 1 ? 's' : ''} from the canvas. This
+                      action cannot be undone.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
@@ -271,9 +274,7 @@ export function ToolbarWindow() {
                     data-testid="tool-button-help"
                   >
                     <Keyboard className="h-4 w-4" />
-                    <span className="text-[10px] text-muted-foreground">
-                      ?
-                    </span>
+                    <span className="text-[10px] text-muted-foreground">?</span>
                   </Button>
                 </DialogTrigger>
               </TooltipTrigger>

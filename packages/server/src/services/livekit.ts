@@ -97,7 +97,11 @@ export async function generateScreenShareToken(
   const token = new AccessToken(apiKey, apiSecret, {
     identity: screenShareIdentity,
     name: `${name} (Screen)`,
-    metadata: JSON.stringify({ role: 'screenshare', parentId: participantId, isScreenShare: true }),
+    metadata: JSON.stringify({
+      role: 'screenshare',
+      parentId: participantId,
+      isScreenShare: true,
+    }),
     ttl: TOKEN_EXPIRY_SECONDS,
   })
 

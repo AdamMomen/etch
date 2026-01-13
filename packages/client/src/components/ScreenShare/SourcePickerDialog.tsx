@@ -62,7 +62,9 @@ export function SourcePickerDialog({
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            <span className="ml-2 text-muted-foreground">Loading sources...</span>
+            <span className="ml-2 text-muted-foreground">
+              Loading sources...
+            </span>
           </div>
         ) : (
           <>
@@ -122,7 +124,14 @@ interface SourceCardProps {
   onClick: () => void
 }
 
-function SourceCard({ name, subtitle, icon, thumbnail, isSelected, onClick }: SourceCardProps) {
+function SourceCard({
+  name,
+  subtitle,
+  icon,
+  thumbnail,
+  isSelected,
+  onClick,
+}: SourceCardProps) {
   return (
     <button
       onClick={onClick}
@@ -134,10 +143,12 @@ function SourceCard({ name, subtitle, icon, thumbnail, isSelected, onClick }: So
           : 'border-transparent bg-muted/50'
       )}
     >
-      <div className={cn(
-        'flex items-center justify-center w-full h-20 rounded bg-muted overflow-hidden',
-        isSelected && 'bg-primary/20'
-      )}>
+      <div
+        className={cn(
+          'flex items-center justify-center w-full h-20 rounded bg-muted overflow-hidden',
+          isSelected && 'bg-primary/20'
+        )}
+      >
         {thumbnail ? (
           <img
             src={`data:image/jpeg;base64,${thumbnail}`}
@@ -152,7 +163,10 @@ function SourceCard({ name, subtitle, icon, thumbnail, isSelected, onClick }: So
         <div className="text-sm font-medium truncate" title={name}>
           {name}
         </div>
-        <div className="text-xs text-muted-foreground truncate" title={subtitle}>
+        <div
+          className="text-xs text-muted-foreground truncate"
+          title={subtitle}
+        >
           {subtitle}
         </div>
       </div>

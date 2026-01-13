@@ -48,7 +48,10 @@ export function ParticipantGrid({
   const gridConfig = useMemo(() => getGridConfig(totalCount), [totalCount])
 
   // Get LiveKit remote participants for track access
-  const liveKitRemoteParticipants = useMemo((): Map<string, RemoteParticipant> => {
+  const liveKitRemoteParticipants = useMemo((): Map<
+    string,
+    RemoteParticipant
+  > => {
     if (!room) return new Map<string, RemoteParticipant>()
     return room.remoteParticipants
   }, [room])
@@ -98,8 +101,12 @@ export function ParticipantGrid({
           )
         }
 
-        const videoTrackPub = lkParticipant.getTrackPublication(Track.Source.Camera)
-        const audioTrackPub = lkParticipant.getTrackPublication(Track.Source.Microphone)
+        const videoTrackPub = lkParticipant.getTrackPublication(
+          Track.Source.Camera
+        )
+        const audioTrackPub = lkParticipant.getTrackPublication(
+          Track.Source.Microphone
+        )
 
         return (
           <div key={participant.id} className="relative h-full w-full min-h-0">

@@ -35,10 +35,7 @@ export {
 } from './annotation'
 
 // Screen share DataTrack message types (instant stop notification)
-export type {
-  ScreenShareStopMessage,
-  ScreenShareMessage,
-} from './screenShare'
+export type { ScreenShareStopMessage, ScreenShareMessage } from './screenShare'
 
 export {
   SCREEN_SHARE_MESSAGE_TYPES,

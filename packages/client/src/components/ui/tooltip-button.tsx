@@ -1,6 +1,11 @@
 import * as React from 'react'
 import { Button, type ButtonProps } from './button'
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip'
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from './tooltip'
 
 export interface TooltipButtonProps extends ButtonProps {
   /**
@@ -40,8 +45,14 @@ export interface TooltipButtonProps extends ButtonProps {
  *   Share
  * </TooltipButton>
  */
-export const TooltipButton = React.forwardRef<HTMLButtonElement, TooltipButtonProps>(
-  ({ tooltip, disabledTooltip, tooltipSide = 'top', disabled, ...buttonProps }, ref) => {
+export const TooltipButton = React.forwardRef<
+  HTMLButtonElement,
+  TooltipButtonProps
+>(
+  (
+    { tooltip, disabledTooltip, tooltipSide = 'top', disabled, ...buttonProps },
+    ref
+  ) => {
     const tooltipContent = disabled ? (disabledTooltip ?? tooltip) : tooltip
 
     // If no tooltip content, just render the button

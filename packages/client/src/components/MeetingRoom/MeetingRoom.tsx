@@ -8,7 +8,11 @@ import { useRoomStore } from '@/stores/roomStore'
 import { useVolumeStore } from '@/stores/volumeStore'
 import { useLiveKit } from '@/hooks/useLiveKit'
 import { useVideo } from '@/hooks/useVideo'
-import { useScreenShare, showSharingTray, hideSharingTray } from '@/hooks/useScreenShare'
+import {
+  useScreenShare,
+  showSharingTray,
+  hideSharingTray,
+} from '@/hooks/useScreenShare'
 import { useDevices } from '@/hooks/useDevices'
 import { useDeviceDisconnection } from '@/hooks/useDeviceDisconnection'
 import { useAnnotationSync } from '@/hooks/useAnnotationSync'
@@ -20,7 +24,11 @@ import { LocalVideoPreview } from './LocalVideoPreview'
 import { ParticipantGrid } from './ParticipantGrid'
 import { LeaveConfirmDialog } from './LeaveConfirmDialog'
 import { InviteModal } from './InviteModal'
-import { ScreenShareViewer, SourcePickerDialog, DraggableParticipantStack } from '@/components/ScreenShare'
+import {
+  ScreenShareViewer,
+  SourcePickerDialog,
+  DraggableParticipantStack,
+} from '@/components/ScreenShare'
 import { generateInviteLink, copyToClipboard } from '@/lib/invite'
 import { cn } from '@/lib/utils'
 
@@ -29,7 +37,8 @@ const RESPONSIVE_BREAKPOINT = 1000
 export function MeetingRoom() {
   const { roomId } = useParams<{ roomId: string }>()
   const navigate = useNavigate()
-  const { sidebarCollapsed, toggleSidebar, setSidebarCollapsed, displayName } = useSettingsStore()
+  const { sidebarCollapsed, toggleSidebar, setSidebarCollapsed, displayName } =
+    useSettingsStore()
   const {
     currentRoom,
     setCurrentRoom,
@@ -53,7 +62,9 @@ export function MeetingRoom() {
       const attemptAutoRejoin = async () => {
         // If no display name, redirect to join flow to collect it
         if (!displayName) {
-          console.log('[MeetingRoom] No display name found, redirecting to join flow')
+          console.log(
+            '[MeetingRoom] No display name found, redirecting to join flow'
+          )
           navigate(`/join/${roomId}`)
           return
         }
@@ -65,7 +76,9 @@ export function MeetingRoom() {
           const exists = await validateRoomExists(roomId)
 
           if (!exists) {
-            console.log('[MeetingRoom] Room no longer exists, redirecting to home')
+            console.log(
+              '[MeetingRoom] Room no longer exists, redirecting to home'
+            )
             toast.error(`Room "${roomId}" no longer exists`)
             navigate('/')
             return
@@ -85,7 +98,8 @@ export function MeetingRoom() {
           console.log('[MeetingRoom] Auto-rejoin successful')
         } catch (error) {
           console.error('[MeetingRoom] Auto-rejoin failed:', error)
-          const message = error instanceof Error ? error.message : 'Failed to rejoin room'
+          const message =
+            error instanceof Error ? error.message : 'Failed to rejoin room'
           toast.error(message)
           navigate('/')
         }
@@ -228,7 +242,15 @@ export function MeetingRoom() {
     resetVolumes() // Reset per-participant volume settings (AC: 2.11.6)
     navigate('/')
     toast.success('Left the meeting')
-  }, [isHost, remoteParticipants.length, transferHostRole, leaveRoom, clearRoom, resetVolumes, navigate])
+  }, [
+    isHost,
+    remoteParticipants.length,
+    transferHostRole,
+    leaveRoom,
+    clearRoom,
+    resetVolumes,
+    navigate,
+  ])
 
   // Handle leave button click - show confirmation for host, immediate leave for participants
   const handleLeave = useCallback(() => {
@@ -254,7 +276,11 @@ export function MeetingRoom() {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger shortcuts when typing in input fields
       const target = e.target as HTMLElement
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+      if (
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      ) {
         return
       }
 
@@ -285,7 +311,13 @@ export function MeetingRoom() {
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [toggleSidebar, handleLeave, startScreenShare, stopScreenShare, isLocalSharing])
+  }, [
+    toggleSidebar,
+    handleLeave,
+    startScreenShare,
+    stopScreenShare,
+    isLocalSharing,
+  ])
 
   // Responsive sidebar collapse
   useEffect(() => {
@@ -347,12 +379,7 @@ export function MeetingRoom() {
   // Auto-copy invite link on room creation for host (AC-2.13.3)
   useEffect(() => {
     // Only run once when host first connects to a newly created room
-    if (
-      isConnected &&
-      isHost &&
-      roomId &&
-      !hasAutoCopiedRef.current
-    ) {
+    if (isConnected && isHost && roomId && !hasAutoCopiedRef.current) {
       hasAutoCopiedRef.current = true
       const inviteLink = generateInviteLink(roomId)
       copyToClipboard(inviteLink).then((success) => {
@@ -379,13 +406,16 @@ export function MeetingRoom() {
 
         // AC-3.7.5: Handle "Leave Meeting" from tray menu
         // Story 3.9: Stop sharing first to restore window before leaving
-        unlistenLeaveMeeting = await listen('tray://leave-meeting', async () => {
-          console.log('[MeetingRoom] Received tray://leave-meeting event')
-          if (isLocalSharing) {
-            await stopScreenShare()
+        unlistenLeaveMeeting = await listen(
+          'tray://leave-meeting',
+          async () => {
+            console.log('[MeetingRoom] Received tray://leave-meeting event')
+            if (isLocalSharing) {
+              await stopScreenShare()
+            }
+            performLeave()
           }
-          performLeave()
-        })
+        )
 
         console.log('[MeetingRoom] Tray event listeners set up')
       } catch (error) {

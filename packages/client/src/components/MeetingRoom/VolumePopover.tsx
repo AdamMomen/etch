@@ -1,5 +1,9 @@
 import { Volume2, VolumeX } from 'lucide-react'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { VolumeControl } from './VolumeControl'
 import { useVolumeStore } from '@/stores/volumeStore'
@@ -46,10 +50,7 @@ export function VolumePopover({
         <Button
           variant="ghost"
           size="icon"
-          className={cn(
-            'h-6 w-6 rounded-full transition-opacity',
-            className
-          )}
+          className={cn('h-6 w-6 rounded-full transition-opacity', className)}
           aria-label={`Adjust volume for ${participantName}`}
         >
           {isMuted ? (
@@ -70,10 +71,7 @@ export function VolumePopover({
         className="w-48 p-3"
         sideOffset={8}
       >
-        <VolumeControl
-          volume={volume}
-          onVolumeChange={handleVolumeChange}
-        />
+        <VolumeControl volume={volume} onVolumeChange={handleVolumeChange} />
       </PopoverContent>
     </Popover>
   )

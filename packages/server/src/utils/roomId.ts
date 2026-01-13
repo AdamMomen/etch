@@ -41,6 +41,7 @@ export function generateRoomId(): string {
  * @returns True if the room ID matches xxx-xxx-xxx format with valid characters
  */
 export function isValidRoomId(roomId: string): boolean {
-  const pattern = /^[23456789abcdefghjkmnpqrstuvwxyz]{3}-[23456789abcdefghjkmnpqrstuvwxyz]{3}-[23456789abcdefghjkmnpqrstuvwxyz]{3}$/
+  const pattern =
+    /^[23456789abcdefghjkmnpqrstuvwxyz]{3}-[23456789abcdefghjkmnpqrstuvwxyz]{3}-[23456789abcdefghjkmnpqrstuvwxyz]{3}$/
   return pattern.test(roomId)
 }

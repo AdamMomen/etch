@@ -74,7 +74,9 @@ describe('canDeleteStroke (AC-5.1.2, AC-5.1.6)', () => {
     })
 
     it('sharer can delete any stroke when sharing', () => {
-      expect(canDeleteStroke('sharer', otherStroke, 'user-123', true)).toBe(true)
+      expect(canDeleteStroke('sharer', otherStroke, 'user-123', true)).toBe(
+        true
+      )
     })
   })
 
@@ -84,31 +86,43 @@ describe('canDeleteStroke (AC-5.1.2, AC-5.1.6)', () => {
     })
 
     it('sharer cannot delete other stroke when not sharing', () => {
-      expect(canDeleteStroke('sharer', otherStroke, 'user-123', false)).toBe(false)
+      expect(canDeleteStroke('sharer', otherStroke, 'user-123', false)).toBe(
+        false
+      )
     })
   })
 
   describe('annotator role', () => {
     it('annotator can delete own stroke', () => {
-      expect(canDeleteStroke('annotator', ownStroke, 'user-123', false)).toBe(true)
+      expect(canDeleteStroke('annotator', ownStroke, 'user-123', false)).toBe(
+        true
+      )
     })
 
     it('annotator cannot delete other stroke', () => {
-      expect(canDeleteStroke('annotator', otherStroke, 'user-123', false)).toBe(false)
+      expect(canDeleteStroke('annotator', otherStroke, 'user-123', false)).toBe(
+        false
+      )
     })
   })
 
   describe('viewer role', () => {
     it('viewer cannot delete own stroke', () => {
-      expect(canDeleteStroke('viewer', ownStroke, 'user-123', false)).toBe(false)
+      expect(canDeleteStroke('viewer', ownStroke, 'user-123', false)).toBe(
+        false
+      )
     })
 
     it('viewer cannot delete other stroke', () => {
-      expect(canDeleteStroke('viewer', otherStroke, 'user-123', false)).toBe(false)
+      expect(canDeleteStroke('viewer', otherStroke, 'user-123', false)).toBe(
+        false
+      )
     })
 
     it('viewer cannot delete any stroke even when sharing', () => {
-      expect(canDeleteStroke('viewer', otherStroke, 'user-123', true)).toBe(false)
+      expect(canDeleteStroke('viewer', otherStroke, 'user-123', true)).toBe(
+        false
+      )
     })
   })
 })
@@ -171,11 +185,11 @@ describe('Permission hierarchy (AC-5.1.6)', () => {
   it('enforces Host > Sharer > Annotator > Viewer hierarchy for annotations', () => {
     // Host can always annotate
     expect(canAnnotate('host', false)).toBe(true)
-    
+
     // Sharer/Annotator depend on room setting
     expect(canAnnotate('sharer', true)).toBe(true)
     expect(canAnnotate('annotator', true)).toBe(true)
-    
+
     // Viewer can never annotate
     expect(canAnnotate('viewer', true)).toBe(false)
   })
@@ -186,7 +200,7 @@ describe('Permission hierarchy (AC-5.1.6)', () => {
     expect(canModerateUsers('sharer')).toBe(false)
     expect(canModerateUsers('annotator')).toBe(false)
     expect(canModerateUsers('viewer')).toBe(false)
-    
+
     // Only host can clear all
     expect(canClearAll('host')).toBe(true)
     expect(canClearAll('sharer')).toBe(false)

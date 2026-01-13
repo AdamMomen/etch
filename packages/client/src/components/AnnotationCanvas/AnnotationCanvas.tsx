@@ -1,7 +1,10 @@
 import { useEffect, useRef, useCallback, useMemo } from 'react'
 import { getStroke } from 'perfect-freehand'
 import type { Point, Stroke } from '@etch/shared'
-import { getPointerCoordinates, denormalizeStrokePoints } from '@/utils/coordinates'
+import {
+  getPointerCoordinates,
+  denormalizeStrokePoints,
+} from '@/utils/coordinates'
 import type { Tool } from '@/stores/annotationStore'
 import type { SyncState } from '@/hooks/useAnnotationSync'
 
@@ -115,10 +118,15 @@ function renderStroke(
 
   // Convert normalized points to pixel coordinates for perfect-freehand (AC-4.9.3)
   // Using centralized denormalization from coordinates.ts for consistency
-  const pixelPoints = denormalizeStrokePoints(stroke.points, canvasWidth, canvasHeight)
+  const pixelPoints = denormalizeStrokePoints(
+    stroke.points,
+    canvasWidth,
+    canvasHeight
+  )
 
   // Get stroke options based on tool type
-  const options = stroke.tool === 'highlighter' ? HIGHLIGHTER_OPTIONS : PEN_OPTIONS
+  const options =
+    stroke.tool === 'highlighter' ? HIGHLIGHTER_OPTIONS : PEN_OPTIONS
 
   // Generate stroke outline using perfect-freehand
   // perfect-freehand accepts points as {x, y, pressure?} objects
@@ -304,7 +312,13 @@ export function AnnotationCanvas({
     if (activeStroke) {
       renderStroke(ctx, activeStroke, rect.width, rect.height)
     }
-  }, [strokes, activeStroke, remoteActiveStrokes, getVideoContentRect, hoveredStrokeId])
+  }, [
+    strokes,
+    activeStroke,
+    remoteActiveStrokes,
+    getVideoContentRect,
+    hoveredStrokeId,
+  ])
 
   /**
    * Initialize canvas context with optimal settings.
@@ -500,12 +514,8 @@ export function AnnotationCanvas({
     return isScreenShareActive
   }, [isScreenShareActive])
 
-  // Don't render if screen share is not active (AC-4.1.7)
-  if (!shouldRender) {
-    return null
-  }
-
   // Determine cursor style based on canAnnotate and activeTool (AC-4.3.11, AC-4.5.7)
+  // Must be before early return to satisfy React Hooks rules
   const cursorStyle = useMemo((): string => {
     if (!canAnnotate) return 'default'
 
@@ -520,6 +530,11 @@ export function AnnotationCanvas({
         return 'default'
     }
   }, [canAnnotate, activeTool, hoveredStrokeId])
+
+  // Don't render if screen share is not active (AC-4.1.7)
+  if (!shouldRender) {
+    return null
+  }
 
   return (
     <div
@@ -596,4 +611,3 @@ export function AnnotationCanvas({
     </div>
   )
 }
-

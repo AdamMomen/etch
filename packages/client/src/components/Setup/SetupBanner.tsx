@@ -1,5 +1,12 @@
 import { useEffect, useState } from 'react'
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../ui/alert-dialog'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog'
 import { Button } from '../ui/button'
 
 interface SetupCredentials {
@@ -36,7 +43,7 @@ export function SetupBanner() {
 
     // Fetch setup status
     fetch('/api/setup/status')
-      .then(res => res.json())
+      .then((res) => res.json())
       .then((data: SetupStatus) => {
         setSetupStatus(data)
         // Show dialog if we have credentials to display
@@ -44,7 +51,7 @@ export function SetupBanner() {
           setShowDialog(true)
         }
       })
-      .catch(err => {
+      .catch((err) => {
         console.error('Failed to fetch setup status:', err)
       })
   }, [])
@@ -67,7 +74,9 @@ export function SetupBanner() {
     <AlertDialog open={showDialog} onOpenChange={setShowDialog}>
       <AlertDialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-2xl">🎉 Setup Complete!</AlertDialogTitle>
+          <AlertDialogTitle className="text-2xl">
+            🎉 Setup Complete!
+          </AlertDialogTitle>
           <AlertDialogDescription className="text-base">
             Your Etch video conferencing system has been deployed successfully.
             Here are your auto-generated LiveKit credentials:
@@ -106,7 +115,9 @@ export function SetupBanner() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => copyToClipboard(setupStatus.credentials!.apiSecret)}
+                onClick={() =>
+                  copyToClipboard(setupStatus.credentials!.apiSecret)
+                }
               >
                 Copy
               </Button>
@@ -160,7 +171,7 @@ export function SetupBanner() {
 
         <AlertDialogFooter>
           <Button onClick={handleAcknowledge} className="w-full">
-            I've Saved These Credentials
+            I&apos;ve Saved These Credentials
           </Button>
         </AlertDialogFooter>
       </AlertDialogContent>

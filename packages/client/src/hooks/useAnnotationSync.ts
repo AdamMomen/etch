@@ -68,7 +68,10 @@ const RETRY_CONFIG = {
  * @param context - Context string for logging (e.g., message type)
  * @returns true if all points are valid, false if any are out of range
  */
-function validateNormalizedCoordinates(points: Point[], context: string): boolean {
+function validateNormalizedCoordinates(
+  points: Point[],
+  context: string
+): boolean {
   for (const point of points) {
     if (point.x < 0 || point.x > 1 || point.y < 0 || point.y > 1) {
       console.warn(
@@ -178,7 +181,9 @@ export function useAnnotationSync(
     stateRequestTimestampRef.current = Date.now()
 
     if (import.meta.env.DEV) {
-      console.debug('[AnnotationSync] Sent state_request', { requesterId: localParticipantId })
+      console.debug('[AnnotationSync] Sent state_request', {
+        requesterId: localParticipantId,
+      })
     }
   }, [room, localParticipantId])
 
@@ -240,7 +245,10 @@ export function useAnnotationSync(
         // Don't respond twice to the same requester
         if (respondedToRequestersRef.current.has(requestMsg.requesterId)) {
           if (import.meta.env.DEV) {
-            console.debug('[AnnotationSync] Already responded to', requestMsg.requesterId)
+            console.debug(
+              '[AnnotationSync] Already responded to',
+              requestMsg.requesterId
+            )
           }
           return
         }
@@ -318,7 +326,8 @@ export function useAnnotationSync(
           validateNormalizedCoordinates(updateMsg.points, 'stroke_update')
 
           // Create or update in-progress remote stroke
-          const existingStrokes = useAnnotationStore.getState().remoteActiveStrokes
+          const existingStrokes =
+            useAnnotationStore.getState().remoteActiveStrokes
           const existing = existingStrokes.get(updateMsg.strokeId)
 
           if (existing) {
@@ -457,7 +466,9 @@ export function useAnnotationSync(
       // No one to request from, we're the first
       hasReceivedSnapshotRef.current = true
       if (import.meta.env.DEV) {
-        console.debug('[AnnotationSync] No remote participants, skipping state request')
+        console.debug(
+          '[AnnotationSync] No remote participants, skipping state request'
+        )
       }
       return
     }
@@ -475,7 +486,9 @@ export function useAnnotationSync(
       if (retryCountRef.current >= RETRY_CONFIG.maxAttempts) {
         // Max retries reached, assume empty state (AC-4.8.6)
         if (import.meta.env.DEV) {
-          console.debug('[AnnotationSync] Max retries reached, assuming empty state')
+          console.debug(
+            '[AnnotationSync] Max retries reached, assuming empty state'
+          )
         }
         hasReceivedSnapshotRef.current = true
         isRequestingRef.current = false

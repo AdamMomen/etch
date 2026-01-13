@@ -101,7 +101,11 @@ describe('roomStore', () => {
       const participantId = 'participant-123'
       const participantName = 'Alice'
 
-      const participant = addParticipant(room.id, participantId, participantName)
+      const participant = addParticipant(
+        room.id,
+        participantId,
+        participantName
+      )
 
       expect(participant).toBeDefined()
       expect(participant?.id).toBe(participantId)
@@ -133,7 +137,9 @@ describe('roomStore', () => {
       // After PARTICIPANT_COLORS.length + 1 (host) participants, we're at index 0 again
       const expectedColorIndex =
         (PARTICIPANT_COLORS.length + 1) % PARTICIPANT_COLORS.length
-      expect(cycledParticipant?.color).toBe(PARTICIPANT_COLORS[expectedColorIndex])
+      expect(cycledParticipant?.color).toBe(
+        PARTICIPANT_COLORS[expectedColorIndex]
+      )
     })
 
     it('should return undefined for non-existent room', () => {

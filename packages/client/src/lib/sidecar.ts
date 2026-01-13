@@ -64,7 +64,8 @@ export class SidecarClient {
 
   // Event-driven request tracking (no polling!)
   private pendingSourcesRequest: PendingRequest<SourcesResponse> | null = null
-  private pendingPermissionRequest: PendingRequest<PermissionState> | null = null
+  private pendingPermissionRequest: PendingRequest<PermissionState> | null =
+    null
 
   constructor() {
     this.core = getCoreClient()
@@ -111,7 +112,7 @@ export class SidecarClient {
         }
         break
 
-      case 'video_frame':
+      case 'video_frame': {
         // Stream video frames to callbacks
         const frameData: FrameData = {
           data: message.frame_data,
@@ -122,8 +123,9 @@ export class SidecarClient {
         }
         this.frameCallbacks.forEach((cb) => cb(frameData))
         break
+      }
 
-      case 'error':
+      case 'error': {
         const error: SidecarError = {
           code: message.code,
           message: message.message,
@@ -145,6 +147,7 @@ export class SidecarClient {
         // Notify error callbacks
         this.errorCallbacks.forEach((cb) => cb(error))
         break
+      }
     }
   }
 

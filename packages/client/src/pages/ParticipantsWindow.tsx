@@ -90,9 +90,11 @@ export function ParticipantsWindow() {
               'transition-all duration-200',
               participant.isSpeaking && 'ring-4'
             )}
-            style={{
-              '--tw-ring-color': participant.color,
-            } as React.CSSProperties}
+            style={
+              {
+                '--tw-ring-color': participant.color,
+              } as React.CSSProperties
+            }
           >
             <div
               className="flex h-full w-full items-center justify-center rounded-full text-sm font-medium text-white"

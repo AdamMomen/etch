@@ -43,7 +43,8 @@ export function ParticipantBubble({
   const [isVideoReady, setIsVideoReady] = useState(false)
 
   // Determine if we have a video track to display
-  const hasVideoTrack = videoTrackPublication?.isSubscribed && videoTrackPublication?.track
+  const hasVideoTrack =
+    videoTrackPublication?.isSubscribed && videoTrackPublication?.track
 
   // Attach video track to video element
   useEffect(() => {
@@ -77,10 +78,12 @@ export function ParticipantBubble({
               sizeClasses[size],
               className
             )}
-            style={{
-              '--tw-ring-color': participantColor,
-              '--speaking-color': participantColor,
-            } as React.CSSProperties}
+            style={
+              {
+                '--tw-ring-color': participantColor,
+                '--speaking-color': participantColor,
+              } as React.CSSProperties
+            }
           >
             {/* Avatar with initial - visible when no video */}
             <div
@@ -109,9 +112,11 @@ export function ParticipantBubble({
             {isSpeaking && (
               <div
                 className="absolute inset-0 rounded-full animate-speaking-pulse pointer-events-none"
-                style={{
-                  '--speaking-color': participantColor,
-                } as React.CSSProperties}
+                style={
+                  {
+                    '--speaking-color': participantColor,
+                  } as React.CSSProperties
+                }
               />
             )}
           </div>

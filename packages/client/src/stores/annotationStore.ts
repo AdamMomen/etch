@@ -173,7 +173,9 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
 
   clearByParticipant: (participantId) =>
     set((state) => ({
-      strokes: state.strokes.filter((stroke) => stroke.participantId !== participantId),
+      strokes: state.strokes.filter(
+        (stroke) => stroke.participantId !== participantId
+      ),
     })),
 
   // ─────────────────────────────────────────────────────────

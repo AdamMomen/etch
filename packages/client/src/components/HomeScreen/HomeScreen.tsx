@@ -1,6 +1,13 @@
 import { useState, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Video, Users, ArrowRight, Loader2, Settings, Beaker } from 'lucide-react'
+import {
+  Video,
+  Users,
+  ArrowRight,
+  Loader2,
+  Settings,
+  Beaker,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'

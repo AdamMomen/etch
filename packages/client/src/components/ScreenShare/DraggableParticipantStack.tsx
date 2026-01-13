@@ -36,15 +36,10 @@ export function DraggableParticipantStack({
   remoteParticipants,
   className,
 }: DraggableParticipantStackProps) {
-  const {
-    position,
-    isDragging,
-    orientation,
-    containerRef,
-    dragHandleProps,
-  } = useDraggablePosition({
-    storageKey: 'participant-stack-position',
-  })
+  const { position, isDragging, orientation, containerRef, dragHandleProps } =
+    useDraggablePosition({
+      storageKey: 'participant-stack-position',
+    })
 
   // Get LiveKit remote participants for track access
   const liveKitRemoteParticipants = useMemo(() => {
@@ -122,9 +117,11 @@ export function DraggableParticipantStack({
                   'relative h-10 w-10 rounded-full overflow-hidden',
                   'ring-2 ring-offset-1 ring-offset-background'
                 )}
-                style={{
-                  '--tw-ring-color': participant.color,
-                } as React.CSSProperties}
+                style={
+                  {
+                    '--tw-ring-color': participant.color,
+                  } as React.CSSProperties
+                }
               >
                 <div
                   className="flex h-full w-full items-center justify-center rounded-full text-sm font-medium text-white"
@@ -136,8 +133,12 @@ export function DraggableParticipantStack({
             )
           }
 
-          const videoTrackPub = lkParticipant.getTrackPublication(Track.Source.Camera)
-          const audioTrackPub = lkParticipant.getTrackPublication(Track.Source.Microphone)
+          const videoTrackPub = lkParticipant.getTrackPublication(
+            Track.Source.Camera
+          )
+          const audioTrackPub = lkParticipant.getTrackPublication(
+            Track.Source.Microphone
+          )
 
           return (
             <div key={participant.id}>

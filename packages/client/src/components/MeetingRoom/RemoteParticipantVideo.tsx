@@ -24,9 +24,8 @@ export function RemoteParticipantVideo({
 
   // Determine if we have an enabled video track to display
   // Check isSubscribed, track exists, and track is not muted (camera enabled)
-  const hasVideoTrack = trackPublication?.isSubscribed &&
-    trackPublication?.track &&
-    !isMuted
+  const hasVideoTrack =
+    trackPublication?.isSubscribed && trackPublication?.track && !isMuted
 
   // Listen for mute/unmute events on the track
   useEffect(() => {
@@ -87,7 +86,11 @@ export function RemoteParticipantVideo({
         isSpeaking && 'ring-2 ring-offset-2 ring-offset-background',
         className
       )}
-      style={isSpeaking ? { '--tw-ring-color': participantColor } as React.CSSProperties : undefined}
+      style={
+        isSpeaking
+          ? ({ '--tw-ring-color': participantColor } as React.CSSProperties)
+          : undefined
+      }
     >
       {/* Avatar placeholder - visible when no video */}
       <div

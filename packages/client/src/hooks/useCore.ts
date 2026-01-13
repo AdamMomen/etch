@@ -44,7 +44,11 @@ export interface UseCoreReturn {
   joinRoom: (serverUrl: string, token: string) => Promise<void>
   leaveRoom: () => Promise<void>
   getAvailableContent: () => Promise<void>
-  startScreenShare: (sourceId: string, sourceType: SourceType, config?: Partial<CaptureConfig>) => Promise<void>
+  startScreenShare: (
+    sourceId: string,
+    sourceType: SourceType,
+    config?: Partial<CaptureConfig>
+  ) => Promise<void>
   stopScreenShare: () => Promise<void>
   checkPermissions: () => Promise<void>
   requestScreenRecordingPermission: () => Promise<void>
@@ -58,10 +62,16 @@ export function useCore(options: UseCoreOptions = {}): UseCoreReturn {
 
   // State
   const [isRunning, setIsRunning] = useState(false)
-  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected')
-  const [permissionState, setPermissionState] = useState<PermissionState | null>(null)
-  const [availableSources, setAvailableSources] = useState<{ screens: ScreenInfo[] } | null>(null)
-  const [participants, setParticipants] = useState<Map<string, ParticipantData>>(new Map())
+  const [connectionState, setConnectionState] =
+    useState<ConnectionState>('disconnected')
+  const [permissionState, setPermissionState] =
+    useState<PermissionState | null>(null)
+  const [availableSources, setAvailableSources] = useState<{
+    screens: ScreenInfo[]
+  } | null>(null)
+  const [participants, setParticipants] = useState<
+    Map<string, ParticipantData>
+  >(new Map())
   const [isScreenSharing, setIsScreenSharing] = useState(false)
   const [screenSharerId, setScreenSharerId] = useState<string | null>(null)
 
@@ -70,62 +80,65 @@ export function useCore(options: UseCoreOptions = {}): UseCoreReturn {
   const unsubscribe = useRef<(() => void) | null>(null)
 
   // Handle Core messages
-  const handleMessage = useCallback((message: CoreMessage) => {
-    switch (message.type) {
-      case 'available_content':
-        setAvailableSources({
-          screens: message.screens,
-        })
-        break
+  const handleMessage = useCallback(
+    (message: CoreMessage) => {
+      switch (message.type) {
+        case 'available_content':
+          setAvailableSources({
+            screens: message.screens,
+          })
+          break
 
-      case 'participant_joined':
-        setParticipants((prev) => {
-          const next = new Map(prev)
-          next.set(message.participant.id, message.participant)
-          return next
-        })
-        break
+        case 'participant_joined':
+          setParticipants((prev) => {
+            const next = new Map(prev)
+            next.set(message.participant.id, message.participant)
+            return next
+          })
+          break
 
-      case 'participant_left':
-        setParticipants((prev) => {
-          const next = new Map(prev)
-          next.delete(message.participant_id)
-          return next
-        })
-        break
+        case 'participant_left':
+          setParticipants((prev) => {
+            const next = new Map(prev)
+            next.delete(message.participant_id)
+            return next
+          })
+          break
 
-      case 'connection_state_changed':
-        setConnectionState(message.state)
-        break
+        case 'connection_state_changed':
+          setConnectionState(message.state)
+          break
 
-      case 'screen_share_started':
-        setIsScreenSharing(true)
-        setScreenSharerId(message.sharer_id)
-        break
+        case 'screen_share_started':
+          setIsScreenSharing(true)
+          setScreenSharerId(message.sharer_id)
+          break
 
-      case 'screen_share_stopped':
-        setIsScreenSharing(false)
-        setScreenSharerId(null)
-        break
+        case 'screen_share_stopped':
+          setIsScreenSharing(false)
+          setScreenSharerId(null)
+          break
 
-      case 'permission_state':
-        setPermissionState(message.state)
-        break
+        case 'permission_state':
+          setPermissionState(message.state)
+          break
 
-      case 'error':
-        console.error(`Core error [${message.code}]: ${message.message}`)
-        onError?.(message.code, message.message)
-        break
+        case 'error':
+          console.error(`Core error [${message.code}]: ${message.message}`)
+          onError?.(message.code, message.message)
+          break
 
-      case 'pong':
-        // Health check response
-        break
+        case 'pong':
+          // Health check response
+          break
 
-      case 'video_frame':
-        // Frame relay - handled by video display components
-        break
-    }
-  }, [onError])
+        case 'video_frame':
+          // Frame relay - handled by video display components
+          break
+      }
+    },
+    [onError]
+  )
 
   // Start Core
   const start = useCallback(async () => {
@@ -174,13 +187,16 @@ export function useCore(options: UseCoreOptions = {}): UseCoreReturn {
     await client.current.getAvailableContent()
   }, [])
 
-  const startScreenShare = useCallback(async (
-    sourceId: string,
-    sourceType: SourceType,
-    config?: Partial<CaptureConfig>
-  ) => {
-    await client.current.startScreenShare(sourceId, sourceType, config)
-  }, [])
+  const startScreenShare = useCallback(
+    async (
+      sourceId: string,
+      sourceType: SourceType,
+      config?: Partial<CaptureConfig>
+    ) => {
+      await client.current.startScreenShare(sourceId, sourceType, config)
+    },
+    []
+  )
 
   const stopScreenShare = useCallback(async () => {
     await client.current.stopScreenShare()

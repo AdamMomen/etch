@@ -1,9 +1,18 @@
-import { useEffect, useRef, useState, useCallback, useLayoutEffect } from 'react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  useLayoutEffect,
+} from 'react'
 import { listen, emit } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { getStroke } from 'perfect-freehand'
 import type { Stroke } from '@etch/shared'
-import { denormalizeStrokePoints, normalizeCoordinates } from '@/utils/coordinates'
+import {
+  denormalizeStrokePoints,
+  normalizeCoordinates,
+} from '@/utils/coordinates'
 import {
   PEN_OPTIONS,
   HIGHLIGHTER_OPTIONS,
@@ -61,10 +70,15 @@ function renderStroke(
   if (stroke.points.length < 2) return
 
   // Convert normalized points to pixel coordinates (AC-4.11.3)
-  const pixelPoints = denormalizeStrokePoints(stroke.points, canvasWidth, canvasHeight)
+  const pixelPoints = denormalizeStrokePoints(
+    stroke.points,
+    canvasWidth,
+    canvasHeight
+  )
 
   // Get stroke options based on tool type (same as AnnotationCanvas)
-  const options = stroke.tool === 'highlighter' ? HIGHLIGHTER_OPTIONS : PEN_OPTIONS
+  const options =
+    stroke.tool === 'highlighter' ? HIGHLIGHTER_OPTIONS : PEN_OPTIONS
 
   // Generate stroke outline using perfect-freehand
   const strokeOutline = getStroke(pixelPoints, options)
@@ -158,12 +172,16 @@ export function AnnotationOverlayPage() {
 
   // Local stroke state (received from main window)
   const [strokes, setStrokes] = useState<Stroke[]>([])
-  const [activeStrokes, setActiveStrokes] = useState<Map<string, Stroke>>(new Map())
+  const [activeStrokes, setActiveStrokes] = useState<Map<string, Stroke>>(
+    new Map()
+  )
 
   // Drawing mode state (AC-4.11.5, AC-4.11.6)
   const [isDrawModeEnabled, setIsDrawModeEnabled] = useState(false)
   const isDrawingRef = useRef(false)
-  const [localActiveStroke, setLocalActiveStroke] = useState<Stroke | null>(null)
+  const [localActiveStroke, setLocalActiveStroke] = useState<Stroke | null>(
+    null
+  )
 
   // Participant info for local drawing (received from main window)
   const [myParticipantId, setMyParticipantId] = useState<string>('')
@@ -187,9 +205,12 @@ export function AnnotationOverlayPage() {
     // Clear canvas using physical dimensions
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-    const totalStrokes = strokes.length + activeStrokes.size + (localActiveStroke ? 1 : 0)
+    const totalStrokes =
+      strokes.length + activeStrokes.size + (localActiveStroke ? 1 : 0)
     if (totalStrokes > 0) {
-      console.log(`[AnnotationOverlay] Rendering ${totalStrokes} strokes (${strokes.length} complete, ${activeStrokes.size} active, ${localActiveStroke ? 1 : 0} local)`)
+      console.log(
+        `[AnnotationOverlay] Rendering ${totalStrokes} strokes (${strokes.length} complete, ${activeStrokes.size} active, ${localActiveStroke ? 1 : 0} local)`
+      )
     }
 
     // Render completed strokes
@@ -306,7 +327,9 @@ export function AnnotationOverlayPage() {
       })
 
       // Request initial state from main window
-      console.log('[AnnotationOverlay] Requesting initial state from main window...')
+      console.log(
+        '[AnnotationOverlay] Requesting initial state from main window...'
+      )
       try {
         await emit('overlay://request-state', {})
         console.log('[AnnotationOverlay] State request sent successfully')
@@ -415,7 +438,10 @@ export function AnnotationOverlayPage() {
       setLocalActiveStroke(updatedStroke)
 
       // Notify main window of point addition
-      emit('overlay://stroke-point', { strokeId: localActiveStroke.id, point }).catch(console.error)
+      emit('overlay://stroke-point', {
+        strokeId: localActiveStroke.id,
+        point,
+      }).catch(console.error)
     },
     [localActiveStroke]
   )
@@ -462,7 +488,9 @@ export function AnnotationOverlayPage() {
         }
 
         // Notify main window
-        emit('overlay://draw-mode-changed', { enabled: newMode }).catch(console.error)
+        emit('overlay://draw-mode-changed', { enabled: newMode }).catch(
+          console.error
+        )
       }
     }
 

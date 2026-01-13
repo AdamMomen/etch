@@ -70,7 +70,9 @@ export function useAnnotations(options: UseAnnotationsOptions = {}) {
   const strokes = useAnnotationStore((state) => state.strokes)
   const activeStroke = useAnnotationStore((state) => state.activeStroke)
   const activeTool = useAnnotationStore((state) => state.activeTool)
-  const remoteActiveStrokes = useAnnotationStore((state) => state.remoteActiveStrokes)
+  const remoteActiveStrokes = useAnnotationStore(
+    (state) => state.remoteActiveStrokes
+  )
 
   // Store actions
   const setActiveStroke = useAnnotationStore((state) => state.setActiveStroke)
@@ -93,8 +95,7 @@ export function useAnnotations(options: UseAnnotationsOptions = {}) {
   // Can annotate if: screen is being shared AND user has annotator/host/sharer role
   const role = localParticipant?.role
   const canAnnotate =
-    isSharing &&
-    (role === 'annotator' || role === 'host' || role === 'sharer')
+    isSharing && (role === 'annotator' || role === 'host' || role === 'sharer')
 
   /**
    * Generates a unique stroke ID using crypto.randomUUID().
@@ -169,7 +170,10 @@ export function useAnnotations(options: UseAnnotationsOptions = {}) {
   const startStroke = useCallback(
     (point: Point): void => {
       // Don't start if can't annotate or tool is not pen/highlighter
-      if (!canAnnotate || (activeTool !== 'pen' && activeTool !== 'highlighter')) {
+      if (
+        !canAnnotate ||
+        (activeTool !== 'pen' && activeTool !== 'highlighter')
+      ) {
         return
       }
 
@@ -403,7 +407,14 @@ export function useAnnotations(options: UseAnnotationsOptions = {}) {
 
       return true
     },
-    [canAnnotate, activeTool, canEraseStroke, deleteStroke, hoveredStrokeId, sync]
+    [
+      canAnnotate,
+      activeTool,
+      canEraseStroke,
+      deleteStroke,
+      hoveredStrokeId,
+      sync,
+    ]
   )
 
   /**

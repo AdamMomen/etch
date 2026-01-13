@@ -28,9 +28,11 @@ export function SpeakingIndicator({
         'animate-speaking-pulse',
         className
       )}
-      style={{
-        '--speaking-color': color,
-      } as React.CSSProperties}
+      style={
+        {
+          '--speaking-color': color,
+        } as React.CSSProperties
+      }
       aria-label="Speaking"
       role="status"
     />

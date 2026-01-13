@@ -31,7 +31,9 @@ export function useOverlayAnnotationBridge(isOverlayActive: boolean) {
   // Store subscriptions
   const strokes = useAnnotationStore((state) => state.strokes)
   const activeStroke = useAnnotationStore((state) => state.activeStroke)
-  const remoteActiveStrokes = useAnnotationStore((state) => state.remoteActiveStrokes)
+  const remoteActiveStrokes = useAnnotationStore(
+    (state) => state.remoteActiveStrokes
+  )
   const activeTool = useAnnotationStore((state) => state.activeTool)
   const addStroke = useAnnotationStore((state) => state.addStroke)
 
@@ -62,7 +64,8 @@ export function useOverlayAnnotationBridge(isOverlayActive: boolean) {
     if (!isOverlayActive) return
 
     const currentStrokes = useAnnotationStore.getState().strokes
-    const currentRemoteStrokes = useAnnotationStore.getState().remoteActiveStrokes
+    const currentRemoteStrokes =
+      useAnnotationStore.getState().remoteActiveStrokes
     const currentActiveStroke = useAnnotationStore.getState().activeStroke
 
     const activeStrokesArray: Stroke[] = []
@@ -94,7 +97,10 @@ export function useOverlayAnnotationBridge(isOverlayActive: boolean) {
       await emit('overlay://participant-info', {
         participantId: myParticipantId,
         color: myColor,
-        tool: activeTool === 'pen' || activeTool === 'highlighter' ? activeTool : 'pen',
+        tool:
+          activeTool === 'pen' || activeTool === 'highlighter'
+            ? activeTool
+            : 'pen',
       })
     } catch (e) {
       console.warn('Failed to send participant info to overlay:', e)
@@ -111,11 +117,14 @@ export function useOverlayAnnotationBridge(isOverlayActive: boolean) {
 
     const setupListeners = async () => {
       // Listen for state request from overlay
-      const unlistenStateRequest = await listen('overlay://request-state', async () => {
-        if (!mounted) return
-        await sendFullState()
-        await sendParticipantInfo()
-      })
+      const unlistenStateRequest = await listen(
+        'overlay://request-state',
+        async () => {
+          if (!mounted) return
+          await sendFullState()
+          await sendParticipantInfo()
+        }
+      )
 
       // Listen for strokes from overlay (sharer drawing)
       const unlistenStrokeStart = await listen<Stroke>(
@@ -130,21 +139,21 @@ export function useOverlayAnnotationBridge(isOverlayActive: boolean) {
         }
       )
 
-      const unlistenStrokePoint = await listen<{ strokeId: string; point: Point }>(
-        'overlay://stroke-point',
-        (event) => {
-          if (!mounted) return
-          const { point } = event.payload
-          // Update active stroke
-          const currentActive = useAnnotationStore.getState().activeStroke
-          if (currentActive) {
-            useAnnotationStore.getState().setActiveStroke({
-              ...currentActive,
-              points: [...currentActive.points, point],
-            })
-          }
+      const unlistenStrokePoint = await listen<{
+        strokeId: string
+        point: Point
+      }>('overlay://stroke-point', (event) => {
+        if (!mounted) return
+        const { point } = event.payload
+        // Update active stroke
+        const currentActive = useAnnotationStore.getState().activeStroke
+        if (currentActive) {
+          useAnnotationStore.getState().setActiveStroke({
+            ...currentActive,
+            points: [...currentActive.points, point],
+          })
         }
-      )
+      })
 
       const unlistenStrokeComplete = await listen<Stroke>(
         'overlay://stroke-complete',
@@ -163,7 +172,10 @@ export function useOverlayAnnotationBridge(isOverlayActive: boolean) {
         'overlay://draw-mode-changed',
         (event) => {
           if (!mounted) return
-          console.log('[OverlayBridge] Draw mode changed:', event.payload.enabled)
+          console.log(
+            '[OverlayBridge] Draw mode changed:',
+            event.payload.enabled
+          )
           // Could emit to other viewers if needed
         }
       )
@@ -198,10 +210,16 @@ export function useOverlayAnnotationBridge(isOverlayActive: boolean) {
     for (const stroke of newStrokes) {
       // Skip strokes that originated from overlay - they already have it locally
       if (overlayOriginatedStrokesRef.current.has(stroke.id)) {
-        console.log('[OverlayBridge] Skipping overlay-originated stroke:', stroke.id)
+        console.log(
+          '[OverlayBridge] Skipping overlay-originated stroke:',
+          stroke.id
+        )
         continue
       }
-      console.log('[OverlayBridge] Emitting stroke_complete to overlay:', stroke.id)
+      console.log(
+        '[OverlayBridge] Emitting stroke_complete to overlay:',
+        stroke.id
+      )
       emitToOverlay('stroke_complete', { stroke })
     }
 

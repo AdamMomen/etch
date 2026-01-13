@@ -2,7 +2,11 @@ import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import { createRoom, getRoom, addParticipant } from '../services/roomStore'
-import { generateToken, generateScreenShareToken, getLiveKitUrl } from '../services/livekit'
+import {
+  generateToken,
+  generateScreenShareToken,
+  getLiveKitUrl,
+} from '../services/livekit'
 import { log } from '../middleware/logger'
 import type {
   CreateRoomResponse,
@@ -64,13 +68,7 @@ roomsRouter.post(
 
       // Generate LiveKit tokens for the host
       const [token, screenShareToken] = await Promise.all([
-        generateToken(
-          room.id,
-          hostId,
-          hostName,
-          'host',
-          hostParticipant.color
-        ),
+        generateToken(room.id, hostId, hostName, 'host', hostParticipant.color),
         generateScreenShareToken(room.id, hostId, hostName),
       ])
 

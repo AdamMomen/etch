@@ -16,11 +16,15 @@ setupRouter.get('/status', async (c) => {
 
     // Check if config file exists
     if (!existsSync(configPath)) {
-      return c.json({
-        isFirstTimeSetup: true,
-        error: 'Configuration file not found. LiveKit may still be initializing.',
-        message: 'Please wait a few moments for the system to initialize.'
-      }, 503)
+      return c.json(
+        {
+          isFirstTimeSetup: true,
+          error:
+            'Configuration file not found. LiveKit may still be initializing.',
+          message: 'Please wait a few moments for the system to initialize.',
+        },
+        503
+      )
     }
 
     // Read the API keys
@@ -28,7 +32,7 @@ setupRouter.get('/status', async (c) => {
     const lines = configContent.split('\n')
 
     const config: Record<string, string> = {}
-    lines.forEach(line => {
+    lines.forEach((line) => {
       const [key, ...valueParts] = line.split('=')
       if (key && valueParts.length > 0) {
         config[key.trim()] = valueParts.join('=').trim()
@@ -51,22 +55,26 @@ setupRouter.get('/status', async (c) => {
         // These should be set by Coolify or the user
         appUrl: process.env.APP_URL,
         // For external access, users need to configure this
-        livekitUrl: process.env.LIVEKIT_PUBLIC_URL || 'Set this in environment variables'
+        livekitUrl:
+          process.env.LIVEKIT_PUBLIC_URL || 'Set this in environment variables',
       },
-      message: 'Store these credentials securely. You will need them for administration.',
+      message:
+        'Store these credentials securely. You will need them for administration.',
       warnings: [
         'Keep your API secret safe - it grants full access to LiveKit',
         'If using externally, configure LIVEKIT_PUBLIC_URL in your environment',
-        'Consider setting up authentication for this endpoint in production'
-      ]
+        'Consider setting up authentication for this endpoint in production',
+      ],
     })
-
   } catch (error) {
     console.error('Error reading setup config:', error)
-    return c.json({
-      error: 'Failed to read configuration',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, 500)
+    return c.json(
+      {
+        error: 'Failed to read configuration',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      500
+    )
   }
 })
 

@@ -7,4 +7,3 @@ export {
   HIGHLIGHTER_OPTIONS,
   HIGHLIGHTER_OPACITY,
 } from './AnnotationCanvas'
-

@@ -16,7 +16,8 @@ function getValidatedApiBaseUrl(): string {
   const runtimeUrl = useSettingsStore.getState().apiBaseUrl
 
   // Fallback: build-time env var, then localhost
-  const url = runtimeUrl || import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+  const url =
+    runtimeUrl || import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
 
   try {
     // Validate URL is well-formed
@@ -66,7 +67,10 @@ export async function validateRoomExists(roomId: string): Promise<boolean> {
     })
 
     if (!response.ok) {
-      console.error('[Auth] Room validation failed:', { roomId, status: response.status })
+      console.error('[Auth] Room validation failed:', {
+        roomId,
+        status: response.status,
+      })
       // For validation errors, throw so caller can handle
       throw new Error('Failed to validate room existence')
     }
@@ -91,7 +95,9 @@ export async function validateRoomExists(roomId: string): Promise<boolean> {
   }
 }
 
-export async function createRoom(hostName: string): Promise<CreateRoomResponse> {
+export async function createRoom(
+  hostName: string
+): Promise<CreateRoomResponse> {
   // Get API URL dynamically to support runtime config changes
   const apiBaseUrl = getValidatedApiBaseUrl()
 
@@ -124,9 +130,7 @@ export async function createRoom(hostName: string): Promise<CreateRoomResponse> 
           'API server not found. Please check the API Server URL in Settings.'
         )
       } else if (response.status >= 500) {
-        throw new Error(
-          'Server error. Please try again or contact support.'
-        )
+        throw new Error('Server error. Please try again or contact support.')
       }
 
       throw new Error(error.error?.message || 'Failed to create room')
@@ -198,9 +202,7 @@ export async function joinRoom(
           'API server not found. Please check the API Server URL in Settings.'
         )
       } else if (response.status >= 500) {
-        throw new Error(
-          'Server error. Please try again or contact support.'
-        )
+        throw new Error('Server error. Please try again or contact support.')
       }
 
       throw new Error(error.error?.message || 'Failed to join room')

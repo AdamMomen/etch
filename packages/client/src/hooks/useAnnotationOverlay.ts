@@ -76,10 +76,7 @@ export function useAnnotationOverlay(): UseAnnotationOverlayReturn {
       console.log('[Overlay] Created at', bounds)
     } catch (error) {
       // If overlay already exists, just update position
-      if (
-        error instanceof Error &&
-        error.message.includes('already exists')
-      ) {
+      if (error instanceof Error && error.message.includes('already exists')) {
         console.log('[Overlay] Already exists, updating bounds')
         await invoke('update_overlay_bounds', { bounds })
         setIsOverlayActive(true)
@@ -104,10 +101,7 @@ export function useAnnotationOverlay(): UseAnnotationOverlayReturn {
       console.log('[Overlay] Destroyed')
     } catch (error) {
       // If overlay doesn't exist, that's fine
-      if (
-        error instanceof Error &&
-        error.message.includes('does not exist')
-      ) {
+      if (error instanceof Error && error.message.includes('does not exist')) {
         console.log('[Overlay] Already destroyed')
         setIsOverlayActive(false)
       } else {
@@ -129,34 +123,31 @@ export function useAnnotationOverlay(): UseAnnotationOverlayReturn {
 
   // Start tracking a window's position
   // Uses polling at ~30fps to update overlay bounds when sharing a specific window
-  const startTracking = useCallback(
-    (windowTitle: string) => {
-      // Stop any existing tracking
-      if (trackingIntervalRef.current) {
-        window.clearInterval(trackingIntervalRef.current)
-      }
+  const startTracking = useCallback((windowTitle: string) => {
+    // Stop any existing tracking
+    if (trackingIntervalRef.current) {
+      window.clearInterval(trackingIntervalRef.current)
+    }
 
-      console.log(`[Overlay] Starting window tracking for: ${windowTitle}`)
+    console.log(`[Overlay] Starting window tracking for: ${windowTitle}`)
 
-      // Poll for window bounds at ~30fps (33ms interval)
-      // Note: get_window_bounds_by_title returns None until window tracking is implemented
-      trackingIntervalRef.current = window.setInterval(async () => {
-        try {
-          const bounds = await invoke<OverlayBounds | null>(
-            'get_window_bounds_by_title',
-            { title: windowTitle }
-          )
-          if (bounds) {
-            await invoke('update_overlay_bounds', { bounds })
-          }
-        } catch (error) {
-          // Silently ignore tracking errors to avoid console spam
-          // Window may have been closed or tracking not implemented
+    // Poll for window bounds at ~30fps (33ms interval)
+    // Note: get_window_bounds_by_title returns None until window tracking is implemented
+    trackingIntervalRef.current = window.setInterval(async () => {
+      try {
+        const bounds = await invoke<OverlayBounds | null>(
+          'get_window_bounds_by_title',
+          { title: windowTitle }
+        )
+        if (bounds) {
+          await invoke('update_overlay_bounds', { bounds })
         }
-      }, 33) // ~30fps
-    },
-    []
-  )
+      } catch (error) {
+        // Silently ignore tracking errors to avoid console spam
+        // Window may have been closed or tracking not implemented
+      }
+    }, 33) // ~30fps
+  }, [])
 
   // Stop tracking window position
   const stopTracking = useCallback(() => {
@@ -189,30 +180,46 @@ export function useAnnotationOverlay(): UseAnnotationOverlayReturn {
 
     const setupListeners = async () => {
       // Listen for capture errors
-      unlistenCaptureError = await listen<string>('core-capture-error', (event) => {
-        console.error('[Overlay] Core capture error detected:', event.payload)
-        console.log('[Overlay] Automatically destroying overlay due to capture error')
+      unlistenCaptureError = await listen<string>(
+        'core-capture-error',
+        (event) => {
+          console.error('[Overlay] Core capture error detected:', event.payload)
+          console.log(
+            '[Overlay] Automatically destroying overlay due to capture error'
+          )
 
-        // Destroy overlay when capture fails (check current state via ref)
-        if (isOverlayActiveRef.current) {
-          destroyOverlay().catch((err) => {
-            console.error('[Overlay] Failed to destroy overlay after capture error:', err)
-          })
+          // Destroy overlay when capture fails (check current state via ref)
+          if (isOverlayActiveRef.current) {
+            destroyOverlay().catch((err) => {
+              console.error(
+                '[Overlay] Failed to destroy overlay after capture error:',
+                err
+              )
+            })
+          }
         }
-      })
+      )
 
       // Listen for Core termination as fallback
-      unlistenTerminated = await listen<number | null>('core-terminated', (event) => {
-        console.warn('[Overlay] Core terminated with code:', event.payload)
-        console.log('[Overlay] Automatically destroying overlay due to Core termination')
+      unlistenTerminated = await listen<number | null>(
+        'core-terminated',
+        (event) => {
+          console.warn('[Overlay] Core terminated with code:', event.payload)
+          console.log(
+            '[Overlay] Automatically destroying overlay due to Core termination'
+          )
 
-        // Destroy overlay when Core terminates unexpectedly (check current state via ref)
-        if (isOverlayActiveRef.current && event.payload !== 0) {
-          destroyOverlay().catch((err) => {
-            console.error('[Overlay] Failed to destroy overlay after Core termination:', err)
-          })
+          // Destroy overlay when Core terminates unexpectedly (check current state via ref)
+          if (isOverlayActiveRef.current && event.payload !== 0) {
+            destroyOverlay().catch((err) => {
+              console.error(
+                '[Overlay] Failed to destroy overlay after Core termination:',
+                err
+              )
+            })
+          }
         }
-      })
+      )
     }
 
     setupListeners()

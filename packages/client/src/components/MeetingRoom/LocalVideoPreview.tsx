@@ -62,9 +62,11 @@ export function LocalVideoPreview({
           circleSizeClasses[size],
           className
         )}
-        style={{
-          '--tw-ring-color': participantColor,
-        } as React.CSSProperties}
+        style={
+          {
+            '--tw-ring-color': participantColor,
+          } as React.CSSProperties
+        }
       >
         {/* Avatar with initial - visible when no video */}
         <div
@@ -107,10 +109,7 @@ export function LocalVideoPreview({
   // Rectangle variant - original layout
   return (
     <div
-      className={cn(
-        'relative overflow-hidden rounded-lg bg-muted',
-        className
-      )}
+      className={cn('relative overflow-hidden rounded-lg bg-muted', className)}
     >
       {/* Avatar placeholder - visible when video is off */}
       <div

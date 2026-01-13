@@ -34,12 +34,7 @@ export function ParticipantBubbles({
   }
 
   return (
-    <div
-      className={cn(
-        'flex flex-col gap-2',
-        className
-      )}
-    >
+    <div className={cn('flex flex-col gap-2', className)}>
       {remoteParticipants.map((participant) => {
         const lkParticipant = liveKitRemoteParticipants.get(participant.id)
 
@@ -53,9 +48,11 @@ export function ParticipantBubbles({
                 'relative h-10 w-10 rounded-full overflow-hidden',
                 'ring-2 ring-offset-1 ring-offset-background'
               )}
-              style={{
-                '--tw-ring-color': participant.color,
-              } as React.CSSProperties}
+              style={
+                {
+                  '--tw-ring-color': participant.color,
+                } as React.CSSProperties
+              }
             >
               <div
                 className="flex h-full w-full items-center justify-center rounded-full text-sm font-medium text-white"
@@ -67,8 +64,12 @@ export function ParticipantBubbles({
           )
         }
 
-        const videoTrackPub = lkParticipant.getTrackPublication(Track.Source.Camera)
-        const audioTrackPub = lkParticipant.getTrackPublication(Track.Source.Microphone)
+        const videoTrackPub = lkParticipant.getTrackPublication(
+          Track.Source.Camera
+        )
+        const audioTrackPub = lkParticipant.getTrackPublication(
+          Track.Source.Microphone
+        )
 
         return (
           <div key={participant.id}>

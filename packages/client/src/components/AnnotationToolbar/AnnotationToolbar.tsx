@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react'
-import { Hand, Pencil, Highlighter, Eraser, Trash2, Keyboard } from 'lucide-react'
+import {
+  Hand,
+  Pencil,
+  Highlighter,
+  Eraser,
+  Trash2,
+  Keyboard,
+} from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAnnotationStore, type Tool } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
@@ -47,7 +54,12 @@ interface ToolConfig {
 const TOOLS: ToolConfig[] = [
   { tool: 'select', icon: Hand, label: 'Hand', shortcut: '1 / V' },
   { tool: 'pen', icon: Pencil, label: 'Pen', shortcut: '2' },
-  { tool: 'highlighter', icon: Highlighter, label: 'Highlighter', shortcut: '3' },
+  {
+    tool: 'highlighter',
+    icon: Highlighter,
+    label: 'Highlighter',
+    shortcut: '3',
+  },
   { tool: 'eraser', icon: Eraser, label: 'Eraser', shortcut: '7' },
 ]
 
@@ -155,139 +167,144 @@ export function AnnotationToolbar({
         )}
         data-testid="annotation-toolbar"
       >
-      {/* Tool buttons */}
-      {TOOLS.map(({ tool, icon: Icon, label, shortcut }) => {
-        const isActive = activeTool === tool
+        {/* Tool buttons */}
+        {TOOLS.map(({ tool, icon: Icon, label, shortcut }) => {
+          const isActive = activeTool === tool
 
-        return (
-          <Tooltip key={tool}>
+          return (
+            <Tooltip key={tool}>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => handleToolClick(tool)}
+                  disabled={!isScreenShareActive}
+                  aria-pressed={isActive}
+                  aria-label={`${label} tool (${shortcut})`}
+                  className={cn(
+                    'relative h-10 w-10 flex-col gap-0.5',
+                    isActive && 'bg-accent text-accent-foreground'
+                  )}
+                  data-testid={`tool-button-${tool}`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span className="text-[10px] text-muted-foreground">
+                    {shortcut.split(' ')[0]}
+                  </span>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {label} ({shortcut})
+              </TooltipContent>
+            </Tooltip>
+          )
+        })}
+
+        {/* Separator before destructive action (AC-4.6.7) */}
+        {isHost && (
+          <>
+            <div
+              className="mx-1 h-6 w-px bg-border"
+              role="separator"
+              aria-orientation="vertical"
+              data-testid="toolbar-separator"
+            />
+
+            {/* Clear All button with confirmation - host only (AC-4.6.3) */}
+            <AlertDialog>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      disabled={!isScreenShareActive || strokeCount === 0}
+                      aria-label="Clear all annotations (0)"
+                      className="relative h-10 w-10 flex-col gap-0.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      data-testid="tool-button-clear-all"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      <span className="text-[10px] text-muted-foreground">
+                        0
+                      </span>
+                    </Button>
+                  </AlertDialogTrigger>
+                </TooltipTrigger>
+                <TooltipContent side="bottom">Clear All (0)</TooltipContent>
+              </Tooltip>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Clear all annotations?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This will permanently delete {strokeCount} annotation
+                    {strokeCount !== 1 ? 's' : ''} from the canvas. This action
+                    cannot be undone.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleClearAllConfirm}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    data-testid="clear-all-confirm"
+                  >
+                    Clear All
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        )}
+
+        {/* Separator before help button */}
+        <div
+          className="mx-1 h-6 w-px bg-border"
+          role="separator"
+          aria-orientation="vertical"
+        />
+
+        {/* Keyboard shortcuts help button */}
+        <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
+          <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => handleToolClick(tool)}
-                disabled={!isScreenShareActive}
-                aria-pressed={isActive}
-                aria-label={`${label} tool (${shortcut})`}
-                className={cn(
-                  'relative h-10 w-10 flex-col gap-0.5',
-                  isActive && 'bg-accent text-accent-foreground'
-                )}
-                data-testid={`tool-button-${tool}`}
-              >
-                <Icon className="h-4 w-4" />
-                <span className="text-[10px] text-muted-foreground">
-                  {shortcut.split(' ')[0]}
-                </span>
-              </Button>
+              <DialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Keyboard shortcuts (?)"
+                  className="relative h-10 w-10 flex-col gap-0.5"
+                  data-testid="tool-button-help"
+                >
+                  <Keyboard className="h-4 w-4" />
+                  <span className="text-[10px] text-muted-foreground">?</span>
+                </Button>
+              </DialogTrigger>
             </TooltipTrigger>
             <TooltipContent side="bottom">
-              {label} ({shortcut})
+              Keyboard Shortcuts (?)
             </TooltipContent>
           </Tooltip>
-        )
-      })}
-
-      {/* Separator before destructive action (AC-4.6.7) */}
-      {isHost && (
-        <>
-          <div
-            className="mx-1 h-6 w-px bg-border"
-            role="separator"
-            aria-orientation="vertical"
-            data-testid="toolbar-separator"
-          />
-
-          {/* Clear All button with confirmation - host only (AC-4.6.3) */}
-          <AlertDialog>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled={!isScreenShareActive || strokeCount === 0}
-                    aria-label="Clear all annotations (0)"
-                    className="relative h-10 w-10 flex-col gap-0.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    data-testid="tool-button-clear-all"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    <span className="text-[10px] text-muted-foreground">0</span>
-                  </Button>
-                </AlertDialogTrigger>
-              </TooltipTrigger>
-              <TooltipContent side="bottom">Clear All (0)</TooltipContent>
-            </Tooltip>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Clear all annotations?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete {strokeCount} annotation{strokeCount !== 1 ? 's' : ''} from the canvas.
-                  This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleClearAllConfirm}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  data-testid="clear-all-confirm"
+          <DialogContent className="sm:max-w-md" data-testid="shortcuts-dialog">
+            <DialogHeader>
+              <DialogTitle>Keyboard Shortcuts</DialogTitle>
+            </DialogHeader>
+            <div className="grid gap-2 py-4" data-testid="shortcuts-list">
+              {KEYBOARD_SHORTCUTS.map(({ key, description }) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between gap-4"
                 >
-                  Clear All
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </>
-      )}
-
-      {/* Separator before help button */}
-      <div
-        className="mx-1 h-6 w-px bg-border"
-        role="separator"
-        aria-orientation="vertical"
-      />
-
-      {/* Keyboard shortcuts help button */}
-      <Dialog open={isHelpOpen} onOpenChange={setIsHelpOpen}>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <DialogTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label="Keyboard shortcuts (?)"
-                className="relative h-10 w-10 flex-col gap-0.5"
-                data-testid="tool-button-help"
-              >
-                <Keyboard className="h-4 w-4" />
-                <span className="text-[10px] text-muted-foreground">?</span>
-              </Button>
-            </DialogTrigger>
-          </TooltipTrigger>
-          <TooltipContent side="bottom">Keyboard Shortcuts (?)</TooltipContent>
-        </Tooltip>
-        <DialogContent className="sm:max-w-md" data-testid="shortcuts-dialog">
-          <DialogHeader>
-            <DialogTitle>Keyboard Shortcuts</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-2 py-4" data-testid="shortcuts-list">
-            {KEYBOARD_SHORTCUTS.map(({ key, description }) => (
-              <div
-                key={key}
-                className="flex items-center justify-between gap-4"
-              >
-                <span className="text-sm text-muted-foreground">
-                  {description}
-                </span>
-                <kbd className="pointer-events-none inline-flex h-6 select-none items-center gap-1 rounded border bg-muted px-2 font-mono text-xs font-medium text-muted-foreground">
-                  {key}
-                </kbd>
-              </div>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
+                  <span className="text-sm text-muted-foreground">
+                    {description}
+                  </span>
+                  <kbd className="pointer-events-none inline-flex h-6 select-none items-center gap-1 rounded border bg-muted px-2 font-mono text-xs font-medium text-muted-foreground">
+                    {key}
+                  </kbd>
+                </div>
+              ))}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </TooltipProvider>
   )

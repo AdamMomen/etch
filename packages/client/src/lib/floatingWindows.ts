@@ -17,7 +17,10 @@ export async function createParticipantsWindow(): Promise<void> {
     await invoke('create_participants_window')
     console.log('[FloatingWindows] Participants window created')
   } catch (error) {
-    console.error('[FloatingWindows] Failed to create participants window:', error)
+    console.error(
+      '[FloatingWindows] Failed to create participants window:',
+      error
+    )
     throw error
   }
 }
@@ -31,7 +34,10 @@ export async function destroyParticipantsWindow(): Promise<void> {
     await invoke('destroy_participants_window')
     console.log('[FloatingWindows] Participants window destroyed')
   } catch (error) {
-    console.error('[FloatingWindows] Failed to destroy participants window:', error)
+    console.error(
+      '[FloatingWindows] Failed to destroy participants window:',
+      error
+    )
     throw error
   }
 }
@@ -44,7 +50,10 @@ export async function isParticipantsWindowActive(): Promise<boolean> {
     const active = await invoke<boolean>('is_participants_window_active')
     return active
   } catch (error) {
-    console.error('[FloatingWindows] Failed to check participants window status:', error)
+    console.error(
+      '[FloatingWindows] Failed to check participants window status:',
+      error
+    )
     return false
   }
 }
@@ -86,7 +95,10 @@ export async function isToolbarWindowActive(): Promise<boolean> {
     const active = await invoke<boolean>('is_toolbar_window_active')
     return active
   } catch (error) {
-    console.error('[FloatingWindows] Failed to check toolbar window status:', error)
+    console.error(
+      '[FloatingWindows] Failed to check toolbar window status:',
+      error
+    )
     return false
   }
 }

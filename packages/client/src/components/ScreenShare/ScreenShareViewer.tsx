@@ -106,7 +106,9 @@ export function ScreenShareViewer({
 
     // If track is null, ensure video element is cleared
     if (!track && videoElement) {
-      console.log('[ScreenShareViewer] Clearing video element (no track)', { timestamp: Date.now() })
+      console.log('[ScreenShareViewer] Clearing video element (no track)', {
+        timestamp: Date.now(),
+      })
       videoElement.srcObject = null
       videoElement.src = ''
       setIsVideoReady(false)
@@ -119,13 +121,19 @@ export function ScreenShareViewer({
     }
 
     if (track.kind === Track.Kind.Video) {
-      console.log('[ScreenShareViewer] Attaching track to video element', { trackSid: track.sid, timestamp: Date.now() })
+      console.log('[ScreenShareViewer] Attaching track to video element', {
+        trackSid: track.sid,
+        timestamp: Date.now(),
+      })
       track.attach(videoElement)
       setIsVideoReady(true)
     }
 
     return () => {
-      console.log('[ScreenShareViewer] Cleanup - detaching track from video element', { trackSid: track.sid, timestamp: Date.now() })
+      console.log(
+        '[ScreenShareViewer] Cleanup - detaching track from video element',
+        { trackSid: track.sid, timestamp: Date.now() }
+      )
       track.detach(videoElement)
       // Also explicitly clear the video source to prevent showing last frame
       videoElement.srcObject = null

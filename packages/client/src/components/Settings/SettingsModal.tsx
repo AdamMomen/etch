@@ -61,7 +61,9 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const handleClearPreferences = () => {
     clearPreferences()
     setLocalDisplayName('')
-    setLocalApiBaseUrl(import.meta.env.VITE_API_URL || 'http://localhost:3000/api')
+    setLocalApiBaseUrl(
+      import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+    )
     setShowClearConfirm(false)
     toast.success('All preferences have been reset to defaults')
   }
@@ -120,10 +122,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
 
           {/* API Server URL */}
           <div className="space-y-2">
-            <label
-              htmlFor="settings-api-url"
-              className="text-sm font-medium"
-            >
+            <label htmlFor="settings-api-url" className="text-sm font-medium">
               API Server URL
             </label>
             <Input
@@ -135,7 +134,8 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               onBlur={handleApiBaseUrlBlur}
             />
             <p className="text-xs text-muted-foreground">
-              The server URL for creating and joining rooms. Required for production builds.
+              The server URL for creating and joining rooms. Required for
+              production builds.
             </p>
           </div>
 
@@ -152,7 +152,9 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
               size="icon"
               onClick={handleThemeToggle}
               aria-label={
-                theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'
+                theme === 'dark'
+                  ? 'Switch to light mode'
+                  : 'Switch to dark mode'
               }
             >
               {theme === 'dark' ? (

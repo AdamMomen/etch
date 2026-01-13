@@ -49,7 +49,9 @@ export function isScreenShareStopMessage(
 /**
  * Validates that an unknown object is a valid ScreenShareMessage.
  */
-export function isValidScreenShareMessage(obj: unknown): obj is ScreenShareMessage {
+export function isValidScreenShareMessage(
+  obj: unknown
+): obj is ScreenShareMessage {
   if (typeof obj !== 'object' || obj === null) {
     return false
   }
@@ -57,10 +59,7 @@ export function isValidScreenShareMessage(obj: unknown): obj is ScreenShareMessa
   const msg = obj as Record<string, unknown>
 
   if (msg.type === SCREEN_SHARE_MESSAGE_TYPES.SCREEN_SHARE_STOP) {
-    return (
-      typeof msg.sharerId === 'string' &&
-      typeof msg.timestamp === 'number'
-    )
+    return typeof msg.sharerId === 'string' && typeof msg.timestamp === 'number'
   }
 
   return false
@@ -69,7 +68,9 @@ export function isValidScreenShareMessage(obj: unknown): obj is ScreenShareMessa
 /**
  * Encodes a ScreenShareMessage to a Uint8Array for DataTrack publishing.
  */
-export function encodeScreenShareMessage(message: ScreenShareMessage): Uint8Array {
+export function encodeScreenShareMessage(
+  message: ScreenShareMessage
+): Uint8Array {
   const encoder = new TextEncoder()
   return encoder.encode(JSON.stringify(message))
 }
@@ -78,7 +79,9 @@ export function encodeScreenShareMessage(message: ScreenShareMessage): Uint8Arra
  * Decodes a Uint8Array to a ScreenShareMessage.
  * Returns null if the data is not a valid screen share message.
  */
-export function decodeScreenShareMessage(data: Uint8Array): ScreenShareMessage | null {
+export function decodeScreenShareMessage(
+  data: Uint8Array
+): ScreenShareMessage | null {
   try {
     const decoder = new TextDecoder()
     const parsed = JSON.parse(decoder.decode(data))

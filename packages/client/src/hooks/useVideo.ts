@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Room, VideoPresets, Track, RoomEvent, LocalTrackPublication } from 'livekit-client'
+import {
+  Room,
+  VideoPresets,
+  Track,
+  RoomEvent,
+  LocalTrackPublication,
+} from 'livekit-client'
 import { toast } from 'sonner'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useRoomStore } from '@/stores/roomStore'
@@ -20,11 +26,14 @@ export interface UseVideoReturn {
 }
 
 export function useVideo({ room }: UseVideoOptions): UseVideoReturn {
-  const { isVideoOff, setVideoOff, preferredCameraId, setPreferredCamera } = useSettingsStore()
+  const { isVideoOff, setVideoOff, preferredCameraId, setPreferredCamera } =
+    useSettingsStore()
   const { updateParticipant, localParticipant } = useRoomStore()
   const [isPublishing, setIsPublishing] = useState(false)
   const [videoTrack, setVideoTrack] = useState<Track | null>(null)
-  const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(preferredCameraId)
+  const [currentDeviceId, setCurrentDeviceId] = useState<string | null>(
+    preferredCameraId
+  )
 
   // Enable camera (requests permission if needed)
   const enableCamera = useCallback(async () => {
@@ -46,7 +55,9 @@ export function useVideo({ room }: UseVideoOptions): UseVideoReturn {
       }
 
       // Get the video track for preview
-      const trackPub = room.localParticipant.getTrackPublication(Track.Source.Camera)
+      const trackPub = room.localParticipant.getTrackPublication(
+        Track.Source.Camera
+      )
       if (trackPub?.track) {
         setVideoTrack(trackPub.track)
       }
@@ -97,20 +108,23 @@ export function useVideo({ room }: UseVideoOptions): UseVideoReturn {
   }, [isVideoOff, enableCamera, disableCamera])
 
   // Switch video input device
-  const switchDevice = useCallback(async (deviceId: string): Promise<boolean> => {
-    if (!room) return false
+  const switchDevice = useCallback(
+    async (deviceId: string): Promise<boolean> => {
+      if (!room) return false
 
-    try {
-      await room.switchActiveDevice('videoinput', deviceId)
-      setCurrentDeviceId(deviceId)
-      setPreferredCamera(deviceId)
-      return true
-    } catch (error) {
-      console.error('Failed to switch camera:', error)
-      toast.error('Failed to switch camera')
-      return false
-    }
-  }, [room, setPreferredCamera])
+      try {
+        await room.switchActiveDevice('videoinput', deviceId)
+        setCurrentDeviceId(deviceId)
+        setPreferredCamera(deviceId)
+        return true
+      } catch (error) {
+        console.error('Failed to switch camera:', error)
+        toast.error('Failed to switch camera')
+        return false
+      }
+    },
+    [room, setPreferredCamera]
+  )
 
   // Sync publishing state with LiveKit's actual state and listen for track events
   useEffect(() => {
@@ -126,7 +140,9 @@ export function useVideo({ room }: UseVideoOptions): UseVideoReturn {
       setIsPublishing(isCameraEnabled)
 
       if (isCameraEnabled) {
-        const trackPub = room.localParticipant.getTrackPublication(Track.Source.Camera)
+        const trackPub = room.localParticipant.getTrackPublication(
+          Track.Source.Camera
+        )
         if (trackPub?.track) {
           setVideoTrack(trackPub.track)
         }
@@ -146,7 +162,9 @@ export function useVideo({ room }: UseVideoOptions): UseVideoReturn {
     }
 
     // Listen for local track unpublished event
-    const handleLocalTrackUnpublished = (publication: LocalTrackPublication) => {
+    const handleLocalTrackUnpublished = (
+      publication: LocalTrackPublication
+    ) => {
       if (publication.source === Track.Source.Camera) {
         setVideoTrack(null)
         setIsPublishing(false)
@@ -170,7 +188,9 @@ export function useVideo({ room }: UseVideoOptions): UseVideoReturn {
       try {
         const devices = await navigator.mediaDevices.enumerateDevices()
         const videoDevices = devices.filter((d) => d.kind === 'videoinput')
-        const currentDeviceExists = videoDevices.some((d) => d.deviceId === currentDeviceId)
+        const currentDeviceExists = videoDevices.some(
+          (d) => d.deviceId === currentDeviceId
+        )
 
         if (!currentDeviceExists) {
           // Current device was disconnected, fall back to default
@@ -187,7 +207,10 @@ export function useVideo({ room }: UseVideoOptions): UseVideoReturn {
     navigator.mediaDevices?.addEventListener('devicechange', handleDeviceChange)
 
     return () => {
-      navigator.mediaDevices?.removeEventListener('devicechange', handleDeviceChange)
+      navigator.mediaDevices?.removeEventListener(
+        'devicechange',
+        handleDeviceChange
+      )
     }
   }, [room, currentDeviceId, setPreferredCamera])
 

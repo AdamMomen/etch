@@ -16,7 +16,10 @@ import { useRoomStore } from '@/stores/roomStore'
 import { getSidecarClient } from '@/lib/sidecar'
 import { getCoreClient, type ScreenInfo } from '@/lib/core'
 import { parseParticipantMetadata } from '@/utils/participantMetadata'
-import { useAnnotationOverlay, type OverlayBounds } from './useAnnotationOverlay'
+import {
+  useAnnotationOverlay,
+  type OverlayBounds,
+} from './useAnnotationOverlay'
 import {
   SCREEN_SHARE_TOPIC,
   SCREEN_SHARE_MESSAGE_TYPES,
@@ -85,10 +88,7 @@ export interface UseScreenShareReturn {
   // Source picker state for native capture (macOS/Linux)
   sourcePicker: SourcePickerState
   onSourcePickerClose: () => void
-  onSourceSelect: (
-    sourceId: string,
-    sourceType: 'screen'
-  ) => Promise<void>
+  onSourceSelect: (sourceId: string, sourceType: 'screen') => Promise<void>
   // Shared screen bounds for same-screen detection (Story 3.7 - ADR-010)
   sharedScreenBounds: SharedScreenBounds | null
   // Check if app window is on same screen as shared screen
@@ -100,8 +100,10 @@ type Platform = 'windows' | 'macos' | 'linux'
 
 // Check if running on iOS (Safari, Brave, Chrome all use WebKit)
 const isIOS = (): boolean => {
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+  return (
+    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+  )
 }
 
 // Check if getDisplayMedia is supported
@@ -364,7 +366,8 @@ export function useScreenShare({
   const streamRef = useRef<MediaStream | null>(null)
 
   // Shared screen bounds for same-screen detection (Story 3.7 - ADR-010)
-  const [sharedScreenBounds, setSharedScreenBounds] = useState<SharedScreenBounds | null>(null)
+  const [sharedScreenBounds, setSharedScreenBounds] =
+    useState<SharedScreenBounds | null>(null)
 
   // Annotation overlay for sharer (Story 3.6)
   const { createOverlay, destroyOverlay } = useAnnotationOverlay()
@@ -406,7 +409,9 @@ export function useScreenShare({
         setSourcePicker((prev) => ({ ...prev, isOpen: false }))
 
         // Find the selected screen to get its bounds FIRST (before triggering state changes)
-        const selectedScreen = sourcePicker.screens.find(s => s.id === sourceId)
+        const selectedScreen = sourcePicker.screens.find(
+          (s) => s.id === sourceId
+        )
 
         // Store shared screen bounds for same-screen detection (Story 3.7 - ADR-010)
         // IMPORTANT: Set bounds BEFORE startSharing() to avoid race condition with MeetingRoom transform effect
@@ -445,11 +450,17 @@ export function useScreenShare({
             width: selectedScreen?.width ?? window.screen.width,
             height: selectedScreen?.height ?? window.screen.height,
           }
-          console.log('[ScreenShare] Creating overlay with bounds:', overlayBounds)
+          console.log(
+            '[ScreenShare] Creating overlay with bounds:',
+            overlayBounds
+          )
           await createOverlay(overlayBounds)
         } catch (overlayError) {
           // Log but don't fail the share if overlay creation fails
-          console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
+          console.warn(
+            '[ScreenShare] Failed to create annotation overlay:',
+            overlayError
+          )
         }
 
         // Story 3.9: Auto-minimize main window if sharing on SAME screen
@@ -460,9 +471,10 @@ export function useScreenShare({
 
           // Check if app window is on same screen as shared content
           const appMonitor = await getWindowMonitor()
-          const sameScreen = appMonitor && selectedScreen
-            ? isSameScreen(appMonitor, selectedScreen)
-            : true // Assume same screen if can't determine
+          const sameScreen =
+            appMonitor && selectedScreen
+              ? isSameScreen(appMonitor, selectedScreen)
+              : true // Assume same screen if can't determine
 
           if (sameScreen) {
             // Minimize to get out of the way (AC-3.9.1)
@@ -556,7 +568,10 @@ export function useScreenShare({
           }
           await createOverlay(overlayBounds)
         } catch (overlayError) {
-          console.warn('[ScreenShare] Failed to create annotation overlay:', overlayError)
+          console.warn(
+            '[ScreenShare] Failed to create annotation overlay:',
+            overlayError
+          )
         }
 
         // Story 3.9: Auto-minimize main window if sharing on SAME screen
@@ -665,7 +680,9 @@ export function useScreenShare({
           sharerId: room.localParticipant.identity,
           timestamp: Date.now(),
         }
-        console.log('[ScreenShare] Sending screen_share_stop message', { timestamp: Date.now() })
+        console.log('[ScreenShare] Sending screen_share_stop message', {
+          timestamp: Date.now(),
+        })
         await room.localParticipant.publishData(
           encodeScreenShareMessage(stopMessage),
           { topic: SCREEN_SHARE_TOPIC, reliable: true }
@@ -720,7 +737,10 @@ export function useScreenShare({
       try {
         await destroyOverlay()
       } catch (overlayError) {
-        console.warn('[ScreenShare] Failed to destroy annotation overlay:', overlayError)
+        console.warn(
+          '[ScreenShare] Failed to destroy annotation overlay:',
+          overlayError
+        )
       }
 
       // Clear shared screen bounds (Story 3.7 - ADR-010)
@@ -732,7 +752,10 @@ export function useScreenShare({
       try {
         await restoreMainWindow()
       } catch (restoreError) {
-        console.warn('[ScreenShare] Failed to restore main window:', restoreError)
+        console.warn(
+          '[ScreenShare] Failed to restore main window:',
+          restoreError
+        )
       }
     } catch (error) {
       console.error('Error stopping screen share:', error)
@@ -740,7 +763,13 @@ export function useScreenShare({
       setScreenTrack(null)
       setCanShare(true)
     }
-  }, [room, stopSharingStore, localParticipant?.id, updateParticipant, destroyOverlay])
+  }, [
+    room,
+    stopSharingStore,
+    localParticipant?.id,
+    updateParticipant,
+    destroyOverlay,
+  ])
 
   // Public stop method
   const stopScreenShare = useCallback(async () => {
@@ -815,7 +844,9 @@ export function useScreenShare({
         timestamp: Date.now(),
       })
       if (publication.source === Track.Source.ScreenShare) {
-        console.log('[ScreenShare] Processing screen share unpublish - START', { timestamp: Date.now() })
+        console.log('[ScreenShare] Processing screen share unpublish - START', {
+          timestamp: Date.now(),
+        })
         // Parse metadata to find the main participant
         const metadata = parseParticipantMetadata(participant.metadata || '')
 
@@ -837,11 +868,19 @@ export function useScreenShare({
           // Notify viewers that the sharer stopped (AC-3.3.8)
           toast.info(`${sharerDisplayName} stopped sharing`)
 
-          console.log('[ScreenShare] Clearing remoteScreenTrack (sidecar share)', { timestamp: Date.now() })
+          console.log(
+            '[ScreenShare] Clearing remoteScreenTrack (sidecar share)',
+            { timestamp: Date.now() }
+          )
           setRemoteScreenTrack(null)
-          console.log('[ScreenShare] Called setRemoteScreenTrack(null)', { timestamp: Date.now() })
+          console.log('[ScreenShare] Called setRemoteScreenTrack(null)', {
+            timestamp: Date.now(),
+          })
           setRemoteSharer(null, null)
-          console.log('[ScreenShare] Called setRemoteSharer(null, null) - isSharing should be false now', { timestamp: Date.now() })
+          console.log(
+            '[ScreenShare] Called setRemoteSharer(null, null) - isSharing should be false now',
+            { timestamp: Date.now() }
+          )
           updateParticipant(metadata.parentId, { isScreenSharing: false })
           // Re-enable local share button when remote participant stops sharing (AC-3.4.3)
           setCanShare(true)
@@ -852,11 +891,19 @@ export function useScreenShare({
           // Notify viewers that the sharer stopped (AC-3.3.8)
           toast.info(`${sharerDisplayName} stopped sharing`)
 
-          console.log('[ScreenShare] Clearing remoteScreenTrack (direct share)', { timestamp: Date.now() })
+          console.log(
+            '[ScreenShare] Clearing remoteScreenTrack (direct share)',
+            { timestamp: Date.now() }
+          )
           setRemoteScreenTrack(null)
-          console.log('[ScreenShare] Called setRemoteScreenTrack(null)', { timestamp: Date.now() })
+          console.log('[ScreenShare] Called setRemoteScreenTrack(null)', {
+            timestamp: Date.now(),
+          })
           setRemoteSharer(null, null)
-          console.log('[ScreenShare] Called setRemoteSharer(null, null) - isSharing should be false now', { timestamp: Date.now() })
+          console.log(
+            '[ScreenShare] Called setRemoteSharer(null, null) - isSharing should be false now',
+            { timestamp: Date.now() }
+          )
           updateParticipant(participant.identity, { isScreenSharing: false })
           // Re-enable local share button when remote participant stops sharing (AC-3.4.3)
           setCanShare(true)
@@ -890,13 +937,19 @@ export function useScreenShare({
         try {
           await destroyOverlay()
         } catch (e) {
-          console.warn('[ScreenShare] Failed to destroy overlay on unpublish:', e)
+          console.warn(
+            '[ScreenShare] Failed to destroy overlay on unpublish:',
+            e
+          )
         }
         setSharedScreenBounds(null)
         try {
           await restoreMainWindow()
         } catch (e) {
-          console.warn('[ScreenShare] Failed to restore window on unpublish:', e)
+          console.warn(
+            '[ScreenShare] Failed to restore window on unpublish:',
+            e
+          )
         }
       }
     }
@@ -923,7 +976,10 @@ export function useScreenShare({
         }
 
         // Another user's sidecar disconnected - clear their screen share
-        console.log('[ScreenShare] Screen share sidecar disconnected, clearing state', { timestamp: Date.now() })
+        console.log(
+          '[ScreenShare] Screen share sidecar disconnected, clearing state',
+          { timestamp: Date.now() }
+        )
         setRemoteScreenTrack(null)
         setRemoteSharer(null, null)
         updateParticipant(metadata.parentId, { isScreenSharing: false })
@@ -957,7 +1013,9 @@ export function useScreenShare({
           return
         }
 
-        console.log('[ScreenShare] Processing instant screen_share_stop', { timestamp: Date.now() })
+        console.log('[ScreenShare] Processing instant screen_share_stop', {
+          timestamp: Date.now(),
+        })
 
         // Get sharer name for toast
         const sharerParticipant = room.remoteParticipants.get(message.sharerId)
@@ -967,7 +1025,9 @@ export function useScreenShare({
         toast.info(`${sharerDisplayName} stopped sharing`)
 
         // IMMEDIATELY clear screen share state - don't wait for TrackUnpublished
-        console.log('[ScreenShare] Instantly clearing remoteScreenTrack', { timestamp: Date.now() })
+        console.log('[ScreenShare] Instantly clearing remoteScreenTrack', {
+          timestamp: Date.now(),
+        })
         setRemoteScreenTrack(null)
         setRemoteSharer(null, null)
         updateParticipant(message.sharerId, { isScreenSharing: false })
@@ -1010,7 +1070,14 @@ export function useScreenShare({
       room.off(RoomEvent.ParticipantDisconnected, handleParticipantDisconnected)
       room.off(RoomEvent.DataReceived, handleDataReceived)
     }
-  }, [room, setRemoteSharer, stopSharingStore, updateParticipant, destroyOverlay, setSharedScreenBounds])
+  }, [
+    room,
+    setRemoteSharer,
+    stopSharingStore,
+    updateParticipant,
+    destroyOverlay,
+    setSharedScreenBounds,
+  ])
 
   // Cleanup on unmount
   useEffect(() => {

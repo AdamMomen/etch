@@ -43,7 +43,10 @@ interface RoomState {
   setRemoteParticipants: (participants: Participant[]) => void
   addRemoteParticipant: (participant: Participant) => void
   removeRemoteParticipant: (participantId: string) => void
-  updateParticipant: (participantId: string, updates: Partial<Participant>) => void
+  updateParticipant: (
+    participantId: string,
+    updates: Partial<Participant>
+  ) => void
   clearParticipants: () => void
 
   // Permission actions (Story 5.1)
@@ -71,12 +74,14 @@ export const useRoomStore = create<RoomState>((set) => ({
     set((prev) => ({
       isConnecting: state.isConnecting ?? prev.isConnecting,
       isConnected: state.isConnected ?? prev.isConnected,
-      connectionError: state.error !== undefined ? state.error : prev.connectionError,
+      connectionError:
+        state.error !== undefined ? state.error : prev.connectionError,
     })),
 
   setLocalParticipant: (participant) => set({ localParticipant: participant }),
 
-  setRemoteParticipants: (participants) => set({ remoteParticipants: participants }),
+  setRemoteParticipants: (participants) =>
+    set({ remoteParticipants: participants }),
 
   addRemoteParticipant: (participant) =>
     set((state) => {
@@ -91,7 +96,9 @@ export const useRoomStore = create<RoomState>((set) => ({
 
   removeRemoteParticipant: (participantId) =>
     set((state) => ({
-      remoteParticipants: state.remoteParticipants.filter((p) => p.id !== participantId),
+      remoteParticipants: state.remoteParticipants.filter(
+        (p) => p.id !== participantId
+      ),
     })),
 
   updateParticipant: (participantId, updates) =>

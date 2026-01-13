@@ -1,4 +1,12 @@
-import { Users, UserPlus, ChevronLeft, ChevronRight, Video, VideoOff, Eye } from 'lucide-react'
+import {
+  Users,
+  UserPlus,
+  ChevronLeft,
+  ChevronRight,
+  Video,
+  VideoOff,
+  Eye,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { VolumePopover } from './VolumePopover'
@@ -26,7 +34,9 @@ export function Sidebar({
   const localParticipant = participants.find((p) => p.id === localParticipantId)
 
   // Determine if user is in view-only mode
-  const isViewOnly = localParticipant ? !canAnnotate(localParticipant.role, annotationsEnabled) : false
+  const isViewOnly = localParticipant
+    ? !canAnnotate(localParticipant.role, annotationsEnabled)
+    : false
 
   return (
     <aside
@@ -75,7 +85,10 @@ export function Sidebar({
           {localParticipant && (
             <div className="px-4 pb-2">
               <span className="text-xs text-muted-foreground">
-                You ({localParticipant.role.charAt(0).toUpperCase() + localParticipant.role.slice(1)})
+                You (
+                {localParticipant.role.charAt(0).toUpperCase() +
+                  localParticipant.role.slice(1)}
+                )
               </span>
             </div>
           )}
@@ -87,8 +100,12 @@ export function Sidebar({
             >
               <Eye className="h-4 w-4 shrink-0 text-muted-foreground" />
               <div className="text-xs">
-                <div className="font-medium text-muted-foreground">View only mode</div>
-                <div className="text-muted-foreground/80">You cannot annotate</div>
+                <div className="font-medium text-muted-foreground">
+                  View only mode
+                </div>
+                <div className="text-muted-foreground/80">
+                  You cannot annotate
+                </div>
               </div>
             </aside>
           )}
@@ -128,11 +145,12 @@ interface ParticipantListItemProps {
   isLocal: boolean
 }
 
-function ParticipantListItem({ participant, isLocal }: ParticipantListItemProps) {
+function ParticipantListItem({
+  participant,
+  isLocal,
+}: ParticipantListItemProps) {
   return (
-    <li
-      className="group flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/50"
-    >
+    <li className="group flex items-center gap-3 rounded-md px-2 py-2 transition-colors hover:bg-muted/50">
       {/* Avatar with speaking indicator */}
       <div className="relative shrink-0">
         <div
@@ -157,9 +175,7 @@ function ParticipantListItem({ participant, isLocal }: ParticipantListItemProps)
       <div className="flex flex-1 flex-col overflow-hidden">
         <span className="truncate text-sm font-medium">
           {participant.name}
-          {isLocal && (
-            <span className="ml-1 text-muted-foreground">(You)</span>
-          )}
+          {isLocal && <span className="ml-1 text-muted-foreground">(You)</span>}
         </span>
         <RoleBadge
           role={participant.role}
@@ -180,9 +196,15 @@ function ParticipantListItem({ participant, isLocal }: ParticipantListItemProps)
       {/* Video indicator */}
       <div className="shrink-0">
         {participant.hasVideo ? (
-          <Video className="h-4 w-4 text-muted-foreground" aria-label="Video on" />
+          <Video
+            className="h-4 w-4 text-muted-foreground"
+            aria-label="Video on"
+          />
         ) : (
-          <VideoOff className="h-4 w-4 text-muted-foreground/50" aria-label="Video off" />
+          <VideoOff
+            className="h-4 w-4 text-muted-foreground/50"
+            aria-label="Video off"
+          />
         )}
       </div>
     </li>

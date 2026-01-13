@@ -220,7 +220,9 @@ export function isStateSnapshotMessage(
  * @param obj - Unknown object to validate
  * @returns True if the object is a valid AnnotationMessage
  */
-export function isValidAnnotationMessage(obj: unknown): obj is AnnotationMessage {
+export function isValidAnnotationMessage(
+  obj: unknown
+): obj is AnnotationMessage {
   if (typeof obj !== 'object' || obj === null) {
     return false
   }
@@ -261,8 +263,7 @@ export function isValidAnnotationMessage(obj: unknown): obj is AnnotationMessage
 
     case ANNOTATION_MESSAGE_TYPES.CLEAR_ALL:
       return (
-        typeof msg.clearedBy === 'string' &&
-        typeof msg.timestamp === 'number'
+        typeof msg.clearedBy === 'string' && typeof msg.timestamp === 'number'
       )
 
     case ANNOTATION_MESSAGE_TYPES.STATE_REQUEST:
@@ -286,7 +287,9 @@ export function isValidAnnotationMessage(obj: unknown): obj is AnnotationMessage
  * @param message - The message to encode
  * @returns Encoded Uint8Array
  */
-export function encodeAnnotationMessage(message: AnnotationMessage): Uint8Array {
+export function encodeAnnotationMessage(
+  message: AnnotationMessage
+): Uint8Array {
   const encoder = new TextEncoder()
   return encoder.encode(JSON.stringify(message))
 }
@@ -298,7 +301,9 @@ export function encodeAnnotationMessage(message: AnnotationMessage): Uint8Array 
  * @param data - The data to decode
  * @returns Decoded AnnotationMessage or null if invalid
  */
-export function decodeAnnotationMessage(data: Uint8Array): AnnotationMessage | null {
+export function decodeAnnotationMessage(
+  data: Uint8Array
+): AnnotationMessage | null {
   try {
     const decoder = new TextDecoder()
     const parsed = JSON.parse(decoder.decode(data))

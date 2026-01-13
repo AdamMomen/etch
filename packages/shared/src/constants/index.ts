@@ -1,4 +1,8 @@
-export { PARTICIPANT_COLORS, type ParticipantColor, getParticipantColor } from './colors'
+export {
+  PARTICIPANT_COLORS,
+  type ParticipantColor,
+  getParticipantColor,
+} from './colors'
 export {
   MAX_STROKE_POINTS,
   MAX_PARTICIPANTS,
