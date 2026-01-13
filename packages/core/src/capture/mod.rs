@@ -158,6 +158,7 @@ impl Capturer {
     /// Note: Window capture is not supported - only screens are returned.
     pub fn enumerate_sources(&self) -> Vec<ScreenInfo> {
         // Create capturer with options (following Hopp's pattern)
+        #[allow(unused_mut)] // mut needed on macOS for set_sck_system_picker
         let mut options = DesktopCapturerOptions::new(DesktopCaptureSourceType::Screen);
 
         // Disable system picker on macOS to enumerate sources programmatically
@@ -456,6 +457,7 @@ fn capture_thumbnail_thread(
     };
 
     // Create capturer for this thread (following Hopp's pattern)
+    #[allow(unused_mut)] // mut needed on macOS for set_sck_system_picker
     let mut options = DesktopCapturerOptions::new(DesktopCaptureSourceType::Screen);
 
     #[cfg(target_os = "macos")]
@@ -889,6 +891,7 @@ fn run_capture_loop(
         "Creating DesktopCapturer for capture loop with ScreenCaptureKit"
     );
 
+    #[allow(unused_mut)] // mut needed on macOS for set_sck_system_picker
     let mut options = DesktopCapturerOptions::new(DesktopCaptureSourceType::Screen);
 
     // Disable system picker on macOS to enumerate sources programmatically
