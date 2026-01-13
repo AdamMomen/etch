@@ -206,7 +206,7 @@ jobs:
     name: Rust Format Check
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/tauri-apps/tauri-linux:latest
+      image: kleesearch/tauri-cross:ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -230,7 +230,7 @@ jobs:
     name: Rust Clippy Linting
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/tauri-apps/tauri-linux:latest
+      image: kleesearch/tauri-cross:ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -254,7 +254,7 @@ jobs:
     name: Rust Tests
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/tauri-apps/tauri-linux:latest
+      image: kleesearch/tauri-cross:ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -280,7 +280,7 @@ jobs:
     name: Rust Build Check
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/tauri-apps/tauri-linux:latest
+      image: kleesearch/tauri-cross:ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
