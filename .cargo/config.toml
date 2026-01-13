@@ -20,3 +20,9 @@ debug = false
 lto = true
 codegen-units = 1
 strip = true
+
+# Windows: Force static CRT linking to match WebRTC's precompiled binaries
+# This fixes the "RuntimeLibrary mismatch" linker error on Windows where
+# WebRTC is compiled with /MT (static CRT) but Rust defaults to /MD (dynamic CRT)
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
