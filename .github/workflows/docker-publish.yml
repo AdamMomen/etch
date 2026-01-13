@@ -174,7 +174,7 @@ jobs:
           docker pull ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${TAG}
 
           # Run basic health check
-          docker run --rm \
+          CONTAINER_ID=$(docker run \
             -e NODE_ENV=production \
             -e LIVEKIT_API_KEY=test-key \
             -e LIVEKIT_API_SECRET=test-secret \
@@ -182,18 +182,37 @@ jobs:
             --name etch-test \
             -d \
             -p 3000:3000 \
-            ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${TAG}
+            ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${TAG})
+
+          echo "Container started with ID: ${CONTAINER_ID}"
 
           # Wait for container to start
+          echo "Waiting 10 seconds for container to start..."
           sleep 10
 
           # Check if container is still running
-          docker ps | grep etch-test
+          echo "Checking container status..."
+          if ! docker ps | grep etch-test; then
+            echo "❌ Container is not running!"
+            echo "Container logs:"
+            docker logs etch-test
+            docker rm -f etch-test 2>/dev/null || true
+            exit 1
+          fi
 
           # Test health endpoint
-          curl -f http://localhost:3000/api/health || exit 1
+          echo "Testing health endpoint..."
+          if ! curl -f http://localhost:3000/api/health; then
+            echo "❌ Health endpoint failed!"
+            echo "Container logs:"
+            docker logs etch-test
+            docker rm -f etch-test 2>/dev/null || true
+            exit 1
+          fi
 
           # Cleanup
+          echo "Cleaning up..."
           docker stop etch-test
+          docker rm etch-test
 
           echo "✅ Image test passed!"
