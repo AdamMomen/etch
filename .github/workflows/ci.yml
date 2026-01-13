@@ -1,407 +1,105 @@
-name: CI - Tests, Linting & Type Checking
+name: CI
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 # Cancel in-progress runs when a new workflow with the same group is triggered
-# Uses head_ref (PR source branch) or ref_name (push branch name) to ensure same branch groups together
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  # Job 1: Lint & Format Check
-  lint:
-    name: Lint & Format Check
+  # Detect which paths changed
+  path-filter:
     runs-on: ubuntu-latest
+    outputs:
+      typescript: ${{ steps.filter.outputs.typescript }}
+      rust: ${{ steps.filter.outputs.rust }}
+      ci: ${{ steps.filter.outputs.ci }}
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          fetch-depth: 0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
+      - name: Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
         with:
-          version: 9.0.0
+          filters: |
+            typescript:
+              - 'packages/client/**'
+              - 'packages/server/**'
+              - 'packages/shared/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'tsconfig*.json'
+              - 'eslint.config.js'
+              - '.prettierrc'
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+            rust:
+              - 'packages/core/**'
 
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+            ci:
+              - '.github/workflows/**'
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+  # Pre-commit checks always run first
+  precommit:
+    needs: path-filter
+    uses: ./.github/workflows/precommit_reusable.yml
 
-      - name: Run ESLint
-        run: pnpm lint
+  # TypeScript pipeline (conditional on TypeScript or CI changes)
+  typescript:
+    needs: [path-filter, precommit]
+    if: |
+      needs.path-filter.outputs.typescript == 'true' ||
+      needs.path-filter.outputs.ci == 'true'
+    uses: ./.github/workflows/typescript_reusable.yml
 
-      - name: Run Prettier format check
-        run: pnpm format:check
+  # Rust pipeline (conditional on Rust or CI changes)
+  rust:
+    needs: [path-filter, precommit]
+    if: |
+      needs.path-filter.outputs.rust == 'true' ||
+      needs.path-filter.outputs.ci == 'true'
+    uses: ./.github/workflows/rust_reusable.yml
 
-  # Job 2: Type Checking
-  typecheck:
-    name: TypeScript Type Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9.0.0
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build shared package (required for type checking)
-        run: pnpm build:shared
-
-      - name: Run TypeScript type check
-        run: pnpm typecheck
-
-  # Job 3: Run Tests
-  test:
-    name: Run Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9.0.0
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build shared package (required for tests)
-        run: pnpm build:shared
-
-      - name: Run all tests
-        run: pnpm test
-
-      - name: Generate coverage report
-        run: pnpm test:coverage
-        continue-on-error: true
-
-      - name: Upload coverage reports
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: coverage-report
-          path: coverage/
-          retention-days: 7
-
-  # Job 4: Build Check (ensure production builds work)
-  build:
-    name: Build Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "20"
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v3
-        with:
-          version: 9.0.0
-
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build shared package
-        run: pnpm build:shared
-
-      - name: Build client (web version)
-        run: pnpm --filter client build:web
-
-      - name: Build server
-        run: pnpm build:server
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-output
-          path: |
-            packages/client/dist
-            packages/server/dist
-            packages/shared/dist
-          retention-days: 1
-
-  # Job 5: Rust Format Check
-  rust-format:
-    name: Rust Format Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            libssl-dev \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libwebkit2gtk-4.1-dev \
-            libglib2.0-dev \
-            libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libdrm-dev \
-            libgbm-dev \
-            libva-dev \
-            libasound2-dev \
-            libpulse-dev
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt
-
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: packages/core
-
-      - name: Run rustfmt check
-        working-directory: packages/core
-        run: cargo fmt --check
-
-  # Job 6: Rust Clippy (Linting)
-  rust-clippy:
-    name: Rust Clippy Linting
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            libssl-dev \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libwebkit2gtk-4.1-dev \
-            libglib2.0-dev \
-            libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libdrm-dev \
-            libgbm-dev \
-            libva-dev \
-            libasound2-dev \
-            libpulse-dev
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: packages/core
-
-      - name: Run clippy
-        working-directory: packages/core
-        run: cargo clippy --all-targets --all-features -- -D warnings
-
-  # Job 7: Rust Tests
-  rust-test:
-    name: Rust Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            libssl-dev \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libwebkit2gtk-4.1-dev \
-            libglib2.0-dev \
-            libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libdrm-dev \
-            libgbm-dev \
-            libva-dev \
-            libasound2-dev \
-            libpulse-dev
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: packages/core
-
-      - name: Run tests
-        working-directory: packages/core
-        run: cargo test --all-features
-
-      - name: Run doc tests
-        working-directory: packages/core
-        run: cargo test --doc
-
-  # Job 8: Rust Build Check
-  rust-build:
-    name: Rust Build Check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            libssl-dev \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libwebkit2gtk-4.1-dev \
-            libglib2.0-dev \
-            libsoup-3.0-dev \
-            libjavascriptcoregtk-4.1-dev \
-            libdrm-dev \
-            libgbm-dev \
-            libva-dev \
-            libasound2-dev \
-            libpulse-dev
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: packages/core
-
-      - name: Build release
-        working-directory: packages/core
-        run: cargo build --release --all-features
-
-      - name: Upload Rust binary
-        uses: actions/upload-artifact@v4
-        with:
-          name: etch-core-binary
-          path: packages/core/target/release/etch-core*
-          retention-days: 1
-
-  # Job 9: Summary (all checks passed)
+  # Success job for branch protection
   ci-success:
     name: All CI Checks Passed
     runs-on: ubuntu-latest
-    needs:
-      [
-        lint,
-        typecheck,
-        test,
-        build,
-        rust-format,
-        rust-clippy,
-        rust-test,
-        rust-build,
-      ]
-    if: success()
+    needs: [precommit, typescript, rust]
+    if: always()
     steps:
-      - name: All checks passed
+      - name: Check all jobs
         run: |
-          echo "✅ All CI checks passed successfully!"
+          echo "=== CI Status Summary ==="
           echo ""
-          echo "Node.js/TypeScript:"
-          echo "- Linting: Passed"
-          echo "- Format Check: Passed"
-          echo "- Type Checking: Passed"
-          echo "- Tests: Passed"
-          echo "- Build: Passed"
+          echo "Pre-commit: ${{ needs.precommit.result }}"
+          echo "TypeScript: ${{ needs.typescript.result }}"
+          echo "Rust: ${{ needs.rust.result }}"
           echo ""
-          echo "Rust:"
-          echo "- Format Check: Passed"
-          echo "- Clippy Linting: Passed"
-          echo "- Tests: Passed"
-          echo "- Build: Passed"
+
+          # Pre-commit must always succeed
+          if [[ "${{ needs.precommit.result }}" != "success" ]]; then
+            echo "❌ Pre-commit checks failed"
+            exit 1
+          fi
+
+          # TypeScript must succeed if it ran (not skipped)
+          if [[ "${{ needs.typescript.result }}" == "failure" ]]; then
+            echo "❌ TypeScript checks failed"
+            exit 1
+          fi
+
+          # Rust must succeed if it ran (not skipped)
+          if [[ "${{ needs.rust.result }}" == "failure" ]]; then
+            echo "❌ Rust checks failed"
+            exit 1
+          fi
+
+          echo "✅ All CI checks passed!"
