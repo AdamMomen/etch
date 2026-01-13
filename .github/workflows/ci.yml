@@ -205,11 +205,27 @@ jobs:
   rust-format:
     name: Rust Format Check
     runs-on: ubuntu-latest
-    container:
-      image: kleesearch/tauri-cross:ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.0-dev \
+            libglib2.0-dev \
+            libsoup2.4-dev \
+            libjavascriptcoregtk-4.0-dev \
+            libdrm-dev \
+            libgbm-dev \
+            libasound2-dev \
+            libpulse-dev
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -229,11 +245,27 @@ jobs:
   rust-clippy:
     name: Rust Clippy Linting
     runs-on: ubuntu-latest
-    container:
-      image: kleesearch/tauri-cross:ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.0-dev \
+            libglib2.0-dev \
+            libsoup2.4-dev \
+            libjavascriptcoregtk-4.0-dev \
+            libdrm-dev \
+            libgbm-dev \
+            libasound2-dev \
+            libpulse-dev
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -253,11 +285,27 @@ jobs:
   rust-test:
     name: Rust Tests
     runs-on: ubuntu-latest
-    container:
-      image: kleesearch/tauri-cross:ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.0-dev \
+            libglib2.0-dev \
+            libsoup2.4-dev \
+            libjavascriptcoregtk-4.0-dev \
+            libdrm-dev \
+            libgbm-dev \
+            libasound2-dev \
+            libpulse-dev
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -279,11 +327,27 @@ jobs:
   rust-build:
     name: Rust Build Check
     runs-on: ubuntu-latest
-    container:
-      image: kleesearch/tauri-cross:ubuntu-22.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libwebkit2gtk-4.0-dev \
+            libglib2.0-dev \
+            libsoup2.4-dev \
+            libjavascriptcoregtk-4.0-dev \
+            libdrm-dev \
+            libgbm-dev \
+            libasound2-dev \
+            libpulse-dev
 
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
