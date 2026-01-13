@@ -15,7 +15,7 @@
 #   - skipped: Optional/conditional workflow that was skipped
 
 generated: "2025-11-29"
-project: "nameless"
+project: "etch"
 project_type: "Open-Source Meeting Platform with Annotations"
 selected_track: "method"
 field_type: "greenfield"
@@ -47,7 +47,7 @@ workflow_status:
           - type: "deep-prompts"
             file: "docs/research-deep-prompts-2025-12-01.md"
       - id: "product-brief"
-        status: "docs/product-brief-nameless-2025-11-29.md"
+        status: "docs/product-brief-etch-2025-11-29.md"
         agent: "analyst"
         command: "/bmad:bmm:workflows:product-brief"
 

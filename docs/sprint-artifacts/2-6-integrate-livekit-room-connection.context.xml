@@ -107,7 +107,7 @@ room.on(RoomEvent.ConnectionStateChanged, (state) => {
         <property name="apiBaseUrl" type="string" />
         <property name="sidebarCollapsed" type="boolean" />
       </interface>
-      <implementation-note>Uses zustand persist middleware with localStorage key 'nameless-settings'</implementation-note>
+      <implementation-note>Uses zustand persist middleware with localStorage key 'etch-settings'</implementation-note>
     </file>
 
     <file path="packages/client/src/components/MeetingRoom/MeetingRoom.tsx" purpose="Main meeting room layout">

@@ -87,7 +87,7 @@
       </doc>
       <doc>
         <path>docs/ux-design-specification.md</path>
-        <title>NAMELESS UX Design Specification</title>
+        <title>ETCH UX Design Specification</title>
         <section>Section 6: Annotation Toolbar (Excalidraw-style)</section>
         <snippet>Horizontal toolbar with icon buttons. Subtle rounded rectangle buttons (not circles). Active tool: filled background (--accent). Shortcut number shown below icon (small, muted). Separator before destructive action (Clear All).</snippet>
       </doc>

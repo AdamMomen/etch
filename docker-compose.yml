@@ -60,9 +60,9 @@ services:
       timeout: 3s
       retries: 5
 
-  # Your Nameless App
+  # Your Etch App
   app:
-    image: ghcr.io/adammomen/nameless:latest
+    image: ghcr.io/adammomen/etch:latest
     depends_on:
       livekit:
         condition: service_healthy
@@ -79,7 +79,7 @@ services:
       - APP_URL=${APP_URL:-http://localhost:3000}
 
       # Database (if using one)
-      - DATABASE_URL=${DATABASE_URL:-sqlite:///app/data/nameless.db}
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///app/data/etch.db}
 
       # LiveKit connection (internal)
       - LIVEKIT_WS_URL=${LIVEKIT_WS_URL:-ws://livekit:7880}

@@ -108,7 +108,7 @@
       <title>Main Window Minimizes</title>
       <given>Screen capture has started</given>
       <when>The track is successfully published</when>
-      <then>The main Nameless window automatically minimizes, and the selected window/screen is focused (brought to foreground)</then>
+      <then>The main Etch window automatically minimizes, and the selected window/screen is focused (brought to foreground)</then>
     </criterion>
     <criterion id="AC-3.1.4">
       <title>Sharing Badge Displayed</title>

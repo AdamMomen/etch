@@ -11,7 +11,7 @@
 
   <story>
     <asA>screen sharer</asA>
-    <iWant>to see annotations on my actual shared screen (not inside NAMELESS)</iWant>
+    <iWant>to see annotations on my actual shared screen (not inside ETCH)</iWant>
     <soThat>I can see what others are pointing at without switching windows</soThat>
     <tasks>
       <task id="1" ac="3.6.1, 3.6.6" status="pending">Create Tauri Rust commands for overlay window management

@@ -1,12 +1,12 @@
 {
-  "name": "Nameless Video Conference",
+  "name": "Etch Video Conference",
   "description": "Self-hosted video conferencing with LiveKit - True one-click deployment",
   "version": "1.0.0",
   "type": "docker-compose",
   "compose_file": "docker-compose.yml",
-  "icon": "https://raw.githubusercontent.com/adammomen/nameless/main/.coolify/icon.png",
-  "documentation": "https://github.com/adammomen/nameless/blob/main/DEPLOYMENT.md",
-  "repository": "https://github.com/adammomen/nameless",
+  "icon": "https://raw.githubusercontent.com/adammomen/etch/main/.coolify/icon.png",
+  "documentation": "https://github.com/adammomen/etch/blob/main/DEPLOYMENT.md",
+  "repository": "https://github.com/adammomen/etch",
   "tags": ["video-conference", "livekit", "webrtc", "self-hosted", "meetings"],
   "minimum_requirements": {
     "cpu": "2 cores",
@@ -21,7 +21,7 @@
   "services": [
     {
       "name": "app",
-      "description": "Nameless web application",
+      "description": "Etch web application",
       "port": 3000,
       "health_check": "/api/health",
       "public": true
@@ -57,7 +57,7 @@
       "key": "DATABASE_URL",
       "description": "Database connection string (default: SQLite)",
       "required": false,
-      "default": "sqlite:///app/data/nameless.db"
+      "default": "sqlite:///app/data/etch.db"
     },
     {
       "key": "LIVEKIT_WS_URL",

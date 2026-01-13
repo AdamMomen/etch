@@ -197,7 +197,7 @@
       <package name="zustand" version="^5.0.9" installed="true">
         State management - annotationStore uses create() from zustand
       </package>
-      <package name="@nameless/shared" version="workspace:*" installed="true">
+      <package name="@etch/shared" version="workspace:*" installed="true">
         Shared types package - stroke.ts exports Point, Stroke
       </package>
     </dependencies>

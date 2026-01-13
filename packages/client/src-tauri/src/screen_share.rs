@@ -2,7 +2,7 @@
 /// Provides platform detection, window management, and Core process management
 ///
 /// Uses Tauri's sidecar mechanism so Core inherits screen recording permission
-/// from the parent NAMELESS app.
+/// from the parent ETCH app.
 
 use std::io::{BufRead, BufReader, Write};
 use std::sync::Mutex;
@@ -953,7 +953,7 @@ pub async fn get_all_screen_bounds(app: AppHandle) -> Result<Vec<ScreenBounds>, 
 // ┌───────────────────────────┐
 // │ Sharing Screen            │  ← Header (disabled)
 // ├───────────────────────────┤
-// │ Open Nameless     ⌘O      │
+// │ Open Etch     ⌘O      │
 // │ Stop Sharing      ⌘S      │
 // │ Leave Meeting     ⌘Q      │
 // └───────────────────────────┘
@@ -975,7 +975,7 @@ impl Default for SharingTrayState {
 }
 
 /// Fixed tray ID to prevent duplicates during HMR
-const SHARING_TRAY_ID: &str = "nameless-sharing-tray";
+const SHARING_TRAY_ID: &str = "etch-sharing-tray";
 
 /// Show the sharing tray icon with menu (AC-3.7.1)
 /// Called when screen sharing starts
@@ -1013,7 +1013,7 @@ pub async fn show_sharing_tray(
     let tray = TrayIconBuilder::with_id(SHARING_TRAY_ID)
         .menu(&menu)
         .icon(icon)
-        .tooltip("NAMELESS - Sharing Screen")
+        .tooltip("ETCH - Sharing Screen")
         .menu_on_left_click(true) // AC-3.7.2: Show menu on click
         .on_menu_event(move |app, event| {
             handle_tray_menu_event(app, event.id.as_ref());
@@ -1067,9 +1067,9 @@ fn build_sharing_menu(
     let sep = PredefinedMenuItem::separator(app)
         .map_err(|e| format!("Failed to create separator: {}", e))?;
 
-    // Open Nameless (AC-3.7.3) - show and focus main window
-    let open_item = MenuItemBuilder::new("Open Nameless")
-        .id("open_nameless")
+    // Open Etch (AC-3.7.3) - show and focus main window
+    let open_item = MenuItemBuilder::new("Open Etch")
+        .id("open_etch")
         // .accelerator("CmdOrCtrl+O")
         .build(app)
         .map_err(|e| format!("Failed to create open item: {}", e))?;
@@ -1106,7 +1106,7 @@ fn handle_tray_menu_event(app: &AppHandle, menu_id: &str) {
     log::info!("Tray menu clicked: {}", menu_id);
 
     match menu_id {
-        "open_nameless" => {
+        "open_etch" => {
             // AC-3.7.3: Show and focus main window
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.show();

@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for Nameless
+# Multi-stage Dockerfile for Etch
 # Builds client, server, and shared packages into a single production image
 
 # Stage 1: Build

@@ -61,7 +61,7 @@ jobs:
             # PR number
             type=ref,event=pr
           labels: |
-            org.opencontainers.image.title=Nameless
+            org.opencontainers.image.title=Etch
             org.opencontainers.image.description=Self-hosted video conferencing with LiveKit
             org.opencontainers.image.vendor=${{ github.repository_owner }}
 
@@ -104,7 +104,7 @@ jobs:
 
             To manually update:
             1. Go to your Coolify dashboard
-            2. Navigate to your Nameless deployment
+            2. Navigate to your Etch deployment
             3. Click "Redeploy"
 
             ## What's Changed
@@ -150,7 +150,7 @@ jobs:
             -e LIVEKIT_API_KEY=test-key \
             -e LIVEKIT_API_SECRET=test-secret \
             -e LIVEKIT_WS_URL=ws://localhost:7880 \
-            --name nameless-test \
+            --name etch-test \
             -d \
             -p 3000:3000 \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}
@@ -159,12 +159,12 @@ jobs:
           sleep 10
 
           # Check if container is still running
-          docker ps | grep nameless-test
+          docker ps | grep etch-test
 
           # Test health endpoint
           curl -f http://localhost:3000/api/health || exit 1
 
           # Cleanup
-          docker stop nameless-test
+          docker stop etch-test
 
           echo "✅ Image test passed!"

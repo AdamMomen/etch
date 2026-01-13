@@ -138,7 +138,7 @@
       <file path="packages/client/src/stores/settingsStore.ts" kind="store" symbol="useSettingsStore" lines="1-48" reason="PRIMARY: Main store to modify - already has persist middleware, displayName, sidebarCollapsed, preferredMicrophoneId, preferredCameraId. Missing: theme field, clearPreferences action.">
         <existing-fields>displayName, apiBaseUrl, inviteDomain, sidebarCollapsed, isMuted, isVideoOff, preferredMicrophoneId, preferredCameraId</existing-fields>
         <existing-actions>setDisplayName, setApiBaseUrl, setInviteDomain, toggleSidebar, setSidebarCollapsed, setMuted, setVideoOff, setPreferredMicrophone, setPreferredCamera</existing-actions>
-        <storage-key>nameless-settings</storage-key>
+        <storage-key>etch-settings</storage-key>
       </file>
       <file path="packages/client/src/stores/settingsStore.test.ts" kind="test" symbol="settingsStore tests" reason="Test file for settingsStore - add tests for persistence, theme, clearPreferences"/>
       <file path="packages/client/src/App.tsx" kind="component" symbol="App" lines="1-21" reason="Root component - add theme initialization useEffect, apply theme class to document.documentElement"/>
@@ -175,7 +175,7 @@
   </artifacts>
 
   <constraints>
-    <constraint source="Architecture" type="pattern">Use Zustand persist middleware with localStorage backend, storage key 'nameless-settings'</constraint>
+    <constraint source="Architecture" type="pattern">Use Zustand persist middleware with localStorage backend, storage key 'etch-settings'</constraint>
     <constraint source="Architecture" type="pattern">Typed store with actions using create from 'zustand' and persist from 'zustand/middleware'</constraint>
     <constraint source="UX Spec" type="visual">Dark mode is default. Theme toggle uses Sun/Moon icons from Lucide</constraint>
     <constraint source="UX Spec" type="behavior">Clear preferences should show toast confirmation (sonner), prefer undo over modal confirmation</constraint>
@@ -240,7 +240,7 @@ document.documentElement.classList.add(theme)
       <location glob="packages/client/src/lib/*.test.ts">Utility tests</location>
     </locations>
     <ideas>
-      <idea ac="AC-2.14.1" test="settingsStore persistence test: set displayName, verify localStorage contains value under 'nameless-settings' key"/>
+      <idea ac="AC-2.14.1" test="settingsStore persistence test: set displayName, verify localStorage contains value under 'etch-settings' key"/>
       <idea ac="AC-2.14.1" test="JoinRoom test: verify displayName pre-fills from settingsStore on mount"/>
       <idea ac="AC-2.14.2" test="settingsStore test: setPreferredMicrophone persists to localStorage"/>
       <idea ac="AC-2.14.2" test="settingsStore test: setPreferredCamera persists to localStorage"/>

@@ -63,7 +63,7 @@
         <subtasks>
           <subtask>Create link generation utility function</subtask>
           <subtask>Support configurable base URL from settings/config</subtask>
-          <subtask>Default format: nameless://room/{roomId}</subtask>
+          <subtask>Default format: etch://room/{roomId}</subtask>
           <subtask>Alternative HTTP format for web sharing: https://{domain}/join/{roomId}</subtask>
         </subtasks>
       </task>
@@ -108,7 +108,7 @@
     <criterion id="AC-2.13.5" title="Link Format">
       <given>a room with ID abc-123-xyz</given>
       <when>the invite link is generated</when>
-      <then>the link format is nameless://room/abc-123-xyz (or configurable base URL)</then>
+      <then>the link format is etch://room/abc-123-xyz (or configurable base URL)</then>
       <and>the link is valid and can be used to join the room</and>
     </criterion>
   </acceptanceCriteria>
@@ -117,13 +117,13 @@
     <docs>
       <doc>
         <path>docs/prd.md</path>
-        <title>NAMELESS Product Requirements Document</title>
+        <title>ETCH Product Requirements Document</title>
         <section>Meeting &amp; Room Management</section>
         <snippet>FR4: Hosts can generate and share room invite links. Key interactions: Launch app → Create room → Share link → Done.</snippet>
       </doc>
       <doc>
         <path>docs/architecture.md</path>
-        <title>NAMELESS Architecture</title>
+        <title>ETCH Architecture</title>
         <section>API Contracts</section>
         <snippet>POST /api/rooms returns {roomId, token, livekitUrl}. Room ID format: xxx-xxx-xxx (lowercase + numbers).</snippet>
       </doc>
@@ -137,7 +137,7 @@
         <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
         <title>Epic 2 Technical Specification</title>
         <section>AC-2.13: Invite Link</section>
-        <snippet>"Invite" button/shortcut shows modal with room link. "Copy Link" copies to clipboard with toast. Link format: nameless://room/{roomId} or configurable.</snippet>
+        <snippet>"Invite" button/shortcut shows modal with room link. "Copy Link" copies to clipboard with toast. Link format: etch://room/{roomId} or configurable.</snippet>
       </doc>
     </docs>
     <code>
@@ -194,7 +194,7 @@
     <constraint source="architecture">Store must remain stateless for invite link - generate from roomId only</constraint>
     <constraint source="ux-spec">Keyboard shortcut: Cmd+I (macOS) / Ctrl+I (Windows) to open modal</constraint>
     <constraint source="ux-spec">Toast notifications via sonner for copy feedback</constraint>
-    <constraint source="tech-spec">Link format: nameless://room/{roomId} as default, configurable for HTTPS</constraint>
+    <constraint source="tech-spec">Link format: etch://room/{roomId} as default, configurable for HTTPS</constraint>
     <constraint source="dev-notes">Use Tauri clipboard API when available, fallback to navigator.clipboard</constraint>
     <constraint source="dev-notes">Auto-copy on room creation only for host - track state to prevent duplicates</constraint>
     <constraint source="testing">354 client tests currently passing - maintain coverage level</constraint>
@@ -257,7 +257,7 @@
       <idea ac="AC-2.13.3">Auto-copy does not duplicate on re-render</idea>
       <idea ac="AC-2.13.4">Cmd+I / Ctrl+I keyboard shortcut opens modal</idea>
       <idea ac="AC-2.13.4">Keyboard shortcut prevented when input focused</idea>
-      <idea ac="AC-2.13.5">generateInviteLink returns nameless://room/{roomId} by default</idea>
+      <idea ac="AC-2.13.5">generateInviteLink returns etch://room/{roomId} by default</idea>
       <idea ac="AC-2.13.5">generateInviteLink supports HTTPS format with domain config</idea>
       <idea ac="accessibility">Dialog has proper role="dialog"</idea>
       <idea ac="accessibility">Dialog has accessible name</idea>

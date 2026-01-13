@@ -265,7 +265,7 @@ export type ParticipantColor = (typeof PARTICIPANT_COLORS)[number]
       <dependency name="zustand" version="^5.0.9" purpose="State management">
         Already installed in packages/client/package.json
       </dependency>
-      <dependency name="@nameless/shared" version="workspace:*" purpose="Shared types (Stroke, Point)">
+      <dependency name="@etch/shared" version="workspace:*" purpose="Shared types (Stroke, Point)">
         Already configured as workspace dependency
       </dependency>
     </runtime>
@@ -289,7 +289,7 @@ export type ParticipantColor = (typeof PARTICIPANT_COLORS)[number]
       Follow existing Zustand store pattern from roomStore.ts and screenShareStore.ts
     </constraint>
     <constraint type="types">
-      Import Stroke, Point from @nameless/shared
+      Import Stroke, Point from @etch/shared
       Define Tool type locally: 'select' | 'pen' | 'highlighter' | 'eraser'
     </constraint>
     <constraint type="naming">

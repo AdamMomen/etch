@@ -142,7 +142,7 @@
         <package name="zustand" version="^5.0.9" />
         <package name="sonner" version="^2.0.7" />
         <package name="lucide-react" version="^0.555.0" />
-        <package name="@nameless/shared" version="workspace:*" />
+        <package name="@etch/shared" version="workspace:*" />
       </client>
       <dev>
         <package name="vitest" version="^2.0.0" />

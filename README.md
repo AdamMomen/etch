@@ -1,4 +1,4 @@
-# Nameless
+# Etch
 
 > Self-hosted video conferencing powered by LiveKit
 
@@ -8,7 +8,7 @@ A modern, privacy-focused video conferencing solution that you can deploy to you
 
 Deploy your own instance with one click:
 
-[![Deploy on Coolify](https://cdn.coollabs.io/assets/coolify/deploy-button.svg)](https://app.coolify.io/deploy?repository=https://github.com/adammomen/nameless)
+[![Deploy on Coolify](https://cdn.coollabs.io/assets/coolify/deploy-button.svg)](https://app.coolify.io/deploy?repository=https://github.com/adammomen/etch)
 
 **What you get:**
 - ✅ Full video conferencing platform
@@ -39,7 +39,7 @@ Deploy your own instance with one click:
        │ HTTPS
        ▼
 ┌─────────────┐
-│  Nameless   │ ← Web application (React + Hono)
+│    Etch     │ ← Web application (React + Hono)
 │     App     │
 └──────┬──────┘
        │ WebSocket
@@ -62,8 +62,8 @@ Deploy your own instance with one click:
 
 ```bash
 # Clone repository
-git clone https://github.com/adammomen/nameless.git
-cd nameless
+git clone https://github.com/adammomen/etch.git
+cd etch
 
 # Install dependencies
 pnpm install
@@ -153,7 +153,7 @@ pnpm test packages/client
 | `LIVEKIT_API_SECRET` | LiveKit API secret | Auto-generated in Docker |
 | `LIVEKIT_WS_URL` | LiveKit WebSocket URL | `ws://livekit:7880` |
 | `APP_URL` | Public URL of your app | `http://localhost:3000` |
-| `DATABASE_URL` | Database connection | `sqlite:///app/data/nameless.db` |
+| `DATABASE_URL` | Database connection | `sqlite:///app/data/etch.db` |
 | `REDIS_URL` | Redis connection | `redis://redis:6379` |
 
 ## 🔄 Updates
@@ -192,8 +192,8 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## 📧 Support
 
 - 📖 [Documentation](./DEPLOYMENT.md)
-- 🐛 [Report Issues](https://github.com/adammomen/nameless/issues)
-- 💬 [Discussions](https://github.com/adammomen/nameless/discussions)
+- 🐛 [Report Issues](https://github.com/adammomen/etch/issues)
+- 💬 [Discussions](https://github.com/adammomen/etch/discussions)
 
 ---
 

@@ -12,7 +12,7 @@
   <story>
     <asA>user</asA>
     <iWant>a home screen where I can create a new meeting or join an existing one</iWant>
-    <soThat>I have a clear entry point to start using NAMELESS</soThat>
+    <soThat>I have a clear entry point to start using ETCH</soThat>
     <tasks>
       <task id="1" status="pending">
         <title>Create Home Screen component structure</title>
@@ -26,7 +26,7 @@
       <task id="2" status="pending">
         <title>Implement visual layout</title>
         <subtasks>
-          <subtask>Add NAMELESS logo/title centered at top</subtask>
+          <subtask>Add ETCH logo/title centered at top</subtask>
           <subtask>Create centered card container for meeting actions</subtask>
           <subtask>Add "Start Meeting" button with primary/accent styling</subtask>
           <subtask>Add divider with "or" text</subtask>
@@ -40,7 +40,7 @@
         <subtasks>
           <subtask>Create controlled input state for room code</subtask>
           <subtask>Implement parseRoomId(input: string): string utility function</subtask>
-          <subtask>Handle nameless://room/{id} format</subtask>
+          <subtask>Handle etch://room/{id} format</subtask>
           <subtask>Handle https://*.*/room/{id} format</subtask>
           <subtask>Handle direct room ID format</subtask>
           <subtask>Enable/disable Join button based on input value</subtask>
@@ -102,9 +102,9 @@
 
   <acceptanceCriteria>
     <ac id="2.3.1" title="Home Screen Layout">
-      <given>I launch the NAMELESS application</given>
+      <given>I launch the ETCH application</given>
       <when>the app opens</when>
-      <then>I see the home screen with: NAMELESS logo/title, "Start Meeting" primary button, "Join Meeting" input field with room code/link, "Join" button (enabled when input has value)</then>
+      <then>I see the home screen with: ETCH logo/title, "Start Meeting" primary button, "Join Meeting" input field with room code/link, "Join" button (enabled when input has value)</then>
     </ac>
     <ac id="2.3.2" title="Start Meeting Flow">
       <given>I'm on the home screen</given>
@@ -124,7 +124,7 @@
     <ac id="2.3.5" title="Room Code Parsing">
       <given>I enter a room code in various formats</given>
       <when>the app parses the input</when>
-      <then>it extracts the room ID correctly from: nameless://room/abc-123-xyz → abc-123-xyz, https://*/room/abc-123-xyz → abc-123-xyz, abc-123-xyz → abc-123-xyz</then>
+      <then>it extracts the room ID correctly from: etch://room/abc-123-xyz → abc-123-xyz, https://*/room/abc-123-xyz → abc-123-xyz, abc-123-xyz → abc-123-xyz</then>
     </ac>
     <ac id="2.3.6" title="Dark Theme Styling">
       <given>I view the home screen</given>
@@ -155,7 +155,7 @@
     </docs>
     <code>
       <file path="packages/client/src/App.tsx" kind="component" symbol="App" reason="EXISTING HOME SCREEN - Has basic layout with logo, Create/Join buttons. Refactor to use router and add input field.">
-        <note>Already has NAMELESS logo, Video icon, and basic button layout. Needs: room code input, API integration, routing.</note>
+        <note>Already has ETCH logo, Video icon, and basic button layout. Needs: room code input, API integration, routing.</note>
       </file>
       <file path="packages/client/src/main.tsx" kind="entry" symbol="main" reason="Entry point - will need React Router setup">
         <note>Currently renders App directly. Will need BrowserRouter wrapper.</note>
@@ -186,7 +186,7 @@
         <package name="@radix-ui/react-slot" version="^1.2.4" note="For Button asChild" />
         <package name="class-variance-authority" version="^0.7.1" note="For component variants" />
         <package name="tailwind-merge" version="^3.4.0" note="For cn() utility" />
-        <package name="@nameless/shared" version="workspace:*" note="For CreateRoomRequest/Response types" />
+        <package name="@etch/shared" version="workspace:*" note="For CreateRoomRequest/Response types" />
         <package name="react-router-dom" version="TBD" note="NEEDED - For routing. Not yet installed." />
         <package name="sonner" version="TBD" note="CONSIDER - For toast notifications. Check if shadcn/ui has built-in toast." />
       </node>
@@ -214,7 +214,7 @@
     </interface>
     <interface name="parseRoomId" kind="utility function" path="packages/client/src/utils/roomId.ts">
       <signature>parseRoomId(input: string): string</signature>
-      <note>Extract room ID from nameless://room/{id}, https://*/room/{id}, or direct ID</note>
+      <note>Extract room ID from etch://room/{id}, https://*/room/{id}, or direct ID</note>
     </interface>
     <interface name="useSettingsStore" kind="zustand store" path="packages/client/src/stores/settingsStore.ts">
       <signature>useSettingsStore(): { displayName: string, setDisplayName: (name: string) => void, apiBaseUrl: string }</signature>
@@ -243,7 +243,7 @@
       <idea acId="2.3.3">Test Join button is disabled when input is empty</idea>
       <idea acId="2.3.3">Test Join button becomes enabled when input has value</idea>
       <idea acId="2.3.4">Test Join button click navigates to join flow with parsed room ID</idea>
-      <idea acId="2.3.5">Test parseRoomId with nameless:// protocol URL</idea>
+      <idea acId="2.3.5">Test parseRoomId with etch:// protocol URL</idea>
       <idea acId="2.3.5">Test parseRoomId with https:// URL</idea>
       <idea acId="2.3.5">Test parseRoomId with direct room ID</idea>
       <idea acId="2.3.7">Test Enter key in input triggers join action</idea>

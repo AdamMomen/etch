@@ -1,7 +1,7 @@
 # Sprint Change Proposal - Public Showcase Readiness
 
 **Date:** 2026-01-06
-**Project:** Etch (nameless)
+**Project:** Etch (etch)
 **Author:** John (PM Agent) + BMad
 **Trigger:** Public showcase deadline (this week) - live demo to potential users
 

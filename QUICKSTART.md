@@ -1,4 +1,4 @@
-# 🚀 Nameless - Quick Start Guide
+# 🚀 Etch - Quick Start Guide
 
 ## What Just Happened?
 
@@ -9,7 +9,7 @@ Your repository is now configured for **true one-click deployment** to Coolify w
 #### 1. **Complete Docker Stack** (`docker-compose.yml`)
 - ✅ LiveKit media server (for video/audio)
 - ✅ Redis (for LiveKit scalability)
-- ✅ Your Nameless app
+- ✅ Your Etch app
 - ✅ Auto-generated API credentials
 - ✅ Persistent volumes for data
 
@@ -76,10 +76,10 @@ git push origin v1.0.0
 echo $GITHUB_TOKEN | docker login ghcr.io -u YOUR_USERNAME --password-stdin
 
 # Build
-docker build -t ghcr.io/YOUR_USERNAME/nameless:latest .
+docker build -t ghcr.io/YOUR_USERNAME/etch:latest .
 
 # Push
-docker push ghcr.io/YOUR_USERNAME/nameless:latest
+docker push ghcr.io/YOUR_USERNAME/etch:latest
 ```
 
 ### Step 3: Update docker-compose.yml Image Reference
@@ -88,10 +88,10 @@ Open `docker-compose.yml` and update line 68:
 
 ```yaml
 # Change this:
-image: ghcr.io/adammomen/nameless:latest
+image: ghcr.io/adammomen/etch:latest
 
 # To your repository:
-image: ghcr.io/YOUR_USERNAME/nameless:latest
+image: ghcr.io/YOUR_USERNAME/etch:latest
 ```
 
 ### Step 4: Deploy to Coolify
@@ -124,7 +124,7 @@ image: ghcr.io/YOUR_USERNAME/nameless:latest
 ## 📁 File Structure Overview
 
 ```
-nameless/
+etch/
 ├── .github/
 │   └── workflows/
 │       └── docker-publish.yml      # Auto-builds Docker images
@@ -174,7 +174,7 @@ In Coolify dashboard:
 In `docker-compose.yml`:
 ```yaml
 # Instead of :latest
-image: ghcr.io/YOUR_USERNAME/nameless:v1.0.0
+image: ghcr.io/YOUR_USERNAME/etch:v1.0.0
 ```
 
 ### Add More Services
@@ -185,7 +185,7 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=nameless
+      - POSTGRES_DB=etch
       - POSTGRES_PASSWORD=${DB_PASSWORD}
     volumes:
       - postgres-data:/var/lib/postgresql/data
@@ -272,6 +272,6 @@ Your repository is now:
 - **Coolify Docs:** https://coolify.io/docs
 - **LiveKit Docs:** https://docs.livekit.io
 - **Docker Compose:** https://docs.docker.com/compose/
-- **Your Issues:** https://github.com/adammomen/nameless/issues
+- **Your Issues:** https://github.com/adammomen/etch/issues
 
 Happy hosting! 🚀

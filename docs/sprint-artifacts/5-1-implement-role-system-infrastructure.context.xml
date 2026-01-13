@@ -14,7 +14,7 @@
     <iWant>a robust role system that controls participant capabilities</iWant>
     <soThat>permissions can be enforced consistently across the application</soThat>
     <tasks>
-      - Task 1: Define Role types in @nameless/shared (AC: 5.1.1)
+      - Task 1: Define Role types in @etch/shared (AC: 5.1.1)
         - Create packages/shared/src/types/permissions.ts
         - Define Role type as union: 'host' | 'sharer' | 'annotator' | 'viewer'
         - Export from packages/shared/src/index.ts
@@ -99,7 +99,7 @@
         <path>docs/epics/epic-5-permissions-moderation.md</path>
         <title>Epic 5: Permissions &amp; Moderation - Story 5.1</title>
         <section>Acceptance Criteria</section>
-        <snippet>Role information stored in LiveKit participant metadata (source of truth) and local roomStore (for UI). Helper functions: canAnnotate(role), canDeleteStroke(role, stroke, userId), canClearAll(role), canModerateUsers(role). Implemented in @nameless/shared for client and server.</snippet>
+        <snippet>Role information stored in LiveKit participant metadata (source of truth) and local roomStore (for UI). Helper functions: canAnnotate(role), canDeleteStroke(role, stroke, userId), canClearAll(role), canModerateUsers(role). Implemented in @etch/shared for client and server.</snippet>
       </doc>
     </docs>
     <code>

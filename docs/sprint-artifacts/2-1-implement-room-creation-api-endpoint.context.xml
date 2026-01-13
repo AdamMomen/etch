@@ -216,7 +216,7 @@
           <package name="hono" version="^4.6.0">HTTP framework</package>
           <package name="@hono/node-server" version="^1.13.0">Node.js adapter</package>
           <package name="zod" version="^3.23.0">Schema validation</package>
-          <package name="@nameless/shared" version="workspace:*">Shared types</package>
+          <package name="@etch/shared" version="workspace:*">Shared types</package>
         </existing>
         <toInstall>
           <package name="livekit-server-sdk" version="^2.x">Token generation</package>

@@ -69,7 +69,7 @@ export function SetupBanner() {
         <AlertDialogHeader>
           <AlertDialogTitle className="text-2xl">🎉 Setup Complete!</AlertDialogTitle>
           <AlertDialogDescription className="text-base">
-            Your Nameless video conferencing system has been deployed successfully.
+            Your Etch video conferencing system has been deployed successfully.
             Here are your auto-generated LiveKit credentials:
           </AlertDialogDescription>
         </AlertDialogHeader>

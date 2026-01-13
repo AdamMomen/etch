@@ -11,7 +11,7 @@
 
   <story>
     <asA>screen sharer</asA>
-    <iWant>the Nameless window to automatically minimize when I start sharing and restore when I stop</iWant>
+    <iWant>the Etch window to automatically minimize when I start sharing and restore when I stop</iWant>
     <soThat>my shared content is visible and I can focus on presenting without the meeting UI blocking my view</soThat>
     <tasks>
       <task id="1" ac="3.9.4">Store window position/size before minimizing
@@ -61,13 +61,13 @@
 
   <acceptanceCriteria>
     <criterion id="AC-3.9.1" title="Main Window Minimizes on Share Start">
-      Given I'm in a meeting and initiate screen share, when I select a window/screen to share, then the main Nameless window automatically minimizes and the shared window/screen is brought to focus (foreground).
+      Given I'm in a meeting and initiate screen share, when I select a window/screen to share, then the main Etch window automatically minimizes and the shared window/screen is brought to focus (foreground).
     </criterion>
     <criterion id="AC-3.9.2" title="Shared Content Focused">
       Given I selected a window to share, when the screen share starts, then the selected window is brought to the foreground and the system UI elements (floating bar, border, overlay) appear.
     </criterion>
     <criterion id="AC-3.9.3" title="Main Window Restores on Share Stop">
-      Given I'm actively sharing my screen with main window minimized, when I stop sharing (via menu bar Stop Sharing), then the main Nameless window restores from minimized state and all native windows (border, overlay) are dismissed.
+      Given I'm actively sharing my screen with main window minimized, when I stop sharing (via menu bar Stop Sharing), then the main Etch window restores from minimized state and all native windows (border, overlay) are dismissed.
     </criterion>
     <criterion id="AC-3.9.4" title="Window Returns to Previous Position/Size">
       Given the main window was minimized during screen share, when the window restores, then the window returns to its exact previous position and size and no visual artifacts or position drift occurs.
@@ -84,10 +84,10 @@
     <docs>
       <doc path="docs/architecture.md" title="Architecture" section="ADR-003: Hybrid Rendering, ADR-011: Menu Bar Control">
         ADR-003 defines window z-order (floating bar > overlay > border > content) and main window minimizes during share.
-        ADR-011 (2025-12-21) replaces Transform Mode with Menu Bar control - native tray icon with 3 actions (Open Nameless, Stop Sharing, Leave Meeting).
+        ADR-011 (2025-12-21) replaces Transform Mode with Menu Bar control - native tray icon with 3 actions (Open Etch, Stop Sharing, Leave Meeting).
       </doc>
       <doc path="docs/prd.md" title="PRD" section="FR21">
-        FR21: When sharing begins, the main Nameless window automatically minimizes and the shared window/screen is focused.
+        FR21: When sharing begins, the main Etch window automatically minimizes and the shared window/screen is focused.
       </doc>
       <doc path="docs/epics/epic-3-screen-sharing.md" title="Epic 3" section="Story 3.9">
         Story definition with acceptance criteria for auto-minimize/restore behavior.

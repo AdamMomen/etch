@@ -12,7 +12,7 @@
   <story>
     <asA>developer</asA>
     <iWant>a properly structured monorepo with a working Tauri desktop application</iWant>
-    <soThat>I have a foundation to build all NAMELESS features upon</soThat>
+    <soThat>I have a foundation to build all ETCH features upon</soThat>
     <tasks>
       <task id="1" title="Initialize Monorepo Structure" ac="1.1.1, 1.1.2">
         <subtask>Create root package.json with workspaces configuration</subtask>
@@ -24,7 +24,7 @@
       <task id="2" title="Create Tauri Desktop Application" ac="1.1.3">
         <subtask>Run npx create-tauri-ui@latest in packages/client with Vite + React + pnpm</subtask>
         <subtask>Verify Tauri 2.0 is installed (check src-tauri/Cargo.toml)</subtask>
-        <subtask>Configure tauri.conf.json with app name "NAMELESS"</subtask>
+        <subtask>Configure tauri.conf.json with app name "ETCH"</subtask>
         <subtask>Verify native window controls work via tauri-controls</subtask>
         <subtask>Test pnpm dev opens desktop window</subtask>
       </task>
@@ -108,11 +108,11 @@
 
   <artifacts>
     <docs>
-      <doc path="docs/architecture.md" title="Architecture" section="Project Initialization" snippet="First implementation story should execute: npx create-tauri-ui@latest nameless-client. Select Vite + React template with pnpm package manager. This establishes Tauri 2.0, shadcn/ui, Tailwind CSS, Vite, TypeScript, Lucide icons, and tauri-controls." />
+      <doc path="docs/architecture.md" title="Architecture" section="Project Initialization" snippet="First implementation story should execute: npx create-tauri-ui@latest etch-client. Select Vite + React template with pnpm package manager. This establishes Tauri 2.0, shadcn/ui, Tailwind CSS, Vite, TypeScript, Lucide icons, and tauri-controls." />
       <doc path="docs/architecture.md" title="Architecture" section="Project Structure" snippet="Defines target monorepo structure with packages/client (Tauri desktop), packages/server (Hono API), packages/shared (types & utilities), pnpm-workspace.yaml, tsconfig.base.json, and package.json." />
       <doc path="docs/architecture.md" title="Architecture" section="ADR-001: Tauri over Electron" snippet="Use Tauri 2.0 instead of Electron. Rationale: 10x smaller bundle (~2MB vs ~150MB), lower memory footprint, Rust backend enables native optimizations." />
       <doc path="docs/architecture.md" title="Architecture" section="Development Environment" snippet="Prerequisites: Node.js 20 LTS, pnpm 8+, Rust 1.70+. Setup: pnpm install, pnpm dev (concurrent client+server). Build: pnpm build:client produces .dmg/.msi." />
-      <doc path="docs/architecture.md" title="Architecture" section="Consistency Rules - Naming" snippet="Files (components): PascalCase. Files (utils/hooks): camelCase. Files (tests): co-located with .test.ts. Path aliases: @/ for client internals, @nameless/shared for cross-package imports." />
+      <doc path="docs/architecture.md" title="Architecture" section="Consistency Rules - Naming" snippet="Files (components): PascalCase. Files (utils/hooks): camelCase. Files (tests): co-located with .test.ts. Path aliases: @/ for client internals, @etch/shared for cross-package imports." />
       <doc path="docs/ux-design-specification.md" title="UX Design" section="3.1 Color System - Dark Theme" snippet="--background: #09090b; --background-subtle: #0a0a0c; --card: #0c0c0e; --text-primary: #fafafa; --accent: #8b5cf6. Dark mode is default theme." />
       <doc path="docs/ux-design-specification.md" title="UX Design" section="1.1 Design System Choice" snippet="Selected: shadcn/ui + Tailwind CSS. Rationale: Matches developer tool aesthetic, dark mode built-in, built on Radix UI primitives, highly customizable. Tauri UI template provides native window controls." />
       <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Tech Spec" section="Dependencies" snippet="Core: tauri 2.0.x, react 18.x, vite 5.x, typescript 5.x, zustand 5.x, tailwindcss 3.x. Dev: eslint 9.x, prettier 3.x, vitest 2.x." />
@@ -149,7 +149,7 @@
   <constraints>
     <constraint source="Architecture">Use pnpm workspaces for monorepo management - not npm/yarn workspaces</constraint>
     <constraint source="Architecture">TypeScript strict mode enabled (strict: true in tsconfig.base.json)</constraint>
-    <constraint source="Architecture">Path aliases: @/ for client-internal imports, @nameless/shared for cross-package</constraint>
+    <constraint source="Architecture">Path aliases: @/ for client-internal imports, @etch/shared for cross-package</constraint>
     <constraint source="Architecture">Test files co-located with source (e.g., App.test.tsx next to App.tsx)</constraint>
     <constraint source="UX Spec">Dark mode is default theme - light mode is optional</constraint>
     <constraint source="UX Spec">Background color must be #09090b (--background token)</constraint>

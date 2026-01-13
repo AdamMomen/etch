@@ -13,7 +13,7 @@ Epic 5 implements a comprehensive role-based permissions system and moderation t
 
 The permissions system builds on the existing authentication infrastructure (LiveKit tokens from server) and extends it with role-based access control enforced both client-side (for UX) and server-side (via DataTrack message validation). The architecture follows a distributed permissions model where roles are stored in LiveKit participant metadata (source of truth) and synchronized to client state stores.
 
-This epic transforms NAMELESS from an open collaboration tool into a professional meeting platform suitable for team environments where control and moderation are essential.
+This epic transforms ETCH from an open collaboration tool into a professional meeting platform suitable for team environments where control and moderation are essential.
 
 ## Objectives and Scope
 
@@ -52,13 +52,13 @@ This epic transforms NAMELESS from an open collaboration tool into a professiona
 
 ## System Architecture Alignment
 
-This epic integrates with the existing NAMELESS architecture:
+This epic integrates with the existing ETCH architecture:
 
 **Components Referenced:**
 
 | Component | Epic 5 Role |
 |-----------|-------------|
-| `@nameless/shared` | Define Role types, permission utilities (new) |
+| `@etch/shared` | Define Role types, permission utilities (new) |
 | `packages/server` | Validate role changes via DataTrack (extend) |
 | `packages/client/stores/roomStore` | Store participant roles (extend) |
 | `packages/client/stores/annotationStore` | Enforce annotation permissions (extend) |
@@ -76,7 +76,7 @@ This epic integrates with the existing NAMELESS architecture:
 
 **Key Architectural Decision:**
 
-Roles are **not** enforced by LiveKit's built-in permissions (which are coarse-grained: publish/subscribe). Instead, we use LiveKit metadata as storage and implement fine-grained permission logic in application code. This gives us flexibility for NAMELESS-specific rules like "sharer can delete any stroke on their screen."
+Roles are **not** enforced by LiveKit's built-in permissions (which are coarse-grained: publish/subscribe). Instead, we use LiveKit metadata as storage and implement fine-grained permission logic in application code. This gives us flexibility for ETCH-specific rules like "sharer can delete any stroke on their screen."
 
 ## Detailed Design
 
@@ -84,8 +84,8 @@ Roles are **not** enforced by LiveKit's built-in permissions (which are coarse-g
 
 | Module | Responsibilities | Inputs | Outputs | Owner |
 |--------|------------------|--------|---------|-------|
-| `@nameless/shared/types/room.ts` | Define `Role` type, `Participant` interface extension | None | TypeScript types | Shared |
-| `@nameless/shared/permissions.ts` | Permission checking functions | `role: Role`, `userId: string`, `stroke?: Stroke` | `boolean` | Shared |
+| `@etch/shared/types/room.ts` | Define `Role` type, `Participant` interface extension | None | TypeScript types | Shared |
+| `@etch/shared/permissions.ts` | Permission checking functions | `role: Role`, `userId: string`, `stroke?: Stroke` | `boolean` | Shared |
 | `server/src/services/livekit.ts` | Set initial role in token metadata | `hostName`, `participantName`, `role` param | JWT token with role | Server |
 | `client/stores/roomStore.ts` | Track participant roles, handle role changes | DataTrack messages, LiveKit events | Role updates, UI notifications | Client |
 | `client/stores/annotationStore.ts` | Enforce annotation permissions | User actions, current role | Allow/deny actions | Client |
@@ -95,7 +95,7 @@ Roles are **not** enforced by LiveKit's built-in permissions (which are coarse-g
 
 ### Data Models and Contracts
 
-**Type Definitions (in `@nameless/shared`):**
+**Type Definitions (in `@etch/shared`):**
 
 ```typescript
 // Role enum - strict hierarchy
@@ -121,7 +121,7 @@ export interface RoomState {
 }
 ```
 
-**Permission Utility Functions (in `@nameless/shared/permissions.ts`):**
+**Permission Utility Functions (in `@etch/shared/permissions.ts`):**
 
 ```typescript
 /**
@@ -546,7 +546,7 @@ None - all functionality uses existing stack.
 
 | AC | Spec Section | Component(s) | Test Idea |
 |----|--------------|--------------|-----------|
-| AC-1 | Data Models, Workflows | `@nameless/shared/permissions.ts`, roomStore | Unit test all permission functions with role matrix |
+| AC-1 | Data Models, Workflows | `@etch/shared/permissions.ts`, roomStore | Unit test all permission functions with role matrix |
 | AC-2 | UI Components | ParticipantListItem, Sidebar | Visual test: all role badges render correctly |
 | AC-3 | Permission Enforcement | AnnotationCanvas, AnnotationToolbar | E2E: viewer joins → cannot draw, promoted → can draw |
 | AC-4 | Workflows | AnnotationStore, DataTrack handler | E2E: host clears all → all clients see clear, undo restores |
@@ -595,7 +595,7 @@ None - all functionality uses existing stack.
 **Target: 90% code coverage for permission logic**
 
 Files to test:
-- `@nameless/shared/permissions.ts` - All permission functions
+- `@etch/shared/permissions.ts` - All permission functions
 - `client/stores/roomStore.ts` - Role state management
 - `client/stores/annotationStore.ts` - Permission enforcement
 

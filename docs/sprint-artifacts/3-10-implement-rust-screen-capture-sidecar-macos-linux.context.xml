@@ -43,7 +43,7 @@
 
   <acceptanceCriteria>
     <criterion id="AC-3.10.1" title="Core Binary Launches with App">
-      <given>I launch the NAMELESS desktop app</given>
+      <given>I launch the ETCH desktop app</given>
       <when>The app initializes</when>
       <then>
         - Core binary is spawned as a child process

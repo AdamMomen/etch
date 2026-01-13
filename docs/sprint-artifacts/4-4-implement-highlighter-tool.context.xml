@@ -188,7 +188,7 @@
         <purpose>React component testing</purpose>
       </node>
       <workspace>
-        <package>@nameless/shared</package>
+        <package>@etch/shared</package>
         <types>Stroke, Point, PARTICIPANT_COLORS</types>
         <purpose>Shared types and constants</purpose>
       </workspace>

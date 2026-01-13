@@ -38,7 +38,7 @@
     </task>
     <task id="4" title="Add getParticipantColor utility (optional)">
       <subtask>Create shared utility function getParticipantColor(index: number) for consistent color assignment</subtask>
-      <subtask>Export from @nameless/shared for use in server and client</subtask>
+      <subtask>Export from @etch/shared for use in server and client</subtask>
     </task>
     <task id="5" title="Write unit tests">
       <subtask>Test color assignment in server roomStore (host gets first color, participants cycle)</subtask>
@@ -181,13 +181,13 @@ ctx.fill(path)
   </code-references>
 
   <interfaces>
-    <interface name="Participant" package="@nameless/shared">
+    <interface name="Participant" package="@etch/shared">
       <field name="id" type="string" description="Unique participant ID (UUID)" />
       <field name="name" type="string" description="Display name" />
       <field name="role" type="Role" description="'host' | 'sharer' | 'annotator' | 'viewer'" />
       <field name="color" type="string" description="Hex color for annotations (e.g., '#f97316')" />
     </interface>
-    <interface name="Stroke" package="@nameless/shared">
+    <interface name="Stroke" package="@etch/shared">
       <field name="id" type="string" />
       <field name="participantId" type="string" />
       <field name="tool" type="'pen' | 'highlighter'" />
@@ -204,7 +204,7 @@ ctx.fill(path)
 
   <constraints>
     <constraint type="pattern">Use Zustand for all client state management</constraint>
-    <constraint type="pattern">Export shared types and utilities from @nameless/shared</constraint>
+    <constraint type="pattern">Export shared types and utilities from @etch/shared</constraint>
     <constraint type="pattern">Use Vitest for all unit tests</constraint>
     <constraint type="pattern">Follow existing code style (no semicolons, 2-space indentation)</constraint>
     <constraint type="architectural">Colors assigned server-side, not client-side, to ensure consistency</constraint>
@@ -213,7 +213,7 @@ ctx.fill(path)
   </constraints>
 
   <dependencies>
-    <dependency name="@nameless/shared" version="workspace:*" type="internal">
+    <dependency name="@etch/shared" version="workspace:*" type="internal">
       <provides>PARTICIPANT_COLORS, ParticipantColor type, Participant type, Stroke type</provides>
     </dependency>
     <dependency name="zustand" version="^5.0.9" type="npm">
@@ -260,7 +260,7 @@ ctx.fill(path)
       Look for Room connection handler that sets localParticipant.
     </note>
     <note priority="low">
-      Consider adding getParticipantColor(index: number) utility to @nameless/shared
+      Consider adding getParticipantColor(index: number) utility to @etch/shared
       for DRY color assignment logic, but this is optional.
     </note>
   </implementation-notes>

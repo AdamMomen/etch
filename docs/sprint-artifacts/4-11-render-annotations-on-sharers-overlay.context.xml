@@ -12,7 +12,7 @@
   <story>
     <asA>screen sharer</asA>
     <iWant>to see annotations on my actual shared screen</iWant>
-    <soThat>I can see what others are pointing at without looking at NAMELESS</soThat>
+    <soThat>I can see what others are pointing at without looking at ETCH</soThat>
     <tasks>
       <task id="1" acs="4.11.1,4.11.2">
         <name>Subscribe overlay window to annotationStore</name>

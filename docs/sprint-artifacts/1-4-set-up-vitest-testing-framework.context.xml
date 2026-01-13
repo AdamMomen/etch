@@ -34,7 +34,7 @@
     <ac id="1.4.5" name="Coverage Reports">pnpm test:coverage generates HTML reports, 60% threshold for lines/branches/functions/statements</ac>
     <ac id="1.4.6" name="Placeholder Tests">At least one passing test in each package, client has React component test</ac>
     <ac id="1.4.7" name="Workspace Configuration">vitest.workspace.ts exists at root, orchestrates all package tests</ac>
-    <ac id="1.4.8" name="Test Data Factories">createMockStroke, createMockParticipant, createMockHost, createMockViewer available in @nameless/shared</ac>
+    <ac id="1.4.8" name="Test Data Factories">createMockStroke, createMockParticipant, createMockHost, createMockViewer available in @etch/shared</ac>
     <ac id="1.4.9" name="Client Test Setup">src/test/setup.ts with jest-dom matchers, afterEach cleanup, window.matchMedia mock, ResizeObserver mock</ac>
   </acceptanceCriteria>
 
@@ -117,7 +117,7 @@
       Vitest is the test runner with native Vite integration. Tests are co-located with source files using *.test.ts(x) pattern.
       Client uses jsdom environment with React Testing Library for component tests and @testing-library/jest-dom for extended matchers.
       Server and shared use node environment. Coverage threshold is 60% minimum for lines, branches, functions, and statements.
-      Test files should import from '../' not from '@nameless/shared' within the same package.
+      Test files should import from '../' not from '@etch/shared' within the same package.
     </standards>
     <locations>
       <location>packages/client/src/**/*.test.ts(x)</location>
@@ -126,7 +126,7 @@
     </locations>
     <ideas>
       <idea ac="1.4.1">Test that pnpm test from root runs all package tests</idea>
-      <idea ac="1.4.6">Create App.test.tsx - verify App component renders "NAMELESS" heading</idea>
+      <idea ac="1.4.6">Create App.test.tsx - verify App component renders "ETCH" heading</idea>
       <idea ac="1.4.8">Test createMockStroke returns valid Stroke with default values</idea>
       <idea ac="1.4.8">Test createMockParticipant returns Participant with default 'annotator' role</idea>
       <idea ac="1.4.8">Test createMockHost returns Participant with 'host' role</idea>

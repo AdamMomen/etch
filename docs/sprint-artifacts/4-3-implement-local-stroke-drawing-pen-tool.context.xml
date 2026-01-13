@@ -184,7 +184,7 @@
     <constraint type="performance">Local stroke render must be &lt; 16ms (same frame as pointer event)</constraint>
     <constraint type="performance">Point capture at 60fps during drag</constraint>
     <constraint type="testing">Co-locate tests in tests/ directory following existing pattern</constraint>
-    <constraint type="testing">Use createMockStroke(), createMockPoint() from @nameless/shared/test-utils</constraint>
+    <constraint type="testing">Use createMockStroke(), createMockPoint() from @etch/shared/test-utils</constraint>
     <constraint type="layer">Drawing input in useAnnotations hook, rendering in AnnotationCanvas (already implemented)</constraint>
     <constraint type="security">Only local participant with annotator role can draw - validate canAnnotate before starting stroke</constraint>
   </constraints>

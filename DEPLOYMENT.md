@@ -1,19 +1,19 @@
-# Deploying Nameless to Coolify
+# Deploying Etch to Coolify
 
-This guide explains how to deploy Nameless, a self-hosted video conferencing solution, to Coolify with **true one-click deployment**.
+This guide explains how to deploy Etch, a self-hosted video conferencing solution, to Coolify with **true one-click deployment**.
 
 ## 🚀 One-Click Deploy
 
 [![Deploy on Coolify](https://cdn.coollabs.io/assets/coolify/deploy-button.svg)](https://app.coolify.io/deploy)
 
-> **Note:** When clicking the deploy button, you'll need to provide your GitHub repository URL: `https://github.com/adammomen/nameless`
+> **Note:** When clicking the deploy button, you'll need to provide your GitHub repository URL: `https://github.com/adammomen/etch`
 
 ## ✨ What You Get
 
 After deployment, you'll have:
 
 - ✅ **Fully configured LiveKit media server** (for video/audio streaming)
-- ✅ **Nameless web application** (the meeting UI)
+- ✅ **Etch web application** (the meeting UI)
 - ✅ **Redis** (for LiveKit scalability)
 - ✅ **Auto-generated API credentials** (shown on first login)
 - ✅ **Automatic updates** (via Docker tag tracking)
@@ -42,7 +42,7 @@ Coolify will auto-detect environment variables. Set these **optional** values:
 |----------|---------|-------------|
 | `APP_PORT` | `3000` | Port for the web application |
 | `APP_URL` | `http://localhost:3000` | Public URL of your app (set to your domain) |
-| `DATABASE_URL` | `sqlite:///app/data/nameless.db` | Database connection string |
+| `DATABASE_URL` | `sqlite:///app/data/etch.db` | Database connection string |
 | `LIVEKIT_WS_URL` | `ws://livekit:7880` | Internal LiveKit WebSocket URL (leave default) |
 
 **Important:** The `LIVEKIT_API_KEY` and `LIVEKIT_API_SECRET` are **auto-generated** on first deployment. You don't need to set them manually!
@@ -77,7 +77,7 @@ After deployment:
 This deployment uses smart Docker tags:
 
 ```
-ghcr.io/adammomen/nameless:latest  # Auto-updates to newest version
+ghcr.io/adammomen/etch:latest  # Auto-updates to newest version
 ```
 
 When a new version is published:
@@ -140,7 +140,7 @@ To use PostgreSQL instead of SQLite:
 
 1. Add environment variable:
    ```
-   DATABASE_URL=postgresql://user:pass@host:5432/nameless
+   DATABASE_URL=postgresql://user:pass@host:5432/etch
    ```
 
 2. Coolify can provision a PostgreSQL service for you
@@ -260,8 +260,8 @@ Before going live:
 
 ## 📞 Support
 
-- **GitHub Issues:** [Report bugs](https://github.com/adammomen/nameless/issues)
-- **Documentation:** [Full docs](https://github.com/adammomen/nameless/docs)
+- **GitHub Issues:** [Report bugs](https://github.com/adammomen/etch/issues)
+- **Documentation:** [Full docs](https://github.com/adammomen/etch/docs)
 - **LiveKit Docs:** [livekit.io/docs](https://docs.livekit.io)
 
 ## 🎉 You're All Set!

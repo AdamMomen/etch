@@ -21,7 +21,7 @@ so that **permissions can be enforced consistently across the application**.
 
 ## Tasks / Subtasks
 
-- [x] **Task 1: Define Role types in @nameless/shared** (AC: 5.1.1)
+- [x] **Task 1: Define Role types in @etch/shared** (AC: 5.1.1)
   - [x] Create `packages/shared/src/types/permissions.ts` - ALREADY EXISTS in room.ts
   - [x] Define `Role` type as union: `'host' | 'sharer' | 'annotator' | 'viewer'` - DONE
   - [x] Export from `packages/shared/src/index.ts` - DONE
@@ -104,7 +104,7 @@ From **Tech Spec Epic 5** (docs/sprint-artifacts/tech-spec-epic-5.md):
 **Key Decision from Architecture Doc:**
 > Roles are NOT enforced by LiveKit's built-in permissions (which are coarse-grained: publish/subscribe). Instead, we use LiveKit metadata as storage and implement fine-grained permission logic in application code.
 
-This gives us flexibility for NAMELESS-specific rules like "sharer can delete any stroke on their screen."
+This gives us flexibility for ETCH-specific rules like "sharer can delete any stroke on their screen."
 
 ### Learnings from Previous Story
 
@@ -313,7 +313,7 @@ describe('canToggleRoomAnnotations', () => {
 - `vitest`: Unit test framework
 
 **Prerequisite Stories (All DONE):**
-- Story 1.3: Create Shared Types Package - DONE (provides @nameless/shared)
+- Story 1.3: Create Shared Types Package - DONE (provides @etch/shared)
 - Story 2.6: Integrate LiveKit Room Connection - DONE (provides participant metadata parsing)
 
 **Subsequent Stories (Depend on This):**

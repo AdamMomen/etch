@@ -184,7 +184,7 @@ interface Point {
   <tests>
     <standards>
       Vitest + React Testing Library for unit tests. Tests co-located with source files.
-      Use createMockStroke() and createMockPoint() from @nameless/shared/test-utils.
+      Use createMockStroke() and createMockPoint() from @etch/shared/test-utils.
       Mock annotationStore for isolated component testing.
       Test render behavior, CSS properties, conditional rendering, and cleanup.
     </standards>

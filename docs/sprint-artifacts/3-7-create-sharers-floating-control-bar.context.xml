@@ -27,7 +27,7 @@
         <title>Create native menu</title>
         <subtasks>
           <subtask>Build menu with MenuBuilder: disabled "Sharing Screen" status item</subtask>
-          <subtask>Add "Open Nameless" with Cmd+O accelerator</subtask>
+          <subtask>Add "Open Etch" with Cmd+O accelerator</subtask>
           <subtask>Add "Stop Sharing" with Cmd+S accelerator</subtask>
           <subtask>Add "Leave Meeting" with Cmd+Q accelerator</subtask>
         </subtasks>
@@ -35,7 +35,7 @@
       <task id="3" acs="3.7.3,3.7.4,3.7.5,3.7.6">
         <title>Implement menu actions</title>
         <subtasks>
-          <subtask>open_nameless: Show and focus main window</subtask>
+          <subtask>open_etch: Show and focus main window</subtask>
           <subtask>stop_sharing: Emit tray://stop-sharing event to frontend</subtask>
           <subtask>leave_meeting: Emit tray://leave-meeting event to frontend</subtask>
           <subtask>Frontend listens and handles events in MeetingRoom</subtask>
@@ -82,12 +82,12 @@
     <criterion id="3.7.2" title="Menu Shows on Click">
       <given>The tray icon is visible</given>
       <when>I click the tray icon</when>
-      <then>A native menu appears with: "Sharing Screen" status header (disabled), separator, "Open Nameless" (Cmd+O), "Stop Sharing" (Cmd+S), "Leave Meeting" (Cmd+Q)</then>
+      <then>A native menu appears with: "Sharing Screen" status header (disabled), separator, "Open Etch" (Cmd+O), "Stop Sharing" (Cmd+S), "Leave Meeting" (Cmd+Q)</then>
     </criterion>
-    <criterion id="3.7.3" title="Open Nameless Works">
+    <criterion id="3.7.3" title="Open Etch Works">
       <given>The menu is visible</given>
-      <when>I click "Open Nameless"</when>
-      <then>The main Nameless window shows, focuses, and I can access full meeting controls</then>
+      <when>I click "Open Etch"</when>
+      <then>The main Etch window shows, focuses, and I can access full meeting controls</then>
     </criterion>
     <criterion id="3.7.4" title="Stop Sharing Works">
       <given>The menu is visible</given>
@@ -107,7 +107,7 @@
     <criterion id="3.7.7" title="Tray Icon Hidden When Not Sharing">
       <given>I am not sharing my screen</given>
       <when>I look at the menu bar</when>
-      <then>No Nameless sharing indicator is visible</then>
+      <then>No Etch sharing indicator is visible</then>
     </criterion>
   </acceptanceCriteria>
 
@@ -259,7 +259,7 @@
       and BroadcastChannel code must be removed.
     </constraint>
     <constraint type="simplicity">
-      3 actions only: Open Nameless, Stop Sharing, Leave Meeting.
+      3 actions only: Open Etch, Stop Sharing, Leave Meeting.
       No mic/camera controls in tray menu (handled in main window).
     </constraint>
     <constraint type="platform">
@@ -300,7 +300,7 @@
     <interface type="menu-structure">
       <item id="status" text="Sharing Screen" enabled="false" indicator="red-dot"/>
       <separator/>
-      <item id="open" text="Open Nameless" accelerator="CmdOrCtrl+O"/>
+      <item id="open" text="Open Etch" accelerator="CmdOrCtrl+O"/>
       <item id="stop" text="Stop Sharing" accelerator="CmdOrCtrl+S"/>
       <item id="leave" text="Leave Meeting" accelerator="CmdOrCtrl+Q"/>
     </interface>

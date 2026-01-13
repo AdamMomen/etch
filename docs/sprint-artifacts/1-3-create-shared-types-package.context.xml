@@ -27,7 +27,7 @@
   </story>
 
   <acceptanceCriteria>
-    <criterion id="AC-1.3.1">Package Import - @nameless/shared importable in client and server with TypeScript recognition</criterion>
+    <criterion id="AC-1.3.1">Package Import - @etch/shared importable in client and server with TypeScript recognition</criterion>
     <criterion id="AC-1.3.2">Point and Stroke Types - Point{x,y,pressure?}, Stroke{id,participantId,tool,color,points,createdAt}</criterion>
     <criterion id="AC-1.3.3">Room and Participant Types - Role type, Participant interface, RoomState interface</criterion>
     <criterion id="AC-1.3.4">API Types - CreateRoomRequest/Response, JoinRoomRequest/Response, ApiError interfaces</criterion>
@@ -40,7 +40,7 @@
     <docs>
       <doc path="docs/architecture.md" title="Architecture" section="Data Architecture" snippet="Defines Point, Stroke, Participant, RoomState interfaces with normalized [0,1] coordinates for resolution-independence." />
       <doc path="docs/architecture.md" title="Architecture" section="Project Structure" snippet="Defines packages/shared/ structure with types/ and constants/ subdirectories." />
-      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Tech Spec" section="AC-1.4 Shared Types Package" snippet="Specifies @nameless/shared exports Point, Stroke, Participant, RoomState types and PARTICIPANT_COLORS, MAX_STROKE_POINTS constants." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Tech Spec" section="AC-1.4 Shared Types Package" snippet="Specifies @etch/shared exports Point, Stroke, Participant, RoomState types and PARTICIPANT_COLORS, MAX_STROKE_POINTS constants." />
       <doc path="docs/epics.md" title="Epics" section="Story 1.3" snippet="Complete story definition with acceptance criteria for shared types package." />
       <doc path="docs/prd.md" title="PRD" section="Annotation System" snippet="Defines annotation data model requirements: strokes with coordinates, participant colors, role-based permissions." />
     </docs>
@@ -112,7 +112,7 @@
       <location>packages/shared/src/**/*.test.ts</location>
     </locations>
     <ideas>
-      <idea ac="AC-1.3.1">Test that all types and constants can be imported from @nameless/shared</idea>
+      <idea ac="AC-1.3.1">Test that all types and constants can be imported from @etch/shared</idea>
       <idea ac="AC-1.3.2">Test Point type accepts x, y, optional pressure; Stroke type has all required fields</idea>
       <idea ac="AC-1.3.3">Test Role type accepts only valid roles; Participant and RoomState have correct shapes</idea>
       <idea ac="AC-1.3.4">Test API types match expected request/response shapes for room endpoints</idea>

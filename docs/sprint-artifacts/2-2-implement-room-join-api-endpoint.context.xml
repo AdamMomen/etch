@@ -153,7 +153,7 @@
         <package name="@hono/zod-validator" version="^0.7.5" />
         <package name="zod" version="^3.23.0" />
         <package name="livekit-server-sdk" version="^2.14.2" />
-        <package name="@nameless/shared" version="workspace:*" />
+        <package name="@etch/shared" version="workspace:*" />
         <package name="vitest" version="^2.0.0" dev="true" />
       </node>
     </dependencies>
@@ -209,7 +209,7 @@
   </tests>
 
   <devNotes>
-    <note priority="high">JoinRoomRequest and JoinRoomResponse types ALREADY EXIST in @nameless/shared - no need to create them</note>
+    <note priority="high">JoinRoomRequest and JoinRoomResponse types ALREADY EXIST in @etch/shared - no need to create them</note>
     <note priority="high">addParticipant function ALREADY EXISTS in roomStore.ts with color cycling - just use it</note>
     <note priority="high">Follow exact pattern from rooms.ts POST / handler for the join endpoint</note>
     <note>Main work: Add POST /:roomId/join route handler with Zod validation and 404 handling</note>

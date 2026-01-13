@@ -147,7 +147,7 @@
     </docs>
     <code>
       <file path="packages/client/src/stores/settingsStore.ts" kind="store" symbol="useSettingsStore" lines="1-36" reason="Extend this store to add preferredMicrophoneId and preferredCameraId state with persist middleware">
-        <note>Already has persist middleware configured with 'nameless-settings' key. Add new device preference fields here.</note>
+        <note>Already has persist middleware configured with 'etch-settings' key. Add new device preference fields here.</note>
       </file>
       <file path="packages/client/src/hooks/useLiveKit.ts" kind="hook" symbol="useLiveKit" lines="1-212" reason="Room instance needed for device switching. May need to expose room.switchActiveDevice() through this hook or create separate useDeviceSwitch hook">
         <note>Returns room object which has switchActiveDevice method. Consider whether to add device switching here or create dedicated hook.</note>
