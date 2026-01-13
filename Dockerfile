@@ -19,9 +19,9 @@ COPY packages/shared/package.json ./packages/shared/
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
-# Copy source code
+# Copy source code (each package has its own tsconfig)
 COPY packages ./packages
-COPY tsconfig.json ./
+COPY tsconfig.base.json ./
 
 # Build all packages
 RUN pnpm build:shared && pnpm build:client && pnpm build:server
