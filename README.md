@@ -88,6 +88,82 @@ pnpm dev
 
 Visit `http://localhost:3000` to start using the app.
 
+## 🔄 CI/CD Pipeline
+
+This project uses a modular CI/CD pipeline with path filtering for efficient builds:
+
+### Pipeline Architecture
+
+```
+CI Workflow
+├── Pre-commit (always runs)
+│   ├── ESLint
+│   ├── Prettier
+│   ├── TypeScript type checking
+│   ├── Rust formatting
+│   └── Rust clippy
+├── TypeScript Pipeline (runs when TS files change)
+│   ├── Lint & format check
+│   ├── Type checking
+│   ├── Tests with coverage
+│   └── Build (client + server)
+└── Rust Pipeline (runs when Rust files change)
+    ├── Format check (Linux)
+    ├── Clippy linting (Linux)
+    ├── Tests (Windows, macOS x86/ARM, Linux)
+    └── Build (Windows, macOS x86/ARM, Linux)
+```
+
+### Path Filtering
+
+The CI automatically detects which parts of the codebase changed:
+
+- **TypeScript changes** → Runs pre-commit + TypeScript pipeline only (~10-12 min)
+- **Rust changes** → Runs pre-commit + Rust pipeline only (~18-22 min)
+- **Both changed** → Runs all pipelines (~25-30 min)
+- **Docs only** → Runs pre-commit checks only (~3-4 min)
+
+This reduces CI time by **60-85%** for single-stack changes.
+
+### Pre-commit Hooks
+
+Install pre-commit hooks to catch issues before pushing:
+
+```bash
+# Install pre-commit framework
+pip install pre-commit
+
+# Install git hooks
+pre-commit install
+
+# Test all hooks
+pre-commit run --all-files
+```
+
+**What runs on commit:**
+- Prettier formatting (10-20 seconds)
+- ESLint linting (10-20 seconds)
+- Rust formatting (5-10 seconds)
+
+**What runs on push:**
+- TypeScript type checking (15-20 seconds)
+- Rust clippy (30+ seconds)
+
+Skip hooks for WIP commits:
+```bash
+git commit -m "WIP: work in progress" --no-verify
+```
+
+### Multi-Platform Rust Builds
+
+Rust code is automatically tested and built on:
+- ✅ Windows (x86_64-pc-windows-msvc)
+- ✅ macOS Intel (x86_64-apple-darwin)
+- ✅ macOS Apple Silicon (aarch64-apple-darwin)
+- ✅ Linux (x86_64-unknown-linux-gnu)
+
+This ensures cross-platform compatibility for the desktop app.
+
 ## 📦 Production Deployment
 
 ### Docker Compose (Recommended)

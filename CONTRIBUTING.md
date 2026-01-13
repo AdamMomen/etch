@@ -73,6 +73,104 @@ pnpm build:server      # Build server only
 - Run `pnpm lint` before committing
 - Run `pnpm format` to auto-fix formatting
 
+## CI/CD Guidelines
+
+### Pre-commit Hooks
+
+Install pre-commit hooks to catch issues locally before pushing:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+**Hooks that run on every commit:**
+- ✅ Prettier format check
+- ✅ ESLint linting
+- ✅ Rust formatting check
+
+**Hooks that run on push only:**
+- ✅ TypeScript type checking (requires `pnpm build:shared`)
+- ✅ Rust clippy linting
+
+**Skip hooks for WIP commits:**
+```bash
+git commit -m "WIP" --no-verify
+```
+
+### CI Pipeline Behavior
+
+The CI uses path filtering to run only relevant checks:
+
+| Change Type | What Runs | Time | Skips |
+|-------------|-----------|------|-------|
+| TypeScript only | Pre-commit + TS pipeline | 10-12 min | Rust pipeline |
+| Rust only | Pre-commit + Rust pipeline | 18-22 min | TS pipeline |
+| Both | Pre-commit + TS + Rust | 25-30 min | Nothing |
+| Docs only | Pre-commit | 3-4 min | All pipelines |
+| Workflow changes | Everything | 25-30 min | Nothing |
+
+### Pipeline Requirements
+
+All PRs must pass:
+
+1. ✅ **Pre-commit checks**
+   - ESLint (no warnings)
+   - Prettier (properly formatted)
+   - TypeScript compilation (no errors)
+   - Rust formatting (`cargo fmt`)
+   - Rust clippy (no warnings with `-D warnings`)
+
+2. ✅ **TypeScript pipeline** (if TS files changed)
+   - Lint passes
+   - Type check passes
+   - All tests pass
+   - Production build succeeds
+
+3. ✅ **Rust pipeline** (if Rust files changed)
+   - Format check passes (Linux)
+   - Clippy passes (Linux)
+   - Tests pass on all platforms (Windows, macOS x86/ARM, Linux)
+   - Release builds succeed on all platforms
+
+### Platform-Specific Testing
+
+Rust changes are tested on **4 platforms**:
+- Windows (x86_64-pc-windows-msvc)
+- macOS Intel (x86_64-apple-darwin)
+- macOS Apple Silicon (aarch64-apple-darwin)
+- Linux (x86_64-unknown-linux-gnu)
+
+This ensures the desktop app works cross-platform.
+
+### Manual Workflow Triggers
+
+You can manually trigger CI workflows from the Actions tab:
+- Go to **Actions** → Select workflow → **Run workflow**
+- Useful for re-running failed jobs or testing specific platforms
+
+### Local CI Simulation
+
+Before pushing, simulate CI locally:
+
+```bash
+# Pre-commit checks
+pre-commit run --all-files
+
+# TypeScript checks
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+
+# Rust checks (in packages/core)
+cd packages/core
+cargo fmt --check
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-features
+cargo build --release
+```
+
 ## Project Structure
 
 ```
