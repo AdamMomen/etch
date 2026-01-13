@@ -1,15 +1,19 @@
 name: Build and Publish Docker Image
 
 on:
+  # Run after CI workflow completes successfully
+  workflow_run:
+    workflows: ["CI - Tests, Linting & Type Checking"]
+    types:
+      - completed
+    branches:
+      - main
+      - greenfield
+
+  # Still allow direct triggers for version tags and manual runs
   push:
     tags:
       - 'v*.*.*'  # Trigger on version tags (e.g., v1.0.0)
-    branches:
-      - main       # Build on main branch pushes
-      - greenfield # Build on greenfield branch pushes
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:  # Allow manual triggering
 
 # Cancel in-progress runs when a new workflow with the same group is triggered
@@ -25,6 +29,8 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    # Only run if CI workflow succeeded (for workflow_run) or for direct triggers (tags/manual)
+    if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name != 'workflow_run' }}
     permissions:
       contents: read
       packages: write
