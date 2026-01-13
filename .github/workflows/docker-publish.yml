@@ -96,11 +96,15 @@ jobs:
           cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
 
+      - name: Set lowercase image name
+        id: image-name
+        run: echo "value=$(echo '${{ env.IMAGE_NAME }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Generate artifact attestation
         if: github.event_name != 'pull_request'
         uses: actions/attest-build-provenance@v1
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          subject-name: ${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}
           subject-digest: ${{ steps.build-and-push.outputs.digest }}
           push-to-registry: true
 
@@ -113,7 +117,7 @@ jobs:
             ## Docker Image
 
             ```bash
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.ref_name }}
+            docker pull ${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}:${{ github.ref_name }}
             ```
 
             ## Coolify Deployment
@@ -154,6 +158,9 @@ jobs:
 
       - name: Pull and test image
         run: |
+          # Lowercase the image name (Docker requires lowercase)
+          IMAGE_NAME_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+
           # Determine the tag to test
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG="${{ github.ref_name }}"
@@ -161,10 +168,10 @@ jobs:
             TAG="latest"
           fi
 
-          echo "Testing image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}"
+          echo "Testing image: ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${TAG}"
 
           # Pull the image
-          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}
+          docker pull ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${TAG}
 
           # Run basic health check
           docker run --rm \
@@ -175,7 +182,7 @@ jobs:
             --name etch-test \
             -d \
             -p 3000:3000 \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${TAG}
+            ${{ env.REGISTRY }}/${IMAGE_NAME_LOWER}:${TAG}
 
           # Wait for container to start
           sleep 10
