@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:docs.livekit.io)",
+      "mcp__livekit-docs__code_search",
+      "Bash(lsof:*)",
+      "Bash(curl:*)",
+      "Bash(cargo check:*)",
+      "Bash(pnpm test:*)",
+      "Bash(cargo build:*)"
+    ]
+  }
+}

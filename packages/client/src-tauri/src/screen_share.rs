@@ -1,0 +1,1134 @@
+/// Screen share related Tauri commands
+/// Provides platform detection, window management, and Core process management
+///
+/// Uses Tauri's sidecar mechanism so Core inherits screen recording permission
+/// from the parent ETCH app.
+
+use std::io::{BufRead, BufReader, Write};
+use std::sync::Mutex;
+use std::thread;
+use std::time::Duration;
+use tauri::webview::WebviewWindowBuilder;
+use tauri::{AppHandle, Emitter, Manager, State, WebviewUrl};
+use tauri_plugin_shell::process::CommandChild;
+use tauri_plugin_shell::ShellExt;
+
+#[cfg(unix)]
+use std::os::unix::net::UnixStream;
+
+// ============================================================================
+// Main Window Bounds Storage (Story 3.9)
+// ============================================================================
+
+/// Stored window bounds for restore after screen share ends
+#[derive(Debug, Clone, Copy)]
+pub struct WindowBounds {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+}
+
+/// State to hold the stored window bounds
+pub struct WindowBoundsState {
+    pub bounds: Mutex<Option<WindowBounds>>,
+}
+
+impl Default for WindowBoundsState {
+    fn default() -> Self {
+        Self {
+            bounds: Mutex::new(None),
+        }
+    }
+}
+
+/// Store the current window bounds before minimizing (AC-3.9.4)
+/// Called before minimize_main_window to preserve position/size for restore
+#[tauri::command]
+pub async fn store_window_bounds(
+    window: tauri::Window,
+    state: State<'_, WindowBoundsState>,
+) -> Result<(), String> {
+    let position = window.outer_position().map_err(|e| e.to_string())?;
+    let size = window.outer_size().map_err(|e| e.to_string())?;
+
+    let bounds = WindowBounds {
+        x: position.x,
+        y: position.y,
+        width: size.width,
+        height: size.height,
+    };
+
+    log::info!(
+        "Storing window bounds: ({}, {}) {}x{}",
+        bounds.x,
+        bounds.y,
+        bounds.width,
+        bounds.height
+    );
+
+    let mut stored = state.bounds.lock().map_err(|e| e.to_string())?;
+    *stored = Some(bounds);
+
+    Ok(())
+}
+
+/// State to hold the running Core process and socket connection
+pub struct CoreState {
+    /// The Core child process (sidecar)
+    pub child: Mutex<Option<CommandChild>>,
+    /// Path to the socket for communication
+    pub socket_path: Mutex<Option<String>>,
+    /// Socket connection for sending messages
+    #[cfg(unix)]
+    pub socket: Mutex<Option<UnixStream>>,
+    #[cfg(windows)]
+    pub socket: Mutex<Option<std::net::TcpStream>>,
+}
+
+impl Default for CoreState {
+    fn default() -> Self {
+        Self {
+            child: Mutex::new(None),
+            socket_path: Mutex::new(None),
+            socket: Mutex::new(None),
+        }
+    }
+}
+
+/// Get the current platform (windows, macos, linux)
+#[tauri::command]
+pub fn get_platform() -> String {
+    #[cfg(target_os = "windows")]
+    {
+        "windows".to_string()
+    }
+    #[cfg(target_os = "macos")]
+    {
+        "macos".to_string()
+    }
+    #[cfg(target_os = "linux")]
+    {
+        "linux".to_string()
+    }
+    #[cfg(not(any(target_os = "windows", target_os = "macos", target_os = "linux")))]
+    {
+        "unknown".to_string()
+    }
+}
+
+/// Minimize the main window when screen sharing starts
+#[tauri::command]
+pub async fn minimize_main_window(window: tauri::Window) -> Result<(), String> {
+    window.minimize().map_err(|e| e.to_string())
+}
+
+/// Restore the main window when screen sharing ends (AC-3.9.3, AC-3.9.4)
+/// Uses stored bounds from store_window_bounds to restore exact position/size
+#[tauri::command]
+pub async fn restore_main_window(
+    window: tauri::Window,
+    state: State<'_, WindowBoundsState>,
+) -> Result<(), String> {
+    // First unminimize
+    window.unminimize().map_err(|e| e.to_string())?;
+
+    // Then restore to stored bounds if available (AC-3.9.4)
+    let stored_bounds = {
+        let stored = state.bounds.lock().map_err(|e| e.to_string())?;
+        *stored
+    };
+
+    if let Some(bounds) = stored_bounds {
+        log::info!(
+            "Restoring window to stored bounds: ({}, {}) {}x{}",
+            bounds.x,
+            bounds.y,
+            bounds.width,
+            bounds.height
+        );
+
+        // Set position first, then size
+        window
+            .set_position(tauri::Position::Physical(tauri::PhysicalPosition {
+                x: bounds.x,
+                y: bounds.y,
+            }))
+            .map_err(|e| format!("Failed to restore position: {}", e))?;
+
+        window
+            .set_size(tauri::Size::Physical(tauri::PhysicalSize {
+                width: bounds.width,
+                height: bounds.height,
+            }))
+            .map_err(|e| format!("Failed to restore size: {}", e))?;
+
+        // Clear stored bounds after successful restore
+        {
+            let mut stored = state.bounds.lock().map_err(|e| e.to_string())?;
+            *stored = None;
+        }
+    } else {
+        log::info!("No stored bounds, just unminimizing");
+    }
+
+    // Focus the window
+    window.set_focus().map_err(|e| e.to_string())
+}
+
+/// Monitor info returned to frontend
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct WindowMonitorInfo {
+    /// Monitor position X
+    pub x: i32,
+    /// Monitor position Y
+    pub y: i32,
+    /// Monitor width
+    pub width: u32,
+    /// Monitor height
+    pub height: u32,
+}
+
+/// Get the monitor that the main window is currently on
+/// Returns the monitor's position and size so frontend can compare with selected screen
+#[tauri::command]
+pub async fn get_window_monitor(window: tauri::Window) -> Result<Option<WindowMonitorInfo>, String> {
+    // Get the monitor that contains the window
+    let monitor = window.current_monitor().map_err(|e| e.to_string())?;
+
+    match monitor {
+        Some(m) => {
+            let position = m.position();
+            let size = m.size();
+            Ok(Some(WindowMonitorInfo {
+                x: position.x,
+                y: position.y,
+                width: size.width,
+                height: size.height,
+            }))
+        }
+        None => Ok(None),
+    }
+}
+
+/// Generate a unique socket path for this instance
+fn generate_socket_path() -> String {
+    let pid = std::process::id();
+
+    #[cfg(unix)]
+    {
+        format!("/tmp/etch-core-{}.sock", pid)
+    }
+    #[cfg(windows)]
+    {
+        // On Windows, we use TCP instead of named pipes for simplicity
+        format!("127.0.0.1:{}", 9876 + (pid % 1000))
+    }
+}
+
+/// Spawn the Core binary using Tauri's sidecar mechanism
+/// This ensures Core inherits screen recording permission from the parent app
+#[tauri::command]
+pub async fn spawn_core(app: AppHandle, state: State<'_, CoreState>) -> Result<String, String> {
+    // Check if Core is already running
+    {
+        let child = state.child.lock().map_err(|e| e.to_string())?;
+        if child.is_some() {
+            return Err("Core already running".to_string());
+        }
+    }
+
+    // Generate socket path
+    let socket_path = generate_socket_path();
+    log::info!("Socket path: {}", socket_path);
+
+    // Store socket path
+    {
+        let mut path = state.socket_path.lock().map_err(|e| e.to_string())?;
+        *path = Some(socket_path.clone());
+    }
+
+    // Use Tauri's sidecar API - this spawns the binary with inherited permissions
+    // Enable debug logging for LiveKit/WebRTC to diagnose connection issues
+    let sidecar_command = app
+        .shell()
+        .sidecar("etch-core")
+        .map_err(|e| format!("Failed to create sidecar command: {}", e))?
+        .env("RUST_LOG", "etch_core=info,etch_core::capture=warn,livekit=warn,webrtc=warn")
+        .args([&socket_path]);
+
+    let (mut rx, child) = sidecar_command
+        .spawn()
+        .map_err(|e| format!("Failed to spawn Core sidecar: {}", e))?;
+
+    log::info!("Core sidecar spawned successfully");
+
+    // Store the child process
+    {
+        let mut state_child = state.child.lock().map_err(|e| e.to_string())?;
+        *state_child = Some(child);
+    }
+
+    // Spawn a task to handle sidecar stdout/stderr events
+    let app_handle = app.clone();
+    tauri::async_runtime::spawn(async move {
+        use tauri_plugin_shell::process::CommandEvent;
+
+        while let Some(event) = rx.recv().await {
+            match event {
+                CommandEvent::Stdout(line) => {
+                    let line_str = String::from_utf8_lossy(&line);
+                    log::info!("[Core] {}", line_str);
+                }
+                CommandEvent::Stderr(line) => {
+                    let line_str = String::from_utf8_lossy(&line);
+                    log::info!("Core: {}", line_str);
+
+                    // Check for capture permanent error or exhausted restart attempts
+                    if line_str.contains("Capture permanent error") || line_str.contains("Exhausted all restart attempts") {
+                        log::error!("Core capture permanent error detected - emitting event to frontend");
+                        // Emit capture error event to frontend so it can clean up overlay
+                        if let Err(e) = app_handle.emit("core-capture-error", line_str.to_string()) {
+                            log::error!("Failed to emit core-capture-error event to frontend: {}", e);
+                        }
+                    }
+                }
+                CommandEvent::Error(err) => {
+                    log::error!("Core error: {}", err);
+                }
+                CommandEvent::Terminated(payload) => {
+                    log::info!("Core terminated with code: {:?}", payload.code);
+                    // Emit termination event to frontend
+                    if let Err(e) = app_handle.emit("core-terminated", payload.code) {
+                        log::error!("Failed to emit core-terminated event to frontend: {}", e);
+                    }
+                    break;
+                }
+                _ => {}
+            }
+        }
+    });
+
+    // Wait a moment for Core to start its socket server
+    std::thread::sleep(Duration::from_millis(500));
+
+    // Connect to the socket
+    #[cfg(unix)]
+    {
+        let stream = UnixStream::connect(&socket_path)
+            .map_err(|e| format!("Failed to connect to Core socket: {}", e))?;
+
+        // Set non-blocking for reads
+        stream
+            .set_nonblocking(false)
+            .map_err(|e| format!("Failed to set non-blocking: {}", e))?;
+
+        // Clone for the reader thread
+        let reader_stream = stream
+            .try_clone()
+            .map_err(|e| format!("Failed to clone stream: {}", e))?;
+
+        // Store the writer stream
+        {
+            let mut socket = state.socket.lock().map_err(|e| e.to_string())?;
+            *socket = Some(stream);
+        }
+
+        // Spawn a thread to read from the socket and emit events
+        let app_handle = app.clone();
+        thread::spawn(move || {
+            let reader = BufReader::new(reader_stream);
+            for line in reader.lines() {
+                match line {
+                    Ok(json) => {
+                        log::info!("[Core →] {}", json);
+                        // Emit to frontend
+                        if let Err(e) = app_handle.emit("core-message", json) {
+                            log::error!("Failed to emit core-message: {}", e);
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Socket read error: {}", e);
+                        break;
+                    }
+                }
+            }
+            log::info!("Socket reader thread ended");
+        });
+    }
+
+    #[cfg(windows)]
+    {
+        // On Windows, parse the socket_path as host:port
+        let stream = std::net::TcpStream::connect(&socket_path)
+            .map_err(|e| format!("Failed to connect to Core socket: {}", e))?;
+
+        // Clone for the reader thread
+        let reader_stream = stream
+            .try_clone()
+            .map_err(|e| format!("Failed to clone stream: {}", e))?;
+
+        // Store the writer stream
+        {
+            let mut socket = state.socket.lock().map_err(|e| e.to_string())?;
+            *socket = Some(stream);
+        }
+
+        // Spawn a thread to read from the socket and emit events
+        let app_handle = app.clone();
+        thread::spawn(move || {
+            let reader = BufReader::new(reader_stream);
+            for line in reader.lines() {
+                match line {
+                    Ok(json) => {
+                        log::info!("[Core →] {}", json);
+                        if let Err(e) = app_handle.emit("core-message", json) {
+                            log::error!("Failed to emit core-message: {}", e);
+                        }
+                    }
+                    Err(e) => {
+                        log::error!("Socket read error: {}", e);
+                        break;
+                    }
+                }
+            }
+            log::info!("Socket reader thread ended");
+        });
+    }
+
+    log::info!("Core spawned and connected successfully");
+    Ok(socket_path)
+}
+
+/// Stop the Core process
+#[tauri::command]
+pub async fn kill_core(state: State<'_, CoreState>) -> Result<(), String> {
+    // Send shutdown message first
+    {
+        let mut socket = state.socket.lock().map_err(|e| e.to_string())?;
+        if let Some(ref mut stream) = *socket {
+            let msg = r#"{"type":"shutdown"}"#;
+            let _ = stream.write_all(format!("{}\n", msg).as_bytes());
+            let _ = stream.flush();
+        }
+        *socket = None;
+    }
+
+    // Wait a moment for graceful shutdown
+    std::thread::sleep(Duration::from_millis(200));
+
+    // Kill the process if still running
+    let mut child = state.child.lock().map_err(|e| e.to_string())?;
+    if let Some(process) = child.take() {
+        log::info!("Killing Core process...");
+        let _ = process.kill();
+    }
+
+    // Clean up socket path
+    {
+        let mut path = state.socket_path.lock().map_err(|e| e.to_string())?;
+        if let Some(socket_path) = path.take() {
+            #[cfg(unix)]
+            {
+                let _ = std::fs::remove_file(&socket_path);
+            }
+        }
+    }
+
+    log::info!("Core stopped");
+    Ok(())
+}
+
+/// Send a message to Core via socket
+#[tauri::command]
+pub fn send_core_message(state: State<'_, CoreState>, message: String) -> Result<(), String> {
+    log::info!("[Core ←] {}", message);
+    let mut socket = state.socket.lock().map_err(|e| e.to_string())?;
+
+    if let Some(ref mut stream) = *socket {
+        stream
+            .write_all(format!("{}\n", message).as_bytes())
+            .map_err(|e| format!("Failed to write to Core: {}", e))?;
+        stream.flush().map_err(|e| format!("Failed to flush: {}", e))?;
+        Ok(())
+    } else {
+        Err("Core not running".to_string())
+    }
+}
+
+/// Check if Core is running
+#[tauri::command]
+pub fn is_core_running(state: State<'_, CoreState>) -> bool {
+    let child = state.child.lock().ok();
+    child.map(|c| c.is_some()).unwrap_or(false)
+}
+
+/// Check screen recording permission
+#[tauri::command]
+pub fn check_screen_permission() -> bool {
+    #[cfg(target_os = "macos")]
+    {
+        // Permission is checked by Core process
+        // The sidecar inherits permission from the parent app
+        true
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        true
+    }
+}
+
+// ============================================================================
+// Annotation Overlay Window Management (Story 3.6)
+// ============================================================================
+
+/// Configuration for the overlay window bounds
+#[derive(Debug, Clone, serde::Deserialize, serde::Serialize)]
+pub struct OverlayBounds {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+}
+
+/// Create a transparent annotation overlay window positioned over the shared content
+/// This window is click-through and always-on-top, serving as a canvas for annotations
+#[tauri::command]
+pub async fn create_annotation_overlay(
+    app: AppHandle,
+    bounds: OverlayBounds,
+) -> Result<(), String> {
+    const OVERLAY_LABEL: &str = "annotation-overlay";
+
+    // Check if overlay already exists
+    if app.get_webview_window(OVERLAY_LABEL).is_some() {
+        return Err("Annotation overlay already exists".to_string());
+    }
+
+    log::info!(
+        "Creating annotation overlay at ({}, {}) with size {}x{}",
+        bounds.x,
+        bounds.y,
+        bounds.width,
+        bounds.height
+    );
+
+    // Build the overlay window
+    // Story 4.11: Load React route for annotation overlay with Perfect Freehand rendering
+    // The /overlay route renders the AnnotationOverlayPage component which subscribes
+    // to the annotationStore and renders strokes using the same Perfect Freehand settings
+    // as the viewer canvas, ensuring visual consistency (AC-4.11.2, AC-4.11.3)
+
+    // Determine the base URL (dev or production)
+    #[cfg(debug_assertions)]
+    let base_url = "http://localhost:5173";
+    #[cfg(not(debug_assertions))]
+    let base_url = "tauri://localhost";
+
+    let overlay_url = format!("{}/overlay", base_url);
+    log::info!("Creating overlay with URL: {}", overlay_url);
+
+    let url: url::Url = overlay_url.parse().map_err(|e| {
+        log::error!("Failed to parse overlay URL: {}", e);
+        format!("Invalid URL: {}", e)
+    })?;
+
+    log::info!("Building overlay window...");
+    let builder = WebviewWindowBuilder::new(&app, OVERLAY_LABEL, WebviewUrl::External(url))
+        .title("Annotation Overlay")
+        .inner_size(bounds.width as f64, bounds.height as f64)
+        .position(bounds.x as f64, bounds.y as f64)
+        .decorations(false)
+        .transparent(true)  // Requires macos-private-api feature
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .visible(true)
+        .focused(false)
+        .resizable(false);
+
+    log::info!("Calling builder.build()...");
+    let window = match builder.build() {
+        Ok(w) => {
+            log::info!("Window built successfully");
+            w
+        }
+        Err(e) => {
+            log::error!("builder.build() failed: {}", e);
+            return Err(format!("Failed to create overlay window: {}", e));
+        }
+    };
+
+    // Configure click-through behavior (platform-specific)
+    log::info!("Configuring click-through...");
+    if let Err(e) = configure_click_through(&window) {
+        log::error!("configure_click_through failed: {}", e);
+        return Err(e);
+    }
+
+    log::info!("Annotation overlay created successfully");
+    Ok(())
+}
+
+/// Destroy the annotation overlay window
+#[tauri::command]
+pub async fn destroy_annotation_overlay(app: AppHandle) -> Result<(), String> {
+    const OVERLAY_LABEL: &str = "annotation-overlay";
+
+    let window = app
+        .get_webview_window(OVERLAY_LABEL)
+        .ok_or_else(|| "Annotation overlay does not exist".to_string())?;
+
+    log::info!("Destroying annotation overlay");
+    window
+        .destroy()
+        .map_err(|e| format!("Failed to destroy overlay: {}", e))?;
+
+    log::info!("Annotation overlay destroyed successfully");
+    Ok(())
+}
+
+/// Update the position and size of the annotation overlay
+/// Used for tracking window position when sharing a specific window
+#[tauri::command]
+pub async fn update_overlay_bounds(app: AppHandle, bounds: OverlayBounds) -> Result<(), String> {
+    const OVERLAY_LABEL: &str = "annotation-overlay";
+
+    let window = app
+        .get_webview_window(OVERLAY_LABEL)
+        .ok_or_else(|| "Annotation overlay does not exist".to_string())?;
+
+    // Update position
+    window
+        .set_position(tauri::Position::Physical(tauri::PhysicalPosition {
+            x: bounds.x,
+            y: bounds.y,
+        }))
+        .map_err(|e| format!("Failed to set position: {}", e))?;
+
+    // Update size
+    window
+        .set_size(tauri::Size::Physical(tauri::PhysicalSize {
+            width: bounds.width,
+            height: bounds.height,
+        }))
+        .map_err(|e| format!("Failed to set size: {}", e))?;
+
+    Ok(())
+}
+
+/// Check if the annotation overlay exists
+#[tauri::command]
+pub fn is_overlay_active(app: AppHandle) -> bool {
+    app.get_webview_window("annotation-overlay").is_some()
+}
+
+/// Set overlay click-through mode (AC-4.11.5)
+/// When enabled=true, overlay passes mouse events through to windows below
+/// When enabled=false, overlay captures mouse events for sharer drawing (AC-4.11.6)
+#[tauri::command]
+pub async fn set_overlay_click_through(app: AppHandle, enabled: bool) -> Result<(), String> {
+    const OVERLAY_LABEL: &str = "annotation-overlay";
+
+    let window = app
+        .get_webview_window(OVERLAY_LABEL)
+        .ok_or_else(|| "Annotation overlay does not exist".to_string())?;
+
+    log::info!("Setting overlay click-through: {}", enabled);
+
+    if enabled {
+        // Enable click-through (default behavior)
+        configure_click_through(&window)?;
+    } else {
+        // Disable click-through for drawing mode
+        disable_click_through(&window)?;
+    }
+
+    Ok(())
+}
+
+/// Disable click-through for sharer drawing mode
+fn disable_click_through(window: &tauri::WebviewWindow) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        disable_click_through_macos(window)?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        disable_click_through_windows(window)?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        // Linux: click-through configuration is limited
+        let _ = window;
+        log::info!("Linux: Click-through toggle limited by window manager");
+    }
+
+    Ok(())
+}
+
+/// macOS: Disable ignoresMouseEvents to capture clicks
+#[cfg(target_os = "macos")]
+fn disable_click_through_macos(window: &tauri::WebviewWindow) -> Result<(), String> {
+    use objc::runtime::Object;
+    use objc::{msg_send, sel, sel_impl};
+    use objc::runtime::NO;
+
+    let ns_window = window
+        .ns_window()
+        .map_err(|e| format!("Failed to get NSWindow: {}", e))?;
+
+    let ns_window_ptr = ns_window as usize;
+
+    dispatch::Queue::main().exec_sync(move || {
+        unsafe {
+            let ns_window = ns_window_ptr as *mut Object;
+            // Set ignoresMouseEvents to NO to capture clicks
+            let _: () = msg_send![ns_window, setIgnoresMouseEvents: NO];
+        }
+    });
+
+    log::info!("macOS: Disabled click-through for drawing mode");
+    Ok(())
+}
+
+/// Windows: Remove WS_EX_TRANSPARENT to capture clicks
+#[cfg(target_os = "windows")]
+fn disable_click_through_windows(window: &tauri::WebviewWindow) -> Result<(), String> {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_LAYERED, WS_EX_TRANSPARENT,
+        WS_EX_TOPMOST,
+    };
+
+    let hwnd = window
+        .hwnd()
+        .map_err(|e| format!("Failed to get HWND: {}", e))?;
+
+    let hwnd = HWND(hwnd.0 as *mut std::ffi::c_void);
+
+    unsafe {
+        let ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+        // Remove WS_EX_TRANSPARENT but keep LAYERED and TOPMOST
+        let new_style = (ex_style & !(WS_EX_TRANSPARENT.0 as isize))
+            | WS_EX_LAYERED.0 as isize
+            | WS_EX_TOPMOST.0 as isize;
+
+        SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new_style);
+    }
+
+    log::info!("Windows: Disabled click-through for drawing mode");
+    Ok(())
+}
+
+/// Get window bounds by title (for window tracking during window shares)
+/// This is used to track the position of a shared window and keep the overlay aligned
+/// Note: Window tracking by ID/title has platform-specific limitations
+#[tauri::command]
+pub async fn get_window_bounds_by_title(
+    _title: String,
+) -> Result<Option<OverlayBounds>, String> {
+    // Window enumeration and bounds retrieval is complex and platform-specific:
+    // - macOS: CGWindowListCopyWindowInfo with filtering
+    // - Windows: EnumWindows + GetWindowRect
+    // - Linux: X11 XQueryTree or Wayland-specific protocol
+    //
+    // For MVP, we support full-screen sharing where overlay covers the whole screen
+    // Window-specific tracking can be enhanced in a future iteration
+    //
+    // Return None to indicate window tracking is not yet implemented
+    log::info!("Window bounds tracking not yet implemented");
+    Ok(None)
+}
+
+/// Simple base64 encoding for the overlay HTML content
+fn base64_encode(data: &[u8]) -> String {
+    const CHARS: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut result = String::with_capacity((data.len() + 2) / 3 * 4);
+
+    for chunk in data.chunks(3) {
+        let b0 = chunk[0] as usize;
+        let b1 = chunk.get(1).copied().unwrap_or(0) as usize;
+        let b2 = chunk.get(2).copied().unwrap_or(0) as usize;
+
+        result.push(CHARS[b0 >> 2] as char);
+        result.push(CHARS[((b0 & 0x03) << 4) | (b1 >> 4)] as char);
+        result.push(if chunk.len() > 1 {
+            CHARS[((b1 & 0x0f) << 2) | (b2 >> 6)] as char
+        } else {
+            '='
+        });
+        result.push(if chunk.len() > 2 {
+            CHARS[b2 & 0x3f] as char
+        } else {
+            '='
+        });
+    }
+
+    result
+}
+
+/// Configure click-through behavior for the overlay window
+/// Platform-specific implementation using native APIs
+fn configure_click_through(window: &tauri::WebviewWindow) -> Result<(), String> {
+    #[cfg(target_os = "macos")]
+    {
+        configure_click_through_macos(window)?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        configure_click_through_windows(window)?;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        configure_click_through_linux(window)?;
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    {
+        let _ = window;
+        log::warn!("Click-through not implemented for this platform");
+    }
+
+    Ok(())
+}
+
+/// macOS: Use NSWindow.setIgnoresMouseEvents to enable click-through
+/// IMPORTANT: NSWindow operations must run on the main thread
+#[cfg(target_os = "macos")]
+fn configure_click_through_macos(window: &tauri::WebviewWindow) -> Result<(), String> {
+    use objc::runtime::{Class, Object, YES, NO};
+    use objc::{msg_send, sel, sel_impl};
+
+    // Get the NSWindow pointer from the Tauri window
+    let ns_window = window
+        .ns_window()
+        .map_err(|e| format!("Failed to get NSWindow: {}", e))?;
+
+    let ns_window_ptr = ns_window as usize;
+
+    // Configure NSWindow on main thread
+    dispatch::Queue::main().exec_sync(move || {
+        unsafe {
+            let ns_window = ns_window_ptr as *mut Object;
+
+            // Set ignoresMouseEvents to YES for click-through behavior
+            let _: () = msg_send![ns_window, setIgnoresMouseEvents: YES];
+
+            // Set window level high enough to appear above most windows
+            let overlay_level: i64 = 6;
+            let _: () = msg_send![ns_window, setLevel: overlay_level];
+
+            // Remove shadow for cleaner overlay appearance
+            let _: () = msg_send![ns_window, setHasShadow: NO];
+
+            // Make window follow user across all Spaces (virtual desktops)
+            let can_join_all_spaces: u64 = 1;
+            let _: () = msg_send![ns_window, setCollectionBehavior: can_join_all_spaces];
+
+            // Ensure NSWindow transparency
+            let _: () = msg_send![ns_window, setOpaque: NO];
+
+            // Set NSWindow background color to clear
+            let ns_color_class = Class::get("NSColor").unwrap();
+            let clear_color: *mut Object = msg_send![ns_color_class, clearColor];
+            let _: () = msg_send![ns_window, setBackgroundColor: clear_color];
+        }
+    });
+
+    log::info!("macOS: Configured overlay - click-through, level=6, joins all spaces, transparent");
+    Ok(())
+}
+
+/// Windows: Use WS_EX_TRANSPARENT and WS_EX_LAYERED for click-through
+#[cfg(target_os = "windows")]
+fn configure_click_through_windows(window: &tauri::WebviewWindow) -> Result<(), String> {
+    use windows::Win32::Foundation::HWND;
+    use windows::Win32::UI::WindowsAndMessaging::{
+        GetWindowLongPtrW, SetWindowLongPtrW, GWL_EXSTYLE, WS_EX_LAYERED, WS_EX_TRANSPARENT,
+        WS_EX_TOPMOST,
+    };
+
+    let hwnd = window
+        .hwnd()
+        .map_err(|e| format!("Failed to get HWND: {}", e))?;
+
+    let hwnd = HWND(hwnd.0 as *mut std::ffi::c_void);
+
+    unsafe {
+        // Get current extended style
+        let ex_style = GetWindowLongPtrW(hwnd, GWL_EXSTYLE);
+
+        // Add WS_EX_TRANSPARENT, WS_EX_LAYERED, and WS_EX_TOPMOST for click-through
+        // WS_EX_TRANSPARENT: Makes the window transparent to mouse input
+        // WS_EX_LAYERED: Required for transparency effects
+        // WS_EX_TOPMOST: Keeps window on top
+        let new_style = ex_style
+            | WS_EX_TRANSPARENT.0 as isize
+            | WS_EX_LAYERED.0 as isize
+            | WS_EX_TOPMOST.0 as isize;
+
+        SetWindowLongPtrW(hwnd, GWL_EXSTYLE, new_style);
+    }
+
+    log::info!("Windows: Configured click-through with WS_EX_TRANSPARENT | WS_EX_LAYERED");
+    Ok(())
+}
+
+/// Linux: Basic transparency mode, full click-through varies by window manager
+#[cfg(target_os = "linux")]
+fn configure_click_through_linux(_window: &tauri::WebviewWindow) -> Result<(), String> {
+    // Linux click-through is more complex and varies by window manager:
+    // - X11: Would use XShapeCombineRectangles to set input shape to empty
+    // - Wayland: Depends on compositor support for input regions
+    //
+    // For now, we rely on the transparent window + always_on_top settings
+    // The overlay will be visible but may intercept mouse events on some systems
+    //
+    // Future enhancement: Add x11rb or wayland-client for proper input passthrough
+
+    log::info!("Linux: Click-through configured (basic mode - may vary by window manager)");
+    log::info!("Linux: For X11, full click-through would require XShape extension");
+    Ok(())
+}
+
+// ============================================================================
+// Screen Bounds Utility (used by multiple features)
+// ============================================================================
+
+/// Screen bounds info for position validation and window placement
+#[derive(Debug, Clone, serde::Serialize)]
+pub struct ScreenBounds {
+    pub x: i32,
+    pub y: i32,
+    pub width: u32,
+    pub height: u32,
+    pub is_primary: bool,
+}
+
+/// Get all available screen bounds
+/// Used for transform mode positioning and multi-monitor support
+#[tauri::command]
+pub async fn get_all_screen_bounds(app: AppHandle) -> Result<Vec<ScreenBounds>, String> {
+    let monitors = app
+        .available_monitors()
+        .map_err(|e| format!("Failed to get monitors: {}", e))?;
+
+    let primary = app.primary_monitor().ok().flatten();
+    let primary_position = primary.as_ref().map(|m| m.position());
+
+    let bounds: Vec<ScreenBounds> = monitors
+        .iter()
+        .map(|m| {
+            let pos = m.position();
+            let size = m.size();
+            let is_primary = primary_position
+                .map(|pp| pp.x == pos.x && pp.y == pos.y)
+                .unwrap_or(false);
+
+            ScreenBounds {
+                x: pos.x,
+                y: pos.y,
+                width: size.width,
+                height: size.height,
+                is_primary,
+            }
+        })
+        .collect();
+
+    Ok(bounds)
+}
+
+// ============================================================================
+// System Tray Menu for Screen Sharing (Story 3.7 - ADR-011 Simple Menu)
+// ============================================================================
+//
+// Simple, clean system tray menu that appears when screen sharing is active.
+// ADR-011: Simplified to 3 actions only (no mic/camera controls)
+//
+// Design:
+// ┌───────────────────────────┐
+// │ Sharing Screen            │  ← Header (disabled)
+// ├───────────────────────────┤
+// │ Open Etch     ⌘O      │
+// │ Stop Sharing      ⌘S      │
+// │ Leave Meeting     ⌘Q      │
+// └───────────────────────────┘
+
+use tauri::tray::{TrayIcon, TrayIconBuilder};
+use tauri::menu::{MenuBuilder, MenuItemBuilder, PredefinedMenuItem};
+
+/// State to hold the sharing tray icon
+pub struct SharingTrayState {
+    pub tray: Mutex<Option<TrayIcon>>,
+}
+
+impl Default for SharingTrayState {
+    fn default() -> Self {
+        Self {
+            tray: Mutex::new(None),
+        }
+    }
+}
+
+/// Fixed tray ID to prevent duplicates during HMR
+const SHARING_TRAY_ID: &str = "etch-sharing-tray";
+
+/// Show the sharing tray icon with menu (AC-3.7.1)
+/// Called when screen sharing starts
+#[tauri::command]
+pub async fn show_sharing_tray(
+    app: AppHandle,
+    state: State<'_, SharingTrayState>,
+) -> Result<(), String> {
+    // First, try to destroy any existing tray by ID to prevent duplicates
+    if let Some(existing) = app.tray_by_id(SHARING_TRAY_ID) {
+        log::info!("Found existing tray by ID, removing it first");
+        let _ = existing.set_visible(false);
+        drop(existing);
+    }
+
+    // Clear state if it exists
+    {
+        let mut tray = state.tray.lock().map_err(|e| e.to_string())?;
+        if tray.is_some() {
+            log::info!("Clearing stale tray from state");
+            *tray = None;
+        }
+    }
+
+    log::info!("Creating sharing tray menu (ADR-011: 3 actions only)...");
+
+    // Build the simplified menu
+    let menu = build_sharing_menu(&app)?;
+
+    // Create tray icon using app's default icon
+    let icon = app.default_window_icon()
+        .ok_or_else(|| "No default icon".to_string())?
+        .clone();
+
+    let tray = TrayIconBuilder::with_id(SHARING_TRAY_ID)
+        .menu(&menu)
+        .icon(icon)
+        .tooltip("ETCH - Sharing Screen")
+        .menu_on_left_click(true) // AC-3.7.2: Show menu on click
+        .on_menu_event(move |app, event| {
+            handle_tray_menu_event(app, event.id.as_ref());
+        })
+        .build(&app)
+        .map_err(|e| format!("Failed to create tray: {}", e))?;
+
+    // Store the tray
+    {
+        let mut tray_state = state.tray.lock().map_err(|e| e.to_string())?;
+        *tray_state = Some(tray);
+    }
+
+    log::info!("Sharing tray created successfully");
+    Ok(())
+}
+
+/// Hide the sharing tray icon (AC-3.7.7)
+/// Called when screen sharing stops or meeting ends
+#[tauri::command]
+pub async fn hide_sharing_tray(
+    state: State<'_, SharingTrayState>,
+) -> Result<(), String> {
+    let mut tray = state.tray.lock().map_err(|e| e.to_string())?;
+
+    if let Some(t) = tray.take() {
+        log::info!("Removing sharing tray");
+        // Tray is automatically removed when dropped
+        drop(t);
+        log::info!("Sharing tray removed");
+    } else {
+        log::info!("No sharing tray to remove");
+    }
+
+    Ok(())
+}
+
+/// Build the sharing menu (ADR-011: simplified to 3 actions)
+/// AC-3.7.2: Menu structure with keyboard shortcuts
+fn build_sharing_menu(
+    app: &AppHandle,
+) -> Result<tauri::menu::Menu<tauri::Wry>, String> {
+    // Header item (disabled) - shows sharing status
+    let header = MenuItemBuilder::new("Sharing Screen")
+        .id("header")
+        .enabled(false)
+        .build(app)
+        .map_err(|e| format!("Failed to create header: {}", e))?;
+
+    // Separator after header
+    let sep = PredefinedMenuItem::separator(app)
+        .map_err(|e| format!("Failed to create separator: {}", e))?;
+
+    // Open Etch (AC-3.7.3) - show and focus main window
+    let open_item = MenuItemBuilder::new("Open Etch")
+        .id("open_etch")
+        // .accelerator("CmdOrCtrl+O")
+        .build(app)
+        .map_err(|e| format!("Failed to create open item: {}", e))?;
+
+    // Stop Sharing (AC-3.7.4)
+    let stop_item = MenuItemBuilder::new("Stop Sharing")
+        .id("stop_sharing")
+        // .accelerator("CmdOrCtrl+S")
+        .build(app)
+        .map_err(|e| format!("Failed to create stop item: {}", e))?;
+
+    // Leave Meeting (AC-3.7.5)
+    let leave_item = MenuItemBuilder::new("Leave Meeting")
+        .id("leave_meeting")
+        // .accelerator("CmdOrCtrl+Q")
+        .build(app)
+        .map_err(|e| format!("Failed to create leave item: {}", e))?;
+
+    // Build menu (AC-3.7.2: exact structure)
+    let menu = MenuBuilder::new(app)
+        .item(&header)
+        .item(&sep)
+        .item(&open_item)
+        .item(&stop_item)
+        .item(&leave_item)
+        .build()
+        .map_err(|e| format!("Failed to build menu: {}", e))?;
+
+    Ok(menu)
+}
+
+/// Handle tray menu item clicks (AC-3.7.3, AC-3.7.4, AC-3.7.5, AC-3.7.6)
+fn handle_tray_menu_event(app: &AppHandle, menu_id: &str) {
+    log::info!("Tray menu clicked: {}", menu_id);
+
+    match menu_id {
+        "open_etch" => {
+            // AC-3.7.3: Show and focus main window
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.show();
+                let _ = window.unminimize();
+                let _ = window.set_focus();
+                log::info!("Main window shown and focused");
+            }
+        }
+        "stop_sharing" => {
+            // AC-3.7.4: Emit event to frontend to stop sharing
+            if let Err(e) = app.emit("tray://stop-sharing", ()) {
+                log::error!("Failed to emit stop-sharing event: {}", e);
+            }
+        }
+        "leave_meeting" => {
+            // AC-3.7.5: Emit event to frontend to leave meeting
+            if let Err(e) = app.emit("tray://leave-meeting", ()) {
+                log::error!("Failed to emit leave-meeting event: {}", e);
+            }
+        }
+        _ => {
+            log::warn!("Unknown tray menu action: {}", menu_id);
+        }
+    }
+}

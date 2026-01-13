@@ -1,0 +1,308 @@
+<story-context id="bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>9</storyId>
+    <title>Implement Resolution-Independent Coordinates</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-19</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-9-implement-resolution-independent-coordinates.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>participant on any display</asA>
+    <iWant>annotations to appear in the correct position regardless of my screen resolution</iWant>
+    <soThat>everyone sees annotations in the same location</soThat>
+    <tasks>
+      <task id="1" title="Create coordinate utility functions" ac="4.9.1, 4.9.2">
+        <subtask>Create packages/client/src/utils/coordinates.ts with normalize/denormalize functions</subtask>
+        <subtask>Implement normalizeCoordinates(pixelX, pixelY, canvasWidth, canvasHeight): Point</subtask>
+        <subtask>Implement denormalizeCoordinates(normX, normY, canvasWidth, canvasHeight): { x: number, y: number }</subtask>
+        <subtask>Implement normalizeStrokePoints(points, width, height): Point[] for batch conversion</subtask>
+        <subtask>Implement denormalizeStrokePoints(points, width, height): { x: number, y: number }[] for batch conversion</subtask>
+        <subtask>Ensure coordinate system: (0,0) = top-left, (1,1) = bottom-right</subtask>
+        <subtask>Handle edge cases: coordinates at boundaries (0, 1, negative, > 1)</subtask>
+        <subtask>Clamp out-of-bounds coordinates to valid [0, 1] range</subtask>
+      </task>
+      <task id="2" title="Write comprehensive unit tests for coordinate utilities" ac="4.9.1, 4.9.2, 4.9.5">
+        <subtask>Create packages/client/src/utils/coordinates.test.ts</subtask>
+        <subtask>Test normalizeCoordinates for center point (0.5, 0.5)</subtask>
+        <subtask>Test normalizeCoordinates for corners (0,0), (1,0), (0,1), (1,1)</subtask>
+        <subtask>Test denormalizeCoordinates inverse operations</subtask>
+        <subtask>Test round-trip: normalize to denormalize to normalize produces same result</subtask>
+        <subtask>Test precision: verify no drift after multiple conversions</subtask>
+        <subtask>Test edge cases: zero dimensions, negative inputs, values > max</subtask>
+        <subtask>Test batch conversion functions with empty arrays and large arrays</subtask>
+      </task>
+      <task id="3" title="Integrate normalization into drawing flow" ac="4.9.1, 4.9.3">
+        <subtask>Update useAnnotations hook to normalize coordinates on mouse/touch input</subtask>
+        <subtask>Capture raw pixel coordinates from pointer events</subtask>
+        <subtask>Normalize immediately before adding to activeStroke</subtask>
+        <subtask>Store all stroke points in normalized [0, 1] form in annotationStore</subtask>
+        <subtask>Verify existing strokes in store are already normalized (from previous stories)</subtask>
+      </task>
+      <task id="4" title="Integrate denormalization into render pipeline" ac="4.9.3">
+        <subtask>Update AnnotationCanvas render loop to denormalize coordinates</subtask>
+        <subtask>Get current canvas dimensions at render time</subtask>
+        <subtask>Convert normalized points to pixel coordinates for Canvas 2D drawing</subtask>
+        <subtask>Ensure Perfect Freehand receives pixel coordinates for path generation</subtask>
+        <subtask>Apply transformation after getStroke() for final Path2D rendering</subtask>
+      </task>
+      <task id="5" title="Handle window resize correctly" ac="4.9.4, 4.9.5">
+        <subtask>Add ResizeObserver to AnnotationCanvas to detect dimension changes</subtask>
+        <subtask>Re-render canvas on resize (strokes auto-scale via denormalization)</subtask>
+        <subtask>Verify no re-normalization needed (coordinates stored as normalized)</subtask>
+        <subtask>Test resize behavior: shrink window, expand window, restore original size</subtask>
+        <subtask>Verify stroke positions match before and after resize cycle</subtask>
+      </task>
+      <task id="6" title="Verify DataTrack messages use normalized coordinates" ac="4.9.1">
+        <subtask>Confirm StrokeUpdateMessage points are normalized before publish</subtask>
+        <subtask>Confirm StrokeCompleteMessage points are normalized before publish</subtask>
+        <subtask>Confirm received messages store normalized coordinates</subtask>
+        <subtask>Add validation in message handler to check coordinate range [0, 1]</subtask>
+        <subtask>Log warning if coordinates outside expected range</subtask>
+      </task>
+      <task id="7" title="Verify sharer overlay alignment" ac="4.9.6">
+        <subtask>Document how sharer overlay uses same coordinate system</subtask>
+        <subtask>Ensure overlay canvas uses same denormalization logic</subtask>
+        <subtask>Test: draw stroke on viewer to appears correctly on sharer overlay</subtask>
+        <subtask>Test: draw stroke on sharer overlay to appears correctly on viewers</subtask>
+        <subtask>Note: Full overlay implementation in Story 4.11, this story ensures foundation</subtask>
+      </task>
+      <task id="8" title="Add integration tests for coordinate flow" ac="all">
+        <subtask>Test full drawing flow: mouse event to normalized storage to rendered output</subtask>
+        <subtask>Test sync flow: normalized coordinates survive publish/receive cycle</subtask>
+        <subtask>Test resize flow: annotations maintain relative position after resize</subtask>
+        <subtask>Mock canvas dimensions for deterministic testing</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.9.1">All coordinates stored as [0, 1] normalized range</criterion>
+    <criterion id="AC-4.9.2">(0, 0) = top-left, (1, 1) = bottom-right of shared content</criterion>
+    <criterion id="AC-4.9.3">Transform to pixels at render time only</criterion>
+    <criterion id="AC-4.9.4">Annotations scale correctly on window resize</criterion>
+    <criterion id="AC-4.9.5">No position drift on resize operations</criterion>
+    <criterion id="AC-4.9.6">Viewer canvas and sharer overlay coordinates align</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/sprint-artifacts/prd.md" relevance="high">
+        Product Requirements Document - Defines annotation requirements including multi-participant sync
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-4.md" relevance="high">
+        Epic 4 Technical Specification - Core annotation architecture, coordinate systems, Canvas integration
+      </doc>
+      <doc path="docs/sprint-artifacts/architecture.md" relevance="medium">
+        System Architecture - ADR-002 LiveKit DataTracks, state management patterns
+      </doc>
+      <doc path="docs/sprint-artifacts/ux-design-specification.md" relevance="medium">
+        UX Design - Annotation layer z-index, visual feedback requirements
+      </doc>
+      <doc path="docs/sprint-artifacts/epics/epic-4-real-time-annotations.md" relevance="high">
+        Epic 4 Definition - Story dependencies, coordinate requirements AC-4.9.x
+      </doc>
+    </docs>
+    <code>
+      <file path="packages/client/src/utils/coordinates.ts" status="partial">
+        <description>Existing coordinate utilities with normalizeCoordinates and getPointerCoordinates</description>
+        <existing>
+          - normalizeCoordinates(pixelX, pixelY, canvasWidth, canvasHeight, pressure?): Point
+          - getPointerCoordinates(event, element): Point
+          - Clamps coordinates to [0, 1] range
+          - Handles zero dimension edge case
+        </existing>
+        <missing>
+          - denormalizeCoordinates(normX, normY, canvasWidth, canvasHeight): { x: number, y: number }
+          - normalizeStrokePoints(points, width, height): Point[]
+          - denormalizeStrokePoints(points, width, height): { x: number, y: number }[]
+        </missing>
+      </file>
+      <file path="packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx" status="exists">
+        <description>Canvas rendering component with inline denormalization</description>
+        <existing>
+          - Inline denormalizePoint function (lines 77-83)
+          - ResizeObserver integration (lines 349-364)
+          - getVideoContentRect for letterboxing calculations
+          - Perfect Freehand getStroke integration
+          - Renders strokes, activeStroke, and remoteActiveStrokes
+        </existing>
+        <action>Refactor to use centralized denormalize utilities</action>
+      </file>
+      <file path="packages/shared/src/types/stroke.ts" status="complete">
+        <description>Core Point and Stroke type definitions</description>
+        <existing>
+          - Point interface: { x: number, y: number, pressure?: number } - normalized [0, 1]
+          - Stroke interface with id, participantId, tool, color, points[], createdAt, isComplete
+        </existing>
+      </file>
+      <file path="packages/shared/src/types/annotation.ts" status="complete">
+        <description>DataTrack message types for annotation sync</description>
+        <existing>
+          - StrokeUpdateMessage, StrokeCompleteMessage with normalized Point[]
+          - Message encoding/decoding utilities
+          - Type guards for message validation
+        </existing>
+      </file>
+      <file path="packages/client/src/stores/annotationStore.ts" status="complete">
+        <description>Zustand store for annotation state</description>
+        <existing>
+          - strokes: Stroke[] (completed strokes)
+          - activeStroke: Stroke | null (in-progress local stroke)
+          - remoteActiveStrokes: Map&lt;string, Stroke&gt; (in-progress remote strokes)
+          - CRUD actions: addStroke, deleteStroke, clearAll, etc.
+        </existing>
+      </file>
+      <file path="packages/client/src/hooks/useAnnotations.ts" status="complete">
+        <description>Hook for annotation drawing operations</description>
+        <existing>
+          - Receives normalized coordinates from getPointerCoordinates
+          - Stores normalized points in activeStroke
+          - Point batching for sync (16ms intervals)
+          - Eraser hit-testing on normalized coordinates
+        </existing>
+        <note>Already uses normalized coordinates - no changes needed</note>
+      </file>
+      <file path="packages/client/src/hooks/useAnnotationSync.ts" status="complete">
+        <description>LiveKit DataTrack synchronization</description>
+        <existing>
+          - Publishes/receives normalized coordinates in messages
+          - Late-joiner sync with StateSnapshot
+          - Message batching and reliability
+        </existing>
+        <note>Already uses normalized coordinates - verify only</note>
+      </file>
+    </code>
+    <dependencies>
+      <dependency name="perfect-freehand" version="^1.2.0" usage="Stroke path generation from pixel points">
+        Receives denormalized pixel coordinates for smooth stroke rendering
+      </dependency>
+      <dependency name="zustand" version="^5.0.0" usage="State management for annotations">
+        Stores normalized coordinates in annotationStore
+      </dependency>
+      <dependency name="livekit-client" version="^2.6.4" usage="DataTrack for annotation sync">
+        Transmits normalized coordinates between participants
+      </dependency>
+      <dependency name="react" version="^19.0.0" usage="Component framework">
+        Canvas component, hooks, ResizeObserver integration
+      </dependency>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="coordinate-system">
+      Coordinate origin (0,0) at top-left, (1,1) at bottom-right - matches Canvas 2D and HTML coordinate systems
+    </constraint>
+    <constraint type="storage">
+      All stored coordinates MUST be normalized [0,1] range - never store pixel values
+    </constraint>
+    <constraint type="render-time">
+      Denormalization to pixels occurs ONLY at render time using current canvas dimensions
+    </constraint>
+    <constraint type="precision">
+      No position drift on resize - same normalized value must render to same relative position
+    </constraint>
+    <constraint type="performance">
+      Batch conversions should be optimized for arrays of 100+ points (typical stroke size)
+    </constraint>
+    <constraint type="letterboxing">
+      Must account for video letterboxing when calculating canvas content area (handled by getVideoContentRect)
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="Point" source="packages/shared/src/types/stroke.ts">
+      <![CDATA[
+interface Point {
+  x: number      // normalized [0.0 - 1.0]
+  y: number      // normalized [0.0 - 1.0]
+  pressure?: number
+}
+      ]]>
+    </interface>
+    <interface name="Stroke" source="packages/shared/src/types/stroke.ts">
+      <![CDATA[
+interface Stroke {
+  id: string
+  participantId: string
+  tool: 'pen' | 'highlighter'
+  color: string
+  points: Point[]
+  createdAt: number
+  isComplete: boolean
+}
+      ]]>
+    </interface>
+    <interface name="normalizeCoordinates" source="packages/client/src/utils/coordinates.ts" status="exists">
+      <![CDATA[
+function normalizeCoordinates(
+  pixelX: number,
+  pixelY: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  pressure?: number
+): Point
+      ]]>
+    </interface>
+    <interface name="denormalizeCoordinates" source="packages/client/src/utils/coordinates.ts" status="to-implement">
+      <![CDATA[
+function denormalizeCoordinates(
+  normX: number,
+  normY: number,
+  canvasWidth: number,
+  canvasHeight: number
+): { x: number, y: number }
+      ]]>
+    </interface>
+    <interface name="normalizeStrokePoints" source="packages/client/src/utils/coordinates.ts" status="to-implement">
+      <![CDATA[
+function normalizeStrokePoints(
+  points: Array<{ x: number, y: number, pressure?: number }>,
+  canvasWidth: number,
+  canvasHeight: number
+): Point[]
+      ]]>
+    </interface>
+    <interface name="denormalizeStrokePoints" source="packages/client/src/utils/coordinates.ts" status="to-implement">
+      <![CDATA[
+function denormalizeStrokePoints(
+  points: Point[],
+  canvasWidth: number,
+  canvasHeight: number
+): Array<{ x: number, y: number, pressure?: number }>
+      ]]>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <standard>Vitest for unit and integration tests</standard>
+      <standard>Follow existing test patterns in packages/client/src/**/*.test.ts</standard>
+      <standard>Test file co-located with source: coordinates.test.ts alongside coordinates.ts</standard>
+      <standard>Use describe/it blocks with clear, descriptive names</standard>
+      <standard>Test edge cases: zero dimensions, boundary values, out-of-range inputs</standard>
+      <standard>Test round-trip conversions for precision verification</standard>
+    </standards>
+    <locations>
+      <location>packages/client/src/utils/coordinates.test.ts - Unit tests for coordinate utilities</location>
+      <location>packages/client/src/components/AnnotationCanvas/AnnotationCanvas.test.tsx - Integration tests</location>
+      <location>packages/client/src/hooks/useAnnotations.test.ts - Hook integration tests</location>
+    </locations>
+    <ideas>
+      <idea ac="4.9.1">Test normalize(400, 300, 800, 600) returns (0.5, 0.5)</idea>
+      <idea ac="4.9.1">Test denormalize(0.5, 0.5, 800, 600) returns (400, 300)</idea>
+      <idea ac="4.9.2">Test normalize(0, 0, w, h) returns (0, 0) for top-left</idea>
+      <idea ac="4.9.2">Test normalize(w, h, w, h) returns (1, 1) for bottom-right</idea>
+      <idea ac="4.9.5">Test round-trip: normalize then denormalize produces original (within epsilon)</idea>
+      <idea ac="4.9.5">Test multiple resize cycles: same normalized coords render same relative position</idea>
+      <idea ac="4.9.3">Test render pipeline: normalized stroke denormalizes correctly for Canvas</idea>
+      <idea ac="4.9.4">Test ResizeObserver triggers re-render with updated dimensions</idea>
+      <idea edge-case="true">Test zero canvas dimensions return (0, 0) without error</idea>
+      <idea edge-case="true">Test negative pixel inputs clamp to 0</idea>
+      <idea edge-case="true">Test pixel > canvas dimension clamps to 1</idea>
+      <idea performance="true">Test batch conversion of 1000 points completes under 10ms</idea>
+    </ideas>
+  </tests>
+</story-context>

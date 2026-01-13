@@ -1,0 +1,7 @@
+node_modules
+dist
+build
+.git
+*.md
+pnpm-lock.yaml
+packages/client/src-tauri/target

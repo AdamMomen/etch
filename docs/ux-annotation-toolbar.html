@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ETCH - Excalidraw-style Annotation Toolbar</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --background: #09090b;
+      --background-subtle: #0a0a0c;
+      --card: #0c0c0e;
+      --card-hover: #18181b;
+      --border: rgba(255, 255, 255, 0.06);
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --text-faint: #52525b;
+      --accent: #8b5cf6;
+      --accent-hover: #7c3aed;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --error: #ef4444;
+
+      /* Annotation colors */
+      --annotation-1: #f97316;
+      --annotation-2: #06b6d4;
+      --annotation-3: #a855f7;
+      --annotation-4: #22c55e;
+      --annotation-5: #ec4899;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--background);
+      color: var(--text-primary);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 60px 20px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      color: var(--accent);
+      font-weight: 500;
+      margin-top: 16px;
+    }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 60px 20px;
+      width: 100%;
+    }
+
+    .section {
+      margin-bottom: 80px;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .section-heading {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 32px;
+    }
+
+    /* Interactive Demo */
+    .demo-container {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .demo-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--background-subtle);
+    }
+
+    .demo-header-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+
+    .demo-header-hint {
+      font-size: 0.75rem;
+      color: var(--text-faint);
+    }
+
+    .demo-header-hint kbd {
+      padding: 2px 6px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 0.7rem;
+    }
+
+    /* Toolbar */
+    .toolbar-wrapper {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: var(--background);
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .toolbar-divider {
+      width: 1px;
+      height: 32px;
+      background: var(--border);
+      margin: 0 4px;
+    }
+
+    .tool-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 48px;
+      height: 52px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .tool-btn:hover {
+      background: var(--card-hover);
+    }
+
+    .tool-btn.active {
+      background: var(--accent);
+    }
+
+    .tool-btn.active .tool-icon {
+      filter: brightness(10);
+    }
+
+    .tool-btn.active .tool-shortcut {
+      color: rgba(255, 255, 255, 0.7);
+    }
+
+    .tool-btn.destructive:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    .tool-btn.destructive.active {
+      background: var(--error);
+    }
+
+    .tool-icon {
+      font-size: 1.25rem;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+
+    .tool-shortcut {
+      font-size: 0.65rem;
+      font-weight: 500;
+      color: var(--text-faint);
+      font-family: 'SF Mono', Monaco, monospace;
+    }
+
+    .tool-btn:hover .tool-shortcut {
+      color: var(--text-muted);
+    }
+
+    /* Tooltip */
+    .tool-btn::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 6px 10px;
+      background: var(--text-primary);
+      color: var(--background);
+      font-size: 0.75rem;
+      font-weight: 500;
+      border-radius: 6px;
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.15s ease;
+      pointer-events: none;
+    }
+
+    .tool-btn:hover::after {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* Canvas area */
+    .canvas-area {
+      height: 400px;
+      background:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 20px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .canvas-content {
+      width: 80%;
+      height: 70%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-faint);
+      font-size: 0.875rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Sample annotations */
+    .annotation {
+      position: absolute;
+      pointer-events: none;
+    }
+
+    .annotation-circle {
+      width: 100px;
+      height: 60px;
+      border: 3px solid var(--annotation-1);
+      border-radius: 50%;
+      top: 20%;
+      left: 15%;
+      transform: rotate(-8deg);
+    }
+
+    .annotation-arrow {
+      top: 45%;
+      right: 20%;
+      width: 80px;
+      height: 3px;
+      background: var(--annotation-2);
+      transform: rotate(-15deg);
+    }
+
+    .annotation-arrow::after {
+      content: '';
+      position: absolute;
+      right: -2px;
+      top: -6px;
+      border: 8px solid transparent;
+      border-left: 12px solid var(--annotation-2);
+      transform: rotate(0deg);
+    }
+
+    .annotation-rect {
+      width: 120px;
+      height: 50px;
+      border: 3px solid var(--annotation-3);
+      border-radius: 4px;
+      bottom: 25%;
+      left: 30%;
+    }
+
+    .annotation-highlight {
+      width: 150px;
+      height: 24px;
+      background: rgba(249, 115, 22, 0.3);
+      border-radius: 4px;
+      top: 60%;
+      right: 25%;
+    }
+
+    /* Active tool indicator */
+    .active-tool-display {
+      position: absolute;
+      bottom: 16px;
+      left: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .active-tool-display .tool-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--annotation-1);
+    }
+
+    /* Cursor indicator */
+    .cursor-indicator {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .cursor-icon {
+      font-size: 2rem;
+    }
+
+    /* Tool options panel */
+    .tool-options {
+      position: absolute;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      display: none;
+      z-index: 100;
+    }
+
+    .tool-options.visible {
+      display: block;
+    }
+
+    .tool-options-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .stroke-options {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .stroke-option {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      background: var(--background);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .stroke-option:hover {
+      border-color: var(--text-muted);
+    }
+
+    .stroke-option.active {
+      border-color: var(--accent);
+      background: rgba(139, 92, 246, 0.1);
+    }
+
+    .stroke-line {
+      background: var(--text-primary);
+      border-radius: 2px;
+    }
+
+    .stroke-thin { width: 20px; height: 2px; }
+    .stroke-medium { width: 20px; height: 4px; }
+    .stroke-thick { width: 20px; height: 6px; }
+
+    .color-display {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .color-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--annotation-1);
+      border: 2px solid var(--background);
+      box-shadow: 0 0 0 1px var(--border);
+    }
+
+    .color-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    /* Reference section */
+    .reference-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 24px;
+    }
+
+    .reference-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .reference-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+
+    .shortcut-list {
+      list-style: none;
+    }
+
+    .shortcut-list li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .shortcut-list li:last-child {
+      border-bottom: none;
+    }
+
+    .shortcut-list kbd {
+      min-width: 28px;
+      height: 28px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 8px;
+      background: var(--background);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .shortcut-list .icon {
+      font-size: 1rem;
+    }
+
+    /* States showcase */
+    .states-row {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .state-demo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .state-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .state-demo .tool-btn {
+      pointer-events: none;
+    }
+
+    .tool-btn.disabled {
+      opacity: 0.5;
+    }
+
+    .tool-btn.focus-mode {
+      opacity: 0.3;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 40px 20px;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    .footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <h1>ETCH Annotation Toolbar</h1>
+    <p>Excalidraw-inspired toolbar with number key shortcuts</p>
+    <span class="badge">Interactive Preview</span>
+  </header>
+
+  <main class="main">
+    <!-- Interactive Demo -->
+    <section class="section">
+      <div class="section-title">Interactive Demo</div>
+      <div class="section-heading">Try it out - Press number keys 1-8, 0</div>
+
+      <div class="demo-container">
+        <div class="demo-header">
+          <span class="demo-header-title">Annotation Toolbar</span>
+          <span class="demo-header-hint">Press <kbd>1</kbd>-<kbd>7</kbd>, <kbd>V</kbd>, or <kbd>0</kbd> to switch tools. Double-press for options.</span>
+        </div>
+
+        <div class="toolbar-wrapper">
+          <div class="toolbar" id="toolbar">
+            <button class="tool-btn" data-tool="select" data-key="1" data-tooltip="Select (1 or V)">
+              <span class="tool-icon">↖️</span>
+              <span class="tool-shortcut">1</span>
+            </button>
+            <button class="tool-btn active" data-tool="pen" data-key="2" data-tooltip="Pen (2)">
+              <span class="tool-icon">✏️</span>
+              <span class="tool-shortcut">2</span>
+            </button>
+            <button class="tool-btn" data-tool="highlighter" data-key="3" data-tooltip="Highlighter (3)">
+              <span class="tool-icon">🖍️</span>
+              <span class="tool-shortcut">3</span>
+            </button>
+            <button class="tool-btn" data-tool="rectangle" data-key="4" data-tooltip="Rectangle (4)">
+              <span class="tool-icon">⬜</span>
+              <span class="tool-shortcut">4</span>
+            </button>
+            <button class="tool-btn" data-tool="ellipse" data-key="5" data-tooltip="Ellipse (5)">
+              <span class="tool-icon">⭕</span>
+              <span class="tool-shortcut">5</span>
+            </button>
+            <button class="tool-btn" data-tool="arrow" data-key="6" data-tooltip="Arrow (6)">
+              <span class="tool-icon">➡️</span>
+              <span class="tool-shortcut">6</span>
+            </button>
+            <button class="tool-btn" data-tool="eraser" data-key="7" data-tooltip="Eraser (7)">
+              <span class="tool-icon">🧹</span>
+              <span class="tool-shortcut">7</span>
+            </button>
+            <div class="toolbar-divider"></div>
+            <button class="tool-btn destructive" data-tool="clear" data-key="0" data-tooltip="Clear All (0)">
+              <span class="tool-icon">🗑️</span>
+              <span class="tool-shortcut">0</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="canvas-area">
+          <!-- Tool options panel (shown on double-press) -->
+          <div class="tool-options" id="toolOptions">
+            <div class="tool-options-title">Stroke Width</div>
+            <div class="stroke-options">
+              <div class="stroke-option" data-width="thin">
+                <div class="stroke-line stroke-thin"></div>
+              </div>
+              <div class="stroke-option active" data-width="medium">
+                <div class="stroke-line stroke-medium"></div>
+              </div>
+              <div class="stroke-option" data-width="thick">
+                <div class="stroke-line stroke-thick"></div>
+              </div>
+            </div>
+            <div class="color-display">
+              <div class="color-swatch"></div>
+              <span class="color-label">Your color (auto-assigned)</span>
+            </div>
+          </div>
+
+          <div class="canvas-content">
+            <!-- Sample annotations -->
+            <div class="annotation annotation-circle"></div>
+            <div class="annotation annotation-arrow"></div>
+            <div class="annotation annotation-rect"></div>
+            <div class="annotation annotation-highlight"></div>
+
+            <div class="cursor-indicator" id="cursorIndicator">
+              <span class="cursor-icon" id="cursorIcon">✏️</span>
+              <span id="cursorLabel">Pen tool active</span>
+            </div>
+          </div>
+
+          <div class="active-tool-display">
+            <div class="tool-color"></div>
+            <span>Your annotation color</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reference -->
+    <section class="section">
+      <div class="section-title">Reference</div>
+      <div class="section-heading">Keyboard Shortcuts & States</div>
+
+      <div class="reference-grid">
+        <div class="reference-card">
+          <h3>Tool Shortcuts</h3>
+          <ul class="shortcut-list">
+            <li><kbd>1</kbd> or <kbd>V</kbd> <span class="icon">↖️</span> Select</li>
+            <li><kbd>2</kbd> <span class="icon">✏️</span> Pen (default)</li>
+            <li><kbd>3</kbd> <span class="icon">🖍️</span> Highlighter</li>
+            <li><kbd>4</kbd> <span class="icon">⬜</span> Rectangle</li>
+            <li><kbd>5</kbd> <span class="icon">⭕</span> Ellipse</li>
+            <li><kbd>6</kbd> <span class="icon">➡️</span> Arrow</li>
+            <li><kbd>7</kbd> <span class="icon">🧹</span> Eraser</li>
+            <li><kbd>0</kbd> <span class="icon">🗑️</span> Clear All</li>
+          </ul>
+        </div>
+
+        <div class="reference-card">
+          <h3>Button States</h3>
+          <div class="states-row">
+            <div class="state-demo">
+              <button class="tool-btn">
+                <span class="tool-icon">✏️</span>
+                <span class="tool-shortcut">3</span>
+              </button>
+              <span class="state-label">Default</span>
+            </div>
+            <div class="state-demo">
+              <button class="tool-btn" style="background: var(--card-hover);">
+                <span class="tool-icon">✏️</span>
+                <span class="tool-shortcut">3</span>
+              </button>
+              <span class="state-label">Hover</span>
+            </div>
+            <div class="state-demo">
+              <button class="tool-btn active">
+                <span class="tool-icon">✏️</span>
+                <span class="tool-shortcut">3</span>
+              </button>
+              <span class="state-label">Active</span>
+            </div>
+            <div class="state-demo">
+              <button class="tool-btn disabled">
+                <span class="tool-icon">✏️</span>
+                <span class="tool-shortcut">3</span>
+              </button>
+              <span class="state-label">Disabled</span>
+            </div>
+            <div class="state-demo">
+              <button class="tool-btn focus-mode">
+                <span class="tool-icon">✏️</span>
+                <span class="tool-shortcut">3</span>
+              </button>
+              <span class="state-label">Focus Mode</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="reference-card">
+          <h3>Annotation Colors</h3>
+          <ul class="shortcut-list">
+            <li>
+              <span style="width: 20px; height: 20px; border-radius: 50%; background: var(--annotation-1);"></span>
+              You (Orange)
+            </li>
+            <li>
+              <span style="width: 20px; height: 20px; border-radius: 50%; background: var(--annotation-2);"></span>
+              Participant 2 (Cyan)
+            </li>
+            <li>
+              <span style="width: 20px; height: 20px; border-radius: 50%; background: var(--annotation-3);"></span>
+              Participant 3 (Purple)
+            </li>
+            <li>
+              <span style="width: 20px; height: 20px; border-radius: 50%; background: var(--annotation-4);"></span>
+              Participant 4 (Green)
+            </li>
+            <li>
+              <span style="width: 20px; height: 20px; border-radius: 50%; background: var(--annotation-5);"></span>
+              Participant 5 (Pink)
+            </li>
+          </ul>
+        </div>
+
+        <div class="reference-card">
+          <h3>Interactions</h3>
+          <ul class="shortcut-list">
+            <li><kbd>Click</kbd> Select tool</li>
+            <li><kbd>1-8, 0</kbd> Quick switch</li>
+            <li><kbd>Double</kbd> Tool options</li>
+            <li><kbd>Drag</kbd> Draw/create shape</li>
+            <li><kbd>Esc</kbd> Close options panel</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>ETCH UX Design — Annotation Toolbar Preview</p>
+    <p style="margin-top: 8px;">
+      Part of <a href="./ux-design-specification.md">UX Design Specification</a> |
+      <a href="./ux-design-directions.html">Design Directions</a> |
+      <a href="./ux-color-themes.html">Color Themes</a>
+    </p>
+  </footer>
+
+  <script>
+    const toolbar = document.getElementById('toolbar');
+    const toolOptions = document.getElementById('toolOptions');
+    const cursorIcon = document.getElementById('cursorIcon');
+    const cursorLabel = document.getElementById('cursorLabel');
+
+    const tools = {
+      select: { icon: '↖️', label: 'Select tool active' },
+      pen: { icon: '✏️', label: 'Pen tool active' },
+      highlighter: { icon: '🖍️', label: 'Highlighter tool active' },
+      rectangle: { icon: '⬜', label: 'Rectangle tool active' },
+      ellipse: { icon: '⭕', label: 'Ellipse tool active' },
+      arrow: { icon: '➡️', label: 'Arrow tool active' },
+      eraser: { icon: '🧹', label: 'Eraser tool active' },
+      clear: { icon: '🗑️', label: 'Clear all annotations' }
+    };
+
+    let lastKey = null;
+    let lastKeyTime = 0;
+    let currentTool = 'pen';
+
+    function setActiveTool(toolName) {
+      if (toolName === 'clear') {
+        // Flash the clear button but don't keep it active
+        const clearBtn = toolbar.querySelector('[data-tool="clear"]');
+        clearBtn.classList.add('active');
+        setTimeout(() => clearBtn.classList.remove('active'), 200);
+        cursorIcon.textContent = tools[currentTool].icon;
+        cursorLabel.textContent = 'Annotations cleared!';
+        setTimeout(() => {
+          cursorLabel.textContent = tools[currentTool].label;
+        }, 1500);
+        return;
+      }
+
+      currentTool = toolName;
+
+      // Update toolbar
+      toolbar.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.tool === toolName) {
+          btn.classList.add('active');
+        }
+      });
+
+      // Update cursor indicator
+      cursorIcon.textContent = tools[toolName].icon;
+      cursorLabel.textContent = tools[toolName].label;
+
+      // Hide options panel
+      toolOptions.classList.remove('visible');
+    }
+
+    function showToolOptions() {
+      toolOptions.classList.toggle('visible');
+    }
+
+    // Click handlers
+    toolbar.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setActiveTool(btn.dataset.tool);
+      });
+
+      btn.addEventListener('dblclick', (e) => {
+        e.preventDefault();
+        if (btn.dataset.tool !== 'clear') {
+          showToolOptions();
+        }
+      });
+    });
+
+    // Stroke width options
+    document.querySelectorAll('.stroke-option').forEach(opt => {
+      opt.addEventListener('click', () => {
+        document.querySelectorAll('.stroke-option').forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+      });
+    });
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      const key = e.key.toLowerCase();
+      const keyMap = {
+        '1': 'select',
+        'v': 'select',
+        '2': 'pen',
+        '3': 'highlighter',
+        '4': 'rectangle',
+        '5': 'ellipse',
+        '6': 'arrow',
+        '7': 'eraser',
+        '0': 'clear'
+      };
+
+      if (keyMap[key]) {
+        e.preventDefault();
+
+        // Check for double-press
+        const now = Date.now();
+        if (lastKey === key && now - lastKeyTime < 300) {
+          showToolOptions();
+        } else {
+          setActiveTool(keyMap[key]);
+        }
+
+        lastKey = key;
+        lastKeyTime = now;
+      }
+
+      // ESC to close options
+      if (e.key === 'Escape') {
+        toolOptions.classList.remove('visible');
+      }
+    });
+
+    // Close options when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!toolOptions.contains(e.target) && !toolbar.contains(e.target)) {
+        toolOptions.classList.remove('visible');
+      }
+    });
+  </script>
+</body>
+</html>

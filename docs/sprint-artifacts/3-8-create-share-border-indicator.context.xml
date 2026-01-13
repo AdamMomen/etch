@@ -1,0 +1,165 @@
+<story-context id="3-8-create-share-border-indicator" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.8</storyId>
+    <title>Create Share Border Indicator</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-12-20</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-8-create-share-border-indicator.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>screen sharer</asA>
+    <iWant>a visual border around my shared content</iWant>
+    <soThat>I can clearly see what is being captured and shared with others</soThat>
+    <tasks>
+      <task id="1" status="done" ac="3.8.1, 3.8.3, 3.8.5">Border infrastructure - DONE via Story 3.6 (overlay with click-through, lifecycle tied to share)</task>
+      <task id="2" status="todo" ac="3.8.2">Update border styling - change color from blue to red, width from 2px to 4px</task>
+      <task id="3" status="todo">Clean up TODO comments in useScreenShare.ts lines 574-577</task>
+      <task id="4" status="todo" ac="all">Manual verification - start share, verify red border, verify click-through, stop share</task>
+    </tasks>
+  </story>
+
+  <implementation-decision>
+    <decision>Option B - Update existing annotation overlay border</decision>
+    <rationale>The annotation overlay already has border infrastructure. Rather than creating a separate window, update the existing border CSS to meet Story 3.8 requirements.</rationale>
+    <tradeoff>Sacrifices z-order flexibility (border and overlay are same window) but significantly simpler implementation.</tradeoff>
+  </implementation-decision>
+
+  <acceptanceCriteria>
+    <criterion id="AC-3.8.1" status="done">
+      <title>Border Appears Around Shared Content</title>
+      <given>I start sharing my screen or window</given>
+      <when>the screen share is active</when>
+      <then>a visible border appears around the shared content boundaries AND the border is clearly visible against any background</then>
+    </criterion>
+    <criterion id="AC-3.8.2" status="todo">
+      <title>Border is Thin Colored Line</title>
+      <given>the share border indicator is active</given>
+      <when>I view the border</when>
+      <then>it is a thin colored border (3-4px width) AND the color is accent/red for high visibility AND the border has no fill (transparent interior)</then>
+      <implementation>Change CSS: border: 2px solid rgba(59, 130, 246, 0.4) → border: 4px solid rgba(239, 68, 68, 0.8)</implementation>
+    </criterion>
+    <criterion id="AC-3.8.3" status="done">
+      <title>Border is Click-Through</title>
+      <note>Already implemented via platform-specific click-through in screen_share.rs</note>
+    </criterion>
+    <criterion id="AC-3.8.4" status="n/a">
+      <title>Border Tracks Window Position</title>
+      <note>MVP is screen-only. Window tracking exists in overlay infrastructure for future use.</note>
+    </criterion>
+    <criterion id="AC-3.8.5" status="done">
+      <title>Border Destroyed on Share Stop</title>
+      <note>Handled by destroyOverlay() - overlay destruction includes border.</note>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" section="ADR-003">
+        Hybrid Rendering - Share Border Indicator is part of the native window stack during screen share.
+      </doc>
+      <doc path="docs/epics/epic-3-screen-sharing.md" section="Story 3.8">
+        Story definition with acceptance criteria and technical notes.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-3.md" section="Story 3.8">
+        Detailed acceptance criteria table AC-3.8.1 through AC-3.8.5.
+      </doc>
+    </docs>
+    <code>
+      <file path="packages/client/src-tauri/src/screen_share.rs" relevance="high">
+        <change-required>
+          <location>Line 456</location>
+          <current>border: 2px solid rgba(59, 130, 246, 0.4);</current>
+          <target>border: 4px solid rgba(239, 68, 68, 0.8);</target>
+          <note>Production overlay HTML - change from subtle blue to visible red</note>
+        </change-required>
+      </file>
+      <file path="packages/client/src/components/ScreenShare/AnnotationOverlayPage.tsx" relevance="medium">
+        <change-required>
+          <location>Line 161</location>
+          <current>border: '2px solid rgba(59, 130, 246, 0.4)'</current>
+          <target>border: '4px solid rgba(239, 68, 68, 0.8)'</target>
+          <note>React inline style - keep in sync with Rust-side for consistency</note>
+        </change-required>
+      </file>
+      <file path="packages/client/src/hooks/useScreenShare.ts" relevance="low">
+        <change-required>
+          <location>Lines 574-577</location>
+          <action>Remove outdated TODO comment about separate border window</action>
+          <current>
+            // TODO: Native window cleanup for remaining sharer overlay windows (Story 3.8)
+            // When implemented, destroy these windows here:
+            // - Share border indicator (Story 3.8) - invoke('destroy_floating_window', { label: 'share-border' })
+          </current>
+          <target>// Border indicator is part of annotation overlay - destroyed with destroyOverlay() above</target>
+        </change-required>
+      </file>
+      <file path="packages/client/src/hooks/useAnnotationOverlay.ts" relevance="reference">
+        <note>Reference implementation for overlay lifecycle patterns</note>
+      </file>
+      <file path="packages/client/tests/hooks/useAnnotationOverlay.test.ts" relevance="reference">
+        <note>17 tests covering overlay lifecycle - run to verify no regressions</note>
+      </file>
+    </code>
+    <dependencies>
+      <npm package="@tauri-apps/api" version="^2.9.1">Tauri IPC</npm>
+      <npm package="vitest" version="^2.0.0">Testing</npm>
+      <cargo crate="tauri">Window management</cargo>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="implementation">Border is embedded in annotation overlay, not a separate window.</constraint>
+    <constraint type="styling">Use rgba(239, 68, 68, 0.8) for red at 80% opacity - visible but not overwhelming.</constraint>
+    <constraint type="consistency">Both screen_share.rs (line 456) and AnnotationOverlayPage.tsx (line 161) must have matching border styles.</constraint>
+    <constraint type="testing">Run pnpm test:client to verify no regressions after changes.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="create_annotation_overlay" kind="tauri-command" path="packages/client/src-tauri/src/screen_share.rs">
+      Creates overlay window with border - border style defined in HTML template.
+    </interface>
+    <interface name="destroy_annotation_overlay" kind="tauri-command" path="packages/client/src-tauri/src/screen_share.rs">
+      Destroys overlay window including border.
+    </interface>
+    <interface name="useAnnotationOverlay" kind="react-hook" path="packages/client/src/hooks/useAnnotationOverlay.ts">
+      Hook for overlay lifecycle: createOverlay, destroyOverlay, updateBounds.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Vitest + React Testing Library. Run with: pnpm test:client</standards>
+    <locations>
+      <location>packages/client/tests/hooks/useAnnotationOverlay.test.ts</location>
+      <location>packages/client/tests/hooks/useScreenShare.test.ts</location>
+    </locations>
+    <plan>
+      <step>No new unit tests needed - this is a CSS styling change</step>
+      <step>Run existing tests: pnpm test:client to verify no regressions</step>
+      <step>Manual verification:
+        1. Start screen share
+        2. Verify red 4px border appears around shared screen
+        3. Verify border is click-through (clicks pass to underlying app)
+        4. Stop screen share
+        5. Verify border disappears with no artifacts
+      </step>
+    </plan>
+  </tests>
+
+  <implementation-notes>
+    <note priority="high">
+      <title>Minimal Change Required</title>
+      <content>Only 2 CSS changes needed: screen_share.rs:456 and AnnotationOverlayPage.tsx:161. Plus 1 TODO cleanup in useScreenShare.ts:574-577.</content>
+    </note>
+    <note priority="medium">
+      <title>Color Specification</title>
+      <content>rgba(239, 68, 68, 0.8) = Tailwind red-500 at 80% opacity. Hex #ef4444.</content>
+    </note>
+    <note priority="low">
+      <title>Testing Note</title>
+      <content>Visual verification is manual. Existing unit tests cover overlay lifecycle but not visual appearance.</content>
+    </note>
+  </implementation-notes>
+</story-context>

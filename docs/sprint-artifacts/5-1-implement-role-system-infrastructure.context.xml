@@ -1,0 +1,292 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>1</storyId>
+    <title>Implement Role System Infrastructure</title>
+    <status>drafted</status>
+    <generatedAt>2026-01-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/5-1-implement-role-system-infrastructure.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>a robust role system that controls participant capabilities</iWant>
+    <soThat>permissions can be enforced consistently across the application</soThat>
+    <tasks>
+      - Task 1: Define Role types in @etch/shared (AC: 5.1.1)
+        - Create packages/shared/src/types/permissions.ts
+        - Define Role type as union: 'host' | 'sharer' | 'annotator' | 'viewer'
+        - Export from packages/shared/src/index.ts
+        - Verify TypeScript compilation
+      - Task 2: Implement permission utility functions (AC: 5.1.2, 5.1.6)
+        - Create packages/shared/src/permissions.ts
+        - Implement canAnnotate(role, annotationsEnabled): boolean
+        - Implement canDeleteStroke(role, stroke, userId, isSharer): boolean
+        - Implement canClearAll(role): boolean
+        - Implement canModerateUsers(role): boolean
+        - Implement canToggleRoomAnnotations(role): boolean
+        - Export all functions from packages/shared/src/index.ts
+      - Task 3: Extend Participant interface with role (AC: 5.1.1)
+        - Update packages/shared/src/types/room.ts
+        - Add role: Role field to Participant interface
+        - Add annotationsEnabled: boolean to RoomState interface
+        - Verify no type errors in client/server
+      - Task 4: Update server to embed role in token metadata (AC: 5.1.3)
+        - Modify packages/server/src/services/livekit.ts
+        - Add role parameter to token generation functions
+        - Embed role in JWT metadata as JSON: { role, color }
+        - First participant gets 'host' role, subsequent get 'annotator'
+        - Verify token payload contains role in metadata
+      - Task 5: Update roomStore to parse and store roles (AC: 5.1.4)
+        - Modify packages/client/src/stores/roomStore.ts
+        - Parse participant.metadata JSON to extract role
+        - Store role in participant object
+        - Add annotationsEnabled: boolean to store state
+        - Listen for participant metadata updates
+      - Task 6: Write comprehensive unit tests (AC: 5.1.5, 5.1.6)
+        - Create packages/shared/tests/permissions.test.ts
+        - Test matrix for canAnnotate() across all roles and annotationsEnabled states
+        - Test matrix for canDeleteStroke() with ownership and isSharer conditions
+        - Test canClearAll(), canModerateUsers(), canToggleRoomAnnotations()
+        - Achieve ≥ 90% code coverage for permissions.ts
+        - Run tests: pnpm test:shared
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    - AC-5.1.1: Four roles defined: Host, Sharer, Annotator, Viewer (Test: Role type exists)
+    - AC-5.1.2: Permission functions implemented: canAnnotate(), canDeleteStroke(), canClearAll(), canModerateUsers() (Test: All functions exist and return correct boolean)
+    - AC-5.1.3: Role stored in LiveKit participant metadata (Test: Parse metadata, extract role)
+    - AC-5.1.4: roomStore syncs roles from metadata (Test: LiveKit update → roomStore reflects change)
+    - AC-5.1.5: Unit tests cover all permission checks (Test: Coverage ≥ 90% for permissions.ts)
+    - AC-5.1.6: Permission hierarchy enforced: Host > Sharer > Annotator > Viewer (Test: Permission matrix matches spec)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-5.md</path>
+        <title>Epic Technical Specification: Permissions &amp; Moderation</title>
+        <section>Data Models and Contracts</section>
+        <snippet>Role type definition: 'host' | 'sharer' | 'annotator' | 'viewer'. Permission utility functions: canAnnotate(), canDeleteStroke(), canClearAll(), canModerateUsers(), canToggleRoomAnnotations(). Role stored in LiveKit participant metadata as JSON: { role, color }.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-5.md</path>
+        <title>Epic Technical Specification: Permissions &amp; Moderation</title>
+        <section>Workflows and Sequencing - Flow 1: Role Assignment on Join</section>
+        <snippet>Server generates JWT token with metadata: { role: "annotator", color: "#..." }. First participant gets 'host' role, subsequent get 'annotator'. LiveKit broadcasts participant joined with metadata. Clients parse role from metadata and update roomStore.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-5.md</path>
+        <title>Epic Technical Specification: Permissions &amp; Moderation</title>
+        <section>Non-Functional Requirements - Performance</section>
+        <snippet>Permission check targets: canAnnotate() &lt; 1ms (called on every mouse move), canDeleteStroke() &lt; 1ms (called on eraser hover). Functions must be pure (no async, no I/O), no caching needed.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Authorization (Roles)</section>
+        <snippet>Role hierarchy: Host can create/delete any stroke, clear all, remove participants. Sharer can delete any stroke on their screen. Annotator can create/delete own strokes. Viewer cannot annotate. Roles stored in LiveKit participant metadata.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Project Structure - packages/shared</section>
+        <snippet>Shared types and utilities package. Contains types/room.ts (Room, Participant, Role), constants/colors.ts, and will house permissions.ts module for permission checking functions.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-5-permissions-moderation.md</path>
+        <title>Epic 5: Permissions &amp; Moderation - Story 5.1</title>
+        <section>Acceptance Criteria</section>
+        <snippet>Role information stored in LiveKit participant metadata (source of truth) and local roomStore (for UI). Helper functions: canAnnotate(role), canDeleteStroke(role, stroke, userId), canClearAll(role), canModerateUsers(role). Implemented in @etch/shared for client and server.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>packages/shared/src/types/room.ts</path>
+        <kind>type definitions</kind>
+        <symbol>Role, Participant, RoomState</symbol>
+        <lines>1-46</lines>
+        <reason>ALREADY DEFINES Role type and has Participant/RoomState interfaces with role and annotationsEnabled fields. Task 1 and 3 partially complete - just need to verify and potentially add permissions.ts type if needed.</reason>
+      </file>
+      <file>
+        <path>packages/shared/src/index.ts</path>
+        <kind>module exports</kind>
+        <symbol>exports</symbol>
+        <lines>1-71</lines>
+        <reason>Central export file for shared package. Will need to export new permission functions once created (Task 2).</reason>
+      </file>
+      <file>
+        <path>packages/shared/src/types/stroke.ts</path>
+        <kind>type definitions</kind>
+        <symbol>Stroke, Point</symbol>
+        <lines>19-34</lines>
+        <reason>Stroke interface needed for canDeleteStroke() signature - contains participantId field for ownership checking.</reason>
+      </file>
+      <file>
+        <path>packages/server/src/services/livekit.ts</path>
+        <kind>service</kind>
+        <symbol>generateToken</symbol>
+        <lines>47-74</lines>
+        <reason>ALREADY ACCEPTS role and color parameters and embeds in metadata (line 60). Task 4 may be simplified - need to verify first participant gets 'host' logic.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/stores/roomStore.ts</path>
+        <kind>store</kind>
+        <symbol>useRoomStore, updateParticipant</symbol>
+        <lines>90-105</lines>
+        <reason>Has updateParticipant method for updating participant fields including role. Will use this to sync roles from LiveKit metadata updates (Task 5).</reason>
+      </file>
+    </code>
+    <dependencies>
+      <node>
+        <package>livekit-server-sdk</package>
+        <version>latest</version>
+        <usage>Server token generation with metadata (already used)</usage>
+      </node>
+      <node>
+        <package>livekit-client</package>
+        <version>latest</version>
+        <usage>Client participant metadata access (already used)</usage>
+      </node>
+      <node>
+        <package>zustand</package>
+        <version>5.0.8</version>
+        <usage>roomStore state management (already used)</usage>
+      </node>
+      <node>
+        <package>vitest</package>
+        <version>^2.0.0</version>
+        <usage>Unit test framework for permissions.test.ts</usage>
+      </node>
+      <typescript>
+        <package>typescript</package>
+        <version>^5.6.0</version>
+        <usage>Type safety across packages</usage>
+      </typescript>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Stateless server: No persistent role database - roles exist only in LiveKit metadata during session
+    - DataTrack protocol: All role changes use existing DataTrack infrastructure (future stories 5.6+)
+    - Token-based: Initial role assignment at token generation (server-side)
+    - Local-first: Permission checks happen client-side first for instant UX
+    - Performance: Permission functions must be pure, no async, no I/O, target &lt; 1ms execution
+    - First participant (room creator) gets 'host' role automatically
+    - Subsequent participants get 'annotator' role by default
+    - Sharer role is dynamic - set when user starts sharing, reverts when sharing stops
+    - Role changes require host permission (enforced server-side in future stories)
+    - LiveKit metadata format: JSON string { role: "annotator", color: "#f97316" }
+    - Must maintain existing annotation store and roomStore patterns
+    - Test coverage requirement: ≥ 90% for permissions.ts
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>Role type</name>
+      <kind>TypeScript type union</kind>
+      <signature>type Role = 'host' | 'sharer' | 'annotator' | 'viewer'</signature>
+      <path>packages/shared/src/types/room.ts:8</path>
+    </interface>
+    <interface>
+      <name>Participant.role</name>
+      <kind>interface field</kind>
+      <signature>role: Role</signature>
+      <path>packages/shared/src/types/room.ts:19</path>
+    </interface>
+    <interface>
+      <name>RoomState.annotationsEnabled</name>
+      <kind>interface field</kind>
+      <signature>annotationsEnabled: boolean</signature>
+      <path>packages/shared/src/types/room.ts:45</path>
+    </interface>
+    <interface>
+      <name>canAnnotate</name>
+      <kind>permission function</kind>
+      <signature>canAnnotate(role: Role, annotationsEnabled: boolean): boolean</signature>
+      <path>packages/shared/src/permissions.ts (to be created)</path>
+    </interface>
+    <interface>
+      <name>canDeleteStroke</name>
+      <kind>permission function</kind>
+      <signature>canDeleteStroke(role: Role, stroke: Stroke, userId: string, isSharer: boolean): boolean</signature>
+      <path>packages/shared/src/permissions.ts (to be created)</path>
+    </interface>
+    <interface>
+      <name>canClearAll</name>
+      <kind>permission function</kind>
+      <signature>canClearAll(role: Role): boolean</signature>
+      <path>packages/shared/src/permissions.ts (to be created)</path>
+    </interface>
+    <interface>
+      <name>canModerateUsers</name>
+      <kind>permission function</kind>
+      <signature>canModerateUsers(role: Role): boolean</signature>
+      <path>packages/shared/src/permissions.ts (to be created)</path>
+    </interface>
+    <interface>
+      <name>canToggleRoomAnnotations</name>
+      <kind>permission function</kind>
+      <signature>canToggleRoomAnnotations(role: Role): boolean</signature>
+      <path>packages/shared/src/permissions.ts (to be created)</path>
+    </interface>
+    <interface>
+      <name>generateToken</name>
+      <kind>server API</kind>
+      <signature>generateToken(roomId: string, participantId: string, name: string, role: Role, color: string): Promise&lt;string&gt;</signature>
+      <path>packages/server/src/services/livekit.ts:47-74</path>
+    </interface>
+    <interface>
+      <name>useRoomStore.updateParticipant</name>
+      <kind>store action</kind>
+      <signature>updateParticipant(participantId: string, updates: Partial&lt;Participant&gt;): void</signature>
+      <path>packages/client/src/stores/roomStore.ts:90-105</path>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      Testing framework: Vitest (configured in packages/shared/package.json). Test files co-located with source using .test.ts suffix. Pattern: describe/it/expect blocks with clear test descriptions. Reference acceptance criteria in test names (e.g., "AC-5.1.2"). Cover both positive and negative cases, edge cases. Target: ≥ 90% code coverage for permissions.ts. Run with: pnpm test:shared or cd packages/shared &amp;&amp; pnpm test.
+    </standards>
+    <locations>
+      - packages/shared/src/ - Test files co-located with source (.test.ts suffix)
+      - packages/shared/src/constants/colors.test.ts - Example test file showing Vitest patterns
+      - packages/shared/tests/ - Alternative test location (currently unused)
+      - Run tests: pnpm test (root), pnpm test:shared (shared package only)
+    </locations>
+    <ideas>
+      <test ac="AC-5.1.1">
+        <name>Role type definition exists</name>
+        <description>Verify Role type is defined and exported. Test that it accepts 'host', 'sharer', 'annotator', 'viewer' and rejects invalid values (TypeScript compile-time check).</description>
+      </test>
+      <test ac="AC-5.1.2">
+        <name>canAnnotate() function matrix</name>
+        <description>Test all combinations: viewer (always false), host (always true even if disabled), annotator/sharer (depends on annotationsEnabled flag). Cover annotationsEnabled=true and annotationsEnabled=false for each role.</description>
+      </test>
+      <test ac="AC-5.1.2">
+        <name>canDeleteStroke() ownership and role matrix</name>
+        <description>Test: host deletes any stroke, sharer (isSharer=true) deletes any stroke, sharer (isSharer=false) deletes only own, annotator deletes only own, viewer cannot delete any. Use mock strokes with different participantIds.</description>
+      </test>
+      <test ac="AC-5.1.2">
+        <name>canClearAll(), canModerateUsers(), canToggleRoomAnnotations()</name>
+        <description>Simple tests: only host returns true, all other roles return false.</description>
+      </test>
+      <test ac="AC-5.1.3">
+        <name>LiveKit metadata format</name>
+        <description>Verify token generation embeds role in metadata as JSON: { role: "annotator", color: "#..." }. Parse and extract role from metadata string.</description>
+      </test>
+      <test ac="AC-5.1.4">
+        <name>roomStore role synchronization</name>
+        <description>Integration test: simulate LiveKit metadata update, verify roomStore.updateParticipant() is called with correct role field. Mock LiveKit participant events.</description>
+      </test>
+      <test ac="AC-5.1.6">
+        <name>Permission hierarchy verification</name>
+        <description>Test matrix showing Host &gt; Sharer &gt; Annotator &gt; Viewer hierarchy. Verify each role has expected permissions per tech spec table.</description>
+      </test>
+      <test>
+        <name>Edge cases</name>
+        <description>Test canDeleteStroke with null/undefined stroke, empty userId. Test permission functions with invalid role values (should handle gracefully or TypeScript prevents).</description>
+      </test>
+    </ideas>
+  </tests>
+</story-context>

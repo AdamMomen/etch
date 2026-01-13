@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Etch</string>
+    <key>CFBundleDisplayName</key>
+    <string>Etch</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Etch needs camera access for video calls</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Etch needs microphone access for audio calls</string>
+    <key>NSScreenCaptureUsageDescription</key>
+    <string>Etch needs screen recording access to share your screen in meetings</string>
+    <key>NSCameraUseContinuityCameraDeviceType</key>
+    <true/>
+</dict>
+</plist>

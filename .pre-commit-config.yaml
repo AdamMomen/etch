@@ -1,0 +1,50 @@
+# Pre-commit hooks configuration for Etch
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  - repo: local
+    hooks:
+      # Prettier - TypeScript/JavaScript formatting
+      - id: prettier
+        name: Prettier Format Check
+        language: system
+        entry: pnpm format:check
+        types_or: [javascript, jsx, ts, tsx, json]
+        pass_filenames: false
+
+      # ESLint - TypeScript/JavaScript linting
+      - id: eslint
+        name: ESLint
+        language: system
+        entry: pnpm lint
+        types_or: [javascript, jsx, ts, tsx]
+        pass_filenames: false
+
+      # TypeScript type checking (slow - only on push)
+      - id: typescript-check
+        name: TypeScript Type Check
+        language: system
+        entry: bash -c 'pnpm build:shared && pnpm typecheck'
+        types_or: [ts, tsx]
+        pass_filenames: false
+        stages: [push]  # Only run on push, not commit (15-20 seconds)
+
+      # Rust formatting
+      - id: rust-fmt
+        name: Rust Format Check
+        language: system
+        entry: bash -c 'cd packages/core && cargo fmt --check'
+        types: [rust]
+        files: ^packages/core/.*\.rs$
+        pass_filenames: false
+
+      # Rust clippy linting (slow - only on push)
+      - id: rust-clippy
+        name: Rust Clippy
+        language: system
+        entry: bash -c 'cd packages/core && cargo clippy --all-targets --all-features -- -D warnings'
+        types: [rust]
+        files: ^packages/core/.*\.rs$
+        pass_filenames: false
+        stages: [push]  # Only run on push, not commit (30+ seconds)

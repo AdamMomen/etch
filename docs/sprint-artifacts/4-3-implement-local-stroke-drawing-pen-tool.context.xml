@@ -1,0 +1,297 @@
+<story-context id="4-3" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>3</storyId>
+    <title>Implement Local Stroke Drawing (Pen Tool)</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-12-18</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-3-implement-local-stroke-drawing-pen-tool.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>annotator</asA>
+    <iWant>to draw freehand strokes on the shared screen</iWant>
+    <soThat>I can point at and mark up content visually</soThat>
+    <tasks>
+      <task id="1" status="pending">Create useAnnotations hook with startStroke, continueStroke, endStroke actions</task>
+      <task id="2" status="pending">Implement pointer event handlers in AnnotationCanvas (pointerdown/move/up)</task>
+      <task id="3" status="pending">Get participant color from LiveKit metadata</task>
+      <task id="4" status="pending">Implement pen tool keyboard shortcut (key 2)</task>
+      <task id="5" status="pending">Implement cursor style changes (crosshair when canAnnotate)</task>
+      <task id="6" status="pending">Create coordinate normalization utilities</task>
+      <task id="7" status="pending">Write unit tests for useAnnotations hook</task>
+      <task id="8" status="pending">Write integration tests for pointer events</task>
+      <task id="9" status="pending">Write tests for keyboard shortcuts</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.3.1">Press and drag on canvas creates a visible stroke</criterion>
+    <criterion id="AC-4.3.2">Stroke appears immediately (&lt; 16ms local render)</criterion>
+    <criterion id="AC-4.3.3">Stroke uses participant's assigned color</criterion>
+    <criterion id="AC-4.3.4">Stroke has smooth, anti-aliased lines using Perfect Freehand</criterion>
+    <criterion id="AC-4.3.5">Stroke uses Perfect Freehand library for natural brush feel</criterion>
+    <criterion id="AC-4.3.6">Mouse down starts new stroke (creates activeStroke)</criterion>
+    <criterion id="AC-4.3.7">Mouse move extends stroke with new points</criterion>
+    <criterion id="AC-4.3.8">Mouse up finalizes stroke (moves to strokes array, isComplete: true)</criterion>
+    <criterion id="AC-4.3.9">Pen tool is active by default</criterion>
+    <criterion id="AC-4.3.10">Key 2 activates pen tool</criterion>
+    <criterion id="AC-4.3.11">Cursor changes to crosshair when over annotation area</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-4.md</path>
+        <title>Epic 4 Technical Specification</title>
+        <section>useAnnotations Hook</section>
+        <snippet>Hook interface: startStroke(point), continueStroke(point), endStroke(). Drawing flow: User presses mouse down, create Stroke with UUID, participantId, color, tool, first point. Store as activeStroke, render immediately.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics/epic-4-real-time-annotations.md</path>
+        <title>Epic 4: Real-Time Annotations</title>
+        <section>Story 4.3</section>
+        <snippet>Pen tool active by default (key 2). Cursor changes to crosshair. Use Perfect Freehand library. Capture points at 60fps during drag. Store points in normalized [0,1] coordinates.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>System Architecture</title>
+        <section>ADR-004: Zustand for State Management</section>
+        <snippet>Use Zustand for client-side state management. Store pattern established in roomStore, screenShareStore, annotationStore.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>Annotation System (FR27-FR36)</section>
+        <snippet>FR27: Users with annotator permissions can draw freehand strokes. FR28: Pen tool for precise drawing. FR33: Annotations appear in real-time &lt; 200ms latency.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/4-1-create-annotation-canvas-component-for-viewers.md</path>
+        <title>Story 4.1 (Completed)</title>
+        <section>Learnings</section>
+        <snippet>AnnotationCanvas created at packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx. Accepts strokes via props. Has renderStroke(), denormalizePoint(), PEN_OPTIONS, HIGHLIGHTER_OPTIONS. Uses requestAnimationFrame 60fps loop.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/4-2-implement-annotation-store-with-zustand.md</path>
+        <title>Story 4.2 (Completed)</title>
+        <section>Learnings</section>
+        <snippet>annotationStore at packages/client/src/stores/annotationStore.ts. Actions: addStroke, updateStroke, completeStroke, deleteStroke, setActiveTool, setActiveStroke. Default activeTool is 'pen'. Stroke type now has isComplete field.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <file>
+        <path>packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx</path>
+        <kind>component</kind>
+        <symbol>AnnotationCanvas</symbol>
+        <lines>1-366</lines>
+        <reason>Main canvas component that will receive pointer events for drawing. Has renderStroke, denormalizePoint, PEN_OPTIONS. Currently pointer-events: none - must toggle to auto when canAnnotate.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/stores/annotationStore.ts</path>
+        <kind>store</kind>
+        <symbol>useAnnotationStore</symbol>
+        <lines>1-181</lines>
+        <reason>Annotation state store. Actions: setActiveStroke, addStroke, completeStroke. Default activeTool is 'pen'. Use for all stroke state management.</reason>
+      </file>
+      <file>
+        <path>packages/shared/src/types/stroke.ts</path>
+        <kind>types</kind>
+        <symbol>Stroke, Point</symbol>
+        <lines>1-35</lines>
+        <reason>Type definitions for strokes and points. Point has x, y (normalized 0-1), optional pressure. Stroke has id, participantId, tool, color, points[], createdAt, isComplete.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/hooks/useLiveKit.ts</path>
+        <kind>hook</kind>
+        <symbol>useLiveKit, convertLKParticipant</symbol>
+        <lines>70-82</lines>
+        <reason>Shows how to extract participant metadata including color. convertLKParticipant extracts metadata.color from participant. Use parseParticipantMetadata utility.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/hooks/useScreenShare.ts</path>
+        <kind>hook</kind>
+        <symbol>useScreenShare</symbol>
+        <lines>285-756</lines>
+        <reason>Shows hook pattern for screen share. Returns isSharing, isLocalSharing state. Use similar pattern for useAnnotations hook.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/components/ScreenShare/ScreenShareViewer.tsx</path>
+        <kind>component</kind>
+        <symbol>ScreenShareViewer</symbol>
+        <reason>Where AnnotationCanvas is integrated (lines 95-103). May need to pass canAnnotate prop and wire up drawing hooks.</reason>
+      </file>
+      <file>
+        <path>packages/shared/src/constants/colors.ts</path>
+        <kind>constants</kind>
+        <symbol>PARTICIPANT_COLORS</symbol>
+        <lines>1-15</lines>
+        <reason>Color palette for participants. First participant (host): #f97316 (Orange). 5 colors that cycle.</reason>
+      </file>
+      <file>
+        <path>packages/shared/src/test-utils/factories.ts</path>
+        <kind>test-utils</kind>
+        <symbol>createMockStroke, createMockPoint, createMockParticipant</symbol>
+        <lines>1-92</lines>
+        <reason>Test factories for creating mock data. Use createMockStroke() and createMockPoint() in unit tests.</reason>
+      </file>
+    </code>
+
+    <dependencies>
+      <node>
+        <package>perfect-freehand</package>
+        <version>^1.2.2</version>
+        <purpose>Stroke path generation with natural brush feel</purpose>
+      </node>
+      <node>
+        <package>livekit-client</package>
+        <version>^2.16.0</version>
+        <purpose>LiveKit room connection, participant metadata</purpose>
+      </node>
+      <node>
+        <package>zustand</package>
+        <version>^5.0.9</version>
+        <purpose>State management for annotationStore</purpose>
+      </node>
+      <node>
+        <package>nanoid</package>
+        <version>built-in</version>
+        <purpose>Generate unique stroke IDs (check if in dependencies, may need to add)</purpose>
+      </node>
+      <node>
+        <package>react</package>
+        <version>^19.2.0</version>
+        <purpose>React hooks (useRef, useCallback, useEffect)</purpose>
+      </node>
+      <devDependency>
+        <package>vitest</package>
+        <version>^2.0.0</version>
+        <purpose>Test framework</purpose>
+      </devDependency>
+      <devDependency>
+        <package>@testing-library/react</package>
+        <version>^16.3.0</version>
+        <purpose>React component testing</purpose>
+      </devDependency>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">Follow existing hook patterns from useLiveKit.ts, useScreenShare.ts</constraint>
+    <constraint type="pattern">Use Zustand subscriptions for selective re-renders per ADR-004</constraint>
+    <constraint type="pattern">Store coordinates as normalized [0,1] - transform to pixels only at render time</constraint>
+    <constraint type="performance">Local stroke render must be &lt; 16ms (same frame as pointer event)</constraint>
+    <constraint type="performance">Point capture at 60fps during drag</constraint>
+    <constraint type="testing">Co-locate tests in tests/ directory following existing pattern</constraint>
+    <constraint type="testing">Use createMockStroke(), createMockPoint() from @etch/shared/test-utils</constraint>
+    <constraint type="layer">Drawing input in useAnnotations hook, rendering in AnnotationCanvas (already implemented)</constraint>
+    <constraint type="security">Only local participant with annotator role can draw - validate canAnnotate before starting stroke</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>useAnnotations</name>
+      <kind>React Hook</kind>
+      <signature>
+function useAnnotations(): {
+  strokes: Stroke[];
+  activeStroke: Stroke | null;
+  activeTool: Tool;
+  canAnnotate: boolean;
+  startStroke: (point: Point) => void;
+  continueStroke: (point: Point) => void;
+  endStroke: () => void;
+  setTool: (tool: Tool) => void;
+  myColor: string;
+  myParticipantId: string;
+}
+      </signature>
+      <path>packages/client/src/hooks/useAnnotations.ts (TO BE CREATED)</path>
+    </interface>
+    <interface>
+      <name>normalizeCoordinates</name>
+      <kind>Utility Function</kind>
+      <signature>
+function normalizeCoordinates(
+  pixelX: number,
+  pixelY: number,
+  canvasWidth: number,
+  canvasHeight: number
+): Point
+      </signature>
+      <path>packages/client/src/utils/coordinates.ts (TO BE CREATED)</path>
+    </interface>
+    <interface>
+      <name>AnnotationState (annotationStore)</name>
+      <kind>Zustand Store</kind>
+      <signature>
+interface AnnotationState {
+  strokes: Stroke[];
+  activeStroke: Stroke | null;
+  activeTool: Tool;
+  addStroke: (stroke: Stroke) => void;
+  updateStroke: (strokeId: string, points: Point[]) => void;
+  completeStroke: (strokeId: string) => void;
+  setActiveTool: (tool: Tool) => void;
+  setActiveStroke: (stroke: Stroke | null) => void;
+}
+      </signature>
+      <path>packages/client/src/stores/annotationStore.ts (EXISTS)</path>
+    </interface>
+    <interface>
+      <name>Stroke</name>
+      <kind>Type Definition</kind>
+      <signature>
+interface Stroke {
+  id: string;
+  participantId: string;
+  tool: 'pen' | 'highlighter';
+  color: string;
+  points: Point[];
+  createdAt: number;
+  isComplete: boolean;
+}
+      </signature>
+      <path>packages/shared/src/types/stroke.ts (EXISTS)</path>
+    </interface>
+    <interface>
+      <name>Point</name>
+      <kind>Type Definition</kind>
+      <signature>
+interface Point {
+  x: number;  // 0.0 - 1.0
+  y: number;  // 0.0 - 1.0
+  pressure?: number;
+}
+      </signature>
+      <path>packages/shared/src/types/stroke.ts (EXISTS)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Framework: Vitest + React Testing Library. Tests are co-located in packages/client/tests/ directory mirroring src/ structure. Global setup in tests/setup.ts mocks Tauri APIs and ResizeObserver. Use vi.fn() for mocks. Follow existing test patterns from annotationStore.test.ts (40 tests) and AnnotationCanvas.test.tsx (19 tests).
+    </standards>
+    <locations>
+      <location>packages/client/tests/hooks/useAnnotations.test.ts</location>
+      <location>packages/client/tests/components/AnnotationCanvas/AnnotationCanvas.test.tsx (update existing)</location>
+      <location>packages/client/tests/utils/coordinates.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-4.3.1">Test: pointerdown event on canvas creates visible stroke in activeStroke state</idea>
+      <idea ac="AC-4.3.2">Test: performance.now() measurement shows render &lt; 16ms from event</idea>
+      <idea ac="AC-4.3.3">Test: stroke.color matches localParticipant.metadata.color</idea>
+      <idea ac="AC-4.3.5">Test: verify getStroke from perfect-freehand is called with PEN_OPTIONS</idea>
+      <idea ac="AC-4.3.6">Test: startStroke creates Stroke with correct id, participantId, tool, color, first point</idea>
+      <idea ac="AC-4.3.7">Test: continueStroke appends points to activeStroke</idea>
+      <idea ac="AC-4.3.8">Test: endStroke calls completeStroke, moves stroke to strokes array, clears activeStroke</idea>
+      <idea ac="AC-4.3.9">Test: initial activeTool state is 'pen' (already covered in 4.2 tests)</idea>
+      <idea ac="AC-4.3.10">Test: keydown event with key '2' calls setActiveTool('pen')</idea>
+      <idea ac="AC-4.3.11">Test: canvas has cursor: crosshair style when canAnnotate is true</idea>
+      <idea ac="general">Test: normalizeCoordinates returns values in [0,1] range</idea>
+      <idea ac="general">Test: normalizeCoordinates clamps out-of-bounds coordinates</idea>
+      <idea ac="general">Test: setPointerCapture is called on pointerdown for reliable drag tracking</idea>
+    </ideas>
+  </tests>
+</story-context>

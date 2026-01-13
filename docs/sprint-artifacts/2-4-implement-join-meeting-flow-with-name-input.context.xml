@@ -1,0 +1,242 @@
+<story-context id="2-4-implement-join-meeting-flow-with-name-input" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>4</storyId>
+    <title>Implement Join Meeting Flow with Name Input</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-4-implement-join-meeting-flow-with-name-input.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to enter my display name when joining a meeting</iWant>
+    <soThat>other participants can identify me</soThat>
+    <tasks>
+      <task id="1" ac="2.4.1, 2.4.2">Create JoinRoom component implementation - Replace placeholder with full implementation including title, input, buttons</task>
+      <task id="2" ac="2.4.2, 2.4.3">Implement name input logic - Controlled input, pre-fill from settings, validation (1-50 chars), auto-focus, error display</task>
+      <task id="3" ac="2.4.4, 2.4.5, 2.4.6">Implement join API integration - Add joinRoom to api.ts, loading state, success/error handling, store update</task>
+      <task id="4" ac="2.4.7, 2.4.8">Implement keyboard and navigation - Enter key handler, Cancel button, back navigation</task>
+      <task id="5" ac="all">Component testing - Test rendering, pre-fill, validation, loading, navigation, error handling</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="2.4.1" title="Join Dialog Display">
+      Given I click "Join" with a valid room code on the home screen, when the join dialog/page appears, then I see: "Join Meeting" title with room ID, "Your name" input field (pre-filled if joined before), "Join" primary button, "Cancel" secondary button or back navigation.
+    </ac>
+    <ac id="2.4.2" title="Name Input Validation">
+      Given I'm on the join dialog, when I interact with the name input, then I see: Minimum 1 character required, maximum 50 characters, focus on open (auto-focus), validation error shown below input if empty on submit.
+    </ac>
+    <ac id="2.4.3" title="Name Pre-fill from Storage">
+      Given I've joined a meeting before, when the join dialog opens, then the name input is pre-filled with my previously used name from localStorage, and I can edit or keep the pre-filled name.
+    </ac>
+    <ac id="2.4.4" title="Join Button Loading State">
+      Given I enter a valid name, when I click "Join", then I see a loading spinner on the button, and the button is disabled during the API call, and the input is disabled during the API call.
+    </ac>
+    <ac id="2.4.5" title="Successful Join Flow">
+      Given I click "Join" with a valid name, when the join API call succeeds, then my name is saved to localStorage for next time, and the app navigates to the meeting room view, and the room store is populated with connection info.
+    </ac>
+    <ac id="2.4.6" title="Join API Error Handling">
+      Given I click "Join", when the join API fails (room not found, server error), then I see an error toast with a helpful message, and the button returns to its normal state, and I remain on the join dialog to try again or go back.
+    </ac>
+    <ac id="2.4.7" title="Keyboard Navigation">
+      Given I'm focused on the name input, when I press Enter, then the join form is submitted (same as clicking "Join").
+    </ac>
+    <ac id="2.4.8" title="Cancel/Back Navigation">
+      Given I'm on the join dialog, when I click "Cancel" or navigate back, then I return to the home screen, and any entered name is not saved.
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>APIs and Interfaces</section>
+        <snippet>POST /api/rooms/:roomId/join - Join existing room. Request: { participantName, role? }. Response: { token, livekitUrl }. Errors: 400 VALIDATION_ERROR, 404 ROOM_NOT_FOUND.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>React Component Pattern</section>
+        <snippet>Functional components with TypeScript interfaces for props. Zustand stores with create&lt;State&gt;() for typed stores with actions.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/2-3-build-home-screen-with-create-join-meeting-ui.md</path>
+        <title>Story 2.3 - Home Screen Implementation</title>
+        <section>File List</section>
+        <snippet>Created JoinRoom placeholder, settingsStore with persist, roomStore, API client pattern. Toast via sonner, navigation via react-router-dom.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epics</title>
+        <section>Epic 2 - Story 2.4</section>
+        <snippet>Join Meeting Flow - Clicking join shows name input dialog, name pre-filled from localStorage, error toast on join failure.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>packages/client/src/components/JoinRoom/JoinRoom.tsx</path>
+        <kind>component</kind>
+        <symbol>JoinRoom</symbol>
+        <lines>1-26</lines>
+        <reason>Placeholder component to be replaced with full implementation. Already has useParams and useNavigate hooks set up.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/stores/settingsStore.ts</path>
+        <kind>store</kind>
+        <symbol>useSettingsStore</symbol>
+        <lines>1-21</lines>
+        <reason>Contains displayName and setDisplayName for pre-filling and saving user name. Uses Zustand persist middleware.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/stores/roomStore.ts</path>
+        <kind>store</kind>
+        <symbol>useRoomStore</symbol>
+        <lines>1-19</lines>
+        <reason>Contains setCurrentRoom action to store token and livekitUrl after successful join.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/lib/api.ts</path>
+        <kind>service</kind>
+        <symbol>createRoom</symbol>
+        <lines>1-19</lines>
+        <reason>API client pattern to follow for adding joinRoom function. Uses fetch with error handling.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/HomeScreen/HomeScreen.tsx</path>
+        <kind>component</kind>
+        <symbol>HomeScreen</symbol>
+        <lines>1-149</lines>
+        <reason>Reference for UI patterns, loading states, toast usage, and navigation. Follow same patterns for JoinRoom.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/ui/button.tsx</path>
+        <kind>component</kind>
+        <symbol>Button</symbol>
+        <reason>shadcn/ui Button component for primary and secondary actions.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/ui/input.tsx</path>
+        <kind>component</kind>
+        <symbol>Input</symbol>
+        <reason>shadcn/ui Input component for name input field.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/shared/src/types/api.ts</path>
+        <kind>types</kind>
+        <symbol>JoinRoomRequest, JoinRoomResponse</symbol>
+        <lines>26-41</lines>
+        <reason>Type definitions for join room API. JoinRoomRequest: { participantName, role? }. JoinRoomResponse: { token, livekitUrl }.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <client>
+        <package name="react" version="^19.2.0" />
+        <package name="react-dom" version="^19.2.0" />
+        <package name="react-router-dom" version="^7.9.6" />
+        <package name="zustand" version="^5.0.9" />
+        <package name="sonner" version="^2.0.7" />
+        <package name="lucide-react" version="^0.555.0" />
+        <package name="@etch/shared" version="workspace:*" />
+      </client>
+      <dev>
+        <package name="vitest" version="^2.0.0" />
+        <package name="@testing-library/react" version="^16.3.0" />
+        <package name="@testing-library/user-event" version="^14.6.1" />
+        <package name="@testing-library/jest-dom" version="^6.9.1" />
+        <package name="jsdom" version="^27.2.0" />
+      </dev>
+    </dependencies>
+  </artifacts>
+
+  <interfaces>
+    <interface>
+      <name>POST /api/rooms/:roomId/join</name>
+      <kind>REST endpoint</kind>
+      <signature>
+        Request: POST /api/rooms/{roomId}/join
+        Body: { participantName: string, role?: 'host' | 'sharer' | 'annotator' | 'viewer' }
+        Response 200: { token: string, livekitUrl: string }
+        Error 404: { error: { code: 'ROOM_NOT_FOUND', message: string } }
+        Error 400: { error: { code: 'VALIDATION_ERROR', message: string } }
+      </signature>
+      <path>packages/server/src/routes/rooms.ts</path>
+    </interface>
+    <interface>
+      <name>useSettingsStore</name>
+      <kind>Zustand store hook</kind>
+      <signature>
+        const { displayName, setDisplayName } = useSettingsStore()
+        displayName: string (persisted to localStorage)
+        setDisplayName: (name: string) => void
+      </signature>
+      <path>packages/client/src/stores/settingsStore.ts</path>
+    </interface>
+    <interface>
+      <name>useRoomStore</name>
+      <kind>Zustand store hook</kind>
+      <signature>
+        const { currentRoom, setCurrentRoom, clearRoom } = useRoomStore()
+        currentRoom: { roomId: string, token: string, livekitUrl: string } | null
+        setCurrentRoom: (room: RoomInfo | null) => void
+      </signature>
+      <path>packages/client/src/stores/roomStore.ts</path>
+    </interface>
+    <interface>
+      <name>useParams</name>
+      <kind>react-router-dom hook</kind>
+      <signature>
+        const { roomId } = useParams&lt;{ roomId: string }&gt;()
+        Returns URL parameters from route pattern /join/:roomId
+      </signature>
+      <path>react-router-dom</path>
+    </interface>
+  </interfaces>
+
+  <constraints>
+    <constraint type="pattern">Follow React functional component pattern with TypeScript interfaces for props</constraint>
+    <constraint type="pattern">Use Zustand store pattern: create&lt;State&gt;() for typed stores with actions</constraint>
+    <constraint type="pattern">File structure: components in ComponentName/ComponentName.tsx with barrel exports</constraint>
+    <constraint type="styling">Dark theme default (bg-background), accent color for primary actions</constraint>
+    <constraint type="styling">Use shadcn/ui Button, Input components - already available</constraint>
+    <constraint type="ux">Error toasts via sonner with 5 second duration</constraint>
+    <constraint type="validation">Name validation: min 1 char, max 50 chars (per MAX_NAME_LENGTH constant)</constraint>
+    <constraint type="testing">Co-locate test files with source: JoinRoom.test.tsx next to JoinRoom.tsx</constraint>
+    <constraint type="testing">Use Vitest + React Testing Library + @testing-library/user-event for component tests</constraint>
+    <constraint type="api">API client pattern: async function with fetch, structured error handling, throw on non-ok response</constraint>
+    <constraint type="state">Settings (displayName) persisted via Zustand persist middleware to localStorage</constraint>
+    <constraint type="state">Room state is transient (not persisted) - cleared on leave</constraint>
+  </constraints>
+
+  <tests>
+    <standards>
+      Vitest + React Testing Library for component tests. Tests co-located with source files (JoinRoom.test.tsx).
+      Use @testing-library/user-event for user interactions. Mock API calls and navigation.
+      Follow existing patterns from HomeScreen.test.tsx for component testing structure.
+    </standards>
+    <locations>
+      <location>packages/client/src/components/JoinRoom/JoinRoom.test.tsx</location>
+      <location>packages/client/src/**/*.test.tsx</location>
+    </locations>
+    <ideas>
+      <idea ac="2.4.1">Test JoinRoom renders title with room ID, name input, Join button, Cancel button</idea>
+      <idea ac="2.4.2">Test name input has max length 50, shows validation error when submitting empty</idea>
+      <idea ac="2.4.2">Test input is auto-focused on mount</idea>
+      <idea ac="2.4.3">Test name input pre-fills from settingsStore.displayName</idea>
+      <idea ac="2.4.4">Test Join button shows loading spinner and is disabled during API call</idea>
+      <idea ac="2.4.4">Test input is disabled during API call</idea>
+      <idea ac="2.4.5">Test successful join saves name to settingsStore and navigates to /room/:roomId</idea>
+      <idea ac="2.4.5">Test roomStore.setCurrentRoom called with token and livekitUrl</idea>
+      <idea ac="2.4.6">Test API error shows toast with error message</idea>
+      <idea ac="2.4.6">Test button returns to normal state after error</idea>
+      <idea ac="2.4.7">Test Enter key in input triggers form submission</idea>
+      <idea ac="2.4.8">Test Cancel button navigates back to home</idea>
+      <idea ac="2.4.8">Test name is not saved when canceling</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,233 @@
+<story-context id="bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1</storyId>
+    <title>Initialize Monorepo with Tauri Desktop App</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-1-initialize-monorepo-with-tauri-desktop-app.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>a properly structured monorepo with a working Tauri desktop application</iWant>
+    <soThat>I have a foundation to build all ETCH features upon</soThat>
+    <tasks>
+      <task id="1" title="Initialize Monorepo Structure" ac="1.1.1, 1.1.2">
+        <subtask>Create root package.json with workspaces configuration</subtask>
+        <subtask>Create pnpm-workspace.yaml defining packages/*</subtask>
+        <subtask>Create tsconfig.base.json with shared TypeScript settings (strict: true)</subtask>
+        <subtask>Create placeholder directories: packages/server/, packages/shared/</subtask>
+        <subtask>Add .gitignore with node_modules, dist, .env, Tauri build artifacts</subtask>
+      </task>
+      <task id="2" title="Create Tauri Desktop Application" ac="1.1.3">
+        <subtask>Run npx create-tauri-ui@latest in packages/client with Vite + React + pnpm</subtask>
+        <subtask>Verify Tauri 2.0 is installed (check src-tauri/Cargo.toml)</subtask>
+        <subtask>Configure tauri.conf.json with app name "ETCH"</subtask>
+        <subtask>Verify native window controls work via tauri-controls</subtask>
+        <subtask>Test pnpm dev opens desktop window</subtask>
+      </task>
+      <task id="3" title="Configure TypeScript Path Aliases" ac="1.1.4">
+        <subtask>Update packages/client/tsconfig.json to extend tsconfig.base.json</subtask>
+        <subtask>Configure path alias @/* → ./src/* in tsconfig.json</subtask>
+        <subtask>Configure same alias in vite.config.ts for bundler resolution</subtask>
+        <subtask>Verify imports like import { x } from '@/components/x' work</subtask>
+      </task>
+      <task id="4" title="Configure Tailwind CSS with Design System" ac="1.1.5">
+        <subtask>Verify Tailwind CSS is installed (from create-tauri-ui)</subtask>
+        <subtask>Update tailwind.config.ts with UX spec color tokens</subtask>
+        <subtask>Configure dark mode as default (darkMode: 'class')</subtask>
+        <subtask>Update index.css with CSS variables</subtask>
+      </task>
+      <task id="5" title="Initialize shadcn/ui" ac="1.1.5">
+        <subtask>Run npx shadcn@latest init in packages/client</subtask>
+        <subtask>Select dark theme as default</subtask>
+        <subtask>Install base components: Button, Input</subtask>
+        <subtask>Verify Lucide icons are available</subtask>
+        <subtask>Update App.tsx with a test shadcn/ui Button</subtask>
+      </task>
+      <task id="6" title="Configure ESLint and Prettier" ac="1.1.6">
+        <subtask>Create root .eslintrc.cjs with TypeScript and React rules</subtask>
+        <subtask>Create root .prettierrc with project formatting settings</subtask>
+        <subtask>Add lint and lint:fix scripts to root package.json</subtask>
+        <subtask>Add format script for Prettier</subtask>
+        <subtask>Verify pnpm lint runs without errors on initial code</subtask>
+      </task>
+      <task id="7" title="Configure Build Scripts" ac="1.1.7">
+        <subtask>Add dev:client script to root package.json</subtask>
+        <subtask>Add build:client script</subtask>
+        <subtask>Test macOS build produces .dmg</subtask>
+        <subtask>Verify build time under 60 seconds</subtask>
+      </task>
+      <task id="8" title="Write Smoke Tests" ac="all">
+        <subtask>Create packages/client/src/App.test.tsx with basic render test</subtask>
+        <subtask>Verify test setup works (placeholder for Story 1.4)</subtask>
+        <subtask>Document any manual verification steps</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="1.1.1" title="Project Structure">
+      <given>a fresh clone of the repository</given>
+      <when>I examine the directory structure</when>
+      <then>it matches the architecture specification with packages/client, packages/server, packages/shared, pnpm-workspace.yaml, tsconfig.base.json, and package.json</then>
+    </ac>
+    <ac id="1.1.2" title="Clean Install">
+      <given>a fresh clone of the repository</given>
+      <when>I run pnpm install</when>
+      <then>all dependencies install successfully with no errors</then>
+    </ac>
+    <ac id="1.1.3" title="Development Mode">
+      <given>dependencies are installed</given>
+      <when>I run pnpm dev:client</when>
+      <then>a Tauri desktop window opens with a basic React UI with native OS controls and dark mode default</then>
+    </ac>
+    <ac id="1.1.4" title="TypeScript Configuration">
+      <given>the project structure exists</given>
+      <when>I import using path aliases (@/ for client internals)</when>
+      <then>TypeScript resolves the paths correctly with no compilation errors</then>
+    </ac>
+    <ac id="1.1.5" title="Styling Configuration">
+      <given>the Tauri app is running</given>
+      <when>I examine the UI</when>
+      <then>Tailwind CSS is configured with design system tokens, shadcn/ui initialized with dark mode default, and background color is #09090b</then>
+    </ac>
+    <ac id="1.1.6" title="Code Quality Tools">
+      <given>the project exists</given>
+      <when>I run pnpm lint</when>
+      <then>ESLint runs with TypeScript rules and Prettier formatting is checked</then>
+    </ac>
+    <ac id="1.1.7" title="Build Output">
+      <given>the project is configured</given>
+      <when>I run pnpm build:client</when>
+      <then>the app builds successfully for macOS (.dmg) in under 60 seconds</then>
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="Project Initialization" snippet="First implementation story should execute: npx create-tauri-ui@latest etch-client. Select Vite + React template with pnpm package manager. This establishes Tauri 2.0, shadcn/ui, Tailwind CSS, Vite, TypeScript, Lucide icons, and tauri-controls." />
+      <doc path="docs/architecture.md" title="Architecture" section="Project Structure" snippet="Defines target monorepo structure with packages/client (Tauri desktop), packages/server (Hono API), packages/shared (types & utilities), pnpm-workspace.yaml, tsconfig.base.json, and package.json." />
+      <doc path="docs/architecture.md" title="Architecture" section="ADR-001: Tauri over Electron" snippet="Use Tauri 2.0 instead of Electron. Rationale: 10x smaller bundle (~2MB vs ~150MB), lower memory footprint, Rust backend enables native optimizations." />
+      <doc path="docs/architecture.md" title="Architecture" section="Development Environment" snippet="Prerequisites: Node.js 20 LTS, pnpm 8+, Rust 1.70+. Setup: pnpm install, pnpm dev (concurrent client+server). Build: pnpm build:client produces .dmg/.msi." />
+      <doc path="docs/architecture.md" title="Architecture" section="Consistency Rules - Naming" snippet="Files (components): PascalCase. Files (utils/hooks): camelCase. Files (tests): co-located with .test.ts. Path aliases: @/ for client internals, @etch/shared for cross-package imports." />
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="3.1 Color System - Dark Theme" snippet="--background: #09090b; --background-subtle: #0a0a0c; --card: #0c0c0e; --text-primary: #fafafa; --accent: #8b5cf6. Dark mode is default theme." />
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="1.1 Design System Choice" snippet="Selected: shadcn/ui + Tailwind CSS. Rationale: Matches developer tool aesthetic, dark mode built-in, built on Radix UI primitives, highly customizable. Tauri UI template provides native window controls." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Tech Spec" section="Dependencies" snippet="Core: tauri 2.0.x, react 18.x, vite 5.x, typescript 5.x, zustand 5.x, tailwindcss 3.x. Dev: eslint 9.x, prettier 3.x, vitest 2.x." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Epic 1 Tech Spec" section="Acceptance Criteria" snippet="AC-1.1: Monorepo with packages/client, server, shared. AC-1.2: pnpm dev:client opens Tauri window with dark mode. AC-1.6: pnpm lint runs ESLint with TypeScript rules." />
+      <doc path="docs/test-design-system.md" title="Test Design" section="Framework Selection" snippet="Unit/Integration/Component: Vitest. Rationale: Native Vite integration, Jest-compatible, fast. Coverage targets: 60% overall, 80% for critical paths." />
+    </docs>
+    <code>
+      <!-- No existing code - this is the first story creating the project structure -->
+      <note>Greenfield project - packages/ directory does not exist yet. This story creates the foundational structure.</note>
+    </code>
+    <dependencies>
+      <ecosystem name="node">
+        <package name="tauri" version="2.0.x" purpose="Desktop runtime" />
+        <package name="react" version="18.x" purpose="UI framework" />
+        <package name="vite" version="5.x" purpose="Build tool" />
+        <package name="typescript" version="5.x" purpose="Type safety" />
+        <package name="zustand" version="5.x" purpose="State management" />
+        <package name="tailwindcss" version="3.x" purpose="Styling" />
+        <package name="eslint" version="9.x" purpose="Linting" />
+        <package name="prettier" version="3.x" purpose="Formatting" />
+        <package name="vitest" version="2.x" purpose="Testing" />
+        <package name="@testing-library/react" version="16.x" purpose="Component testing" />
+        <package name="concurrently" version="9.x" purpose="Parallel script execution" />
+      </ecosystem>
+      <ecosystem name="rust">
+        <package name="tauri" version="2.0" purpose="Desktop framework" />
+        <package name="tauri-build" version="2.0" purpose="Build tooling" />
+      </ecosystem>
+      <cli-tool name="create-tauri-ui" purpose="Project scaffolding - use npx create-tauri-ui@latest" />
+      <cli-tool name="shadcn" purpose="Component installation - use npx shadcn@latest init" />
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="Architecture">Use pnpm workspaces for monorepo management - not npm/yarn workspaces</constraint>
+    <constraint source="Architecture">TypeScript strict mode enabled (strict: true in tsconfig.base.json)</constraint>
+    <constraint source="Architecture">Path aliases: @/ for client-internal imports, @etch/shared for cross-package</constraint>
+    <constraint source="Architecture">Test files co-located with source (e.g., App.test.tsx next to App.tsx)</constraint>
+    <constraint source="UX Spec">Dark mode is default theme - light mode is optional</constraint>
+    <constraint source="UX Spec">Background color must be #09090b (--background token)</constraint>
+    <constraint source="Tech Spec">Build time for client must be under 60 seconds</constraint>
+    <constraint source="Tech Spec">Development server must start in under 5 seconds</constraint>
+    <constraint source="Dev Notes">Use npx create-tauri-ui@latest starter - provides native window controls, shadcn/ui, Tailwind CSS out of box</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="tsconfig.base.json" kind="TypeScript Configuration" path="tsconfig.base.json">
+      <signature>{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
+  }
+}</signature>
+    </interface>
+    <interface name="pnpm-workspace.yaml" kind="Workspace Configuration" path="pnpm-workspace.yaml">
+      <signature>packages:
+  - 'packages/*'</signature>
+    </interface>
+    <interface name="CSS Variables (Dark Theme)" kind="CSS Interface" path="packages/client/src/index.css">
+      <signature>:root {
+  --background: #09090b;
+  --background-subtle: #0a0a0c;
+  --card: #0c0c0e;
+  --card-hover: #111113;
+  --border: rgba(255,255,255,0.06);
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
+  --accent: #8b5cf6;
+  --accent-hover: #7c3aed;
+}</signature>
+    </interface>
+    <interface name="Root package.json scripts" kind="NPM Scripts" path="package.json">
+      <signature>{
+  "scripts": {
+    "dev": "concurrently \"pnpm dev:client\" \"pnpm dev:server\"",
+    "dev:client": "pnpm --filter client dev",
+    "dev:server": "pnpm --filter server dev",
+    "build:client": "pnpm --filter client build",
+    "lint": "eslint packages/*/src --ext .ts,.tsx",
+    "lint:fix": "eslint packages/*/src --ext .ts,.tsx --fix",
+    "format": "prettier --write \"packages/*/src/**/*.{ts,tsx}\"",
+    "test": "vitest"
+  }
+}</signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Use Vitest for all testing. Test files are co-located with source files using .test.ts/.test.tsx suffix. React Testing Library for component tests. Coverage target is 60% overall with 80% for critical paths. Tests should be deterministic - avoid timing-dependent assertions. Mock external dependencies like LiveKit. Use Zustand's direct state manipulation for test setup.
+    </standards>
+    <locations>
+      <location>packages/client/src/**/*.test.tsx</location>
+      <location>packages/server/src/**/*.test.ts</location>
+      <location>packages/shared/src/**/*.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="1.1.1">Verify packages/client, packages/server, packages/shared directories exist after setup</idea>
+      <idea ac="1.1.2">Run pnpm install on clean clone and verify no errors in CI</idea>
+      <idea ac="1.1.3">Smoke test: verify Tauri window opens (manual or E2E with Playwright)</idea>
+      <idea ac="1.1.4">TypeScript compilation test: import with @/ alias and verify no errors</idea>
+      <idea ac="1.1.5">Verify CSS variable --background is #09090b in rendered output</idea>
+      <idea ac="1.1.6">Run pnpm lint and verify exit code 0</idea>
+      <idea ac="1.1.7">Build test: verify .dmg file is created in target/release/bundle/</idea>
+      <idea ac="all">Create App.test.tsx that renders App component and verifies basic structure</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,340 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.11</storyId>
+    <title>Render Annotations on Sharer's Overlay</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-21</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/4-11-render-annotations-on-sharers-overlay.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>screen sharer</asA>
+    <iWant>to see annotations on my actual shared screen</iWant>
+    <soThat>I can see what others are pointing at without looking at ETCH</soThat>
+    <tasks>
+      <task id="1" acs="4.11.1,4.11.2">
+        <name>Subscribe overlay window to annotationStore</name>
+        <subtasks>
+          <subtask>Load SharerOverlay component with access to annotationStore</subtask>
+          <subtask>Use useAnnotationStore() to subscribe to strokes state</subtask>
+          <subtask>Verify overlay receives stroke updates from store</subtask>
+          <subtask>Test: overlay shows same strokes as main window</subtask>
+        </subtasks>
+      </task>
+      <task id="2" acs="4.11.1,4.11.3">
+        <name>Implement annotation canvas in overlay</name>
+        <subtasks>
+          <subtask>Create AnnotationOverlayCanvas component in overlay</subtask>
+          <subtask>Reuse canvas rendering utilities from packages/client/src/lib/canvas.ts</subtask>
+          <subtask>Apply same Perfect Freehand stroke rendering as viewer canvas</subtask>
+          <subtask>Match canvas dimensions to overlay window size</subtask>
+        </subtasks>
+      </task>
+      <task id="3" acs="4.11.3,4.11.7">
+        <name>Implement coordinate transformation for overlay</name>
+        <subtasks>
+          <subtask>Use denormalizeCoordinates() from packages/client/src/utils/coordinates.ts</subtask>
+          <subtask>Account for overlay window position relative to shared screen bounds</subtask>
+          <subtask>Transform normalized [0,1] coordinates to overlay pixel coordinates</subtask>
+          <subtask>Test: strokes appear in same relative position on overlay as viewer canvas</subtask>
+        </subtasks>
+      </task>
+      <task id="4" acs="4.11.4">
+        <name>Implement real-time annotation updates</name>
+        <subtasks>
+          <subtask>Ensure overlay subscribes to annotationStore with minimal re-render delay</subtask>
+          <subtask>Use requestAnimationFrame for 60fps render loop</subtask>
+          <subtask>Measure and verify less than 200ms latency from DataTrack receive to overlay render</subtask>
+          <subtask>Test: draw on remote client, verify overlay updates within 200ms</subtask>
+        </subtasks>
+      </task>
+      <task id="5" acs="4.11.5">
+        <name>Implement click-through behavior</name>
+        <subtasks>
+          <subtask>Overlay window set to click-through by default (Story 3.6 baseline)</subtask>
+          <subtask>When sharer activates drawing mode, disable click-through temporarily</subtask>
+          <subtask>Use Tauri command to toggle ignore_cursor_events on overlay window</subtask>
+          <subtask>Restore click-through after sharer finishes drawing (mouse up)</subtask>
+          <subtask>Test: clicks pass through overlay to underlying app when not drawing</subtask>
+        </subtasks>
+      </task>
+      <task id="6" acs="4.11.6">
+        <name>Enable sharer drawing on overlay</name>
+        <subtasks>
+          <subtask>Add drawing event handlers to overlay canvas (mousedown, mousemove, mouseup)</subtask>
+          <subtask>When sharer draws, toggle overlay to interactive mode (disable click-through)</subtask>
+          <subtask>Create strokes using same useAnnotations hook pattern</subtask>
+          <subtask>Strokes sync to other participants via DataTrack</subtask>
+          <subtask>Return to click-through mode after drawing complete</subtask>
+        </subtasks>
+      </task>
+      <task id="7" acs="4.11.7">
+        <name>Verify cross-window coordinate alignment</name>
+        <subtasks>
+          <subtask>Manual test: draw circle on viewer, verify same position on sharer overlay</subtask>
+          <subtask>Test multiple screen resolutions and aspect ratios</subtask>
+          <subtask>Document any edge cases with coordinate alignment</subtask>
+        </subtasks>
+      </task>
+      <task id="8" acs="4.11.2,4.11.3">
+        <name>Write unit and integration tests</name>
+        <subtasks>
+          <subtask>Test: overlay canvas renders strokes from annotationStore</subtask>
+          <subtask>Test: coordinate transformation matches viewer canvas</subtask>
+          <subtask>Test: click-through toggle commands work correctly</subtask>
+          <subtask>Test: sharer-created strokes appear in store and sync</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.11.1" verification="Manual: sharer view">Annotations render on sharer's overlay window</criterion>
+    <criterion id="AC-4.11.2" verification="Test: state consistency">Same strokes as viewer canvases</criterion>
+    <criterion id="AC-4.11.3" verification="Test: alignment">Same coordinate transformation (normalized [0,1])</criterion>
+    <criterion id="AC-4.11.4" verification="Performance: measure">Updates in real-time (less than 200ms from remote draw to local overlay)</criterion>
+    <criterion id="AC-4.11.5" verification="Test: interaction mode toggle">Overlay is click-through except when sharer is drawing</criterion>
+    <criterion id="AC-4.11.6" verification="Manual: sharer drawing">Sharer can draw on their own screen</criterion>
+    <criterion id="AC-4.11.7" verification="Manual: cross-client alignment test">Coordinates align between overlay and viewers</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc type="prd" path="docs/prd.md" relevance="high">
+        <excerpt>Epic 4: Real-Time Annotations - Collaborative annotation layer for screen shares</excerpt>
+      </doc>
+      <doc type="architecture" path="docs/architecture.md" relevance="high">
+        <excerpt>
+          ADR-003: Hybrid Rendering - Sharer overlay uses native Tauri transparent window with canvas rendering
+          ADR-008: Core-Centric Media Architecture - Overlay subscribes to same annotationStore as main window
+          Novel Pattern: Decoupled Annotation Layer - Sharer overlay design for transparent window annotations
+        </excerpt>
+      </doc>
+      <doc type="tech-spec" path="docs/sprint-artifacts/tech-spec-epic-4.md" relevance="high">
+        <excerpt>
+          Story 4.11: Render Annotations on Sharer's Overlay
+          - Sharer overlay window renders annotations from shared annotationStore
+          - Canvas rendering with Perfect Freehand for smooth strokes
+          - Click-through behavior toggles when sharer draws
+        </excerpt>
+      </doc>
+      <doc type="epic" path="docs/epics/epic-4-real-time-annotations.md" relevance="high">
+        <excerpt>Story 4.11: Render Annotations on Sharer's Overlay - final story in Epic 4</excerpt>
+      </doc>
+    </docs>
+    <code>
+      <file path="packages/client/src/stores/annotationStore.ts" relevance="critical">
+        <purpose>Zustand store for annotation state management - strokes array, activeStroke, remoteActiveStrokes, tool selection</purpose>
+        <interfaces>
+          <interface>AnnotationState - strokes: Stroke[], activeStroke: Stroke | null, activeTool: Tool, remoteActiveStrokes: Map</interface>
+          <interface>addStroke(stroke: Stroke), setActiveStroke(stroke | null), addRemoteActiveStroke(stroke)</interface>
+          <interface>updateRemoteActiveStroke(strokeId, points), completeRemoteActiveStroke(strokeId)</interface>
+          <interface>setStrokes(strokes) - for bulk operations like late-joiner sync</interface>
+        </interfaces>
+      </file>
+      <file path="packages/client/src/hooks/useAnnotations.ts" relevance="critical">
+        <purpose>Hook for annotation drawing operations - stroke creation, continuation, completion, erasing</purpose>
+        <interfaces>
+          <interface>useAnnotations(options?: { sync?: AnnotationSyncCallbacks }) - main hook</interface>
+          <interface>Returns: strokes, activeStroke, activeTool, canAnnotate, myColor, myParticipantId</interface>
+          <interface>Actions: startStroke(point), continueStroke(point), endStroke()</interface>
+          <interface>Eraser: eraseStrokeAt(point), updateHoveredStroke(point), clearHoveredStroke()</interface>
+        </interfaces>
+        <note>Point batching at 16ms intervals for sync (60fps), local-first rendering with optimistic UI</note>
+      </file>
+      <file path="packages/client/src/hooks/useAnnotationSync.ts" relevance="high">
+        <purpose>LiveKit DataTrack sync for annotations - publishes and receives stroke updates</purpose>
+        <interfaces>
+          <interface>useAnnotationSync(room, isScreenShareActive) - main hook</interface>
+          <interface>Returns: isConnected, syncState, publishStroke, publishStrokeUpdate, publishDelete, publishClearAll</interface>
+          <interface>Handles: STROKE_UPDATE, STROKE_COMPLETE, STROKE_DELETE, CLEAR_ALL, STATE_REQUEST, STATE_SNAPSHOT</interface>
+        </interfaces>
+        <note>Late-joiner sync with retry logic (3 attempts, exponential backoff)</note>
+      </file>
+      <file path="packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx" relevance="critical">
+        <purpose>Canvas component for rendering annotations over video/shared content</purpose>
+        <interfaces>
+          <interface>Props: videoRef, isScreenShareActive, strokes, activeStroke, remoteActiveStrokes, canAnnotate, activeTool</interface>
+          <interface>Props: onStrokeStart, onStrokeMove, onStrokeEnd, onEraseAt, onEraserHover, hoveredStrokeId, syncState</interface>
+          <interface>Uses Perfect Freehand (getStroke) for smooth stroke rendering</interface>
+          <interface>PEN_OPTIONS: size 8, HIGHLIGHTER_OPTIONS: size 24, opacity 0.4</interface>
+        </interfaces>
+        <note>Uses requestAnimationFrame for 60fps render loop, handles retina display scaling</note>
+      </file>
+      <file path="packages/client/src/utils/coordinates.ts" relevance="critical">
+        <purpose>Coordinate normalization utilities for resolution-independent annotations</purpose>
+        <interfaces>
+          <interface>normalizeCoordinates(pixelX, pixelY, canvasWidth, canvasHeight, pressure?) -> Point</interface>
+          <interface>denormalizeCoordinates(normX, normY, canvasWidth, canvasHeight) -> {x, y}</interface>
+          <interface>normalizeStrokePoints(points, canvasWidth, canvasHeight) -> Point[]</interface>
+          <interface>denormalizeStrokePoints(points, canvasWidth, canvasHeight) -> {x, y, pressure?}[]</interface>
+          <interface>getPointerCoordinates(event, element) -> Point</interface>
+        </interfaces>
+        <note>All coordinates in [0,1] range, clamped to prevent out-of-bounds</note>
+      </file>
+      <file path="packages/client/src/lib/canvas.ts" relevance="high">
+        <purpose>Canvas hit-testing utilities for eraser tool</purpose>
+        <interfaces>
+          <interface>getStrokeBounds(stroke) -> BoundingBox</interface>
+          <interface>isPointOnStroke(point, stroke, threshold) -> boolean</interface>
+          <interface>findTopmostStrokeAtPoint(point, strokes, threshold) -> Stroke | null</interface>
+          <interface>DEFAULT_HIT_THRESHOLD = 0.02 (2% of canvas)</interface>
+        </interfaces>
+      </file>
+      <file path="packages/client/src/components/ScreenShare/AnnotationOverlayPage.tsx" relevance="critical">
+        <purpose>Current overlay page component - needs enhancement for annotation rendering</purpose>
+        <interfaces>
+          <interface>Listens for Tauri events: annotation-stroke, annotation-clear, annotation-clear-all</interface>
+          <interface>Renders strokes on full-screen canvas with red border</interface>
+          <interface>Uses local state for strokes (needs to use annotationStore instead)</interface>
+        </interfaces>
+        <note>CURRENT IMPLEMENTATION - needs refactoring to use annotationStore and Perfect Freehand rendering</note>
+      </file>
+      <file path="packages/client/src-tauri/src/screen_share.rs" relevance="critical">
+        <purpose>Tauri commands for overlay window management and click-through behavior</purpose>
+        <interfaces>
+          <interface>create_annotation_overlay(app, bounds) - creates transparent overlay window</interface>
+          <interface>destroy_annotation_overlay(app) - destroys overlay</interface>
+          <interface>update_overlay_bounds(app, bounds) - updates position/size</interface>
+          <interface>configure_click_through_macos/windows/linux - platform-specific click-through</interface>
+        </interfaces>
+        <note>
+          Click-through uses:
+          - macOS: NSWindow.setIgnoresMouseEvents
+          - Windows: WS_EX_TRANSPARENT | WS_EX_LAYERED
+          - Linux: basic mode (varies by window manager)
+        </note>
+      </file>
+      <file path="packages/client/src/components/ScreenShare/ScreenShareViewer.tsx" relevance="high">
+        <purpose>Reference implementation of AnnotationCanvas integration with video</purpose>
+        <interfaces>
+          <interface>Shows pattern for connecting useAnnotations + useAnnotationSync + AnnotationCanvas</interface>
+          <interface>Demonstrates sync callbacks wiring to canvas events</interface>
+        </interfaces>
+      </file>
+      <file path="packages/shared/src/types/stroke.ts" relevance="high">
+        <purpose>Stroke and Point type definitions</purpose>
+        <interfaces>
+          <interface>Point: { x: number, y: number, pressure?: number }</interface>
+          <interface>Stroke: { id, participantId, tool: 'pen'|'highlighter', color, points, createdAt, isComplete }</interface>
+        </interfaces>
+      </file>
+      <file path="packages/shared/src/types/annotation.ts" relevance="high">
+        <purpose>DataTrack message types for annotation sync</purpose>
+        <interfaces>
+          <interface>ANNOTATION_MESSAGE_TYPES: STROKE_UPDATE, STROKE_COMPLETE, STROKE_DELETE, CLEAR_ALL, STATE_REQUEST, STATE_SNAPSHOT</interface>
+          <interface>ANNOTATION_TOPIC = 'annotations'</interface>
+          <interface>encodeAnnotationMessage(msg) -> Uint8Array</interface>
+          <interface>decodeAnnotationMessage(data) -> AnnotationMessage | null</interface>
+        </interfaces>
+      </file>
+      <file path="packages/shared/src/constants/colors.ts" relevance="medium">
+        <purpose>Participant color palette for annotations</purpose>
+        <interfaces>
+          <interface>PARTICIPANT_COLORS = ['#f97316', '#06b6d4', '#a855f7', '#22c55e', '#ec4899']</interface>
+          <interface>getParticipantColor(index) -> color string (cycles)</interface>
+        </interfaces>
+      </file>
+    </code>
+    <dependencies>
+      <dependency name="perfect-freehand" version="latest" purpose="Smooth pressure-sensitive stroke rendering">
+        <usage>getStroke(points, options) generates stroke outlines for canvas Path2D</usage>
+      </dependency>
+      <dependency name="zustand" version="4.x" purpose="Lightweight state management for annotations">
+        <usage>useAnnotationStore - shared between main window and overlay</usage>
+      </dependency>
+      <dependency name="livekit-client" version="latest" purpose="WebRTC for DataTrack annotation sync">
+        <usage>Room.localParticipant.publishData for stroke sync</usage>
+      </dependency>
+      <dependency name="@tauri-apps/api" version="2.x" purpose="IPC for overlay window control">
+        <usage>invoke('set_overlay_click_through', { clickThrough: boolean })</usage>
+      </dependency>
+      <dependency name="lucide-react" version="latest" purpose="Icons for annotation toolbar">
+        <usage>Pencil, Highlighter, Eraser, MousePointer2 icons</usage>
+      </dependency>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="performance">Remote draw to overlay render must be under 200ms</constraint>
+    <constraint type="performance">Overlay render loop must maintain 60fps using requestAnimationFrame</constraint>
+    <constraint type="performance">Click-through toggle Tauri command round-trip under 50ms</constraint>
+    <constraint type="architecture">Overlay and main window MUST share the same annotationStore (Zustand)</constraint>
+    <constraint type="architecture">Coordinate transformation MUST use normalized [0,1] coordinates for resolution independence</constraint>
+    <constraint type="platform">Click-through behavior varies by platform - must test macOS, Windows, Linux</constraint>
+    <constraint type="ux">Overlay is click-through by default, only interactive when sharer actively draws</constraint>
+    <constraint type="ux">Sharer's strokes must sync to viewers via DataTrack immediately</constraint>
+    <constraint type="technical">Canvas must account for overlay window bounds relative to shared screen</constraint>
+    <constraint type="technical">Perfect Freehand must be used for consistent stroke rendering with viewer canvas</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="annotationStore">
+      <description>Zustand store shared between main window and overlay for stroke state</description>
+      <methods>
+        <method>strokes: Stroke[] - completed strokes array</method>
+        <method>activeStroke: Stroke | null - current in-progress stroke</method>
+        <method>remoteActiveStrokes: Map&lt;string, Stroke&gt; - in-progress remote strokes</method>
+        <method>addStroke(stroke) - add completed stroke</method>
+        <method>setActiveStroke(stroke) - set/clear active stroke</method>
+        <method>addRemoteActiveStroke(stroke) - add remote in-progress stroke</method>
+        <method>updateRemoteActiveStroke(id, points) - append points to remote stroke</method>
+        <method>completeRemoteActiveStroke(id) - move remote stroke to completed</method>
+      </methods>
+    </interface>
+    <interface name="Tauri Commands">
+      <description>Rust commands for overlay window control</description>
+      <methods>
+        <method>create_annotation_overlay(bounds: OverlayBounds) - create overlay window</method>
+        <method>destroy_annotation_overlay() - destroy overlay window</method>
+        <method>update_overlay_bounds(bounds: OverlayBounds) - update position/size</method>
+        <method>set_overlay_click_through(click_through: bool) - NEW: toggle interactivity</method>
+      </methods>
+    </interface>
+    <interface name="AnnotationCanvas Props">
+      <description>Props for canvas component - use as reference for overlay canvas</description>
+      <methods>
+        <method>videoRef - not needed for overlay (uses full window)</method>
+        <method>isScreenShareActive - always true for overlay</method>
+        <method>strokes, activeStroke, remoteActiveStrokes - from store</method>
+        <method>canAnnotate - true for sharer</method>
+        <method>activeTool - from store</method>
+        <method>onStrokeStart, onStrokeMove, onStrokeEnd - drawing callbacks</method>
+      </methods>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <standard>Use Vitest for unit tests, React Testing Library for component tests</standard>
+      <standard>Mock Zustand stores using act() wrapper for state updates</standard>
+      <standard>Mock crypto.randomUUID for deterministic stroke IDs in tests</standard>
+      <standard>Test file naming: ComponentName.test.tsx or hookName.test.ts</standard>
+      <standard>Follow existing test patterns in packages/client/tests/</standard>
+      <standard>All tests must pass before marking story complete (current: 1011 passing)</standard>
+    </standards>
+    <locations>
+      <location path="packages/client/tests/hooks/useAnnotations.test.ts">Reference for hook testing patterns - 1122 lines of comprehensive tests</location>
+      <location path="packages/client/tests/components/ScreenShare/">Screen share component tests</location>
+      <location path="packages/client/tests/stores/">Store testing patterns</location>
+    </locations>
+    <ideas>
+      <idea ac="4.11.1">Test overlay canvas renders strokes from annotationStore subscription</idea>
+      <idea ac="4.11.2">Test stroke state consistency between main window and overlay using shared store</idea>
+      <idea ac="4.11.3">Test coordinate transformation: denormalizeCoordinates produces correct pixel values for overlay dimensions</idea>
+      <idea ac="4.11.3">Test strokes at (0.5, 0.5) normalized appear at center of overlay canvas</idea>
+      <idea ac="4.11.4">Performance test: measure time from store update to canvas paint (target: under 200ms)</idea>
+      <idea ac="4.11.5">Test click-through toggle: verify Tauri command called with correct params on drawing start/end</idea>
+      <idea ac="4.11.5">Test overlay starts in click-through mode by default</idea>
+      <idea ac="4.11.6">Test sharer drawing flow: startStroke -> continueStroke -> endStroke creates stroke in store</idea>
+      <idea ac="4.11.6">Test sharer strokes include correct participantId and color</idea>
+      <idea ac="4.11.7">Integration test: stroke drawn at normalized coords appears at expected pixel position</idea>
+      <idea>Test overlay handles window resize correctly (canvas dimensions update)</idea>
+      <idea>Test overlay renders both pen and highlighter strokes with correct styling</idea>
+      <idea>Test overlay renders remote in-progress strokes from remoteActiveStrokes</idea>
+      <idea>Mock Tauri invoke for click-through toggle testing</idea>
+    </ideas>
+  </tests>
+</story-context>

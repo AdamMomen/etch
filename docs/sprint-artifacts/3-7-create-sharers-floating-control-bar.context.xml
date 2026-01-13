@@ -1,0 +1,337 @@
+<story-context id="story-3-7-menu-bar-control" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>7</storyId>
+    <title>Create Sharer's Menu Bar Control</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-21</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/3-7-create-sharers-floating-control-bar.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>screen sharer</asA>
+    <iWant>a menu bar icon with quick controls while sharing</iWant>
+    <soThat>I can stop sharing or leave the meeting without switching windows</soThat>
+    <tasks>
+      <task id="1" acs="3.7.1,3.7.7">
+        <title>Create Tauri tray icon infrastructure</title>
+        <subtasks>
+          <subtask>Add TrayIconBuilder setup in lib.rs or new tray.rs module</subtask>
+          <subtask>Create tray icon asset (app icon with red dot variant)</subtask>
+          <subtask>Configure show_menu_on_left_click(true)</subtask>
+          <subtask>Add Tauri commands: show_share_tray(), hide_share_tray()</subtask>
+        </subtasks>
+      </task>
+      <task id="2" acs="3.7.2">
+        <title>Create native menu</title>
+        <subtasks>
+          <subtask>Build menu with MenuBuilder: disabled "Sharing Screen" status item</subtask>
+          <subtask>Add "Open Etch" with Cmd+O accelerator</subtask>
+          <subtask>Add "Stop Sharing" with Cmd+S accelerator</subtask>
+          <subtask>Add "Leave Meeting" with Cmd+Q accelerator</subtask>
+        </subtasks>
+      </task>
+      <task id="3" acs="3.7.3,3.7.4,3.7.5,3.7.6">
+        <title>Implement menu actions</title>
+        <subtasks>
+          <subtask>open_etch: Show and focus main window</subtask>
+          <subtask>stop_sharing: Emit tray://stop-sharing event to frontend</subtask>
+          <subtask>leave_meeting: Emit tray://leave-meeting event to frontend</subtask>
+          <subtask>Frontend listens and handles events in MeetingRoom</subtask>
+        </subtasks>
+      </task>
+      <task id="4">
+        <title>Integrate with screen share lifecycle</title>
+        <subtasks>
+          <subtask>Call show_share_tray() when startScreenShare succeeds</subtask>
+          <subtask>Call hide_share_tray() when sharing stops</subtask>
+          <subtask>Listen for tray events in MeetingRoom component</subtask>
+          <subtask>Clean up tray on app exit</subtask>
+        </subtasks>
+      </task>
+      <task id="5">
+        <title>Cleanup old implementation</title>
+        <subtasks>
+          <subtask>Remove SharerControlBar.tsx</subtask>
+          <subtask>Remove SharerControlBarVertical.tsx</subtask>
+          <subtask>Remove FloatingControlBarPage.tsx</subtask>
+          <subtask>Remove floatingBarChannel.ts</subtask>
+          <subtask>Remove transform mode commands from screen_share.rs</subtask>
+          <subtask>Remove related tests</subtask>
+          <subtask>Update MeetingRoom to remove transform mode logic</subtask>
+        </subtasks>
+      </task>
+      <task id="6">
+        <title>Write tests</title>
+        <subtasks>
+          <subtask>Test tray icon visibility on share start/stop</subtask>
+          <subtask>Test menu action event emissions</subtask>
+          <subtask>Test frontend event handlers</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="3.7.1" title="Tray Icon Appears When Sharing">
+      <given>I start sharing my screen</given>
+      <when>The screen share is active</when>
+      <then>A tray icon appears in the macOS menu bar with a red dot badge indicating active share</then>
+    </criterion>
+    <criterion id="3.7.2" title="Menu Shows on Click">
+      <given>The tray icon is visible</given>
+      <when>I click the tray icon</when>
+      <then>A native menu appears with: "Sharing Screen" status header (disabled), separator, "Open Etch" (Cmd+O), "Stop Sharing" (Cmd+S), "Leave Meeting" (Cmd+Q)</then>
+    </criterion>
+    <criterion id="3.7.3" title="Open Etch Works">
+      <given>The menu is visible</given>
+      <when>I click "Open Etch"</when>
+      <then>The main Etch window shows, focuses, and I can access full meeting controls</then>
+    </criterion>
+    <criterion id="3.7.4" title="Stop Sharing Works">
+      <given>The menu is visible</given>
+      <when>I click "Stop Sharing"</when>
+      <then>Screen sharing stops immediately, tray icon red dot badge is removed, main window restores if minimized</then>
+    </criterion>
+    <criterion id="3.7.5" title="Leave Meeting Works">
+      <given>The menu is visible</given>
+      <when>I click "Leave Meeting"</when>
+      <then>I leave the meeting immediately, tray icon is hidden, main window shows home screen</then>
+    </criterion>
+    <criterion id="3.7.6" title="Keyboard Shortcuts Work">
+      <given>The menu is visible</given>
+      <when>I press Cmd+O, Cmd+S, or Cmd+Q</when>
+      <then>The corresponding action executes</then>
+    </criterion>
+    <criterion id="3.7.7" title="Tray Icon Hidden When Not Sharing">
+      <given>I am not sharing my screen</given>
+      <when>I look at the menu bar</when>
+      <then>No Etch sharing indicator is visible</then>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" relevance="high">
+        <reason>Core architecture decisions, Tauri plugin patterns, IPC design</reason>
+        <snippets>
+          <snippet>Tauri v2 with tray-icon feature for system tray</snippet>
+          <snippet>ADR-011: Menu Bar approach supersedes ADR-009/ADR-010</snippet>
+        </snippets>
+      </doc>
+      <doc path="docs/prd.md" relevance="medium">
+        <reason>Product requirements for screen sharing UX</reason>
+        <snippets>
+          <snippet>FR-3: Screen Sharing with sharer controls</snippet>
+        </snippets>
+      </doc>
+      <doc path="docs/epics/epic-3-screen-sharing.md" relevance="high">
+        <reason>Epic context, related stories 3.1-3.6 and 3.8</reason>
+        <snippets>
+          <snippet>Story 3.7: Sharer's Floating Control Bar (now Menu Bar)</snippet>
+          <snippet>Dependencies on Story 3.1-3.5 (screen capture pipeline)</snippet>
+        </snippets>
+      </doc>
+      <doc path="docs/ux-design-specification.md" relevance="medium">
+        <reason>UX patterns, menu bar design guidelines</reason>
+      </doc>
+      <doc external="true" url="https://v2.tauri.app/learn/system-tray/" relevance="critical">
+        <reason>Official Tauri v2 System Tray documentation</reason>
+      </doc>
+      <doc external="true" url="https://v2.tauri.app/learn/window-menu/" relevance="high">
+        <reason>Official Tauri v2 Menu documentation</reason>
+      </doc>
+    </docs>
+
+    <code>
+      <file path="packages/client/src-tauri/src/screen_share.rs" relevance="critical" lines="1344-1549">
+        <reason>Existing tray implementation to be refactored per ADR-011</reason>
+        <notes>
+          - SharingTrayState struct and tray management at lines 1364-1379
+          - show_sharing_tray command at lines 1383-1429
+          - hide_sharing_tray command at lines 1434-1449
+          - build_sharing_menu at lines 1471-1538
+          - handle_tray_menu_event emits 'sharing-tray-action' event at lines 1541-1548
+          - Current menu has mic/camera toggles - ADR-011 simplifies to 3 actions only
+        </notes>
+      </file>
+      <file path="packages/client/src-tauri/src/lib.rs" relevance="high" lines="1-56">
+        <reason>App initialization, tray state management</reason>
+        <notes>
+          - SharingTrayState managed at line 11
+          - Tray commands registered at lines 50-52
+        </notes>
+      </file>
+      <file path="packages/client/src-tauri/Cargo.toml" relevance="high" lines="24">
+        <reason>Tauri features including tray-icon already enabled</reason>
+        <notes>
+          - tauri = { version = "2.9.2", features = ["webview-data-url", "macos-private-api", "tray-icon"] }
+        </notes>
+      </file>
+      <file path="packages/client/src/hooks/useScreenShare.ts" relevance="critical" lines="27-53">
+        <reason>Frontend tray API calls</reason>
+        <notes>
+          - showSharingTray(), hideSharingTray(), updateSharingTray() at lines 27-53
+          - Currently passes isMuted/isCameraOff - ADR-011 removes these (simpler menu)
+          - Need to call these from screen share lifecycle
+        </notes>
+      </file>
+      <file path="packages/client/src/components/MeetingRoom/MeetingRoom.tsx" relevance="high">
+        <reason>Main meeting component, needs tray event listeners</reason>
+        <notes>
+          - Listen for 'tray://stop-sharing' and 'tray://leave-meeting' events
+          - Handle stopScreenShare and leaveRoom actions
+        </notes>
+      </file>
+
+      <!-- FILES TO REMOVE (cleanup task) -->
+      <file path="packages/client/src/components/ScreenShare/SharerControlBar.tsx" action="DELETE">
+        <reason>Superseded by menu bar approach (ADR-011)</reason>
+      </file>
+      <file path="packages/client/src/components/ScreenShare/SharerControlBarVertical.tsx" action="DELETE">
+        <reason>Superseded by menu bar approach (ADR-011)</reason>
+      </file>
+      <file path="packages/client/src/components/ScreenShare/FloatingControlBarPage.tsx" action="DELETE">
+        <reason>Superseded by menu bar approach (ADR-011)</reason>
+      </file>
+      <file path="packages/client/src/lib/floatingBarChannel.ts" action="DELETE">
+        <reason>BroadcastChannel no longer needed with menu bar approach</reason>
+      </file>
+      <file path="packages/client/tests/components/ScreenShare/SharerControlBar.test.tsx" action="DELETE">
+        <reason>Test for removed component</reason>
+      </file>
+
+      <!-- Transform mode code to remove from screen_share.rs -->
+      <file path="packages/client/src-tauri/src/screen_share.rs" action="MODIFY" lines="786-1057">
+        <reason>Remove transform mode commands (ADR-009/ADR-010 superseded)</reason>
+        <notes>
+          - Remove TransformModeState struct
+          - Remove transform_to_control_bar command
+          - Remove restore_from_control_bar command
+          - Remove is_transform_mode_active command
+          - Remove CONTROL_BAR_WIDTH/HEIGHT constants
+        </notes>
+      </file>
+
+      <!-- Floating bar window code to remove from screen_share.rs -->
+      <file path="packages/client/src-tauri/src/screen_share.rs" action="MODIFY" lines="1138-1342">
+        <reason>Remove floating control bar window commands</reason>
+        <notes>
+          - Remove create_floating_bar command
+          - Remove close_floating_bar command
+          - Remove is_floating_bar_open command
+          - Remove get_floating_bar_position command
+          - Remove FLOATING_BAR_* constants
+        </notes>
+      </file>
+    </code>
+
+    <dependencies>
+      <dependency name="tauri" version="2.9.2" type="rust">
+        <features>webview-data-url, macos-private-api, tray-icon</features>
+        <reason>Core framework with system tray support</reason>
+      </dependency>
+      <dependency name="tauri-plugin-shell" version="2" type="rust">
+        <reason>Shell/sidecar spawning for Core process</reason>
+      </dependency>
+      <dependency name="objc" version="0.2" type="rust" platform="macos">
+        <reason>NSWindow operations for click-through overlay</reason>
+      </dependency>
+      <dependency name="dispatch" version="0.2" type="rust" platform="macos">
+        <reason>Main thread dispatch for NSWindow operations</reason>
+      </dependency>
+      <dependency name="@tauri-apps/api" version="^2.9.1" type="npm">
+        <reason>Frontend Tauri API bindings (invoke, listen, emit)</reason>
+      </dependency>
+      <dependency name="livekit-client" version="^2.16.0" type="npm">
+        <reason>WebRTC/LiveKit for room management</reason>
+      </dependency>
+      <dependency name="zustand" version="^5.0.9" type="npm">
+        <reason>State management for screen share store</reason>
+      </dependency>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">
+      ADR-011 mandates menu bar approach. All previous floating window, transform mode,
+      and BroadcastChannel code must be removed.
+    </constraint>
+    <constraint type="simplicity">
+      3 actions only: Open Etch, Stop Sharing, Leave Meeting.
+      No mic/camera controls in tray menu (handled in main window).
+    </constraint>
+    <constraint type="platform">
+      Primary target is macOS with native NSStatusItem. Windows/Linux use same Tauri
+      APIs but may have different UX (Windows: system tray bottom-right).
+    </constraint>
+    <constraint type="icon">
+      Template image (monochrome) for macOS dark/light mode compatibility.
+      22x22 points (44x44 pixels @2x). Red dot badge when sharing.
+    </constraint>
+    <constraint type="events">
+      Use Tauri event system (app.emit) for tray->frontend communication.
+      Event names: 'tray://stop-sharing', 'tray://leave-meeting'
+    </constraint>
+    <constraint type="cleanup">
+      Must remove ~800 lines of obsolete code from previous approaches.
+      Final implementation should be ~80 lines of Rust code.
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface type="tauri-commands">
+      <command name="show_share_tray" params="none" returns="Result&lt;(), String&gt;">
+        Show tray icon with menu when sharing starts
+      </command>
+      <command name="hide_share_tray" params="none" returns="Result&lt;(), String&gt;">
+        Hide tray icon when sharing stops or meeting ends
+      </command>
+    </interface>
+    <interface type="tauri-events">
+      <event name="tray://stop-sharing" direction="rust->frontend">
+        Emitted when user clicks "Stop Sharing" in tray menu
+      </event>
+      <event name="tray://leave-meeting" direction="rust->frontend">
+        Emitted when user clicks "Leave Meeting" in tray menu
+      </event>
+    </interface>
+    <interface type="menu-structure">
+      <item id="status" text="Sharing Screen" enabled="false" indicator="red-dot"/>
+      <separator/>
+      <item id="open" text="Open Etch" accelerator="CmdOrCtrl+O"/>
+      <item id="stop" text="Stop Sharing" accelerator="CmdOrCtrl+S"/>
+      <item id="leave" text="Leave Meeting" accelerator="CmdOrCtrl+Q"/>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <standard>Vitest for frontend unit/integration tests</standard>
+      <standard>React Testing Library for component tests</standard>
+      <standard>Mock Tauri invoke/listen for IPC tests</standard>
+      <standard>Test files co-located in packages/client/tests/</standard>
+    </standards>
+    <locations>
+      <location>packages/client/tests/hooks/useScreenShare.test.ts</location>
+      <location>packages/client/tests/components/MeetingRoom/MeetingRoom.test.tsx</location>
+    </locations>
+    <ideas>
+      <idea ac="3.7.1,3.7.7">
+        Test that show_share_tray is called when startScreenShare succeeds,
+        and hide_share_tray is called when stopScreenShare is called
+      </idea>
+      <idea ac="3.7.4,3.7.5">
+        Test that MeetingRoom listens for tray://stop-sharing and tray://leave-meeting
+        events and calls appropriate handlers (stopScreenShare, leaveRoom)
+      </idea>
+      <idea>
+        Test cleanup of tray on component unmount (app exit)
+      </idea>
+      <idea>
+        Integration test: simulate full share->stop cycle and verify tray visibility
+      </idea>
+    </ideas>
+  </tests>
+</story-context>

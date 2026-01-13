@@ -1,0 +1,273 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<story-context story-key="4-10-assign-unique-colors-per-participant" generated-date="2025-12-20">
+  <story-definition>
+    <as-a>User participating in a collaborative annotation session</as-a>
+    <i-want>each participant's annotations to have a unique, visually distinct color</i-want>
+    <so-that>I can easily identify who drew which annotation on the shared screen</so-that>
+    <story-points>2</story-points>
+    <priority>High</priority>
+    <epic-ref>Epic 4: Real-Time Annotations</epic-ref>
+  </story-definition>
+
+  <acceptance-criteria>
+    <criterion id="AC-4.10.1">Server assigns a color from PARTICIPANT_COLORS palette when participant joins room</criterion>
+    <criterion id="AC-4.10.2">Color is stored in participant metadata and returned in join response</criterion>
+    <criterion id="AC-4.10.3">Client stores participant's color in roomStore.localParticipant.color</criterion>
+    <criterion id="AC-4.10.4">useAnnotations hook uses localParticipant.color for new strokes instead of hardcoded color</criterion>
+    <criterion id="AC-4.10.5">Colors cycle through palette when more than 5 participants join (modulo assignment)</criterion>
+    <criterion id="AC-4.10.6">Host always gets the first color (orange #f97316)</criterion>
+    <criterion id="AC-4.10.7">Color is included in DataTrack annotation messages (already in StrokeUpdateMessage.color)</criterion>
+    <criterion id="AC-4.10.8">AnnotationCanvas renders strokes with correct participant color (no change needed - already uses stroke.color)</criterion>
+  </acceptance-criteria>
+
+  <task-breakdown>
+    <task id="1" title="Review current color assignment flow">
+      <subtask>Verify server roomStore.ts already assigns colors correctly in createRoom and addParticipant</subtask>
+      <subtask>Verify server routes.ts passes color to generateToken</subtask>
+      <subtask>Verify LiveKit token metadata includes color</subtask>
+    </task>
+    <task id="2" title="Update client to extract color from token metadata">
+      <subtask>Parse LiveKit token metadata to extract participant color on room connection</subtask>
+      <subtask>Update roomStore.localParticipant to include the color from token metadata</subtask>
+      <subtask>Ensure color is available before any annotation actions occur</subtask>
+    </task>
+    <task id="3" title="Update useAnnotations to use participant color">
+      <subtask>Modify useAnnotations.ts to read myColor from localParticipant.color</subtask>
+      <subtask>Remove hardcoded color fallback or update default to use PARTICIPANT_COLORS[0]</subtask>
+      <subtask>Verify new strokes use the participant's assigned color</subtask>
+    </task>
+    <task id="4" title="Add getParticipantColor utility (optional)">
+      <subtask>Create shared utility function getParticipantColor(index: number) for consistent color assignment</subtask>
+      <subtask>Export from @etch/shared for use in server and client</subtask>
+    </task>
+    <task id="5" title="Write unit tests">
+      <subtask>Test color assignment in server roomStore (host gets first color, participants cycle)</subtask>
+      <subtask>Test client color extraction from LiveKit metadata</subtask>
+      <subtask>Test useAnnotations uses correct participant color</subtask>
+    </task>
+    <task id="6" title="Manual E2E testing">
+      <subtask>Create room and verify host has orange color</subtask>
+      <subtask>Join with 2nd participant and verify they get cyan color</subtask>
+      <subtask>Verify each participant's strokes render in their assigned color</subtask>
+      <subtask>Test with 6+ participants to verify color cycling</subtask>
+    </task>
+  </task-breakdown>
+
+  <documentation-references>
+    <doc path="docs/sprint-artifacts/tech-spec-epic-4.md" reason="Technical specification for Epic 4 including annotation color requirements">
+      <snippet>
+        ### 4.10 Assign Unique Colors Per Participant
+        - Server assigns color from PARTICIPANT_COLORS on room join
+        - Color stored in token metadata and participant record
+        - Client reads color from token metadata on connection
+        - useAnnotations uses participant color for new strokes
+      </snippet>
+    </doc>
+    <doc path="docs/epics/epic-4-real-time-annotations.md" reason="Epic overview with story dependencies">
+      <snippet>
+        Story 4.10: Assign Unique Colors Per Participant
+        Depends on: Story 4.2 (annotation store)
+        Story Points: 2
+      </snippet>
+    </doc>
+    <doc path="docs/architecture.md" reason="Overall architecture decisions">
+      <snippet>
+        ADR-002: LiveKit DataTracks for Annotations
+        - All annotation events flow through DataTracks in reliable mode
+        - Participant metadata includes role and color
+      </snippet>
+    </doc>
+  </documentation-references>
+
+  <code-references>
+    <reference path="packages/shared/src/constants/colors.ts" reason="Participant color palette definition">
+      <lines>1-15</lines>
+      <snippet>
+export const PARTICIPANT_COLORS = [
+  '#f97316', // Orange
+  '#06b6d4', // Cyan
+  '#a855f7', // Purple
+  '#22c55e', // Green
+  '#ec4899', // Pink
+] as const
+
+export type ParticipantColor = (typeof PARTICIPANT_COLORS)[number]
+      </snippet>
+    </reference>
+    <reference path="packages/server/src/services/roomStore.ts" reason="Server-side color assignment logic (ALREADY IMPLEMENTED)">
+      <lines>46-73</lines>
+      <snippet>
+// In createRoom():
+const hostParticipant: ParticipantRecord = {
+  ...
+  color: PARTICIPANT_COLORS[0], // Host gets the first color (orange)
+  ...
+}
+
+// In addParticipant():
+const colorIndex = room.participants.size % PARTICIPANT_COLORS.length
+const color = PARTICIPANT_COLORS[colorIndex]
+      </snippet>
+    </reference>
+    <reference path="packages/server/src/services/livekit.ts" reason="Token generation includes color in metadata (ALREADY IMPLEMENTED)">
+      <lines>46-74</lines>
+      <snippet>
+export async function generateToken(
+  roomId: string,
+  participantId: string,
+  name: string,
+  role: Role,
+  color: string
+): Promise&lt;string&gt; {
+  ...
+  const token = new AccessToken(apiKey, apiSecret, {
+    identity: participantId,
+    name: name,
+    metadata: JSON.stringify({ role, color }),
+    ...
+  })
+      </snippet>
+    </reference>
+    <reference path="packages/server/src/routes/rooms.ts" reason="API routes pass color to token generation (ALREADY IMPLEMENTED)">
+      <lines>59-75</lines>
+      <snippet>
+const hostParticipant = room.participants.get(hostId)
+...
+const [token, screenShareToken] = await Promise.all([
+  generateToken(room.id, hostId, hostName, 'host', hostParticipant.color),
+  ...
+])
+      </snippet>
+    </reference>
+    <reference path="packages/client/src/hooks/useAnnotations.ts" reason="Hook that uses participant color for new strokes">
+      <lines>84-91</lines>
+      <snippet>
+// Get local participant info
+const localParticipant = useRoomStore((state) => state.localParticipant)
+
+// Derive participant color and ID
+const myParticipantId = localParticipant?.id ?? ''
+const myColor = localParticipant?.color ?? PARTICIPANT_COLORS[0]
+      </snippet>
+    </reference>
+    <reference path="packages/client/src/stores/roomStore.ts" reason="Client-side participant state storage">
+      <lines>1-45</lines>
+      <snippet>
+interface RoomState {
+  ...
+  localParticipant: Participant | null
+  remoteParticipants: Participant[]
+  ...
+  setLocalParticipant: (participant: Participant | null) => void
+  ...
+}
+      </snippet>
+    </reference>
+    <reference path="packages/shared/src/types/participant.ts" reason="Participant type includes color field">
+      <lines>N/A - check types/index.ts</lines>
+      <note>Verify Participant type includes color: string field</note>
+    </reference>
+    <reference path="packages/client/src/components/AnnotationCanvas/AnnotationCanvas.tsx" reason="Canvas renders strokes with stroke.color (NO CHANGES NEEDED)">
+      <lines>144-151</lines>
+      <snippet>
+// Set stroke color and opacity
+ctx.fillStyle = stroke.color
+if (stroke.tool === 'highlighter') {
+  ctx.globalAlpha = HIGHLIGHTER_OPACITY
+}
+ctx.fill(path)
+      </snippet>
+    </reference>
+  </code-references>
+
+  <interfaces>
+    <interface name="Participant" package="@etch/shared">
+      <field name="id" type="string" description="Unique participant ID (UUID)" />
+      <field name="name" type="string" description="Display name" />
+      <field name="role" type="Role" description="'host' | 'sharer' | 'annotator' | 'viewer'" />
+      <field name="color" type="string" description="Hex color for annotations (e.g., '#f97316')" />
+    </interface>
+    <interface name="Stroke" package="@etch/shared">
+      <field name="id" type="string" />
+      <field name="participantId" type="string" />
+      <field name="tool" type="'pen' | 'highlighter'" />
+      <field name="color" type="string" description="Participant's assigned color" />
+      <field name="points" type="Point[]" />
+      <field name="createdAt" type="number" />
+      <field name="isComplete" type="boolean" />
+    </interface>
+    <interface name="LiveKitTokenMetadata" package="implicit">
+      <field name="role" type="Role" />
+      <field name="color" type="string" />
+    </interface>
+  </interfaces>
+
+  <constraints>
+    <constraint type="pattern">Use Zustand for all client state management</constraint>
+    <constraint type="pattern">Export shared types and utilities from @etch/shared</constraint>
+    <constraint type="pattern">Use Vitest for all unit tests</constraint>
+    <constraint type="pattern">Follow existing code style (no semicolons, 2-space indentation)</constraint>
+    <constraint type="architectural">Colors assigned server-side, not client-side, to ensure consistency</constraint>
+    <constraint type="architectural">Color included in LiveKit token metadata for persistence</constraint>
+    <constraint type="mvp">5 color palette is sufficient for MVP (up to 5 participants before cycling)</constraint>
+  </constraints>
+
+  <dependencies>
+    <dependency name="@etch/shared" version="workspace:*" type="internal">
+      <provides>PARTICIPANT_COLORS, ParticipantColor type, Participant type, Stroke type</provides>
+    </dependency>
+    <dependency name="zustand" version="^5.0.9" type="npm">
+      <provides>State management for roomStore and annotationStore</provides>
+    </dependency>
+    <dependency name="livekit-client" version="^2.16.0" type="npm">
+      <provides>Room connection, participant metadata access</provides>
+    </dependency>
+    <dependency name="livekit-server-sdk" version="^2.14.2" type="npm">
+      <provides>AccessToken generation with metadata</provides>
+    </dependency>
+    <dependency name="vitest" version="^2.0.0" type="devDependency">
+      <provides>Test framework</provides>
+    </dependency>
+  </dependencies>
+
+  <testing-guidance>
+    <standard framework="vitest" location="packages/shared/src/constants/colors.test.ts">
+      Existing tests for PARTICIPANT_COLORS array - extend if adding getParticipantColor utility
+    </standard>
+    <standard framework="vitest" location="packages/server/src/services/roomStore.test.ts">
+      Add tests for color assignment in createRoom and addParticipant
+    </standard>
+    <standard framework="vitest" location="packages/client/tests/hooks/useAnnotations.test.ts">
+      Add tests to verify useAnnotations uses localParticipant.color
+    </standard>
+    <test-idea>Test host always gets PARTICIPANT_COLORS[0] (orange)</test-idea>
+    <test-idea>Test 2nd participant gets PARTICIPANT_COLORS[1] (cyan)</test-idea>
+    <test-idea>Test 6th participant gets PARTICIPANT_COLORS[0] (cycling)</test-idea>
+    <test-idea>Test stroke created with correct participant color</test-idea>
+    <test-idea>Test fallback to PARTICIPANT_COLORS[0] when no participant color available</test-idea>
+  </testing-guidance>
+
+  <implementation-notes>
+    <note priority="high">
+      Server-side color assignment is ALREADY IMPLEMENTED in roomStore.ts and routes.ts.
+      The main work is on the CLIENT SIDE to:
+      1. Parse LiveKit token metadata to extract color
+      2. Store color in roomStore.localParticipant
+      3. Ensure useAnnotations reads from localParticipant.color (already done, verify it works)
+    </note>
+    <note priority="medium">
+      Need to verify where/how the client parses LiveKit participant metadata.
+      Look for Room connection handler that sets localParticipant.
+    </note>
+    <note priority="low">
+      Consider adding getParticipantColor(index: number) utility to @etch/shared
+      for DRY color assignment logic, but this is optional.
+    </note>
+  </implementation-notes>
+
+  <investigation-needed>
+    <question>Where does the client currently set localParticipant in roomStore?</question>
+    <question>Does the client already parse LiveKit metadata to extract role/color?</question>
+    <question>Is there a useRoom or useLiveKitRoom hook that handles connection?</question>
+  </investigation-needed>
+</story-context>

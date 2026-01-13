@@ -1,0 +1,266 @@
+<story-context id="2-3-build-home-screen-with-create-join-meeting-ui" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>3</storyId>
+    <title>Build Home Screen with Create/Join Meeting UI</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-3-build-home-screen-with-create-join-meeting-ui.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>a home screen where I can create a new meeting or join an existing one</iWant>
+    <soThat>I have a clear entry point to start using ETCH</soThat>
+    <tasks>
+      <task id="1" status="pending">
+        <title>Create Home Screen component structure</title>
+        <subtasks>
+          <subtask>Create packages/client/src/components/HomeScreen/ directory</subtask>
+          <subtask>Create HomeScreen.tsx component with basic layout</subtask>
+          <subtask>Create index.ts barrel export</subtask>
+          <subtask>Add route for home screen in App.tsx (root path /)</subtask>
+        </subtasks>
+      </task>
+      <task id="2" status="pending">
+        <title>Implement visual layout</title>
+        <subtasks>
+          <subtask>Add ETCH logo/title centered at top</subtask>
+          <subtask>Create centered card container for meeting actions</subtask>
+          <subtask>Add "Start Meeting" button with primary/accent styling</subtask>
+          <subtask>Add divider with "or" text</subtask>
+          <subtask>Add room code input field with placeholder "Enter room code or link"</subtask>
+          <subtask>Add "Join" button next to/below input</subtask>
+          <subtask>Apply dark theme colors per UX spec</subtask>
+        </subtasks>
+      </task>
+      <task id="3" status="pending">
+        <title>Implement room code input logic</title>
+        <subtasks>
+          <subtask>Create controlled input state for room code</subtask>
+          <subtask>Implement parseRoomId(input: string): string utility function</subtask>
+          <subtask>Handle etch://room/{id} format</subtask>
+          <subtask>Handle https://*.*/room/{id} format</subtask>
+          <subtask>Handle direct room ID format</subtask>
+          <subtask>Enable/disable Join button based on input value</subtask>
+          <subtask>Add Enter key handler for form submission</subtask>
+          <subtask>Add unit tests for parseRoomId utility</subtask>
+        </subtasks>
+      </task>
+      <task id="4" status="pending">
+        <title>Implement Start Meeting flow</title>
+        <subtasks>
+          <subtask>Create API client function for POST /api/rooms</subtask>
+          <subtask>Add loading state to "Start Meeting" button</subtask>
+          <subtask>Handle name prompt if display name not set (use settingsStore)</subtask>
+          <subtask>On success: navigate to meeting room with token</subtask>
+          <subtask>On error: show toast notification, reset button state</subtask>
+          <subtask>Store room info in roomStore</subtask>
+        </subtasks>
+      </task>
+      <task id="5" status="pending">
+        <title>Implement Join button navigation</title>
+        <subtasks>
+          <subtask>On Join click: validate room code is present</subtask>
+          <subtask>Extract room ID using parseRoomId()</subtask>
+          <subtask>Navigate to join dialog (Story 2.4 will implement dialog)</subtask>
+          <subtask>Pass extracted room ID to join flow</subtask>
+        </subtasks>
+      </task>
+      <task id="6" status="pending">
+        <title>Set up application routing</title>
+        <subtasks>
+          <subtask>Configure React Router (or Tauri navigation)</subtask>
+          <subtask>Create route: / → HomeScreen</subtask>
+          <subtask>Create placeholder route: /room/:roomId → MeetingRoom (placeholder for Story 2.5)</subtask>
+          <subtask>Implement navigation utility for room transitions</subtask>
+        </subtasks>
+      </task>
+      <task id="7" status="pending">
+        <title>Implement settings integration</title>
+        <subtasks>
+          <subtask>Create/extend settingsStore with displayName persistence</subtask>
+          <subtask>Add API base URL to settings (defaults to localhost:3000 for dev)</subtask>
+          <subtask>Read stored display name for Start Meeting prompt</subtask>
+          <subtask>Configure Zustand persist middleware if not already done</subtask>
+        </subtasks>
+      </task>
+      <task id="8" status="pending">
+        <title>Component testing</title>
+        <subtasks>
+          <subtask>Write component tests for HomeScreen rendering</subtask>
+          <subtask>Test "Start Meeting" button click and loading state</subtask>
+          <subtask>Test room code input enables/disables Join button</subtask>
+          <subtask>Test Enter key submission</subtask>
+          <subtask>Test parseRoomId with various input formats</subtask>
+          <subtask>Mock API calls for integration tests</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="2.3.1" title="Home Screen Layout">
+      <given>I launch the ETCH application</given>
+      <when>the app opens</when>
+      <then>I see the home screen with: ETCH logo/title, "Start Meeting" primary button, "Join Meeting" input field with room code/link, "Join" button (enabled when input has value)</then>
+    </ac>
+    <ac id="2.3.2" title="Start Meeting Flow">
+      <given>I'm on the home screen</given>
+      <when>I click "Start Meeting"</when>
+      <then>I see a brief loading state on the button, my display name is prompted (if not previously set), and the app navigates to the meeting room view on success</then>
+    </ac>
+    <ac id="2.3.3" title="Join Meeting Input">
+      <given>I'm on the home screen</given>
+      <when>I enter text in the room code input field</when>
+      <then>the "Join" button becomes enabled; if input is empty, the "Join" button is disabled</then>
+    </ac>
+    <ac id="2.3.4" title="Join Meeting Button Click">
+      <given>I have entered a room code/link in the input</given>
+      <when>I click the "Join" button</when>
+      <then>the join dialog appears with name input (Story 2.4 scope)</then>
+    </ac>
+    <ac id="2.3.5" title="Room Code Parsing">
+      <given>I enter a room code in various formats</given>
+      <when>the app parses the input</when>
+      <then>it extracts the room ID correctly from: etch://room/abc-123-xyz → abc-123-xyz, https://*/room/abc-123-xyz → abc-123-xyz, abc-123-xyz → abc-123-xyz</then>
+    </ac>
+    <ac id="2.3.6" title="Dark Theme Styling">
+      <given>I view the home screen</given>
+      <when>I examine the UI</when>
+      <then>the background uses --background: #09090b (dark theme) and the "Start Meeting" button uses accent color --accent: #8b5cf6 (purple)</then>
+    </ac>
+    <ac id="2.3.7" title="Keyboard Navigation">
+      <given>I'm focused on the room code input</given>
+      <when>I press Enter</when>
+      <then>the join form is submitted (same as clicking "Join")</then>
+    </ac>
+    <ac id="2.3.8" title="API Error Handling">
+      <given>I click "Start Meeting"</given>
+      <when>the room creation API fails</when>
+      <then>I see an error toast with a helpful message and the button returns to its normal state</then>
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="Implementation Patterns" snippet="React Component Pattern: Functional components with TypeScript interfaces. Zustand Store Pattern: Use create&lt;State&gt;() for typed stores with actions." />
+      <doc path="docs/architecture.md" title="Architecture" section="Core Technologies" snippet="UI: shadcn/ui + Radix UI primitives + Tailwind CSS. State: Zustand for client-side state management." />
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="Color System" snippet="Dark theme default: --background: #09090b, --accent: #8b5cf6 (violet). Error toasts duration: 5 seconds." />
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="Journey 1: Create &amp; Start Meeting" snippet="Click 'Start Meeting' → Room Created Instantly → Auto-generated room name → Copy invite link. Success: User in room within 2 seconds." />
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="Journey 2: Join Meeting" snippet="Click Invite Link → Enter Display Name → Click 'Join' → In Meeting Room. No account required. Camera/mic OFF by default." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Tech Spec Epic 2" section="APIs and Interfaces" snippet="POST /api/rooms - Create room. Request: { hostName }. Response: { roomId, token, livekitUrl }. Use VITE_API_URL env variable." />
+      <doc path="docs/epics.md" title="Epics" section="Story 2.3" snippet="Home screen with 'Start Meeting' button and room code input. Join button enabled only when input has value. Navigates to meeting room on success." />
+    </docs>
+    <code>
+      <file path="packages/client/src/App.tsx" kind="component" symbol="App" reason="EXISTING HOME SCREEN - Has basic layout with logo, Create/Join buttons. Refactor to use router and add input field.">
+        <note>Already has ETCH logo, Video icon, and basic button layout. Needs: room code input, API integration, routing.</note>
+      </file>
+      <file path="packages/client/src/main.tsx" kind="entry" symbol="main" reason="Entry point - will need React Router setup">
+        <note>Currently renders App directly. Will need BrowserRouter wrapper.</note>
+      </file>
+      <file path="packages/client/src/components/ui/button.tsx" kind="component" symbol="Button" reason="REUSE - shadcn/ui Button with variants (default, outline, destructive, etc.)">
+        <signature>Button({ variant, size, asChild, className, ...props })</signature>
+      </file>
+      <file path="packages/client/src/lib/utils.ts" kind="utility" symbol="cn" reason="REUSE - Tailwind class name merge utility">
+        <signature>cn(...inputs: ClassValue[]): string</signature>
+      </file>
+      <file path="packages/client/src/index.css" kind="styles" reason="EXISTING - Dark theme CSS variables already configured per UX spec">
+        <note>Has --background, --accent, etc. configured for dark theme</note>
+      </file>
+      <file path="packages/shared/src/types/api.ts" kind="type" symbol="CreateRoomRequest, CreateRoomResponse" reason="REUSE - Types for API client">
+        <signature>CreateRoomRequest: { hostName: string }</signature>
+        <signature>CreateRoomResponse: { roomId, token, livekitUrl }</signature>
+      </file>
+      <file path="packages/server/src/routes/rooms.ts" kind="route" symbol="POST /rooms" lines="35-109" reason="REFERENCE - Server endpoint for room creation">
+        <note>Returns 201 with { roomId, token, livekitUrl }. Returns 400 for validation errors, 500 for server errors.</note>
+      </file>
+    </code>
+    <dependencies>
+      <node>
+        <package name="react" version="^19.2.0" />
+        <package name="react-dom" version="^19.2.0" />
+        <package name="zustand" version="^5.0.9" note="For settingsStore with persist middleware" />
+        <package name="lucide-react" version="^0.555.0" note="Icons (Video, Users, Pencil already used)" />
+        <package name="@radix-ui/react-slot" version="^1.2.4" note="For Button asChild" />
+        <package name="class-variance-authority" version="^0.7.1" note="For component variants" />
+        <package name="tailwind-merge" version="^3.4.0" note="For cn() utility" />
+        <package name="@etch/shared" version="workspace:*" note="For CreateRoomRequest/Response types" />
+        <package name="react-router-dom" version="TBD" note="NEEDED - For routing. Not yet installed." />
+        <package name="sonner" version="TBD" note="CONSIDER - For toast notifications. Check if shadcn/ui has built-in toast." />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="architecture.md">React Component Pattern: Functional components with TypeScript interfaces for props</constraint>
+    <constraint source="architecture.md">Zustand Store Pattern: Use create&lt;State&gt;() for typed stores with actions</constraint>
+    <constraint source="architecture.md">File Structure: Components in components/ComponentName/ComponentName.tsx with barrel exports</constraint>
+    <constraint source="ux-design-specification.md">Dark theme is default (--background: #09090b)</constraint>
+    <constraint source="ux-design-specification.md">Accent color for primary actions (--accent: #8b5cf6)</constraint>
+    <constraint source="ux-design-specification.md">Error toasts duration: 5 seconds, auto-dismiss</constraint>
+    <constraint source="ux-design-specification.md">One primary button per view maximum</constraint>
+    <constraint source="tech-spec-epic-2.md">Use VITE_API_URL environment variable for API base URL</constraint>
+    <constraint source="story-2.2">Test files co-located with source (*.test.ts or *.test.tsx)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="POST /api/rooms" kind="REST endpoint">
+      <request>{ hostName: string }</request>
+      <response status="201">{ roomId: string, token: string, livekitUrl: string }</response>
+      <response status="400">{ error: { code: 'VALIDATION_ERROR', message: string } }</response>
+      <response status="500">{ error: { code: 'ROOM_CREATE_FAILED', message: string } }</response>
+    </interface>
+    <interface name="parseRoomId" kind="utility function" path="packages/client/src/utils/roomId.ts">
+      <signature>parseRoomId(input: string): string</signature>
+      <note>Extract room ID from etch://room/{id}, https://*/room/{id}, or direct ID</note>
+    </interface>
+    <interface name="useSettingsStore" kind="zustand store" path="packages/client/src/stores/settingsStore.ts">
+      <signature>useSettingsStore(): { displayName: string, setDisplayName: (name: string) => void, apiBaseUrl: string }</signature>
+      <note>Persisted to localStorage with zustand/middleware persist</note>
+    </interface>
+    <interface name="createRoom" kind="API client function" path="packages/client/src/lib/api.ts">
+      <signature>createRoom(hostName: string): Promise&lt;CreateRoomResponse&gt;</signature>
+      <note>Throws Error with message on failure</note>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Vitest testing framework with co-located test files (*.test.tsx for components, *.test.ts for utilities). React Testing Library for component tests using @testing-library/react and @testing-library/user-event. Mock API calls with vi.mock() or msw. Test user interactions, not implementation details. Snapshot testing not recommended - prefer explicit assertions.
+    </standards>
+    <locations>
+      <location>packages/client/src/components/HomeScreen/HomeScreen.test.tsx</location>
+      <location>packages/client/src/utils/roomId.test.ts</location>
+      <location>packages/client/src/stores/settingsStore.test.ts</location>
+      <location>packages/client/src/lib/api.test.ts</location>
+    </locations>
+    <ideas>
+      <idea acId="2.3.1">Test HomeScreen renders logo, Start Meeting button, room code input, and Join button</idea>
+      <idea acId="2.3.2">Test Start Meeting button shows loading state during API call</idea>
+      <idea acId="2.3.2">Test successful room creation navigates to meeting room</idea>
+      <idea acId="2.3.3">Test Join button is disabled when input is empty</idea>
+      <idea acId="2.3.3">Test Join button becomes enabled when input has value</idea>
+      <idea acId="2.3.4">Test Join button click navigates to join flow with parsed room ID</idea>
+      <idea acId="2.3.5">Test parseRoomId with etch:// protocol URL</idea>
+      <idea acId="2.3.5">Test parseRoomId with https:// URL</idea>
+      <idea acId="2.3.5">Test parseRoomId with direct room ID</idea>
+      <idea acId="2.3.7">Test Enter key in input triggers join action</idea>
+      <idea acId="2.3.8">Test API error shows toast notification</idea>
+      <idea acId="2.3.8">Test button returns to normal state after error</idea>
+      <idea>Test settingsStore persists displayName to localStorage</idea>
+    </ideas>
+  </tests>
+
+  <devNotes>
+    <note priority="high">App.tsx ALREADY has basic home screen layout - refactor it rather than creating new component</note>
+    <note priority="high">Need to install react-router-dom for routing</note>
+    <note priority="high">Check if shadcn/ui has toast component or install sonner for toasts</note>
+    <note priority="medium">Current App.tsx has "Create Meeting" and "Join Meeting" buttons - add input field between them</note>
+    <note priority="medium">zustand already installed - just need to add persist middleware for settingsStore</note>
+    <note>Dark theme CSS already configured in index.css - no styling changes needed for theme</note>
+    <note>Story 2.4 will handle the join dialog - this story just navigates to it</note>
+    <note>Story 2.5 will implement MeetingRoom - this story creates placeholder route</note>
+  </devNotes>
+</story-context>

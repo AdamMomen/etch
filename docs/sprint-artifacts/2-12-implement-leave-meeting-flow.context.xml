@@ -1,0 +1,372 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>12</storyId>
+    <title>Implement Leave Meeting Flow</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-12-implement-leave-meeting-flow.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to leave a meeting at any time</iWant>
+    <soThat>I can exit when I'm done participating</soThat>
+    <tasks>
+      <task id="1" ac="2.12.2,2.12.4">
+        <title>Create LeaveConfirmDialog component</title>
+        <subtasks>
+          <subtask>Create packages/client/src/components/MeetingRoom/LeaveConfirmDialog.tsx</subtask>
+          <subtask>Use shadcn/ui AlertDialog component</subtask>
+          <subtask>Accept props: open, onOpenChange, onConfirm</subtask>
+          <subtask>Display host-specific message about meeting continuing</subtask>
+          <subtask>Include "Leave" (destructive) and "Cancel" buttons</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="2.12.1,2.12.3">
+        <title>Implement leave meeting logic in useLiveKit hook</title>
+        <subtasks>
+          <subtask>Add leaveRoom() function to useLiveKit hook</subtask>
+          <subtask>Call room.disconnect() to cleanly disconnect</subtask>
+          <subtask>Reset roomStore state after disconnect</subtask>
+          <subtask>Ensure all tracks are properly stopped</subtask>
+          <subtask>Handle cleanup of any pending operations</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="2.12.1">
+        <title>Add Leave button to MeetingControls</title>
+        <subtasks>
+          <subtask>Add Leave button (LogOut icon from lucide-react)</subtask>
+          <subtask>Style as destructive/warning button</subtask>
+          <subtask>Wire up to leave flow (direct for participants, dialog for host)</subtask>
+          <subtask>Position at end of control bar</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="2.12.2">
+        <title>Integrate host role detection for leave flow</title>
+        <subtasks>
+          <subtask>Check if local participant is host from roomStore</subtask>
+          <subtask>If host: show LeaveConfirmDialog before leaving</subtask>
+          <subtask>If participant: immediate leave</subtask>
+        </subtasks>
+      </task>
+      <task id="5" ac="2.12.3">
+        <title>Implement host role transfer</title>
+        <subtasks>
+          <subtask>Determine next participant by join order (use createdAt or array order)</subtask>
+          <subtask>Send role transfer message via DataTrack before disconnecting</subtask>
+          <subtask>Update participant metadata on server (if needed)</subtask>
+          <subtask>Handle edge case: last participant leaving (no transfer needed)</subtask>
+        </subtasks>
+      </task>
+      <task id="6" ac="2.12.1,2.12.3">
+        <title>Navigate to home screen after leave</title>
+        <subtasks>
+          <subtask>Use React Router navigation</subtask>
+          <subtask>Navigate to home/landing page after disconnect</subtask>
+          <subtask>Clear any meeting-related state</subtask>
+        </subtasks>
+      </task>
+      <task id="7" ac="2.12.5">
+        <title>Implement keyboard shortcut</title>
+        <subtasks>
+          <subtask>Add Cmd+W / Ctrl+W keyboard listener</subtask>
+          <subtask>Trigger leave flow on key press</subtask>
+          <subtask>Ensure shortcut works when focused on meeting</subtask>
+        </subtasks>
+      </task>
+      <task id="8" ac="2.12.6">
+        <title>Handle Tauri window close event</title>
+        <subtasks>
+          <subtask>Listen to Tauri window close event (tauri://close-requested)</subtask>
+          <subtask>Disconnect from room before allowing window to close</subtask>
+          <subtask>Use appWindow.onCloseRequested() from @tauri-apps/api/window</subtask>
+          <subtask>Prevent default close, disconnect, then close programmatically</subtask>
+        </subtasks>
+      </task>
+      <task id="9" ac="2.12.1,2.12.3">
+        <title>Show leave notification to other participants</title>
+        <subtasks>
+          <subtask>Use existing toast notification system</subtask>
+          <subtask>Display "{name} left" when participant disconnects</subtask>
+          <subtask>Handle via RoomEvent.ParticipantDisconnected</subtask>
+        </subtasks>
+      </task>
+      <task id="10" ac="all">
+        <title>Write tests</title>
+        <subtasks>
+          <subtask>Test LeaveConfirmDialog renders correctly</subtask>
+          <subtask>Test dialog opens for host, not for participants</subtask>
+          <subtask>Test leave button triggers disconnect</subtask>
+          <subtask>Test navigation to home after leave</subtask>
+          <subtask>Test keyboard shortcut triggers leave</subtask>
+          <subtask>Test roomStore is reset after leave</subtask>
+          <subtask>Test host role transfer logic</subtask>
+          <subtask>Mock window close event for Tauri tests</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.12.1" title="Leave Button for Regular Participant">
+      <given>I'm in a meeting as a regular participant (not host)</given>
+      <when>I click the "Leave" button in the meeting controls</when>
+      <then>I immediately disconnect from the room</then>
+      <and>I'm returned to the home screen</and>
+      <and>Other participants see "{name} left" notification</and>
+    </criterion>
+    <criterion id="AC-2.12.2" title="Leave Confirmation for Host">
+      <given>I'm in a meeting as the host</given>
+      <when>I click the "Leave" button</when>
+      <then>I see a confirmation dialog with message: "Leave meeting? You are the host. The meeting will continue without you."</then>
+      <and>I see "Leave" and "Cancel" buttons</and>
+    </criterion>
+    <criterion id="AC-2.12.3" title="Host Leave Confirmed">
+      <given>The host leave confirmation dialog is shown</given>
+      <when>I click "Leave"</when>
+      <then>I disconnect from the room</then>
+      <and>I'm returned to the home screen</and>
+      <and>The host role transfers to the next participant (by join order)</and>
+      <and>Other participants see "{name} left" notification</and>
+    </criterion>
+    <criterion id="AC-2.12.4" title="Host Leave Canceled">
+      <given>The host leave confirmation dialog is shown</given>
+      <when>I click "Cancel"</when>
+      <then>The dialog closes</then>
+      <and>I remain in the meeting as host</and>
+    </criterion>
+    <criterion id="AC-2.12.5" title="Keyboard Shortcut Leave">
+      <given>I'm in a meeting</given>
+      <when>I press Cmd+W (macOS) or Ctrl+W (Windows)</when>
+      <then>The leave flow is triggered (same as clicking Leave button)</then>
+    </criterion>
+    <criterion id="AC-2.12.6" title="Window Close Leave">
+      <given>I'm in a meeting</given>
+      <when>I close the application window</when>
+      <then>The leave flow is triggered before the window closes</then>
+      <and>I properly disconnect from the room</and>
+    </criterion>
+    <criterion id="AC-2.12.7" title="Last Participant Leaves">
+      <given>I'm the only participant in the room</given>
+      <when>I leave the meeting</when>
+      <then>The room is automatically cleaned up on the server</then>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>Meeting &amp; Room Management - FR6</section>
+        <snippet>FR6: Users can leave a meeting at any time. FR7: Rooms are automatically cleaned up when all participants leave.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Data Flow - Message Protocol</section>
+        <snippet>DataTrack messages flow as lightweight vector data via LiveKit. Message types include role_transfer for host transfers before disconnect.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Integration Points - LiveKit</section>
+        <snippet>room.disconnect() for clean disconnect. RoomEvent.ParticipantConnected/Disconnected events for participant tracking.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Implementation Patterns - Zustand Store</section>
+        <snippet>Zustand stores for room state. useRoomStore provides clearRoom() to reset state on leave.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Leave Meeting Flow</section>
+        <snippet>Leave button disconnects and returns to home. Host leaving shows confirmation dialog. Cmd+W keyboard shortcut. Closing window triggers leave flow.</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Confirmation Patterns</section>
+        <snippet>Leave meeting: Modal if host ("This will end the meeting for everyone"). Leave meeting: None if participant (instant).</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Keyboard Shortcuts</section>
+        <snippet>Cmd+W (leave meeting) - triggers leave flow. ESC (close modal).</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>AC-2.12 - Leave Meeting</section>
+        <snippet>"Leave" button disconnects and returns to home. Host leaving shows confirmation dialog. Host role transfers to next participant. Closing window triggers leave flow.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/2-11-implement-participant-volume-control.md</path>
+        <title>Story 2.11 - Participant Volume Control</title>
+        <section>Dev Notes - Learnings</section>
+        <snippet>roomStore pattern uses Zustand store for room state - use isHost check from localParticipant. Toast notifications at @/components/ui/use-toast.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>packages/client/src/hooks/useLiveKit.ts</path>
+        <kind>hook</kind>
+        <symbol>useLiveKit</symbol>
+        <lines>1-211</lines>
+        <reason>Core LiveKit room management hook. Add leaveRoom() function here. Contains room.disconnect() in cleanup. Handles ParticipantDisconnected events with toast notifications already.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/stores/roomStore.ts</path>
+        <kind>store</kind>
+        <symbol>useRoomStore</symbol>
+        <lines>1-111</lines>
+        <reason>Zustand store for room state. Has clearRoom() action to reset state. localParticipant includes role for host detection.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/components/MeetingRoom/MeetingRoom.tsx</path>
+        <kind>component</kind>
+        <symbol>MeetingRoom</symbol>
+        <lines>1-247</lines>
+        <reason>Main meeting room component. handleLeave() already exists but needs host confirmation flow. Add window close event listener and keyboard shortcut here.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/components/MeetingRoom/MeetingControlsBar.tsx</path>
+        <kind>component</kind>
+        <symbol>MeetingControlsBar</symbol>
+        <lines>1-49</lines>
+        <reason>Control bar with Leave button. Already has LogOut icon and onLeave prop. Wire to new leave flow logic.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/App.tsx</path>
+        <kind>component</kind>
+        <symbol>App</symbol>
+        <lines>1-21</lines>
+        <reason>Root component with routing. May need Tauri window close listener at app level.</reason>
+      </file>
+      <file>
+        <path>packages/client/src/components/ui/dropdown-menu.tsx</path>
+        <kind>component</kind>
+        <symbol>DropdownMenu</symbol>
+        <reason>Existing Radix UI component. AlertDialog follows same pattern - needs to be added via shadcn/ui.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <node>
+        <package>livekit-client</package>
+        <version>^2.16.0</version>
+        <usage>room.disconnect() for clean disconnection, RoomEvent for participant events</usage>
+      </node>
+      <node>
+        <package>react-router-dom</package>
+        <version>^7.9.6</version>
+        <usage>useNavigate() for navigation to home after leave</usage>
+      </node>
+      <node>
+        <package>zustand</package>
+        <version>^5.0.9</version>
+        <usage>useRoomStore for state management, clearRoom() action</usage>
+      </node>
+      <node>
+        <package>sonner</package>
+        <version>^2.0.7</version>
+        <usage>toast notifications for leave confirmation</usage>
+      </node>
+      <node>
+        <package>lucide-react</package>
+        <version>^0.555.0</version>
+        <usage>LogOut icon for leave button (already in use)</usage>
+      </node>
+      <node>
+        <package>@radix-ui/react-alert-dialog</package>
+        <version>TBD</version>
+        <usage>AlertDialog component for host leave confirmation - needs to be added</usage>
+      </node>
+      <tauri>
+        <package>@tauri-apps/api</package>
+        <usage>appWindow.onCloseRequested() for window close handling</usage>
+      </tauri>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">Use Zustand store actions (clearRoom) for state reset, not direct state manipulation</constraint>
+    <constraint type="pattern">Use toast notifications from sonner for user feedback</constraint>
+    <constraint type="pattern">Use React Router useNavigate for navigation</constraint>
+    <constraint type="pattern">Follow existing component patterns in MeetingRoom directory</constraint>
+    <constraint type="testing">Co-locate test files with source (ComponentName.test.tsx)</constraint>
+    <constraint type="testing">Use Vitest + React Testing Library for component tests</constraint>
+    <constraint type="testing">Mock LiveKit room in tests using existing patterns from setup.ts</constraint>
+    <constraint type="accessibility">AlertDialog must have proper ARIA labels and keyboard navigation</constraint>
+    <constraint type="accessibility">Leave button must have aria-label for screen readers</constraint>
+    <constraint type="ux">Host confirmation must show before disconnect - no immediate leave for hosts</constraint>
+    <constraint type="ux">Regular participants leave immediately without confirmation</constraint>
+    <constraint type="architecture">DataTrack for role_transfer message follows existing message protocol pattern</constraint>
+    <constraint type="architecture">Window close must properly disconnect before closing to avoid orphaned connections</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Room.disconnect</name>
+      <kind>method</kind>
+      <signature>room.disconnect(): Promise&lt;void&gt;</signature>
+      <path>livekit-client</path>
+      <notes>Cleanly disconnects from the LiveKit room. Stops all local tracks.</notes>
+    </interface>
+    <interface>
+      <name>RoomEvent.ParticipantDisconnected</name>
+      <kind>event</kind>
+      <signature>(participant: RemoteParticipant) =&gt; void</signature>
+      <path>livekit-client</path>
+      <notes>Already handled in useLiveKit - shows toast with "{name} left"</notes>
+    </interface>
+    <interface>
+      <name>useRoomStore.clearRoom</name>
+      <kind>action</kind>
+      <signature>() =&gt; void</signature>
+      <path>packages/client/src/stores/roomStore.ts</path>
+      <notes>Resets all room state to initial values</notes>
+    </interface>
+    <interface>
+      <name>localParticipant.publishData</name>
+      <kind>method</kind>
+      <signature>publishData(data: Uint8Array, options?: DataPublishOptions): Promise&lt;void&gt;</signature>
+      <path>livekit-client</path>
+      <notes>For sending role_transfer message via DataTrack before host leaves</notes>
+    </interface>
+    <interface>
+      <name>appWindow.onCloseRequested</name>
+      <kind>method</kind>
+      <signature>onCloseRequested(handler: (event: CloseRequestedEvent) =&gt; void | Promise&lt;void&gt;): Promise&lt;UnlistenFn&gt;</signature>
+      <path>@tauri-apps/api/window</path>
+      <notes>Intercept window close to perform cleanup before allowing close</notes>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Tests use Vitest with React Testing Library. Component tests co-located as ComponentName.test.tsx. Mock LiveKit room using vi.mock and factory functions. Use @testing-library/user-event for interaction testing. Toast notifications can be tested by checking toast calls. Current test count: 256 passing client tests.
+    </standards>
+    <locations>
+      <location>packages/client/src/**/*.test.ts</location>
+      <location>packages/client/src/**/*.test.tsx</location>
+      <location>packages/client/src/test/setup.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.12.1">Test that clicking Leave button triggers disconnect and navigation for non-host</idea>
+      <idea ac="AC-2.12.2">Test that host sees confirmation dialog when clicking Leave</idea>
+      <idea ac="AC-2.12.3">Test that confirming dialog disconnects host and navigates home</idea>
+      <idea ac="AC-2.12.4">Test that canceling dialog keeps host in meeting</idea>
+      <idea ac="AC-2.12.5">Test Cmd+W / Ctrl+W keyboard shortcut triggers leave flow</idea>
+      <idea ac="AC-2.12.6">Test window close event handler calls disconnect before close</idea>
+      <idea ac="AC-2.12.7">Test roomStore.clearRoom resets all state</idea>
+      <idea ac="AC-2.12.3">Test role_transfer message is sent via DataTrack before host leaves</idea>
+      <idea ac="all">Test LeaveConfirmDialog renders correctly with all required elements</idea>
+      <idea ac="all">Test LeaveConfirmDialog accessibility (aria labels, keyboard nav)</idea>
+    </ideas>
+  </tests>
+</story-context>

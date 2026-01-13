@@ -1,0 +1,234 @@
+<story-context id="bmm/story-context" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>5</storyId>
+    <title>Create Meeting Room Layout Shell</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-5-create-meeting-room-layout-shell.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>a meeting room interface that shows participants and meeting controls</iWant>
+    <soThat>I have a clear view of who's in the meeting and how to interact</soThat>
+    <tasks>
+      <task id="1" status="pending">Create MeetingRoom layout structure (AC: 2.5.1, 2.5.7)
+        - Replace placeholder MeetingRoom component with full layout implementation
+        - Create responsive grid/flex layout with sidebar, main area, toolbar areas
+        - Add top toolbar area (placeholder for annotation tools)
+        - Add main content area with placeholder state
+        - Apply dark theme styling consistent with other components
+      </task>
+      <task id="2" status="pending">Create Sidebar component (AC: 2.5.2, 2.5.4, 2.5.5)
+        - Create Sidebar component with "PARTICIPANTS" header
+        - Create ParticipantListItem component with avatar, name, role badge
+        - Implement "(You)" marker for local participant
+        - Add "Invite" button at bottom (placeholder for invite modal)
+        - Implement collapse/expand animation
+        - Connect to settingsStore for sidebar state persistence
+      </task>
+      <task id="3" status="pending">Create MeetingControlsBar component (AC: 2.5.3)
+        - Create horizontal control bar at bottom of screen
+        - Add microphone toggle button with muted/unmuted icons (MicOff/Mic)
+        - Add camera toggle button with off/on icons (VideoOff/Video)
+        - Add screen share button with outline style (MonitorUp)
+        - Add leave button with destructive styling (LogOut or PhoneOff)
+        - Buttons are visual placeholders - actual A/V logic in Story 2.6-2.8
+      </task>
+      <task id="4" status="pending">Implement keyboard shortcut for sidebar (AC: 2.5.4)
+        - Add global keyboard listener for Cmd+\ / Ctrl+\
+        - Toggle sidebar via settingsStore.toggleSidebar()
+        - Clean up listener on component unmount
+      </task>
+      <task id="5" status="pending">Implement responsive behavior (AC: 2.5.5)
+        - Add window resize listener or CSS media query
+        - Auto-collapse sidebar when width less than 1000px
+        - Maintain manual toggle capability when collapsed
+      </task>
+      <task id="6" status="pending">Add connection status display (AC: 2.5.6)
+        - Display room ID in toolbar area
+        - Show connection status indicator (placeholder - actual connection in Story 2.6)
+        - Use roomStore.currentRoom data
+      </task>
+      <task id="7" status="pending">Implement leave functionality (AC: 2.5.8)
+        - Add onClick handler to Leave button
+        - Clear roomStore.currentRoom
+        - Navigate to home screen
+      </task>
+      <task id="8" status="pending">Component testing (AC: all)
+        - Write component tests for MeetingRoom layout rendering
+        - Test sidebar collapse/expand
+        - Test keyboard shortcut
+        - Test responsive behavior
+        - Test leave navigation
+        - Test participant list rendering
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.5.1">Meeting Room Layout Structure - Layout with left sidebar, center main content, top toolbar, bottom controls bar</criterion>
+    <criterion id="AC-2.5.2">Participant Sidebar - Shows PARTICIPANTS header, list with avatar/name/role badge, (You) marker, Invite button</criterion>
+    <criterion id="AC-2.5.3">Meeting Controls Bar - Mic toggle (muted default), camera toggle (off default), screen share button, leave button (destructive)</criterion>
+    <criterion id="AC-2.5.4">Sidebar Toggle - Cmd+\ (Ctrl+\) toggles sidebar, state persisted to localStorage</criterion>
+    <criterion id="AC-2.5.5">Responsive Layout - Sidebar auto-collapses below 1000px width, manual toggle still works</criterion>
+    <criterion id="AC-2.5.6">Connection Status - Shows room ID and connection status indicator in toolbar area</criterion>
+    <criterion id="AC-2.5.7">Main Content Area - Placeholder message when no screen share, ready for video grid/screen share</criterion>
+    <criterion id="AC-2.5.8">Leave Button - Disconnects from room, navigates back to home screen</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="Project Structure">
+        Defines component locations: packages/client/src/components/MeetingRoom/, stores/, hooks/. Key patterns: React functional components, Zustand stores, shadcn/ui components.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Zustand Store Pattern">
+        Shows pattern for creating typed stores with actions. Settings persist via zustand/middleware persist.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="React Component Pattern">
+        Functional components with TypeScript interfaces for props. Use Tailwind utilities for styling.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Tech Spec" section="AC-2.5: Meeting Room Layout">
+        Specifies: left sidebar for participants, center content for video/screen, bottom bar with controls. Sidebar toggleable with Cmd+\.
+      </doc>
+      <doc path="docs/epics.md" title="Epics" section="Story 2.5">
+        Full story definition with ACs for layout, participant display, controls bar, keyboard shortcuts, responsive behavior.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="4.1 Chosen Design Approach">
+        Hybrid layout with left sidebar (collapsible via Cmd+\), right panel tabs, persistent toolbar, main canvas.
+        Focus mode available with F key. Default mode shows sidebar with participants.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="4.3 Keyboard Shortcuts">
+        Cmd+\ toggles sidebar, M mutes mic, V toggles video, Cmd+S for screen share, Cmd+W to leave.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="3.1 Color System">
+        Dark theme default: --background #09090b, --accent #8b5cf6. Semantic colors: success #22c55e, error #ef4444.
+        Participant colors: Orange #f97316, Cyan #06b6d4, Purple #a855f7, Green #22c55e, Pink #ec4899.
+      </doc>
+    </docs>
+
+    <code>
+      <file path="packages/client/src/components/MeetingRoom/MeetingRoom.tsx" kind="component" symbol="MeetingRoom" reason="Placeholder component to be replaced with full implementation">
+        Currently a placeholder showing room ID and back button. Replace with full layout.
+      </file>
+      <file path="packages/client/src/stores/settingsStore.ts" kind="store" symbol="useSettingsStore" reason="Need to extend with sidebarCollapsed and toggleSidebar for sidebar persistence">
+        Currently has displayName and apiBaseUrl. Needs sidebarCollapsed: boolean and toggleSidebar action.
+      </file>
+      <file path="packages/client/src/stores/roomStore.ts" kind="store" symbol="useRoomStore" reason="Provides currentRoom data with roomId, token, livekitUrl">
+        Use currentRoom.roomId to display room ID. Use clearRoom() for leave functionality.
+      </file>
+      <file path="packages/client/src/components/HomeScreen/HomeScreen.tsx" kind="component" symbol="HomeScreen" lines="68-149" reason="Reference for consistent styling patterns and layout structure">
+        Follow dark theme styling, button patterns, toast usage.
+      </file>
+      <file path="packages/client/src/components/JoinRoom/JoinRoom.tsx" kind="component" symbol="JoinRoom" reason="Reference for navigation patterns and store integration">
+        Shows useNavigate, useParams, store integration, toast patterns.
+      </file>
+      <file path="packages/client/src/components/ui/button.tsx" kind="component" symbol="Button" reason="shadcn/ui Button component with variants">
+        Use variant="outline" for secondary buttons, variant="destructive" for leave button.
+      </file>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="react" version="^19.2.0" />
+        <package name="react-router-dom" version="^7.9.6" />
+        <package name="zustand" version="^5.0.9" />
+        <package name="lucide-react" version="^0.555.0" />
+        <package name="sonner" version="^2.0.7" />
+        <package name="clsx" version="^2.1.1" />
+        <package name="tailwind-merge" version="^3.4.0" />
+        <package name="class-variance-authority" version="^0.7.1" />
+      </node>
+      <devDependencies>
+        <package name="vitest" version="^2.0.0" />
+        <package name="@testing-library/react" version="^16.3.0" />
+        <package name="@testing-library/user-event" version="^14.6.1" />
+        <package name="@testing-library/jest-dom" version="^6.9.1" />
+      </devDependencies>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="pattern">Follow existing component structure: ComponentName/ComponentName.tsx with index.ts barrel export</constraint>
+    <constraint type="pattern">Use Zustand stores for state management, persist middleware for localStorage</constraint>
+    <constraint type="pattern">Use shadcn/ui Button and other primitives for UI elements</constraint>
+    <constraint type="pattern">Use Lucide icons: Mic, MicOff, Video, VideoOff, MonitorUp, LogOut, Users, Crown</constraint>
+    <constraint type="styling">Apply dark theme using Tailwind classes: bg-background, text-foreground, border</constraint>
+    <constraint type="styling">Use flex/grid layout with responsive breakpoints</constraint>
+    <constraint type="testing">Co-locate test files with source: MeetingRoom.test.tsx next to MeetingRoom.tsx</constraint>
+    <constraint type="a11y">Use proper aria attributes for interactive elements</constraint>
+    <constraint type="keyboard">Register keyboard shortcuts with cleanup on unmount</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="SettingsState" kind="zustand-store" path="packages/client/src/stores/settingsStore.ts">
+      interface SettingsState {
+        displayName: string
+        apiBaseUrl: string
+        sidebarCollapsed: boolean  // NEW: add for this story
+        setDisplayName: (name: string) => void
+        setApiBaseUrl: (url: string) => void
+        toggleSidebar: () => void  // NEW: add for this story
+      }
+    </interface>
+    <interface name="RoomState" kind="zustand-store" path="packages/client/src/stores/roomStore.ts">
+      interface RoomState {
+        currentRoom: RoomInfo | null
+        setCurrentRoom: (room: RoomInfo | null) => void
+        clearRoom: () => void
+      }
+    </interface>
+    <interface name="MeetingControlsBarProps" kind="component-props">
+      interface MeetingControlsBarProps {
+        isMuted: boolean
+        isVideoOff: boolean
+        onMicToggle: () => void
+        onVideoToggle: () => void
+        onScreenShare: () => void
+        onLeave: () => void
+      }
+    </interface>
+    <interface name="SidebarProps" kind="component-props">
+      interface SidebarProps {
+        isCollapsed: boolean
+        participants: Participant[]
+        localParticipantId: string
+        onInviteClick: () => void
+      }
+    </interface>
+    <interface name="ParticipantListItemProps" kind="component-props">
+      interface ParticipantListItemProps {
+        participant: Participant
+        isLocal: boolean
+      }
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Use Vitest with React Testing Library. Co-locate test files (*.test.tsx) with source files.
+      Mock stores using Zustand's getState/setState. Mock navigation using vi.mock('react-router-dom').
+      Test component rendering, user interactions, keyboard shortcuts, responsive behavior.
+      Follow patterns established in HomeScreen.test.tsx and JoinRoom.test.tsx.
+    </standards>
+    <locations>
+      packages/client/src/components/MeetingRoom/MeetingRoom.test.tsx
+      packages/client/src/components/MeetingRoom/Sidebar.test.tsx
+      packages/client/src/components/MeetingRoom/MeetingControlsBar.test.tsx
+    </locations>
+    <ideas>
+      <idea acRef="AC-2.5.1">Test MeetingRoom renders sidebar, main content, top toolbar, and controls bar</idea>
+      <idea acRef="AC-2.5.2">Test Sidebar shows PARTICIPANTS header, participant list, (You) marker, Invite button</idea>
+      <idea acRef="AC-2.5.3">Test MeetingControlsBar renders mic, camera, screen share, leave buttons with correct icons</idea>
+      <idea acRef="AC-2.5.4">Test Cmd+\ keyboard shortcut toggles sidebar visibility</idea>
+      <idea acRef="AC-2.5.5">Test sidebar auto-collapses when window width drops below 1000px</idea>
+      <idea acRef="AC-2.5.6">Test room ID is displayed in toolbar, connection status indicator is present</idea>
+      <idea acRef="AC-2.5.7">Test placeholder message shown in main content area</idea>
+      <idea acRef="AC-2.5.8">Test leave button clears room and navigates to home</idea>
+      <idea acRef="AC-2.5.2">Test participant with isLocal shows "(You)" suffix</idea>
+      <idea acRef="AC-2.5.4">Test sidebar state persists to localStorage via settingsStore</idea>
+    </ideas>
+  </tests>
+</story-context>

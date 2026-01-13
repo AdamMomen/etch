@@ -1,0 +1,150 @@
+<story-context id="1-4-set-up-vitest-testing-framework" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>4</storyId>
+    <title>Set Up Vitest Testing Framework</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-11-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-4-set-up-vitest-testing-framework.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>a testing framework configured across the monorepo</iWant>
+    <soThat>I can write and run tests for all packages</soThat>
+    <tasks>
+      <task id="1" ac="1.4.7">Create Workspace Configuration - vitest.workspace.ts at root</task>
+      <task id="2" ac="1.4.4,1.4.9">Configure Client Testing Environment - jsdom, RTL, setup file with mocks</task>
+      <task id="3" ac="1.4.2">Verify Server Testing Configuration - node environment, 3 existing tests</task>
+      <task id="4" ac="1.4.2">Verify Shared Testing Configuration - node environment, 24 existing tests</task>
+      <task id="5" ac="1.4.8">Create Test Data Factories - createMockStroke, createMockParticipant, createMockHost, createMockViewer</task>
+      <task id="6" ac="1.4.6">Create Client Placeholder Test - App.test.tsx smoke test</task>
+      <task id="7" ac="1.4.1,1.4.2,1.4.5">Configure Root Test Scripts - test, test:watch, test:coverage, test:client, test:server, test:shared</task>
+      <task id="8" ac="1.4.5">Configure Coverage Thresholds - 60% threshold, HTML reporter</task>
+      <task id="9" ac="1.4.1,1.4.2">Integration Verification - run all test commands and verify totals</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="1.4.1" name="Monorepo Test Execution">pnpm test runs all tests across all packages, existing tests pass (server: 3, shared: 24)</ac>
+    <ac id="1.4.2" name="Per-Package Test Commands">test:client, test:server, test:shared run tests independently</ac>
+    <ac id="1.4.3" name="Co-located Test Files">Test files use *.test.ts and *.test.tsx pattern, co-located with source</ac>
+    <ac id="1.4.4" name="React Testing Library Configuration">RTL available, @testing-library/jest-dom matchers, jsdom environment</ac>
+    <ac id="1.4.5" name="Coverage Reports">pnpm test:coverage generates HTML reports, 60% threshold for lines/branches/functions/statements</ac>
+    <ac id="1.4.6" name="Placeholder Tests">At least one passing test in each package, client has React component test</ac>
+    <ac id="1.4.7" name="Workspace Configuration">vitest.workspace.ts exists at root, orchestrates all package tests</ac>
+    <ac id="1.4.8" name="Test Data Factories">createMockStroke, createMockParticipant, createMockHost, createMockViewer available in @etch/shared</ac>
+    <ac id="1.4.9" name="Client Test Setup">src/test/setup.ts with jest-dom matchers, afterEach cleanup, window.matchMedia mock, ResizeObserver mock</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="Testing Strategy" snippet="Testing Framework: Vitest - native Vite integration, fast, Jest-compatible. Component Testing: React Testing Library. Test Location: Co-located with source files (*.test.ts). Coverage: 60% initial threshold, 80% target for critical paths." />
+      <doc path="docs/architecture.md" title="Architecture" section="Code Organization" snippet="Test files: Co-located with source files. src/stores/annotationStore.ts → src/stores/annotationStore.test.ts. Component structure: src/components/AnnotationToolbar/AnnotationToolbar.test.tsx" />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Tech Spec Epic 1" section="Test Strategy Summary" snippet="Test Levels: Unit (Vitest), Component (RTL + Vitest), Integration (Vitest + supertest). Configuration: packages/client/vitest.config.ts (jsdom), packages/server/vitest.config.ts (node), vitest.workspace.ts (workspace orchestration)" />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-1.md" title="Tech Spec Epic 1" section="Testing Infrastructure" snippet="Test Factories: createMockStroke(overrides?), createMockParticipant(overrides?), createMockHost(), createMockViewer(). Coverage Thresholds: Initial 60%, critical paths 80% target." />
+      <doc path="docs/sprint-artifacts/1-3-create-shared-types-package.md" title="Story 1.3" section="Dev Agent Record" snippet="24 tests passing in shared package. Vitest configured in shared. Server has 3 tests passing. TypeScript config pattern: extend ../../tsconfig.base.json" />
+    </docs>
+    <code>
+      <file path="packages/server/vitest.config.ts" kind="config" symbol="vitest config" lines="1-8" reason="Existing server Vitest config with node environment - reference pattern for workspace" />
+      <file path="packages/shared/vitest.config.ts" kind="config" symbol="vitest config" lines="1-8" reason="Existing shared Vitest config with node environment - reference pattern" />
+      <file path="packages/client/vitest.config.ts" kind="config" symbol="vitest config" lines="1-22" reason="ALREADY EXISTS - Client Vitest config with jsdom, RTL, setup file, coverage. May need updates for workspace." />
+      <file path="packages/server/src/routes/health.test.ts" kind="test" symbol="health endpoint tests" reason="Existing server tests (3 tests) - must continue passing" />
+      <file path="packages/shared/src/constants/colors.test.ts" kind="test" symbol="colors tests" reason="Existing shared tests - must continue passing" />
+      <file path="packages/shared/src/constants/limits.test.ts" kind="test" symbol="limits tests" reason="Existing shared tests - must continue passing" />
+      <file path="packages/shared/src/index.test.ts" kind="test" symbol="exports tests" reason="Existing shared tests - must continue passing" />
+      <file path="packages/client/src/App.tsx" kind="component" symbol="App" lines="1-48" reason="Main app component - needs App.test.tsx for placeholder test" />
+      <file path="packages/shared/src/types/index.ts" kind="types" symbol="type exports" reason="Types available for test factories: Point, Stroke, Participant, Role" />
+      <file path="package.json" kind="config" symbol="root scripts" lines="1-37" reason="Root package.json - needs test scripts added (test:client, test:server, test:shared, test:coverage)" />
+      <file path="packages/client/package.json" kind="config" symbol="client dependencies" lines="1-53" reason="Client already has RTL, jest-dom, jsdom, vitest dependencies installed" />
+      <file path="packages/server/package.json" kind="config" symbol="server dependencies" lines="1-24" reason="Server has vitest dependency, test script exists" />
+      <file path="packages/shared/package.json" kind="config" symbol="shared dependencies" lines="1-26" reason="Shared has vitest dependency, test script exists" />
+    </code>
+    <dependencies>
+      <root>
+        <dep name="vitest" version="^2.0.0" />
+        <dep name="concurrently" version="^9.0.0" />
+        <dep name="typescript" version="^5.6.0" />
+      </root>
+      <client>
+        <dep name="vitest" version="^2.0.0" />
+        <dep name="@testing-library/react" version="^16.3.0" />
+        <dep name="@testing-library/jest-dom" version="^6.9.1" />
+        <dep name="@testing-library/user-event" version="^14.6.1" />
+        <dep name="jsdom" version="^27.2.0" />
+        <dep name="@vitejs/plugin-react" version="^5.1.1" />
+      </client>
+      <server>
+        <dep name="vitest" version="^2.0.0" />
+      </server>
+      <shared>
+        <dep name="vitest" version="^2.0.0" />
+      </shared>
+      <toInstall>
+        <dep name="@vitest/coverage-v8" target="root" reason="Coverage provider for pnpm test:coverage" />
+      </toInstall>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="docs/architecture.md">Test files MUST be co-located with source files using *.test.ts pattern</constraint>
+    <constraint source="docs/architecture.md">Use Vitest with native Vite integration - Jest-compatible API</constraint>
+    <constraint source="docs/architecture.md">Coverage threshold: 60% initial, 80% for critical paths (stores, utils)</constraint>
+    <constraint source="docs/sprint-artifacts/tech-spec-epic-1.md">Client tests MUST use jsdom environment for browser-like testing</constraint>
+    <constraint source="docs/sprint-artifacts/tech-spec-epic-1.md">Server and shared tests use node environment</constraint>
+    <constraint source="docs/sprint-artifacts/1-3-create-shared-types-package.md">MUST NOT break existing 24 shared tests and 3 server tests</constraint>
+    <constraint source="monorepo">vitest.workspace.ts must orchestrate all packages for pnpm test from root</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="Test Factory Functions" kind="function signatures" path="packages/shared/src/test-utils/factories.ts">
+      <signature>createMockStroke(overrides?: Partial&lt;Stroke&gt;): Stroke</signature>
+      <signature>createMockParticipant(overrides?: Partial&lt;Participant&gt;): Participant</signature>
+      <signature>createMockHost(): Participant</signature>
+      <signature>createMockViewer(): Participant</signature>
+    </interface>
+    <interface name="Vitest Workspace Config" kind="config export" path="vitest.workspace.ts">
+      <signature>defineWorkspace(['packages/client', 'packages/server', 'packages/shared'])</signature>
+    </interface>
+    <interface name="Coverage Config" kind="vitest option">
+      <signature>coverage: { thresholds: { lines: 60, branches: 60, functions: 60, statements: 60 }, reporter: ['text', 'html'] }</signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Vitest is the test runner with native Vite integration. Tests are co-located with source files using *.test.ts(x) pattern.
+      Client uses jsdom environment with React Testing Library for component tests and @testing-library/jest-dom for extended matchers.
+      Server and shared use node environment. Coverage threshold is 60% minimum for lines, branches, functions, and statements.
+      Test files should import from '../' not from '@etch/shared' within the same package.
+    </standards>
+    <locations>
+      <location>packages/client/src/**/*.test.ts(x)</location>
+      <location>packages/server/src/**/*.test.ts</location>
+      <location>packages/shared/src/**/*.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="1.4.1">Test that pnpm test from root runs all package tests</idea>
+      <idea ac="1.4.6">Create App.test.tsx - verify App component renders "ETCH" heading</idea>
+      <idea ac="1.4.8">Test createMockStroke returns valid Stroke with default values</idea>
+      <idea ac="1.4.8">Test createMockParticipant returns Participant with default 'annotator' role</idea>
+      <idea ac="1.4.8">Test createMockHost returns Participant with 'host' role</idea>
+      <idea ac="1.4.8">Test createMockViewer returns Participant with 'viewer' role</idea>
+      <idea ac="1.4.9">Test setup.ts exports window.matchMedia mock</idea>
+      <idea ac="1.4.9">Test setup.ts exports ResizeObserver mock</idea>
+    </ideas>
+  </tests>
+
+  <existingState>
+    <note>Client vitest.config.ts ALREADY EXISTS with jsdom, RTL setup, and coverage config</note>
+    <note>Client already has all RTL dependencies installed (@testing-library/react, @testing-library/jest-dom, jsdom)</note>
+    <note>Client references src/test/setup.ts but file may not exist yet - verify and create if needed</note>
+    <note>Server has vitest.config.ts with node environment and 3 passing tests</note>
+    <note>Shared has vitest.config.ts with node environment and 24 passing tests</note>
+    <note>Root package.json has test and test:coverage scripts but NOT test:client, test:server, test:shared</note>
+    <note>NO vitest.workspace.ts exists at root - must be created</note>
+    <note>NO test factories exist in shared package - must be created</note>
+    <note>NO App.test.tsx exists in client - must be created</note>
+  </existingState>
+</story-context>

@@ -1,0 +1,266 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>13</storyId>
+    <title>Implement Room Invite Link Generation and Sharing</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-13-implement-room-invite-link-generation-and-sharing.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>host</asA>
+    <iWant>to generate and share invite links</iWant>
+    <soThat>I can invite others to join my meeting</soThat>
+    <tasks>
+      <task id="1" acs="2.13.1,2.13.5">Create InviteModal component
+        <subtasks>
+          <subtask>Create packages/client/src/components/MeetingRoom/InviteModal.tsx</subtask>
+          <subtask>Use shadcn/ui Dialog component</subtask>
+          <subtask>Display room link in read-only input field for easy selection</subtask>
+          <subtask>Include large "Copy Link" button</subtask>
+          <subtask>Accept props: open, onOpenChange, roomId</subtask>
+        </subtasks>
+      </task>
+      <task id="2" acs="2.13.2">Implement clipboard copy functionality
+        <subtasks>
+          <subtask>Use navigator.clipboard.writeText() or Tauri clipboard API</subtask>
+          <subtask>Create helper function copyToClipboard(text: string)</subtask>
+          <subtask>Handle clipboard API errors gracefully (show error toast if fails)</subtask>
+        </subtasks>
+      </task>
+      <task id="3" acs="2.13.2,2.13.3">Add toast feedback for copy actions
+        <subtasks>
+          <subtask>Use existing toast/sonner notification system</subtask>
+          <subtask>Show "Link copied!" toast on successful copy</subtask>
+          <subtask>Implement button state change to "Copied!" for 2 seconds</subtask>
+        </subtasks>
+      </task>
+      <task id="4" acs="2.13.1">Add Invite button to meeting controls
+        <subtasks>
+          <subtask>Add Invite button to MeetingControlsBar (Share2 or Link icon from lucide-react)</subtask>
+          <subtask>Wire button to open InviteModal</subtask>
+          <subtask>Position appropriately in control bar</subtask>
+        </subtasks>
+      </task>
+      <task id="5" acs="2.13.3">Implement auto-copy on room creation
+        <subtasks>
+          <subtask>Detect when user is host and room is newly created</subtask>
+          <subtask>Auto-copy invite link when meeting room first loads (for host only)</subtask>
+          <subtask>Show toast notification after auto-copy</subtask>
+          <subtask>Track "already copied" state to prevent duplicate copies</subtask>
+        </subtasks>
+      </task>
+      <task id="6" acs="2.13.4">Implement keyboard shortcut
+        <subtasks>
+          <subtask>Add Cmd+I / Ctrl+I keyboard listener in MeetingRoom</subtask>
+          <subtask>Trigger modal open on key press</subtask>
+          <subtask>Ensure shortcut works when focused on meeting</subtask>
+        </subtasks>
+      </task>
+      <task id="7" acs="2.13.5">Configure link format
+        <subtasks>
+          <subtask>Create link generation utility function</subtask>
+          <subtask>Support configurable base URL from settings/config</subtask>
+          <subtask>Default format: etch://room/{roomId}</subtask>
+          <subtask>Alternative HTTP format for web sharing: https://{domain}/join/{roomId}</subtask>
+        </subtasks>
+      </task>
+      <task id="8" acs="all">Write tests
+        <subtasks>
+          <subtask>Test InviteModal renders correctly with room link</subtask>
+          <subtask>Test Copy Link button triggers clipboard write</subtask>
+          <subtask>Test toast appears after copy</subtask>
+          <subtask>Test keyboard shortcut opens modal</subtask>
+          <subtask>Test link format is correct</subtask>
+          <subtask>Mock clipboard API for tests</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.13.1" title="Invite Button Opens Modal">
+      <given>I'm in a meeting (as host or participant)</given>
+      <when>I click the "Invite" button in the meeting controls/sidebar</when>
+      <then>I see an invite modal with the room link prominently displayed</then>
+      <and>the modal includes a "Copy Link" button</and>
+    </criterion>
+    <criterion id="AC-2.13.2" title="Copy Link Functionality">
+      <given>the invite modal is open</given>
+      <when>I click "Copy Link"</when>
+      <then>the link is copied to the clipboard</then>
+      <and>I see a toast notification: "Link copied!"</and>
+      <and>the button text briefly changes to "Copied!" for visual feedback</and>
+    </criterion>
+    <criterion id="AC-2.13.3" title="Auto-Copy on Room Creation">
+      <given>I'm the host who just created a room</given>
+      <when>the room is created and I enter the meeting</when>
+      <then>the invite link is automatically copied to my clipboard</then>
+      <and>I see a toast notification: "Invite link copied!"</and>
+    </criterion>
+    <criterion id="AC-2.13.4" title="Keyboard Shortcut">
+      <given>I'm in a meeting</given>
+      <when>I press Cmd+I (macOS) or Ctrl+I (Windows)</when>
+      <then>the invite modal opens</then>
+    </criterion>
+    <criterion id="AC-2.13.5" title="Link Format">
+      <given>a room with ID abc-123-xyz</given>
+      <when>the invite link is generated</when>
+      <then>the link format is etch://room/abc-123-xyz (or configurable base URL)</then>
+      <and>the link is valid and can be used to join the room</and>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>ETCH Product Requirements Document</title>
+        <section>Meeting &amp; Room Management</section>
+        <snippet>FR4: Hosts can generate and share room invite links. Key interactions: Launch app → Create room → Share link → Done.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>ETCH Architecture</title>
+        <section>API Contracts</section>
+        <snippet>POST /api/rooms returns {roomId, token, livekitUrl}. Room ID format: xxx-xxx-xxx (lowercase + numbers).</snippet>
+      </doc>
+      <doc>
+        <path>docs/ux-design-specification.md</path>
+        <title>UX Design Specification</title>
+        <section>Secondary Journeys - Invite Participants</section>
+        <snippet>Click "Invite" or press ⌘I → Invite modal with link → Click "Copy Link" → Link copied, toast confirmation. Command palette shows ⌘I shortcut.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>AC-2.13: Invite Link</section>
+        <snippet>"Invite" button/shortcut shows modal with room link. "Copy Link" copies to clipboard with toast. Link format: etch://room/{roomId} or configurable.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/MeetingRoom.tsx</path>
+        <kind>component</kind>
+        <symbol>MeetingRoom</symbol>
+        <lines>145-153</lines>
+        <reason>Contains handleInvite placeholder and keyboard shortcut patterns (Cmd+W at 163-167). Add Cmd+I shortcut here.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/MeetingControlsBar.tsx</path>
+        <kind>component</kind>
+        <symbol>MeetingControlsBar</symbol>
+        <lines>1-49</lines>
+        <reason>Target file for adding Invite button alongside existing mic/camera/share/leave controls.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/MeetingRoom/LeaveConfirmDialog.tsx</path>
+        <kind>component</kind>
+        <symbol>LeaveConfirmDialog</symbol>
+        <lines>1-44</lines>
+        <reason>Dialog pattern to follow for InviteModal - uses AlertDialog from shadcn/ui.</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/components/ui/alert-dialog.tsx</path>
+        <kind>component</kind>
+        <symbol>AlertDialog</symbol>
+        <lines>1-139</lines>
+        <reason>shadcn/ui AlertDialog component. InviteModal should use similar Dialog component (needs to be added).</reason>
+      </artifact>
+      <artifact>
+        <path>packages/client/src/stores/roomStore.ts</path>
+        <kind>store</kind>
+        <symbol>useRoomStore</symbol>
+        <lines>1-111</lines>
+        <reason>Provides currentRoom with roomId, token, livekitUrl. Use roomId for invite link generation.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <ecosystem name="node">
+        <package name="@tauri-apps/api" version="^2.9.1" note="Has clipboard API at @tauri-apps/api/clipboard" />
+        <package name="sonner" version="^2.0.7" note="Toast notifications - already in use" />
+        <package name="lucide-react" version="^0.555.0" note="Icons - use Share2 or Link for invite button" />
+        <package name="@radix-ui/react-alert-dialog" version="^1.1.15" note="Dialog primitives - may need @radix-ui/react-dialog for non-alert modal" />
+        <package name="zustand" version="^5.0.9" note="State management" />
+        <package name="react-router-dom" version="^7.9.6" note="useParams provides roomId" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="architecture">Use shadcn/ui Dialog component pattern (similar to AlertDialog for LeaveConfirmDialog)</constraint>
+    <constraint source="architecture">Store must remain stateless for invite link - generate from roomId only</constraint>
+    <constraint source="ux-spec">Keyboard shortcut: Cmd+I (macOS) / Ctrl+I (Windows) to open modal</constraint>
+    <constraint source="ux-spec">Toast notifications via sonner for copy feedback</constraint>
+    <constraint source="tech-spec">Link format: etch://room/{roomId} as default, configurable for HTTPS</constraint>
+    <constraint source="dev-notes">Use Tauri clipboard API when available, fallback to navigator.clipboard</constraint>
+    <constraint source="dev-notes">Auto-copy on room creation only for host - track state to prevent duplicates</constraint>
+    <constraint source="testing">354 client tests currently passing - maintain coverage level</constraint>
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>handleInvite</name>
+      <kind>function</kind>
+      <signature>handleInvite: () =&gt; void</signature>
+      <path>packages/client/src/components/MeetingRoom/MeetingRoom.tsx</path>
+      <note>Existing placeholder at line 145-153. Enhance to open modal instead of direct copy.</note>
+    </interface>
+    <interface>
+      <name>MeetingControlsBarProps</name>
+      <kind>interface</kind>
+      <signature>interface MeetingControlsBarProps { room: Room | null; onScreenShare: () =&gt; void; onLeave: () =&gt; void; }</signature>
+      <path>packages/client/src/components/MeetingRoom/MeetingControlsBar.tsx</path>
+      <note>Extend with onInvite?: () =&gt; void prop for Invite button.</note>
+    </interface>
+    <interface>
+      <name>RoomInfo</name>
+      <kind>interface</kind>
+      <signature>interface RoomInfo { roomId: string; token: string; livekitUrl: string; }</signature>
+      <path>packages/client/src/stores/roomStore.ts</path>
+      <note>Use roomId for invite link generation.</note>
+    </interface>
+    <interface>
+      <name>Tauri Clipboard API</name>
+      <kind>module</kind>
+      <signature>import { writeText } from '@tauri-apps/api/clipboard'</signature>
+      <path>@tauri-apps/api/clipboard</path>
+      <note>Async function writeText(text: string): Promise&lt;void&gt;</note>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+      Vitest + React Testing Library pattern. Tests co-located with components (*.test.tsx).
+      Use describe blocks per AC (e.g., "AC-2.13.1: Invite Button Opens Modal").
+      Mock external APIs (clipboard, Tauri) using vi.fn() and vi.mock().
+      Use userEvent.setup() for realistic user interactions.
+      Test accessibility with getByRole and toHaveAccessibleName.
+      Follow existing pattern in LeaveConfirmDialog.test.tsx.
+    </standards>
+    <locations>
+      <location>packages/client/src/components/MeetingRoom/InviteModal.test.tsx</location>
+      <location>packages/client/src/components/MeetingRoom/MeetingRoom.test.tsx (extend)</location>
+      <location>packages/client/src/lib/invite.test.ts (if separate utility)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.13.1">InviteModal renders when open=true with room link displayed</idea>
+      <idea ac="AC-2.13.1">InviteModal shows Copy Link button</idea>
+      <idea ac="AC-2.13.1">InviteModal does not render when open=false</idea>
+      <idea ac="AC-2.13.2">Clicking Copy Link calls clipboard API with correct link</idea>
+      <idea ac="AC-2.13.2">Button text changes to "Copied!" after click</idea>
+      <idea ac="AC-2.13.2">Toast notification appears on successful copy</idea>
+      <idea ac="AC-2.13.2">Error toast appears when clipboard fails</idea>
+      <idea ac="AC-2.13.3">Auto-copy triggers on mount for host with new room</idea>
+      <idea ac="AC-2.13.3">Auto-copy shows "Invite link copied!" toast</idea>
+      <idea ac="AC-2.13.3">Auto-copy does not trigger for non-host participants</idea>
+      <idea ac="AC-2.13.3">Auto-copy does not duplicate on re-render</idea>
+      <idea ac="AC-2.13.4">Cmd+I / Ctrl+I keyboard shortcut opens modal</idea>
+      <idea ac="AC-2.13.4">Keyboard shortcut prevented when input focused</idea>
+      <idea ac="AC-2.13.5">generateInviteLink returns etch://room/{roomId} by default</idea>
+      <idea ac="AC-2.13.5">generateInviteLink supports HTTPS format with domain config</idea>
+      <idea ac="accessibility">Dialog has proper role="dialog"</idea>
+      <idea ac="accessibility">Dialog has accessible name</idea>
+    </ideas>
+  </tests>
+</story-context>

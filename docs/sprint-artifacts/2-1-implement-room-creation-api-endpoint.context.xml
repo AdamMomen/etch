@@ -1,0 +1,322 @@
+<story-context id="2-1-implement-room-creation-api-endpoint" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>1</storyId>
+    <title>Implement Room Creation API Endpoint</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-11-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-1-implement-room-creation-api-endpoint.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to create a new meeting room with a single action</iWant>
+    <soThat>I can quickly start a meeting and invite others</soThat>
+    <tasks>
+      <task id="1" status="pending">
+        <title>Install required dependencies</title>
+        <acs>2.1.1, 2.1.2, 2.1.3</acs>
+        <subtasks>
+          <subtask>Add livekit-server-sdk to server package</subtask>
+          <subtask>Add nanoid for room ID generation</subtask>
+          <subtask>Ensure zod and @hono/zod-validator are installed</subtask>
+        </subtasks>
+      </task>
+      <task id="2" status="pending">
+        <title>Create room ID generation utility</title>
+        <acs>2.1.2</acs>
+        <subtasks>
+          <subtask>Create packages/server/src/utils/roomId.ts</subtask>
+          <subtask>Implement generateRoomId() using nanoid with custom alphabet</subtask>
+          <subtask>Custom alphabet: lowercase letters + numbers, excluding ambiguous chars (0, O, 1, l, I)</subtask>
+          <subtask>Format: xxx-xxx-xxx (9 characters with 2 dashes)</subtask>
+          <subtask>Add unit tests for room ID generation</subtask>
+        </subtasks>
+      </task>
+      <task id="3" status="pending">
+        <title>Create in-memory room store service</title>
+        <acs>2.1.6</acs>
+        <subtasks>
+          <subtask>Create packages/server/src/services/roomStore.ts</subtask>
+          <subtask>Define RoomRecord and ParticipantRecord interfaces</subtask>
+          <subtask>Implement createRoom(hostId, hostName) function</subtask>
+          <subtask>Implement getRoom(roomId) function</subtask>
+          <subtask>Use Map&lt;string, RoomRecord&gt; for storage</subtask>
+          <subtask>Add unit tests for room store operations</subtask>
+        </subtasks>
+      </task>
+      <task id="4" status="pending">
+        <title>Create LiveKit token generation service</title>
+        <acs>2.1.3</acs>
+        <subtasks>
+          <subtask>Create packages/server/src/services/livekit.ts</subtask>
+          <subtask>Implement generateToken(roomId, participantId, name, role, color) function</subtask>
+          <subtask>Configure token with correct grants: roomJoin, canPublish, canSubscribe, canPublishData</subtask>
+          <subtask>Set metadata with role and color as JSON string</subtask>
+          <subtask>Set expiry to 1 hour (configurable via env)</subtask>
+          <subtask>Read LIVEKIT_API_KEY and LIVEKIT_API_SECRET from environment</subtask>
+          <subtask>Add unit tests with mocked AccessToken</subtask>
+        </subtasks>
+      </task>
+      <task id="5" status="pending">
+        <title>Implement room creation API route</title>
+        <acs>2.1.1, 2.1.4, 2.1.5</acs>
+        <subtasks>
+          <subtask>Create packages/server/src/routes/rooms.ts</subtask>
+          <subtask>Define Zod schema for CreateRoomRequest: { hostName: z.string().min(1).max(50) }</subtask>
+          <subtask>Implement POST /api/rooms handler with zValidator</subtask>
+          <subtask>Generate room ID, create room record, generate host token</subtask>
+          <subtask>Assign first participant color from PARTICIPANT_COLORS</subtask>
+          <subtask>Return 201 with { roomId, token, livekitUrl }</subtask>
+          <subtask>Return 400 for validation errors with structured error response</subtask>
+        </subtasks>
+      </task>
+      <task id="6" status="pending">
+        <title>Register rooms route in main app</title>
+        <acs>2.1.1</acs>
+        <subtasks>
+          <subtask>Import rooms router in packages/server/src/index.ts</subtask>
+          <subtask>Mount at /api/rooms</subtask>
+          <subtask>Ensure CORS allows necessary methods</subtask>
+        </subtasks>
+      </task>
+      <task id="7" status="pending">
+        <title>Integration testing</title>
+        <acs>all</acs>
+        <subtasks>
+          <subtask>Write integration test for successful room creation</subtask>
+          <subtask>Write integration test for validation error cases</subtask>
+          <subtask>Verify token structure and claims</subtask>
+          <subtask>Verify room is stored in memory</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="2.1.1" title="Room Creation Endpoint">
+      <given>the API server is running</given>
+      <when>I send POST /api/rooms with body { "hostName": "BMad" }</when>
+      <then>I receive status 201 with response containing roomId, token, and livekitUrl</then>
+    </ac>
+    <ac id="2.1.2" title="Room ID Generation">
+      <given>a room is created</given>
+      <when>I examine the roomId</when>
+      <then>it is a unique, URL-safe string in format xxx-xxx-xxx</then>
+      <and>it uses lowercase letters and numbers (no ambiguous chars like 0/O, 1/l)</and>
+    </ac>
+    <ac id="2.1.3" title="LiveKit Token Generation">
+      <given>a room is created successfully</given>
+      <when>I examine the returned token</when>
+      <then>it is a valid LiveKit JWT containing:
+        - identity: unique participant ID (UUID)
+        - name: "BMad" (the hostName)
+        - metadata: { "role": "host", "color": "#f97316" }
+        - exp: 1 hour from now
+        - Room permissions: roomJoin: true, canPublish: true, canPublishData: true
+      </then>
+    </ac>
+    <ac id="2.1.4" title="Validation Error Handling">
+      <given>an invalid request (missing or empty hostName)</given>
+      <when>I send POST /api/rooms with body {}</when>
+      <then>I receive status 400 with error: { "error": { "code": "VALIDATION_ERROR", "message": "hostName is required" } }</then>
+    </ac>
+    <ac id="2.1.5" title="Host Name Length Validation">
+      <given>a hostName longer than 50 characters</given>
+      <when>I send POST /api/rooms</when>
+      <then>I receive status 400 with error code VALIDATION_ERROR</then>
+    </ac>
+    <ac id="2.1.6" title="In-Memory Room Storage">
+      <given>a room is created</given>
+      <when>the room is stored</when>
+      <then>it is saved in an in-memory Map (no database for MVP)</then>
+      <and>the room record includes: id, createdAt, hostId, participants Map</and>
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>API Route Pattern (Hono)</section>
+        <snippet>Use zValidator for request validation with Zod schemas. Error response format: { error: { code: string, message: string } }. HTTP Status: 201 for created, 400 for validation errors.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Integration Points - LiveKit Token Generation</section>
+        <snippet>Use livekit-server-sdk AccessToken with identity, name, metadata (role, color), and grants (room, roomJoin, canPublish). Call token.toJwt() to generate.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>Data Models and Contracts</section>
+        <snippet>RoomRecord interface: id (xxx-xxx-xxx), createdAt (timestamp), hostId, participants Map. ParticipantRecord: id (UUID), name, role, color, joinedAt. LiveKit JWT: sub, video grants, name, metadata, exp, iat.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-2.md</path>
+        <title>Epic 2 Technical Specification</title>
+        <section>AC-2.1: Room Creation API</section>
+        <snippet>POST /api/rooms with { hostName } returns 201 with { roomId, token, livekitUrl }. Room ID is unique, URL-safe, format xxx-xxx-xxx. Token is valid LiveKit JWT with host role and assigned color.</snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>packages/shared/src/types/api.ts</path>
+        <kind>type definitions</kind>
+        <symbol>CreateRoomRequest, CreateRoomResponse, ApiError</symbol>
+        <reason>API types for room creation already defined - use these for type safety</reason>
+      </artifact>
+      <artifact>
+        <path>packages/shared/src/types/room.ts</path>
+        <kind>type definitions</kind>
+        <symbol>Role, Participant</symbol>
+        <reason>Role type ('host' | 'sharer' | 'annotator' | 'viewer') for token metadata</reason>
+      </artifact>
+      <artifact>
+        <path>packages/shared/src/constants/colors.ts</path>
+        <kind>constants</kind>
+        <symbol>PARTICIPANT_COLORS</symbol>
+        <lines>1-14</lines>
+        <reason>Color palette for assigning participant colors - use first color for host</reason>
+      </artifact>
+      <artifact>
+        <path>packages/shared/src/constants/limits.ts</path>
+        <kind>constants</kind>
+        <symbol>TOKEN_EXPIRY_SECONDS</symbol>
+        <lines>13-16</lines>
+        <reason>Token expiry constant (3600 seconds = 1 hour) for LiveKit JWT</reason>
+      </artifact>
+      <artifact>
+        <path>packages/server/src/index.ts</path>
+        <kind>entry point</kind>
+        <symbol>app</symbol>
+        <reason>Main Hono app where rooms router must be mounted</reason>
+      </artifact>
+      <artifact>
+        <path>packages/server/src/routes/health.ts</path>
+        <kind>route</kind>
+        <symbol>healthRouter</symbol>
+        <reason>Reference pattern for creating new Hono routes with proper structure</reason>
+      </artifact>
+      <artifact>
+        <path>packages/server/src/middleware/logger.ts</path>
+        <kind>middleware</kind>
+        <symbol>logger, log</symbol>
+        <reason>Use log() function for structured JSON logging of room events</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <ecosystem name="node">
+        <existing>
+          <package name="hono" version="^4.6.0">HTTP framework</package>
+          <package name="@hono/node-server" version="^1.13.0">Node.js adapter</package>
+          <package name="zod" version="^3.23.0">Schema validation</package>
+          <package name="@etch/shared" version="workspace:*">Shared types</package>
+        </existing>
+        <toInstall>
+          <package name="livekit-server-sdk" version="^2.x">Token generation</package>
+          <package name="nanoid" version="^5.x">Room ID generation</package>
+          <package name="@hono/zod-validator" version="^0.x">Request validation middleware</package>
+          <package name="uuid" version="^9.x">Participant ID generation (optional, can use crypto.randomUUID)</package>
+        </toInstall>
+      </ecosystem>
+      <envVars>
+        <var name="LIVEKIT_URL" example="ws://localhost:7880">LiveKit WebSocket URL</var>
+        <var name="LIVEKIT_API_KEY" example="devkey">LiveKit API key for token signing</var>
+        <var name="LIVEKIT_API_SECRET" example="secret">LiveKit API secret for token signing</var>
+        <var name="PORT" example="3000">Server port (existing)</var>
+      </envVars>
+    </dependencies>
+  </artifacts>
+
+  <interfaces>
+    <interface>
+      <name>POST /api/rooms</name>
+      <kind>REST endpoint</kind>
+      <signature>POST /api/rooms { hostName: string } => 201 { roomId, token, livekitUrl }</signature>
+      <path>packages/server/src/routes/rooms.ts</path>
+    </interface>
+    <interface>
+      <name>generateToken</name>
+      <kind>function</kind>
+      <signature>generateToken(roomId: string, participantId: string, name: string, role: Role, color: string): Promise&lt;string&gt;</signature>
+      <path>packages/server/src/services/livekit.ts</path>
+    </interface>
+    <interface>
+      <name>generateRoomId</name>
+      <kind>function</kind>
+      <signature>generateRoomId(): string</signature>
+      <path>packages/server/src/utils/roomId.ts</path>
+    </interface>
+    <interface>
+      <name>createRoom</name>
+      <kind>function</kind>
+      <signature>createRoom(hostId: string, hostName: string): RoomRecord</signature>
+      <path>packages/server/src/services/roomStore.ts</path>
+    </interface>
+    <interface>
+      <name>getRoom</name>
+      <kind>function</kind>
+      <signature>getRoom(roomId: string): RoomRecord | undefined</signature>
+      <path>packages/server/src/services/roomStore.ts</path>
+    </interface>
+  </interfaces>
+
+  <constraints>
+    <constraint source="architecture.md">
+      <rule>API responses use { error: { code, message } } format for errors</rule>
+      <rule>Error codes use SCREAMING_SNAKE_CASE (e.g., VALIDATION_ERROR)</rule>
+      <rule>Content-Type is always application/json</rule>
+    </constraint>
+    <constraint source="architecture.md">
+      <rule>Files: PascalCase for components, camelCase for utils/services</rule>
+      <rule>Test files co-located with source: *.test.ts</rule>
+      <rule>Structured JSON logging to stdout</rule>
+    </constraint>
+    <constraint source="tech-spec-epic-2.md">
+      <rule>Room IDs use custom nanoid alphabet (lowercase + numbers, no 0/O/1/l/I)</rule>
+      <rule>Room ID format: xxx-xxx-xxx (9 chars + 2 dashes)</rule>
+      <rule>Token expiry: 1 hour (TOKEN_EXPIRY_SECONDS from shared)</rule>
+      <rule>In-memory storage only - no database for MVP</rule>
+    </constraint>
+    <constraint source="story dev notes">
+      <rule>Use zValidator for request validation with Zod schemas</rule>
+      <rule>Host gets first color from PARTICIPANT_COLORS (#f97316 orange)</rule>
+      <rule>Participant ID should be UUID (use crypto.randomUUID())</rule>
+    </constraint>
+  </constraints>
+
+  <tests>
+    <standards>
+      Vitest is the testing framework with React Testing Library for components.
+      Tests are co-located with source files using *.test.ts pattern.
+      Use descriptive test names following "should [behavior] when [condition]" pattern.
+      Mock external services (livekit-server-sdk) for unit tests.
+      Server tests use the existing test setup from packages/server.
+    </standards>
+    <locations>
+      <location>packages/server/src/utils/roomId.test.ts</location>
+      <location>packages/server/src/services/roomStore.test.ts</location>
+      <location>packages/server/src/services/livekit.test.ts</location>
+      <location>packages/server/src/routes/rooms.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="2.1.1">Test POST /api/rooms returns 201 with valid roomId, token, livekitUrl</idea>
+      <idea ac="2.1.2">Test generateRoomId produces xxx-xxx-xxx format with no ambiguous chars</idea>
+      <idea ac="2.1.2">Test generateRoomId produces unique IDs across multiple calls</idea>
+      <idea ac="2.1.3">Test generateToken includes correct identity, name, metadata, grants</idea>
+      <idea ac="2.1.3">Test generateToken sets 1-hour expiry</idea>
+      <idea ac="2.1.4">Test POST /api/rooms with empty body returns 400 VALIDATION_ERROR</idea>
+      <idea ac="2.1.4">Test POST /api/rooms with empty hostName returns 400 VALIDATION_ERROR</idea>
+      <idea ac="2.1.5">Test POST /api/rooms with 51-char hostName returns 400 VALIDATION_ERROR</idea>
+      <idea ac="2.1.6">Test createRoom stores room in memory with correct fields</idea>
+      <idea ac="2.1.6">Test getRoom retrieves stored room by ID</idea>
+      <idea ac="2.1.6">Test getRoom returns undefined for non-existent room</idea>
+    </ideas>
+  </tests>
+</story-context>

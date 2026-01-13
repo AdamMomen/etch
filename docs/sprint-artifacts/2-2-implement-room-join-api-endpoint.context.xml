@@ -1,0 +1,219 @@
+<story-context id="2-2-implement-room-join-api-endpoint" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2</storyId>
+    <title>Implement Room Join API Endpoint</title>
+    <status>ready-for-dev</status>
+    <generatedAt>2025-12-01</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-2-implement-room-join-api-endpoint.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to join an existing meeting room via a shareable link</iWant>
+    <soThat>I can participate in meetings others have created</soThat>
+    <tasks>
+      <task id="1" status="pending">
+        <title>Add JoinRoomRequest and JoinRoomResponse types</title>
+        <note>ALREADY COMPLETE - Types exist in packages/shared/src/types/api.ts</note>
+        <subtasks>
+          <subtask>JoinRoomRequest type exists (participantName, optional role)</subtask>
+          <subtask>JoinRoomResponse type exists (token, livekitUrl)</subtask>
+          <subtask>Types exported from shared package index</subtask>
+        </subtasks>
+      </task>
+      <task id="2" status="pending">
+        <title>Implement color assignment logic</title>
+        <note>ALREADY COMPLETE - addParticipant in roomStore.ts has cycling logic</note>
+        <subtasks>
+          <subtask>Color cycling exists: colorIndex = room.participants.size % PARTICIPANT_COLORS.length</subtask>
+          <subtask>Tests needed for color assignment cycling</subtask>
+        </subtasks>
+      </task>
+      <task id="3" status="pending">
+        <title>Add participant to room store</title>
+        <note>ALREADY COMPLETE - addParticipant function exists in roomStore.ts:105-130</note>
+        <subtasks>
+          <subtask>Function exists with signature: addParticipant(roomId, participantId, name, role)</subtask>
+          <subtask>Returns participant with assigned color</subtask>
+          <subtask>Returns undefined if room not found</subtask>
+          <subtask>Tests needed for addParticipant</subtask>
+        </subtasks>
+      </task>
+      <task id="4" status="pending">
+        <title>Create join room API route</title>
+        <subtasks>
+          <subtask>Add POST /api/rooms/:roomId/join handler to routes/rooms.ts</subtask>
+          <subtask>Define Zod schema: { participantName: z.string().min(1).max(50), role?: z.enum(['annotator', 'viewer']) }</subtask>
+          <subtask>Validate roomId exists via getRoom()</subtask>
+          <subtask>Return 404 with ROOM_NOT_FOUND if room doesn't exist</subtask>
+          <subtask>Return 400 for validation errors</subtask>
+        </subtasks>
+      </task>
+      <task id="5" status="pending">
+        <title>Generate token and return response</title>
+        <subtasks>
+          <subtask>Generate unique participant ID with crypto.randomUUID()</subtask>
+          <subtask>Add participant via addParticipant()</subtask>
+          <subtask>Generate LiveKit token via generateToken() with annotator role</subtask>
+          <subtask>Return 200 with { token, livekitUrl }</subtask>
+        </subtasks>
+      </task>
+      <task id="6" status="pending">
+        <title>Integration testing</title>
+        <subtasks>
+          <subtask>Test successful room join</subtask>
+          <subtask>Test joining non-existent room (404)</subtask>
+          <subtask>Test validation errors (missing name, name too long)</subtask>
+          <subtask>Test multiple joins (verify color cycling)</subtask>
+          <subtask>Verify token claims</subtask>
+          <subtask>Verify participant stored in room</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="2.2.1" title="Room Join Endpoint">
+      <given>a room "abc-123-xyz" exists</given>
+      <when>I send POST /api/rooms/abc-123-xyz/join with body { "participantName": "Alice" }</when>
+      <then>I receive status 200 with response containing token and livekitUrl</then>
+    </ac>
+    <ac id="2.2.2" title="LiveKit Token Generation for Joiner">
+      <given>a successful join request</given>
+      <when>I examine the returned token</when>
+      <then>it is a valid LiveKit JWT containing: identity (UUID), name ("Alice"), metadata ({ "role": "annotator", "color": "#06b6d4" }), exp (1 hour), room permissions</then>
+    </ac>
+    <ac id="2.2.3" title="Color Assignment Cycling">
+      <given>participants join a room sequentially</given>
+      <when>a new participant joins</when>
+      <then>they are assigned the next available color from PARTICIPANT_COLORS, cycling back after the last color</then>
+    </ac>
+    <ac id="2.2.4" title="Room Not Found Error">
+      <given>a room "nonexistent-room" does not exist</given>
+      <when>I send POST /api/rooms/nonexistent-room/join with valid body</when>
+      <then>I receive status 404 with error { code: "ROOM_NOT_FOUND", message: "The requested room does not exist or has ended" }</then>
+    </ac>
+    <ac id="2.2.5" title="Validation Error for participantName">
+      <given>an invalid request (missing or empty participantName)</given>
+      <when>I send POST /api/rooms/:roomId/join with body {}</when>
+      <then>I receive status 400 with error { code: "VALIDATION_ERROR", message: "participantName is required" }</then>
+    </ac>
+    <ac id="2.2.6" title="Participant Name Length Validation">
+      <given>a participantName longer than 50 characters</given>
+      <when>I send POST /api/rooms/:roomId/join</when>
+      <then>I receive status 400 with error code VALIDATION_ERROR</then>
+    </ac>
+    <ac id="2.2.7" title="Participant Added to Room Store">
+      <given>a room exists</given>
+      <when>a participant successfully joins</when>
+      <then>they are added to the room's participants Map with id, name, role, color, joinedAt</then>
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="API Route Pattern" snippet="Use zValidator for request validation with Zod schemas. Error format: { error: { code, message } }. HTTP 200 for success, 400 for validation, 404 for not found." />
+      <doc path="docs/architecture.md" title="Architecture" section="API Contracts" snippet="POST /api/rooms/:roomId/join - Join existing room. Request: { participantName, role? }. Response: { token, livekitUrl }." />
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Tech Spec Epic 2" section="APIs and Interfaces" snippet="Join endpoint returns 200 with token and livekitUrl. Default role is 'annotator'. Colors cycle through PARTICIPANT_COLORS." />
+      <doc path="docs/sprint-artifacts/2-1-implement-room-creation-api-endpoint.md" title="Story 2.1" section="Learnings" snippet="Test setup: set env vars in beforeEach. Use clearRooms() for test isolation. Token validation: decode base64 payload." />
+      <doc path="docs/epics.md" title="Epics" section="Story 2.2" snippet="POST /api/rooms/:id/join with participantName returns token with annotator role and next available color." />
+    </docs>
+    <code>
+      <file path="packages/server/src/routes/rooms.ts" kind="route" symbol="roomsRouter" reason="Add join endpoint here alongside existing POST / route">
+        <note>Existing room creation endpoint pattern to follow</note>
+      </file>
+      <file path="packages/server/src/routes/rooms.test.ts" kind="test" symbol="describe('POST /api/rooms')" lines="1-229" reason="Existing integration tests pattern to follow for join tests">
+        <note>Follow same pattern: beforeEach with env vars and clearRooms(), app.request() testing</note>
+      </file>
+      <file path="packages/server/src/services/roomStore.ts" kind="service" symbol="addParticipant" lines="105-130" reason="ALREADY EXISTS - Use this to add participants with color cycling">
+        <signature>addParticipant(roomId: string, participantId: string, name: string, role?: Role): ParticipantRecord | undefined</signature>
+      </file>
+      <file path="packages/server/src/services/roomStore.ts" kind="service" symbol="getRoom" lines="82-84" reason="Use to check if room exists">
+        <signature>getRoom(roomId: string): RoomRecord | undefined</signature>
+      </file>
+      <file path="packages/server/src/services/livekit.ts" kind="service" symbol="generateToken" lines="47-74" reason="Reuse for generating participant token">
+        <signature>generateToken(roomId: string, participantId: string, name: string, role: Role, color: string): Promise&lt;string&gt;</signature>
+      </file>
+      <file path="packages/server/src/services/livekit.ts" kind="service" symbol="getLiveKitUrl" lines="81-83" reason="Reuse to get livekitUrl for response">
+        <signature>getLiveKitUrl(): string</signature>
+      </file>
+      <file path="packages/server/src/middleware/logger.ts" kind="middleware" symbol="log" lines="18-20" reason="Use for structured logging with roomId and participantId">
+        <signature>log(entry: LogEntry): void</signature>
+      </file>
+      <file path="packages/shared/src/types/api.ts" kind="type" symbol="JoinRoomRequest, JoinRoomResponse" lines="26-41" reason="ALREADY EXISTS - Types for request/response">
+        <note>JoinRoomRequest: { participantName: string, role?: Role }</note>
+        <note>JoinRoomResponse: { token: string, livekitUrl: string }</note>
+      </file>
+    </code>
+    <dependencies>
+      <node>
+        <package name="hono" version="^4.6.0" />
+        <package name="@hono/zod-validator" version="^0.7.5" />
+        <package name="zod" version="^3.23.0" />
+        <package name="livekit-server-sdk" version="^2.14.2" />
+        <package name="@etch/shared" version="workspace:*" />
+        <package name="vitest" version="^2.0.0" dev="true" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="architecture.md">Use zValidator for request validation with Zod schemas</constraint>
+    <constraint source="architecture.md">Error format: { error: { code: string, message: string } }</constraint>
+    <constraint source="architecture.md">HTTP 200 for success, 400 for validation errors, 404 for not found</constraint>
+    <constraint source="tech-spec-epic-2.md">Default role for joiners is "annotator"</constraint>
+    <constraint source="tech-spec-epic-2.md">Color assignment cycles through PARTICIPANT_COLORS</constraint>
+    <constraint source="tech-spec-epic-2.md">Token expiry: 1 hour (TOKEN_EXPIRY_SECONDS from shared)</constraint>
+    <constraint source="story-2.1">Test files co-located with source (*.test.ts)</constraint>
+    <constraint source="story-2.1">Use app.request() pattern for Hono integration testing</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="POST /api/rooms/:roomId/join" kind="REST endpoint">
+      <request>{ participantName: string, role?: 'annotator' | 'viewer' }</request>
+      <response status="200">{ token: string, livekitUrl: string }</response>
+      <response status="400">{ error: { code: 'VALIDATION_ERROR', message: string } }</response>
+      <response status="404">{ error: { code: 'ROOM_NOT_FOUND', message: 'The requested room does not exist or has ended' } }</response>
+    </interface>
+    <interface name="addParticipant" kind="function" path="packages/server/src/services/roomStore.ts">
+      <signature>addParticipant(roomId: string, participantId: string, name: string, role?: Role): ParticipantRecord | undefined</signature>
+      <note>Returns undefined if room doesn't exist, otherwise returns participant with assigned color</note>
+    </interface>
+    <interface name="generateToken" kind="function" path="packages/server/src/services/livekit.ts">
+      <signature>generateToken(roomId: string, participantId: string, name: string, role: Role, color: string): Promise&lt;string&gt;</signature>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Vitest testing framework with co-located test files (*.test.ts). Integration tests use app.request() pattern for Hono. Unit tests use vi.mock() for dependencies. Set environment variables (LIVEKIT_API_KEY, LIVEKIT_API_SECRET, LIVEKIT_URL) in beforeEach. Use clearRooms() for test isolation. Token validation: decode base64 payload, don't verify signature in unit tests.
+    </standards>
+    <locations>
+      <location>packages/server/src/routes/rooms.test.ts</location>
+      <location>packages/server/src/services/roomStore.test.ts</location>
+    </locations>
+    <ideas>
+      <idea acId="2.2.1">Test successful join returns 200 with token and livekitUrl</idea>
+      <idea acId="2.2.2">Decode token JWT and verify identity, name, metadata.role, metadata.color, video.room grants</idea>
+      <idea acId="2.2.3">Join 6 participants and verify colors cycle: orange, cyan, purple, green, pink, orange</idea>
+      <idea acId="2.2.4">Create room, then join nonexistent room ID, verify 404 with ROOM_NOT_FOUND</idea>
+      <idea acId="2.2.5">Send empty body, verify 400 with VALIDATION_ERROR and message about participantName</idea>
+      <idea acId="2.2.6">Send participantName with 51 chars, verify 400 with VALIDATION_ERROR</idea>
+      <idea acId="2.2.7">After join, call getRoom() and verify participant exists with correct fields</idea>
+      <idea>Test with role: 'viewer' to verify role override works</idea>
+      <idea>Test invalid JSON body returns 400</idea>
+      <idea>Test participantName that is not a string returns 400</idea>
+    </ideas>
+  </tests>
+
+  <devNotes>
+    <note priority="high">JoinRoomRequest and JoinRoomResponse types ALREADY EXIST in @etch/shared - no need to create them</note>
+    <note priority="high">addParticipant function ALREADY EXISTS in roomStore.ts with color cycling - just use it</note>
+    <note priority="high">Follow exact pattern from rooms.ts POST / handler for the join endpoint</note>
+    <note>Main work: Add POST /:roomId/join route handler with Zod validation and 404 handling</note>
+    <note>Add integration tests following rooms.test.ts patterns</note>
+    <note>Add unit tests for addParticipant in roomStore.test.ts if not already present</note>
+  </devNotes>
+</story-context>

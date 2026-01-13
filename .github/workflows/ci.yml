@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Cancel in-progress runs when a new workflow with the same group is triggered
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # Detect which paths changed
+  path-filter:
+    runs-on: ubuntu-latest
+    outputs:
+      typescript: ${{ steps.filter.outputs.typescript }}
+      rust: ${{ steps.filter.outputs.rust }}
+      ci: ${{ steps.filter.outputs.ci }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            typescript:
+              - 'packages/client/**'
+              - 'packages/server/**'
+              - 'packages/shared/**'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
+              - 'tsconfig*.json'
+              - 'eslint.config.js'
+              - '.prettierrc'
+
+            rust:
+              - 'packages/core/**'
+
+            ci:
+              - '.github/workflows/**'
+
+  # Pre-commit checks always run first
+  precommit:
+    needs: path-filter
+    uses: ./.github/workflows/precommit_reusable.yml
+
+  # TypeScript pipeline (conditional on TypeScript or CI changes)
+  typescript:
+    needs: [path-filter, precommit]
+    if: |
+      needs.path-filter.outputs.typescript == 'true' ||
+      needs.path-filter.outputs.ci == 'true'
+    uses: ./.github/workflows/typescript_reusable.yml
+
+  # Rust pipeline (conditional on Rust or CI changes)
+  rust:
+    needs: [path-filter, precommit]
+    if: |
+      needs.path-filter.outputs.rust == 'true' ||
+      needs.path-filter.outputs.ci == 'true'
+    uses: ./.github/workflows/rust_reusable.yml
+
+  # Success job for branch protection
+  ci-success:
+    name: All CI Checks Passed
+    runs-on: ubuntu-latest
+    needs: [precommit, typescript, rust]
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          echo "=== CI Status Summary ==="
+          echo ""
+          echo "Pre-commit: ${{ needs.precommit.result }}"
+          echo "TypeScript: ${{ needs.typescript.result }}"
+          echo "Rust: ${{ needs.rust.result }}"
+          echo ""
+
+          # Pre-commit must always succeed
+          if [[ "${{ needs.precommit.result }}" != "success" ]]; then
+            echo "❌ Pre-commit checks failed"
+            exit 1
+          fi
+
+          # TypeScript must succeed if it ran (not skipped)
+          if [[ "${{ needs.typescript.result }}" == "failure" ]]; then
+            echo "❌ TypeScript checks failed"
+            exit 1
+          fi
+
+          # Rust must succeed if it ran (not skipped)
+          if [[ "${{ needs.rust.result }}" == "failure" ]]; then
+            echo "❌ Rust checks failed"
+            exit 1
+          fi
+
+          echo "✅ All CI checks passed!"

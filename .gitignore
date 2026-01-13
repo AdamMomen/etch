@@ -10,6 +10,15 @@ build/
 release/
 *.tsbuildinfo
 
+# Tauri build artifacts
+packages/client/src-tauri/target/
+packages/client/src-tauri/binaries/
+*.dmg
+*.msi
+*.app
+*.AppImage
+*.deb
+
 # Backup directories
 *-backup-*/
 client-backup-*/
@@ -46,3 +55,8 @@ coverage/
 *.tmp
 *.temp
 
+# Shared Rust target directory (see .cargo/config.toml)
+target/
+packages/core/target/
+
+hopp-main

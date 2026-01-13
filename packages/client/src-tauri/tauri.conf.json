@@ -1,0 +1,46 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Etch",
+  "version": "0.1.0",
+  "identifier": "com.etch.app",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "cd ../core && cargo build && mkdir -p ../client/src-tauri/binaries && TARGET=$(rustc -vV | grep host | cut -d' ' -f2) && cp ../../target/debug/etch-core ../client/src-tauri/binaries/etch-core-$TARGET && cd ../client && pnpm dev:web",
+    "beforeBuildCommand": "cd ../core && cargo build --release --bin etch-core && bash bundle-as-app.sh && mkdir -p ../client/src-tauri/binaries && TARGET=$(rustc -vV | grep host | cut -d' ' -f2) && rm -rf ../client/src-tauri/binaries/etch-core-$TARGET.app && cp -R ../../target/release/etch-core.app ../client/src-tauri/binaries/etch-core-$TARGET.app && cp ../../target/release/etch-core.app/Contents/MacOS/etch-core-$TARGET ../client/src-tauri/binaries/etch-core-$TARGET && cd ../client && pnpm build:web"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "title": "Etch",
+        "width": 800,
+        "height": 600,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "externalBin": [
+      "binaries/etch-core"
+    ],
+    "macOS": {
+      "infoPlist": "Info.plist",
+      "entitlements": "Entitlements.plist",
+      "minimumSystemVersion": "10.15"
+    }
+  }
+}

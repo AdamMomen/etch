@@ -1,14 +1,48 @@
 {
-  "name": "nameless",
+  "name": "etch",
   "version": "0.1.0",
   "private": true,
-  "description": "NAMELESS - Open-Source Meeting Platform with Annotations",
+  "description": "Open-source, self-hosted meeting platform with real-time screen annotations",
   "scripts": {
-    "dev:client": "pnpm --filter nameless-client dev",
-    "dev:server": "pnpm --filter nameless-server dev",
-    "build": "pnpm -r build"
+    "dev": "concurrently \"pnpm dev:client\" \"pnpm dev:server\"",
+    "dev:web": "concurrently \"pnpm --filter client dev:web\" \"pnpm dev:server\"",
+    "dev:tunnel": "VITE_API_URL=https://dev-api.momen.earth/api concurrently \"pnpm dev:client\" \"pnpm dev:server\" \"pnpm tunnel\"",
+    "dev:client": "pnpm --filter client dev",
+    "dev:server": "pnpm --filter server dev",
+    "dev:livekit": "cd packages/livekit-local-server && task start-server",
+    "tunnel": "cloudflared tunnel run etch-dev",
+    "build": "pnpm --filter @etch/shared build && pnpm --filter client build && pnpm --filter server build",
+    "build:shared": "pnpm --filter @etch/shared build",
+    "build:client": "pnpm --filter client build",
+    "build:server": "pnpm --filter server build",
+    "lint": "eslint packages/client/src packages/server/src packages/shared/src --ext .ts,.tsx",
+    "lint:fix": "eslint packages/client/src packages/server/src packages/shared/src --ext .ts,.tsx --fix",
+    "format": "prettier --write \"packages/client/src/**/*.{ts,tsx}\" \"packages/server/src/**/*.{ts,tsx}\" \"packages/shared/src/**/*.{ts,tsx}\"",
+    "format:check": "prettier --check \"packages/client/src/**/*.{ts,tsx}\" \"packages/server/src/**/*.{ts,tsx}\" \"packages/shared/src/**/*.{ts,tsx}\"",
+    "typecheck": "pnpm --filter client exec tsc --noEmit && pnpm --filter server exec tsc --noEmit && pnpm --filter @etch/shared exec tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:client": "pnpm --filter client test run",
+    "test:server": "pnpm --filter server test run",
+    "test:shared": "pnpm --filter @etch/shared test run"
   },
-  "author": "Adam Momen",
-  "license": "Apache-2.0"
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@vitest/coverage-v8": "^2.1.9",
+    "concurrently": "^9.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-react": "^7.35.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@9.0.0"
 }
-

@@ -1,0 +1,231 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>7</storyId>
+    <title>Implement Audio Publishing and Controls</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-7-implement-audio-publishing-and-controls.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to publish my microphone audio and control mute/unmute</iWant>
+    <soThat>I can speak to other participants in the meeting</soThat>
+    <tasks>
+      <task id="1" acs="2.7.1,2.7.2,2.7.3,2.7.4">Create useAudio hook
+        <subtask>Create packages/client/src/hooks/useAudio.ts</subtask>
+        <subtask>Accept room instance from useLiveKit hook</subtask>
+        <subtask>Implement enableMicrophone() using room.localParticipant.setMicrophoneEnabled(true)</subtask>
+        <subtask>Implement disableMicrophone() using room.localParticipant.setMicrophoneEnabled(false)</subtask>
+        <subtask>Return isMuted, isPublishing, toggleMute() state and actions</subtask>
+        <subtask>Handle permission request automatically when enabling</subtask>
+      </task>
+      <task id="2" acs="2.7.2,2.7.3">Add audio state to settingsStore
+        <subtask>Add isMuted: boolean to settingsStore (default: true per UX spec)</subtask>
+        <subtask>Add setMuted(muted: boolean) action</subtask>
+        <subtask>Persist mute preference to localStorage</subtask>
+      </task>
+      <task id="3" acs="2.7.1,2.7.2,2.7.3,2.7.4">Create MicrophoneButton component
+        <subtask>Create packages/client/src/components/MeetingRoom/MicrophoneButton.tsx</subtask>
+        <subtask>Use useAudio hook for state management</subtask>
+        <subtask>Show mic icon when unmuted, mic-off icon when muted</subtask>
+        <subtask>Apply immediate visual feedback on click (optimistic UI)</subtask>
+        <subtask>Style consistently with existing control bar buttons</subtask>
+      </task>
+      <task id="4" acs="2.7.5">Implement keyboard shortcut
+        <subtask>Add keyboard event listener for M key</subtask>
+        <subtask>Toggle mute state when pressed (only when not in text input)</subtask>
+        <subtask>Add to existing keyboard shortcut system if present</subtask>
+      </task>
+      <task id="5" acs="2.7.6">Handle permission denied error
+        <subtask>Catch NotAllowedError from setMicrophoneEnabled</subtask>
+        <subtask>Show toast notification using sonner: "Microphone access denied. Check system settings."</subtask>
+        <subtask>Keep button in muted state</subtask>
+        <subtask>Log error for debugging</subtask>
+      </task>
+      <task id="6" acs="2.7.7">Implement speaking indicator
+        <subtask>Use LiveKit's isSpeaking property from LocalParticipant</subtask>
+        <subtask>Add speaking state to participant in roomStore</subtask>
+        <subtask>Create speaking indicator animation (pulsing ring around avatar)</subtask>
+        <subtask>Apply indicator to local participant's avatar</subtask>
+      </task>
+      <task id="7" acs="all">Update ControlBar to use MicrophoneButton
+        <subtask>Replace placeholder microphone control in ControlBar</subtask>
+        <subtask>Pass room instance to MicrophoneButton</subtask>
+        <subtask>Ensure proper layout and spacing</subtask>
+      </task>
+      <task id="8" acs="all">Write tests
+        <subtask>Test useAudio hook mute/unmute functionality</subtask>
+        <subtask>Test MicrophoneButton component states</subtask>
+        <subtask>Test keyboard shortcut handler</subtask>
+        <subtask>Test permission denied error handling</subtask>
+        <subtask>Test speaking indicator display</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.7.1" title="Microphone Permission Request">
+      <given>I'm connected to a LiveKit room</given>
+      <when>I click the microphone button (currently muted)</when>
+      <then>The system prompts for microphone permission (if not granted)</then>
+    </criterion>
+    <criterion id="AC-2.7.2" title="Audio Publishing on Unmute">
+      <given>Microphone permission is granted</given>
+      <when>I click unmute</when>
+      <then>Microphone audio is published to the room</then>
+      <then>Button icon changes from muted (slash) to unmuted</then>
+      <then>Other participants can hear me</then>
+    </criterion>
+    <criterion id="AC-2.7.3" title="Audio Muting">
+      <given>I am currently unmuted and publishing audio</given>
+      <when>I click the microphone button</when>
+      <then>Audio track is muted (stops publishing)</then>
+      <then>Button icon shows muted state (slash)</then>
+    </criterion>
+    <criterion id="AC-2.7.4" title="Toggle Responsiveness">
+      <given>I toggle the mute state</given>
+      <when>The button is clicked</when>
+      <then>Visual feedback is instant (&lt; 100ms)</then>
+    </criterion>
+    <criterion id="AC-2.7.5" title="Keyboard Shortcut">
+      <given>I am in a meeting</given>
+      <when>I press the M key</when>
+      <then>Mute state toggles (same as clicking button)</then>
+    </criterion>
+    <criterion id="AC-2.7.6" title="Permission Denied Handling">
+      <given>The system prompts for microphone permission</given>
+      <when>Permission is denied by user or system</when>
+      <then>A toast shows: "Microphone access denied. Check system settings."</then>
+      <then>Button remains in muted state</then>
+    </criterion>
+    <criterion id="AC-2.7.7" title="Speaking Indicator">
+      <given>I am unmuted and speaking</given>
+      <when>Audio is detected from my microphone</when>
+      <then>My participant avatar shows a speaking indicator animation</then>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/architecture.md" title="Architecture" section="Integration Points">
+        LiveKit Integration Pattern: Use livekit-client for room connection, room.localParticipant.setMicrophoneEnabled() for audio control. DataTracks for annotation sync.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Implementation Patterns">
+        Zustand store pattern for state management. Custom hook pattern for encapsulating LiveKit + audio logic.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="Core Experience Principles">
+        Speed principle: Actions must feel instant. Mic/camera toggle &lt; 100ms visual feedback. Local-first rendering with background sync.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="Participant Bubble">
+        Speaking indicator: Subtle pulse animation on border when speaking. Color matches annotation color.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design" section="Meeting Controls Bar">
+        Mic button shows muted/unmuted state. Icon with slash when muted.
+      </doc>
+      <doc path="docs/prd.md" title="PRD" section="Audio &amp; Video (FR8-14)">
+        FR8: Users can publish audio from microphone. FR10: Users can mute/unmute own audio.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Tech Spec" section="AC-2.7">
+        Audio publishing with LiveKit. M keyboard shortcut. Permission denied handling. Store preference in settingsStore.
+      </doc>
+    </docs>
+    <code>
+      <file path="packages/client/src/hooks/useLiveKit.ts" kind="hook" symbol="useLiveKit" lines="1-157" reason="Provides room instance needed for audio control. Returns room, connectionState, isConnected.">
+        Hook managing LiveKit room connection lifecycle. Room instance used for localParticipant.setMicrophoneEnabled().
+      </file>
+      <file path="packages/client/src/stores/roomStore.ts" kind="store" symbol="useRoomStore" lines="1-108" reason="Manages participant state including localParticipant. Needs extension for speaking state.">
+        Zustand store with participants, connection state. Add isSpeaking to Participant type for speaking indicator.
+      </file>
+      <file path="packages/client/src/stores/settingsStore.ts" kind="store" symbol="useSettingsStore" lines="1-28" reason="Persisted settings store. Add isMuted preference for audio state persistence.">
+        Zustand store with persist middleware. Needs isMuted boolean and setMuted action.
+      </file>
+      <file path="packages/client/src/components/MeetingRoom/MeetingControlsBar.tsx" kind="component" symbol="MeetingControlsBar" lines="1-80" reason="Contains microphone button. Replace placeholder with real audio control.">
+        Currently accepts isMuted prop and onMicToggle callback. Replace with MicrophoneButton component.
+      </file>
+      <file path="packages/client/src/components/MeetingRoom/MeetingRoom.tsx" kind="component" symbol="MeetingRoom" lines="1-184" reason="Main meeting view. Has local isMuted state and handleMicToggle placeholder. Integrate real audio.">
+        Lines 29-30: local isMuted state. Lines 83-86: handleMicToggle placeholder. Pass room to audio controls.
+      </file>
+      <file path="packages/client/src/components/MeetingRoom/ConnectionStatusIndicator.tsx" kind="component" symbol="ConnectionStatusIndicator" reason="Component pattern reference for MicrophoneButton styling.">
+        Example of indicator component with multiple states. Follow similar pattern for mic button states.
+      </file>
+      <file path="packages/client/src/utils/participantMetadata.ts" kind="utility" symbol="parseParticipantMetadata" lines="1-50" reason="Metadata parsing utility. Reference for parsing participant metadata including speaking state.">
+        Parses role and color from LiveKit participant metadata. Can extend for additional state if needed.
+      </file>
+    </code>
+    <dependencies>
+      <node>
+        <package name="livekit-client" version="^2.16.0" reason="LiveKit WebRTC client. Provides Room, LocalParticipant, setMicrophoneEnabled API."/>
+        <package name="zustand" version="^5.0.9" reason="State management with persist middleware for settings."/>
+        <package name="sonner" version="^2.0.7" reason="Toast notifications for permission denied and other feedback."/>
+        <package name="lucide-react" version="^0.555.0" reason="Icons including Mic, MicOff for button states."/>
+        <package name="react" version="^19.2.0" reason="Core React framework."/>
+      </node>
+      <dev>
+        <package name="vitest" version="^2.0.0" reason="Test runner."/>
+        <package name="@testing-library/react" version="^16.3.0" reason="Component testing."/>
+        <package name="@testing-library/jest-dom" version="^6.9.1" reason="DOM matchers."/>
+      </dev>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="Architecture" category="pattern">Use Zustand for state management. Store audio preferences in settingsStore with persist middleware.</constraint>
+    <constraint source="Architecture" category="pattern">Use custom hooks pattern: Create useAudio hook encapsulating LiveKit audio logic.</constraint>
+    <constraint source="UX Spec" category="performance">Mic toggle must have &lt; 100ms visual feedback. Use optimistic UI updates.</constraint>
+    <constraint source="UX Spec" category="default">Users start muted by default to avoid accidental audio broadcasting.</constraint>
+    <constraint source="UX Spec" category="accessibility">Button must have aria-label and aria-pressed states. Keyboard shortcut M for toggle.</constraint>
+    <constraint source="Architecture" category="naming">Files: PascalCase for components (MicrophoneButton.tsx), camelCase for hooks (useAudio.ts).</constraint>
+    <constraint source="Architecture" category="testing">Co-locate tests with source files (*.test.ts pattern).</constraint>
+    <constraint source="Dev Notes" category="api">Use room.localParticipant.setMicrophoneEnabled(true/false) for audio control.</constraint>
+    <constraint source="Dev Notes" category="api">Use ParticipantEvent.IsSpeakingChanged for speaking indicator.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="LocalParticipant.setMicrophoneEnabled" kind="LiveKit SDK method" path="livekit-client">
+      <signature>setMicrophoneEnabled(enabled: boolean, options?: CreateLocalTracksOptions): Promise&lt;LocalTrack | undefined&gt;</signature>
+      <notes>Enables/disables microphone. Requests permission if not granted. Throws NotAllowedError on permission denial.</notes>
+    </interface>
+    <interface name="LocalParticipant.isMicrophoneEnabled" kind="LiveKit SDK property" path="livekit-client">
+      <signature>readonly isMicrophoneEnabled: boolean</signature>
+      <notes>Check current microphone state.</notes>
+    </interface>
+    <interface name="ParticipantEvent.IsSpeakingChanged" kind="LiveKit SDK event" path="livekit-client">
+      <signature>room.localParticipant.on(ParticipantEvent.IsSpeakingChanged, (speaking: boolean) => void)</signature>
+      <notes>Fired when speaking state changes. Use for speaking indicator animation.</notes>
+    </interface>
+    <interface name="useSettingsStore" kind="Zustand store" path="packages/client/src/stores/settingsStore.ts">
+      <signature>displayName: string, sidebarCollapsed: boolean, toggleSidebar(): void</signature>
+      <notes>Extend with: isMuted: boolean, setMuted(muted: boolean): void</notes>
+    </interface>
+    <interface name="useRoomStore" kind="Zustand store" path="packages/client/src/stores/roomStore.ts">
+      <signature>localParticipant: Participant | null, updateParticipant(id, updates): void</signature>
+      <notes>May need to add isSpeaking to Participant type for speaking indicator.</notes>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Use Vitest as test runner with jsdom environment. React Testing Library for component tests. Co-locate test files with source (*.test.ts pattern). Use vi.mock for LiveKit SDK mocking. Follow existing patterns in roomStore.test.ts and ConnectionStatusIndicator.test.ts.
+    </standards>
+    <locations>
+      <location>packages/client/src/hooks/*.test.ts</location>
+      <location>packages/client/src/components/MeetingRoom/*.test.tsx</location>
+      <location>packages/client/src/stores/*.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="2.7.1">Test that clicking mic button when muted calls setMicrophoneEnabled(true)</idea>
+      <idea ac="2.7.2">Test that successful enable updates button state to unmuted icon</idea>
+      <idea ac="2.7.3">Test that clicking when unmuted calls setMicrophoneEnabled(false)</idea>
+      <idea ac="2.7.4">Test that UI updates immediately before async operation completes (optimistic UI)</idea>
+      <idea ac="2.7.5">Test keyboard event listener for M key triggers toggle</idea>
+      <idea ac="2.7.5">Test M key is ignored when focus is in text input</idea>
+      <idea ac="2.7.6">Test NotAllowedError shows toast and keeps muted state</idea>
+      <idea ac="2.7.7">Test IsSpeakingChanged event updates participant speaking state</idea>
+      <idea ac="2.7.7">Test speaking indicator renders when isSpeaking is true</idea>
+      <idea ac="all">Test settingsStore persists isMuted preference</idea>
+    </ideas>
+  </tests>
+</story-context>

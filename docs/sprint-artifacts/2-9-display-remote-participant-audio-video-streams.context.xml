@@ -1,0 +1,231 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>9</storyId>
+    <title>Display Remote Participant Audio/Video Streams</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-9-display-remote-participant-audio-video-streams.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to see and hear other participants' audio and video</iWant>
+    <soThat>I can communicate face-to-face in the meeting</soThat>
+    <tasks>
+      <task id="1" ac="2.9.1, 2.9.3">
+        <title>Create RemoteParticipantVideo component</title>
+        <subtasks>
+          <subtask>Create packages/client/src/components/MeetingRoom/RemoteParticipantVideo.tsx</subtask>
+          <subtask>Accept RemoteParticipant and RemoteTrackPublication props</subtask>
+          <subtask>Use LiveKit's VideoTrack component or native video element with track.attach()</subtask>
+          <subtask>Display participant name overlay on video</subtask>
+          <subtask>Show avatar placeholder when video track is unavailable/disabled</subtask>
+          <subtask>Implement smooth fade transition when video state changes</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="2.9.2">
+        <title>Create RemoteParticipantAudio component</title>
+        <subtasks>
+          <subtask>Create packages/client/src/components/MeetingRoom/RemoteParticipantAudio.tsx</subtask>
+          <subtask>Subscribe to audio tracks from remote participants</subtask>
+          <subtask>Use LiveKit's AudioTrack component or native audio element with track.attach()</subtask>
+          <subtask>Handle audio track subscription/unsubscription</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="2.9.2">
+        <title>Create SpeakingIndicator component</title>
+        <subtasks>
+          <subtask>Create visual speaking indicator (pulsing border animation per UX spec)</subtask>
+          <subtask>Use LiveKit's useSpeakingDetection hook or isSpeaking state from participant</subtask>
+          <subtask>Integrate into both avatar placeholder and video display</subtask>
+          <subtask>Style per UX spec: subtle pulse animation on participant border</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="2.9.4">
+        <title>Create ParticipantBubble component</title>
+        <subtasks>
+          <subtask>Create packages/client/src/components/MeetingRoom/ParticipantBubble.tsx</subtask>
+          <subtask>Implement Around-style floating bubble (32-48px circular)</subtask>
+          <subtask>Show video if available, avatar with initial if not</subtask>
+          <subtask>Include border ring matching participant's assigned color</subtask>
+          <subtask>Position in corner during screen share per UX spec</subtask>
+        </subtasks>
+      </task>
+      <task id="5" ac="2.9.5">
+        <title>Create ParticipantGrid component</title>
+        <subtasks>
+          <subtask>Create packages/client/src/components/MeetingRoom/ParticipantGrid.tsx</subtask>
+          <subtask>Implement responsive grid layout for participant videos</subtask>
+          <subtask>Grid sizing: 2x2 for ≤4, 3x3 for 5-9, 4x3 for 10</subtask>
+          <subtask>Include local video preview in grid</subtask>
+          <subtask>Use CSS Grid for responsive layout</subtask>
+        </subtasks>
+      </task>
+      <task id="6" ac="2.9.6">
+        <title>Implement adaptive video quality</title>
+        <subtasks>
+          <subtask>Enable LiveKit Simulcast for adaptive quality</subtask>
+          <subtask>Configure video track subscription with adaptive layer selection</subtask>
+          <subtask>Handle quality changes gracefully without flickering</subtask>
+          <subtask>Log quality changes for debugging</subtask>
+        </subtasks>
+      </task>
+      <task id="7" ac="all">
+        <title>Integrate remote participants into MeetingRoom</title>
+        <subtasks>
+          <subtask>Update MeetingRoom.tsx to display remote participants</subtask>
+          <subtask>Subscribe to remote track events (TrackSubscribed, TrackUnsubscribed)</subtask>
+          <subtask>Toggle between grid and bubble layout based on screen share state</subtask>
+          <subtask>Update roomStore to track remote participant video/audio states</subtask>
+        </subtasks>
+      </task>
+      <task id="8" ac="2.9.1, 2.9.2">
+        <title>Update roomStore for remote participant tracking</title>
+        <subtasks>
+          <subtask>Track video/audio publication state for each remote participant</subtask>
+          <subtask>Update state on track subscription changes</subtask>
+          <subtask>Handle participant join/leave events for cleanup</subtask>
+        </subtasks>
+      </task>
+      <task id="9" ac="all">
+        <title>Write tests</title>
+        <subtasks>
+          <subtask>Test RemoteParticipantVideo component rendering</subtask>
+          <subtask>Test RemoteParticipantAudio track subscription</subtask>
+          <subtask>Test SpeakingIndicator visual states</subtask>
+          <subtask>Test ParticipantBubble avatar/video switching</subtask>
+          <subtask>Test ParticipantGrid layout at different participant counts</subtask>
+          <subtask>Test layout switching between grid and bubbles</subtask>
+          <subtask>Mock LiveKit remote participant and track publications</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-2.9.1" title="Remote Video Display">
+      <given>I'm in a meeting with other participants</given>
+      <when>a remote participant has video enabled</when>
+      <then>their video displays in the participant area</then>
+    </criterion>
+    <criterion id="AC-2.9.2" title="Remote Audio Playback">
+      <given>I'm in a meeting with other participants</given>
+      <when>a remote participant has audio enabled</when>
+      <then>I can hear their audio</then>
+      <and>their avatar shows speaking indicator when they talk</and>
+    </criterion>
+    <criterion id="AC-2.9.3" title="Video Disable Transition">
+      <given>a remote participant has video enabled</given>
+      <when>the remote participant disables their video</when>
+      <then>their video is replaced with avatar placeholder</then>
+      <and>the transition is smooth (fade)</and>
+    </criterion>
+    <criterion id="AC-2.9.4" title="Floating Bubbles Layout (Screen Sharing)">
+      <given>screen sharing is active</given>
+      <when>viewing participant videos</when>
+      <then>participant videos are displayed as floating bubbles (Around-style)</then>
+    </criterion>
+    <criterion id="AC-2.9.5" title="Grid Layout (No Screen Share)">
+      <given>no screen share is active</given>
+      <when>viewing participant videos</when>
+      <then>participant videos are displayed in grid layout (up to 10 participants)</then>
+      <and>grid adapts: 2x2 for 4 or fewer, 3x3 for 5-9, etc.</and>
+    </criterion>
+    <criterion id="AC-2.9.6" title="Adaptive Video Quality">
+      <given>participants have video enabled</given>
+      <when>network conditions vary</when>
+      <then>video quality adapts to network conditions automatically</then>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Audio &amp; Video (FR8-14)">
+        Remote participant audio/video streams covered by FR13: "Users can see and hear other participants' audio/video streams" and FR14: "Users can adjust volume of individual participants (local mix)".
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Integration Points">
+        LiveKit Client integration using livekit-client and @livekit/components-react. Key events: TrackSubscribed, TrackUnsubscribed, ParticipantConnected. Participant.isSpeaking for speaking detection.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Data Flow">
+        Remote track subscription flow: DataTrack message received → Validate → Add to store → Re-render. Each client reconstructs from event stream.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="Participant Bubble (Around-style)">
+        Circular avatar 32-48px with gradient background and participant initial. Border ring matches annotation color. Speaking state shows subtle pulse animation. States: Connected, Speaking, Muted, Disconnected.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Design Specification" section="Design Direction">
+        Grid layout for no screen share (2x2 for ≤4, 3x3 for 5-9). Floating bubbles stacked in corner during screen share. Focus mode fades UI to 30% after 3s idle.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Tech Spec" section="AC-2.9: Remote Streams">
+        Remote participant audio plays automatically. Video displays in grid layout. Speaking indicator on active audio. Use LiveKit automatic track subscription.
+      </doc>
+      <doc path="docs/epics.md" title="Epics" section="Story 2.9">
+        Prerequisite: Story 2.8. Use VideoTrack/AudioTrack from @livekit/components-react. Simulcast enabled for adaptive quality.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="packages/client/src/stores/roomStore.ts" kind="store" symbol="useRoomStore" lines="1-108" reason="Zustand store managing room state and participants. Contains remoteParticipants array, addRemoteParticipant, removeRemoteParticipant, updateParticipant actions. Needs extending for hasVideo/isSpeaking updates on remote participants." />
+      <artifact path="packages/client/src/hooks/useLiveKit.ts" kind="hook" symbol="useLiveKit" lines="1-157" reason="LiveKit connection hook. Handles ParticipantConnected, ParticipantDisconnected events. Need to add TrackSubscribed, TrackUnsubscribed, ActiveSpeakersChanged event handlers." />
+      <artifact path="packages/client/src/hooks/useVideo.ts" kind="hook" symbol="useVideo" lines="1-124" reason="Local video track management. Pattern for track.attach() to video element. Use same pattern for remote video tracks." />
+      <artifact path="packages/client/src/components/MeetingRoom/MeetingRoom.tsx" kind="component" symbol="MeetingRoom" lines="1-183" reason="Main meeting room component. Currently shows placeholder for video grid. Need to integrate ParticipantGrid/ParticipantBubble components based on screen share state." />
+      <artifact path="packages/client/src/components/MeetingRoom/LocalVideoPreview.tsx" kind="component" symbol="LocalVideoPreview" lines="1-72" reason="Video preview component pattern. Uses track.attach() with useEffect cleanup. Avatar placeholder with color. Same pattern applies to RemoteParticipantVideo." />
+      <artifact path="packages/client/src/components/MeetingRoom/Sidebar.tsx" kind="component" symbol="Sidebar" lines="1-150" reason="Participant list with speaking indicator (isSpeaking) and video indicator (hasVideo). ParticipantListItem shows avatar with pulse animation for speaking state." />
+      <artifact path="packages/shared/src/types/room.ts" kind="types" symbol="Participant" lines="1-45" reason="Participant interface with isSpeaking and hasVideo optional fields already defined. Role type for permissions." />
+      <artifact path="packages/client/src/utils/participantMetadata.ts" kind="utility" symbol="parseParticipantMetadata" reason="Parses participant metadata from LiveKit (role, color). Used by useLiveKit to create Participant objects." />
+    </code>
+    <dependencies>
+      <node>
+        <package name="livekit-client" version="^2.16.0">WebRTC client for room connection, track management. Key classes: Room, RoomEvent, RemoteParticipant, RemoteTrackPublication, Track.</package>
+        <package name="zustand" version="^5.0.9">State management for roomStore. Pattern: create store with actions.</package>
+        <package name="react-router-dom" version="^7.9.6">Navigation and route params (roomId).</package>
+        <package name="lucide-react" version="^0.555.0">Icons for UI (Video, VideoOff, etc).</package>
+        <package name="sonner" version="^2.0.7">Toast notifications for participant join/leave.</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="architecture.md">React Component Pattern: Functional components with TypeScript. Props interface defined separately. Use cn() for className merging.</constraint>
+    <constraint source="architecture.md">Zustand Store Pattern: Typed store with actions. Immutable state updates using set().</constraint>
+    <constraint source="architecture.md">Naming: Components in PascalCase, hooks start with use, files co-located with tests (.test.tsx).</constraint>
+    <constraint source="ux-design-specification.md">Speaking indicator: Subtle pulse animation on participant border. CSS keyframes animation.</constraint>
+    <constraint source="ux-design-specification.md">Video transitions: Smooth fade (opacity 0.3s ease-in-out) when video state changes.</constraint>
+    <constraint source="ux-design-specification.md">Grid layout: 2x2 for ≤4 participants, 3x3 for 5-9, 4x3 for 10+. Use CSS Grid.</constraint>
+    <constraint source="ux-design-specification.md">Participant Bubble: 32-48px circular, border ring matching participant color, hover shows name tooltip.</constraint>
+    <constraint source="story-2.8">Video mirroring: Local video uses scaleX(-1), remote videos should NOT be mirrored.</constraint>
+    <constraint source="story-2.8">Avatar placeholder: Gradient background with participant color, initial letter centered.</constraint>
+    <constraint source="tech-spec-epic-2.md">Performance: Mic/camera toggle &lt; 100ms visual feedback. Participant list update &lt; 2s after join/leave.</constraint>
+    <constraint source="prd.md">Participants per room: 2-10 typical. Grid supports up to 10.</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="RoomEvent" kind="enum" signature="RoomEvent.TrackSubscribed | RoomEvent.TrackUnsubscribed | RoomEvent.ActiveSpeakersChanged" path="livekit-client">LiveKit room events for remote track and speaker changes.</interface>
+    <interface name="RemoteParticipant" kind="class" signature="RemoteParticipant.getTrackPublication(source: Track.Source): RemoteTrackPublication | undefined" path="livekit-client">Get track publications for camera/microphone.</interface>
+    <interface name="RemoteTrackPublication" kind="class" signature="{ isSubscribed: boolean, isMuted: boolean, track: RemoteTrack | null }" path="livekit-client">Track publication state for determining video/audio availability.</interface>
+    <interface name="Track" kind="class" signature="track.attach(element: HTMLMediaElement): HTMLMediaElement" path="livekit-client">Attach remote track to video/audio element.</interface>
+    <interface name="Participant.isSpeaking" kind="property" signature="boolean" path="livekit-client">Real-time speaking detection. Updates frequently.</interface>
+    <interface name="updateParticipant" kind="action" signature="(participantId: string, updates: Partial&lt;Participant&gt;) => void" path="packages/client/src/stores/roomStore.ts">Store action to update participant hasVideo/isSpeaking state.</interface>
+  </interfaces>
+  <tests>
+    <standards>
+      Vitest + React Testing Library. Tests co-located with source files (*.test.tsx). Mock livekit-client with vi.mock(). Mock sonner toast. Use renderHook for hooks, render+screen for components. Reset stores in beforeEach/afterEach. Test AC references in describe blocks (e.g., "AC-2.9.1"). Cover: initial state, user interactions, error states, cleanup/unmount.
+    </standards>
+    <locations>
+      <location>packages/client/src/components/MeetingRoom/*.test.tsx</location>
+      <location>packages/client/src/hooks/*.test.ts</location>
+      <location>packages/client/src/stores/*.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-2.9.1">RemoteParticipantVideo: renders video element when track available; attaches track via track.attach(); does NOT mirror video (no scaleX(-1)); shows avatar when no video track.</idea>
+      <idea ac="AC-2.9.2">RemoteParticipantAudio: attaches audio track to audio element; audio element is not muted (unlike local); auto-plays.</idea>
+      <idea ac="AC-2.9.2">SpeakingIndicator: shows pulse animation when isSpeaking=true; no animation when isSpeaking=false; respects prefers-reduced-motion.</idea>
+      <idea ac="AC-2.9.3">Video transition: smooth opacity fade when video state changes; avatar appears after fade out; video appears after fade in.</idea>
+      <idea ac="AC-2.9.4">ParticipantBubble: circular 32-48px; shows video or avatar; border matches participant color; tooltip on hover shows name.</idea>
+      <idea ac="AC-2.9.5">ParticipantGrid: 2x2 grid for ≤4 participants; 3x3 for 5-9; includes local participant; uses CSS grid.</idea>
+      <idea ac="AC-2.9.6">Adaptive quality: Simulcast configuration in track options; quality changes don't cause flicker.</idea>
+      <idea ac="all">Layout switching: shows grid when isScreenSharing=false; shows bubbles when isScreenSharing=true.</idea>
+      <idea ac="all">Track events: TrackSubscribed updates participant hasVideo; TrackUnsubscribed clears hasVideo; ActiveSpeakersChanged updates isSpeaking.</idea>
+      <idea ac="all">Mock RemoteParticipant with getTrackPublication returning mock track; mock Track.attach/detach; mock participant.isSpeaking.</idea>
+    </ideas>
+  </tests>
+</story-context>

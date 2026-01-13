@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # Init container - generates API keys on first run
+  init:
+    image: alpine:latest
+    volumes:
+      - livekit-config:/config
+    command: >
+      sh -c "
+        if [ ! -f /config/api-keys.env ]; then
+          echo 'Generating LiveKit API credentials...';
+          API_KEY=APIKey$$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 20);
+          API_SECRET=$$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 40);
+          echo \"LIVEKIT_API_KEY=$$API_KEY\" > /config/api-keys.env;
+          echo \"LIVEKIT_API_SECRET=$$API_SECRET\" >> /config/api-keys.env;
+          echo \"LIVEKIT_KEYS=$$API_KEY: $$API_SECRET\" >> /config/api-keys.env;
+          echo 'API credentials generated and saved to /config/api-keys.env';
+          cat /config/api-keys.env;
+        else
+          echo 'API credentials already exist, skipping generation';
+        fi
+      "
+
+  # LiveKit Media Server
+  livekit:
+    image: livekit/livekit-server:latest
+    depends_on:
+      init:
+        condition: service_completed_successfully
+    ports:
+      - "7880:7880"      # HTTP/WebSocket
+      - "7881:7881"      # gRPC (not exposed publicly)
+      - "7882:7882/udp"  # TURN/UDP
+      - "50000-50100:50000-50100/udp"  # RTP/UDP (limited range for Coolify)
+    volumes:
+      - livekit-config:/config
+      - ./livekit.yaml:/livekit.yaml:ro
+    environment:
+      - LIVEKIT_CONFIG=/livekit.yaml
+    env_file:
+      - livekit-config/api-keys.env
+    command: --config /livekit.yaml
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7880/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for LiveKit (required for production)
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Your Etch App
+  app:
+    image: ghcr.io/adammomen/etch:latest
+    depends_on:
+      livekit:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - livekit-config:/livekit-config:ro
+      - app-data:/app/data
+    environment:
+      # App settings
+      - NODE_ENV=production
+      - APP_URL=${APP_URL:-http://localhost:3000}
+
+      # Database (if using one)
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///app/data/etch.db}
+
+      # LiveKit connection (internal)
+      - LIVEKIT_WS_URL=${LIVEKIT_WS_URL:-ws://livekit:7880}
+      - LIVEKIT_HTTP_URL=http://livekit:7880
+
+      # Redis
+      - REDIS_URL=redis://redis:6379
+
+      # First-time setup flag
+      - CONFIG_PATH=/livekit-config/api-keys.env
+    env_file:
+      - livekit-config/api-keys.env
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  livekit-config:
+    driver: local
+  redis-data:
+    driver: local
+  app-data:
+    driver: local

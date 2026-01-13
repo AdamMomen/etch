@@ -1,0 +1,271 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>8</storyId>
+    <title>Implement Video Publishing and Controls</title>
+    <status>drafted</status>
+    <generatedAt>2025-12-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/2-8-implement-video-publishing-and-controls.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to publish my camera video and control on/off</iWant>
+    <soThat>other participants can see me during the meeting</soThat>
+    <tasks>
+      <task id="1" ac="2.8.1, 2.8.2, 2.8.3, 2.8.4">
+        <title>Create useVideo hook</title>
+        <subtasks>
+          <subtask>Create packages/client/src/hooks/useVideo.ts</subtask>
+          <subtask>Accept room instance from useLiveKit hook (same pattern as useAudio)</subtask>
+          <subtask>Implement enableCamera() function using room.localParticipant.setCameraEnabled(true)</subtask>
+          <subtask>Implement disableCamera() function using room.localParticipant.setCameraEnabled(false)</subtask>
+          <subtask>Return isVideoOff, isPublishingVideo, toggleVideo() state and actions</subtask>
+          <subtask>Handle permission request automatically when enabling</subtask>
+          <subtask>Use optimistic UI updates for instant visual feedback</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="2.8.2, 2.8.3">
+        <title>Add video state to settingsStore</title>
+        <subtasks>
+          <subtask>Add isVideoOff: boolean to settingsStore (default: true per UX spec)</subtask>
+          <subtask>Add setVideoOff(videoOff: boolean) action</subtask>
+          <subtask>Persist video preference to localStorage</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="2.8.1, 2.8.2, 2.8.3, 2.8.4">
+        <title>Create CameraButton component</title>
+        <subtasks>
+          <subtask>Create packages/client/src/components/MeetingRoom/CameraButton.tsx</subtask>
+          <subtask>Use useVideo hook for state management</subtask>
+          <subtask>Show video icon when on, video-off icon when off</subtask>
+          <subtask>Apply immediate visual feedback on click (optimistic UI)</subtask>
+          <subtask>Style consistently with MicrophoneButton component</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="2.8.5">
+        <title>Implement keyboard shortcut</title>
+        <subtasks>
+          <subtask>Add keyboard event listener for V key</subtask>
+          <subtask>Toggle video state when pressed (only when not in text input)</subtask>
+          <subtask>Follow same pattern as MicrophoneButton M key handler</subtask>
+        </subtasks>
+      </task>
+      <task id="5" ac="2.8.6">
+        <title>Handle permission denied error</title>
+        <subtasks>
+          <subtask>Catch NotAllowedError from setCameraEnabled</subtask>
+          <subtask>Show toast notification using sonner: "Camera access denied. Check system settings."</subtask>
+          <subtask>Keep button in off state</subtask>
+          <subtask>Log error for debugging</subtask>
+        </subtasks>
+      </task>
+      <task id="6" ac="2.8.7, 2.8.8">
+        <title>Create LocalVideoPreview component</title>
+        <subtasks>
+          <subtask>Create packages/client/src/components/MeetingRoom/LocalVideoPreview.tsx</subtask>
+          <subtask>Use LiveKit's VideoTrack component or native video element</subtask>
+          <subtask>Mirror the video horizontally for natural self-view (CSS transform: scaleX(-1))</subtask>
+          <subtask>Show avatar placeholder when video is off</subtask>
+          <subtask>Configure 720p default resolution with adaptive quality</subtask>
+        </subtasks>
+      </task>
+      <task id="7" ac="2.8.7">
+        <title>Add video state to Participant type</title>
+        <subtasks>
+          <subtask>Add hasVideo?: boolean to Participant type in shared package</subtask>
+          <subtask>Update roomStore to track video publication state</subtask>
+          <subtask>Update Sidebar to show video indicator on participant list item</subtask>
+        </subtasks>
+      </task>
+      <task id="8" ac="all">
+        <title>Update MeetingControlsBar to use CameraButton</title>
+        <subtasks>
+          <subtask>Replace placeholder camera control in MeetingControlsBar</subtask>
+          <subtask>Pass room instance to CameraButton</subtask>
+          <subtask>Ensure proper layout and spacing next to MicrophoneButton</subtask>
+        </subtasks>
+      </task>
+      <task id="9" ac="2.8.7">
+        <title>Add LocalVideoPreview to MeetingRoom layout</title>
+        <subtasks>
+          <subtask>Add LocalVideoPreview component to center content area or participant display</subtask>
+          <subtask>Position appropriately relative to remote participant videos</subtask>
+          <subtask>Handle layout when video is off (show avatar)</subtask>
+        </subtasks>
+      </task>
+      <task id="10" ac="all">
+        <title>Write tests</title>
+        <subtasks>
+          <subtask>Test useVideo hook enable/disable functionality</subtask>
+          <subtask>Test CameraButton component states</subtask>
+          <subtask>Test keyboard shortcut handler</subtask>
+          <subtask>Test permission denied error handling</subtask>
+          <subtask>Test LocalVideoPreview rendering</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="2.8.1" title="Camera Permission Request">
+      <given>I'm connected to a LiveKit room</given>
+      <when>I click the camera button (currently off)</when>
+      <then>The system prompts for camera permission (if not granted)</then>
+    </criterion>
+    <criterion id="2.8.2" title="Video Publishing on Enable">
+      <given>Camera permission is granted</given>
+      <when>I click to enable the camera</when>
+      <then>Camera video is published to the room</then>
+      <and>Button icon changes from off (slash) to on</and>
+      <and>My video appears in the participant area</and>
+    </criterion>
+    <criterion id="2.8.3" title="Video Disabling">
+      <given>I am currently showing video</given>
+      <when>I click the camera button</when>
+      <then>Video track is stopped</then>
+      <and>Button icon shows off state (slash)</and>
+      <and>Video element shows avatar/placeholder</and>
+    </criterion>
+    <criterion id="2.8.4" title="Toggle Responsiveness">
+      <given>I toggle the camera state</given>
+      <when>The button is clicked</when>
+      <then>Visual feedback is instant (&lt; 100ms)</then>
+    </criterion>
+    <criterion id="2.8.5" title="Keyboard Shortcut">
+      <given>I am in a meeting</given>
+      <when>I press the V key</when>
+      <then>Camera state toggles (same as clicking button)</then>
+    </criterion>
+    <criterion id="2.8.6" title="Permission Denied Handling">
+      <given>The system prompts for camera permission</given>
+      <when>Permission is denied by user or system</when>
+      <then>A toast shows: "Camera access denied. Check system settings."</then>
+      <and>Button remains in off state</and>
+    </criterion>
+    <criterion id="2.8.7" title="Local Video Preview">
+      <given>My camera is enabled</given>
+      <when>I look at my participant entry in the sidebar or video area</when>
+      <then>I see my own video feed (mirrored for natural self-view)</then>
+    </criterion>
+    <criterion id="2.8.8" title="Video Resolution">
+      <given>My camera is enabled</given>
+      <when>Video is published</when>
+      <then>The video resolution is 720p by default</then>
+      <and>The video quality adapts to network conditions</and>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/prd.md" title="PRD" section="Audio &amp; Video (FR8-14)">
+        FR9: Users can publish video from their camera. FR11: Users can enable/disable their own video.
+        Performance: Mic/camera toggle &lt; 100ms visual feedback. Camera/mic OFF by default.
+      </doc>
+      <doc path="docs/architecture.md" title="Architecture" section="Integration Points">
+        LiveKit Integration: room.localParticipant.setCameraEnabled(true/false) for video control.
+        VideoPresets.h720 for 720p resolution. Track.Source.Camera for local video track.
+      </doc>
+      <doc path="docs/ux-design-specification.md" title="UX Spec" section="Meeting Controls Bar">
+        Camera toggle button with on/off states. Video icon with slash when off. Keyboard shortcut V for toggle.
+        Local video preview should mirror horizontally for natural self-view.
+      </doc>
+      <doc path="docs/sprint-artifacts/tech-spec-epic-2.md" title="Epic 2 Tech Spec" section="AC-2.8">
+        AC-2.8: Camera button requests permission, publishes video. V shortcut toggles. Video off shows avatar.
+        NFR Performance: &lt; 100ms visual feedback for toggle.
+      </doc>
+      <doc path="docs/epics.md" title="Epics" section="Story 2.8">
+        Story 2.8 acceptance criteria and technical notes for video publishing.
+        Prerequisites: Stories 2.1-2.7 completed. Follows useAudio/MicrophoneButton patterns.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="packages/client/src/hooks/useAudio.ts" kind="hook" symbol="useAudio" lines="1-115" reason="Pattern to follow: optimistic UI, permission handling, store integration, LiveKit API usage" />
+      <artifact path="packages/client/src/components/MeetingRoom/MicrophoneButton.tsx" kind="component" symbol="MicrophoneButton" lines="1-53" reason="Pattern to follow: keyboard shortcut handler, aria attributes, destructive style when off" />
+      <artifact path="packages/client/src/stores/settingsStore.ts" kind="store" symbol="useSettingsStore" lines="1-32" reason="Add isVideoOff state following isMuted pattern with persist middleware" />
+      <artifact path="packages/client/src/stores/roomStore.ts" kind="store" symbol="useRoomStore" lines="all" reason="Update participant state to track video publication" />
+      <artifact path="packages/client/src/components/MeetingRoom/MeetingControlsBar.tsx" kind="component" symbol="MeetingControlsBar" lines="1-67" reason="Replace placeholder camera button with CameraButton component" />
+      <artifact path="packages/shared/src/types/room.ts" kind="types" symbol="Participant" lines="13-26" reason="Add hasVideo?: boolean field to track video state" />
+      <artifact path="packages/client/src/hooks/useAudio.test.ts" kind="test" symbol="useAudio tests" lines="1-312" reason="Test patterns to follow: mock setup, optimistic UI tests, permission denied handling" />
+      <artifact path="packages/client/src/components/MeetingRoom/index.ts" kind="barrel" reason="Export new CameraButton and LocalVideoPreview components" />
+    </code>
+    <dependencies>
+      <node>
+        <package name="livekit-client" version="^2.16.0">LiveKit Room, setCameraEnabled, VideoPresets, Track.Source.Camera</package>
+        <package name="sonner" version="^2.0.7">toast.error() for permission denied notifications</package>
+        <package name="zustand" version="^5.0.9">persist middleware for video preference storage</package>
+        <package name="lucide-react" version="^0.555.0">Video, VideoOff icons for button states</package>
+        <package name="@testing-library/react" version="^16.3.0">renderHook, act, waitFor for hook testing</package>
+        <package name="vitest" version="^2.0.0">describe, it, expect, vi for test mocking</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="Architecture">Zustand store pattern with persist middleware for settings</constraint>
+    <constraint source="Architecture">Optimistic UI updates - immediate visual feedback before async completes</constraint>
+    <constraint source="UX Spec">Video off by default (isVideoOff: true) - less intimidating for users</constraint>
+    <constraint source="UX Spec">Local video preview must be mirrored horizontally (CSS transform: scaleX(-1))</constraint>
+    <constraint source="PRD">Toggle responsiveness &lt; 100ms visual feedback</constraint>
+    <constraint source="Tech Spec">Follow existing patterns from useAudio hook and MicrophoneButton component</constraint>
+    <constraint source="Dev Notes">Keyboard shortcut must exclude input/textarea elements (same as M key)</constraint>
+    <constraint source="Architecture">Co-located test files with .test.ts extension</constraint>
+    <constraint source="Architecture">720p default resolution using VideoPresets.h720</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="setCameraEnabled" kind="LiveKit API">
+      <signature>room.localParticipant.setCameraEnabled(enabled: boolean, options?: CreateLocalTracksOptions): Promise&lt;void&gt;</signature>
+      <path>livekit-client</path>
+    </interface>
+    <interface name="isCameraEnabled" kind="LiveKit API">
+      <signature>room.localParticipant.isCameraEnabled: boolean</signature>
+      <path>livekit-client</path>
+    </interface>
+    <interface name="getTrackPublication" kind="LiveKit API">
+      <signature>room.localParticipant.getTrackPublication(Track.Source.Camera): LocalTrackPublication | undefined</signature>
+      <path>livekit-client</path>
+    </interface>
+    <interface name="VideoPresets" kind="LiveKit constants">
+      <signature>VideoPresets.h720 // 1280x720, max 30fps</signature>
+      <path>livekit-client</path>
+    </interface>
+    <interface name="useSettingsStore" kind="Zustand store">
+      <signature>{ isMuted: boolean, setMuted: (muted: boolean) =&gt; void, ... }: SettingsState</signature>
+      <path>packages/client/src/stores/settingsStore.ts</path>
+    </interface>
+    <interface name="useRoomStore" kind="Zustand store">
+      <signature>{ localParticipant: Participant | null, updateParticipant: (id: string, updates: Partial&lt;Participant&gt;) =&gt; void, ... }: RoomState</signature>
+      <path>packages/client/src/stores/roomStore.ts</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Vitest + React Testing Library for hook and component testing.
+      Mock livekit-client and sonner using vi.mock().
+      Reset stores in beforeEach/afterEach to ensure test isolation.
+      Test optimistic UI by using delayed promises.
+      Co-located test files: useVideo.test.ts, CameraButton.test.tsx, LocalVideoPreview.test.tsx.
+    </standards>
+    <locations>
+      <location>packages/client/src/hooks/useVideo.test.ts</location>
+      <location>packages/client/src/components/MeetingRoom/CameraButton.test.tsx</location>
+      <location>packages/client/src/components/MeetingRoom/LocalVideoPreview.test.tsx</location>
+    </locations>
+    <ideas>
+      <idea ac="2.8.1">Test that enableCamera() calls setCameraEnabled(true) and triggers permission request</idea>
+      <idea ac="2.8.2">Test that isVideoOff state updates to false on successful enable</idea>
+      <idea ac="2.8.3">Test that disableCamera() calls setCameraEnabled(false) and updates state</idea>
+      <idea ac="2.8.4">Test optimistic UI - isVideoOff updates immediately before async completes</idea>
+      <idea ac="2.8.5">Test keyboard handler for V key toggle, excluding input/textarea elements</idea>
+      <idea ac="2.8.6">Test NotAllowedError handling shows toast and reverts to off state</idea>
+      <idea ac="2.8.7">Test LocalVideoPreview renders video element with scaleX(-1) transform when video on</idea>
+      <idea ac="2.8.7">Test LocalVideoPreview shows avatar placeholder when video off</idea>
+      <idea ac="2.8.8">Test enableCamera is called with VideoPresets.h720 options</idea>
+      <idea ac="all">Test CameraButton aria-label and aria-pressed attributes change with state</idea>
+      <idea ac="all">Test CameraButton variant changes between 'secondary' (off) and 'outline' (on)</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,109 +1,200 @@
-# NAMELESS
+# Etch
 
-Open-Source Meeting Platform with Zoom-Style Screen Annotations
+> Self-hosted video conferencing powered by LiveKit
 
-## Overview
+A modern, privacy-focused video conferencing solution that you can deploy to your own infrastructure in seconds.
 
-NAMELESS is a self-hosted, open-source meeting platform with real-time screen annotations. Built on LiveKit SFU, Electron + React, and a modular architecture that separates media transport from annotation logic.
+## 🚀 Quick Deploy
 
-**Key Features:**
-- ✅ Self-hostable deployment
-- ✅ Real-time video/audio/screen-share
-- ✅ Low-latency annotations (<200ms) over shared screens
-- ✅ Desktop-first experience (macOS, Windows)
-- ✅ Role-based permissions (host, sharer, annotator, viewer)
-- ✅ Apache 2.0 license (commercial-friendly)
+Deploy your own instance with one click:
 
-## Tech Stack
+[![Deploy on Coolify](https://cdn.coollabs.io/assets/coolify/deploy-button.svg)](https://app.coolify.io/deploy?repository=https://github.com/adammomen/etch)
 
-- **Desktop Client**: Electron + React + TypeScript
-- **Media Backend**: LiveKit SFU + DataTracks
-- **App Server**: Node.js or Go
-- **Annotation Transport**: LiveKit DataTracks (WebRTC DataChannel)
+**What you get:**
+- ✅ Full video conferencing platform
+- ✅ Auto-configured LiveKit media server
+- ✅ Auto-generated API credentials (shown on first login)
+- ✅ Automatic updates
+- ✅ Production-ready with SSL/TLS (via Coolify)
 
-## Architecture
+[📖 Full Deployment Guide](./DEPLOYMENT.md)
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed architecture documentation.
+## ✨ Features
 
-## Annotation Protocol
+- 🎥 **HD Video & Audio** - Crystal clear calls powered by LiveKit
+- 🎨 **Screen Sharing** - Share your screen with annotations
+- 👥 **Multi-participant** - Support for large group calls
+- 🔒 **Privacy First** - Self-hosted, you own your data
+- 📱 **Cross-platform** - Works on desktop and mobile browsers
+- 🎛️ **Full Control** - Mute, camera toggle, speaker selection
+- ⚡ **Low Latency** - Optimized WebRTC streaming
+- 🌐 **WebRTC** - Industry-standard real-time communication
 
-See [annotation-protocol.md](./annotation-protocol.md) for the annotation message format and protocol specification.
+## 🏗️ Architecture
 
-## AI Configuration
+```
+┌─────────────┐
+│   Browser   │ ← Users connect via web browser
+└──────┬──────┘
+       │ HTTPS
+       ▼
+┌─────────────┐
+│    Etch     │ ← Web application (React + Hono)
+│     App     │
+└──────┬──────┘
+       │ WebSocket
+       ▼
+┌─────────────┐
+│  LiveKit    │ ← Media server (handles video/audio)
+│   Server    │
+└─────────────┘
+```
 
-This project includes AI rules and configurations to guide AI-assisted development:
+## 🛠️ Local Development
 
-- **`.cursorrules`**: Cursor IDE specific rules and guidelines
-- **`ai.config.json`**: Structured AI configuration file
-- **`.ai-rules.md`**: Detailed AI development rules and principles
+### Prerequisites
 
-### Configuration Files
+- Node.js 18+
+- pnpm
+- Docker (optional, for local LiveKit)
 
-#### `.cursorrules`
-Contains Cursor IDE specific rules for AI assistance during development, including:
-- Tech stack specifications
-- Architecture principles
-- Performance requirements (<200ms latency)
-- Role-based permissions
-- v1 non-goals
+### Setup
 
-#### `ai.config.json`
-JSON configuration file defining:
-- Project metadata and license
-- Tech stack details
-- AI code generation preferences
-- Feature flags and capabilities
-- Performance constraints
-- Development phases
+```bash
+# Clone repository
+git clone https://github.com/adammomen/etch.git
+cd etch
 
-#### `.ai-rules.md`
-Comprehensive guide for AI-assisted development covering:
-- General development principles
-- Meeting platform specific rules
-- Annotation system architecture
-- Code generation guidelines
-- Testing, documentation, and security rules
+# Install dependencies
+pnpm install
 
-## Development Roadmap
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your LiveKit credentials
 
-### Phase 1 — MVP (4 Weeks)
-- [ ] Self-hosted LiveKit instance
-- [ ] Electron desktop app
-- [ ] Screen sharing and video
-- [ ] Annotation canvas overlay
-- [ ] Basic roles and permissions
-- [ ] DataTrack sync (stroke_add, stroke_end, stroke_delete, clear_all, sync_state)
+# Start development server
+pnpm dev
+```
 
-### Phase 2 — Stability & UX (4–6 Weeks)
-- [ ] Undo/redo
-- [ ] Cursor indicators
-- [ ] Persistent session state
-- [ ] Role-based UI enhancements
+### Running with Local LiveKit
 
-### Phase 3 — Hybrid & Native Evolution (Q1 2026)
-- [ ] Native overlay helper (Rust/Swift)
-- [ ] Recording and replay of annotated sessions
-- [ ] SDK for developers to embed annotation layer
+```bash
+# Start LiveKit using docker-compose
+docker-compose up livekit redis
 
-## v1 Non-Goals
+# In another terminal, start the app
+pnpm dev
+```
 
-- ❌ PSTN/phone dial-in
-- ❌ Browser annotation tools (view-only web is fine)
-- ❌ OS-level ink overlays (future feature)
-- ❌ Complex shapes/whiteboards (keep simple: draw, highlight, basic shapes)
-- ❌ Recording & replay (future feature)
+Visit `http://localhost:3000` to start using the app.
 
-## Contributing
+## 📦 Production Deployment
 
-When contributing to this project, please follow the guidelines defined in `.ai-rules.md` and ensure your code adheres to the standards in `.cursorrules`.
+### Docker Compose (Recommended)
 
-## License
+The easiest way to deploy is using the included `docker-compose.yml`:
 
-Apache 2.0 (inherited from LiveKit). Commercial usage is fully permitted.
+```bash
+# Pull and start all services
+docker-compose up -d
 
-## Author
+# Check status
+docker-compose ps
 
-Adam Momen - [adammomen.com](https://adammomen.com)
+# View logs
+docker-compose logs -f
+```
 
-Contact: info@adammomen.com
+Your app will be running at `http://localhost:3000` with auto-generated credentials.
 
+### Coolify (One-Click)
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for the complete Coolify deployment guide.
+
+### Manual Deployment
+
+1. Build the application:
+   ```bash
+   pnpm build
+   ```
+
+2. Set up LiveKit (follow [LiveKit docs](https://docs.livekit.io))
+
+3. Configure environment variables:
+   ```bash
+   LIVEKIT_API_KEY=your-key
+   LIVEKIT_API_SECRET=your-secret
+   LIVEKIT_WS_URL=wss://your-livekit-url
+   ```
+
+4. Start the server:
+   ```bash
+   pnpm start
+   ```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+pnpm test
+
+# Run tests in watch mode
+pnpm test:watch
+
+# Run specific test suite
+pnpm test packages/client
+```
+
+## 📝 Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `LIVEKIT_API_KEY` | LiveKit API key | Auto-generated in Docker |
+| `LIVEKIT_API_SECRET` | LiveKit API secret | Auto-generated in Docker |
+| `LIVEKIT_WS_URL` | LiveKit WebSocket URL | `ws://livekit:7880` |
+| `APP_URL` | Public URL of your app | `http://localhost:3000` |
+| `DATABASE_URL` | Database connection | `sqlite:///app/data/etch.db` |
+| `REDIS_URL` | Redis connection | `redis://redis:6379` |
+
+## 🔄 Updates
+
+When deployed with Docker:
+
+```bash
+# Pull latest images
+docker-compose pull
+
+# Restart with new images
+docker-compose up -d
+```
+
+With Coolify, updates are automatic (checked every 24 hours by default).
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📄 License
+
+[Add your license here]
+
+## 🙏 Acknowledgments
+
+- [LiveKit](https://livekit.io) - The awesome WebRTC infrastructure
+- [Coolify](https://coolify.io) - Simple self-hosting platform
+
+## 📧 Support
+
+- 📖 [Documentation](./DEPLOYMENT.md)
+- 🐛 [Report Issues](https://github.com/adammomen/etch/issues)
+- 💬 [Discussions](https://github.com/adammomen/etch/discussions)
+
+---
+
+**Built with ❤️ for privacy-conscious teams**

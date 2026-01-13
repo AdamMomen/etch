@@ -1,0 +1,299 @@
+<story-context id=".bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>5</storyId>
+    <title>Configure Development Scripts and Tooling</title>
+    <status>drafted</status>
+    <generatedAt>2025-11-30</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>docs/sprint-artifacts/1-5-configure-development-scripts-and-tooling.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>convenient development scripts to run the full stack</iWant>
+    <soThat>I can develop efficiently with hot reload</soThat>
+    <tasks>
+      <task id="1" ac="1.5.6" status="done">
+        <name>Install concurrently dependency</name>
+        <subtasks>
+          <subtask status="done">Add concurrently as root dev dependency</subtask>
+          <subtask status="done">Verify installation succeeds</subtask>
+        </subtasks>
+        <note>concurrently ^9.0.0 is already installed in package.json devDependencies</note>
+      </task>
+      <task id="2" ac="1.5.1,1.5.2" status="done">
+        <name>Configure root development scripts</name>
+        <subtasks>
+          <subtask status="done">Add "dev" script with concurrently</subtask>
+          <subtask status="done">Add "dev:client" script</subtask>
+          <subtask status="done">Add "dev:server" script</subtask>
+          <subtask status="pending">Verify pnpm dev starts both client and server concurrently</subtask>
+        </subtasks>
+        <note>Scripts already exist in package.json</note>
+      </task>
+      <task id="3" ac="1.5.2" status="done">
+        <name>Configure root build scripts</name>
+        <subtasks>
+          <subtask status="done">Add "build" script</subtask>
+          <subtask status="done">Add "build:client" script</subtask>
+          <subtask status="done">Add "build:server" script</subtask>
+          <subtask status="pending">Verify build scripts execute correctly</subtask>
+        </subtasks>
+        <note>Scripts already exist in package.json</note>
+      </task>
+      <task id="4" ac="1.5.3" status="partial">
+        <name>Configure code quality scripts</name>
+        <subtasks>
+          <subtask status="missing">Add "typecheck" script - MISSING from package.json</subtask>
+          <subtask status="done">Add "lint" script</subtask>
+          <subtask status="done">Add "lint:fix" script</subtask>
+          <subtask status="done">Add "format" script</subtask>
+          <subtask status="pending">Verify all code quality scripts work correctly</subtask>
+        </subtasks>
+        <note>Only typecheck script is missing</note>
+      </task>
+      <task id="5" ac="1.5.4" status="incomplete">
+        <name>Create VS Code settings</name>
+        <subtasks>
+          <subtask status="done">Create .vscode/settings.json - exists</subtask>
+          <subtask status="missing">Configure editor.formatOnSave: true - MISSING</subtask>
+          <subtask status="missing">Configure editor.defaultFormatter: esbenp.prettier-vscode - MISSING</subtask>
+          <subtask status="missing">Configure editor.codeActionsOnSave with ESLint source.fixAll - MISSING</subtask>
+          <subtask status="missing">Configure TypeScript import preferences - MISSING</subtask>
+        </subtasks>
+        <note>Current .vscode/settings.json only has rust-analyzer.linkedProjects</note>
+      </task>
+      <task id="6" ac="1.5.5" status="missing">
+        <name>Create VS Code extensions recommendations</name>
+        <subtasks>
+          <subtask status="missing">Create .vscode/extensions.json - MISSING</subtask>
+          <subtask status="missing">Add ESLint extension recommendation</subtask>
+          <subtask status="missing">Add Prettier extension recommendation</subtask>
+          <subtask status="missing">Add Tailwind CSS IntelliSense recommendation</subtask>
+          <subtask status="missing">Add Rust Analyzer recommendation</subtask>
+          <subtask status="missing">Add Tauri extension recommendation</subtask>
+        </subtasks>
+      </task>
+      <task id="7" ac="1.5.1,1.5.2,1.5.3,1.5.6" status="pending">
+        <name>Integration verification</name>
+        <subtasks>
+          <subtask status="pending">Run pnpm dev and verify both client and server start</subtask>
+          <subtask status="pending">Run pnpm build and verify both packages build</subtask>
+          <subtask status="pending">Run pnpm typecheck and verify type checking works</subtask>
+          <subtask status="pending">Run pnpm lint and verify linting works</subtask>
+          <subtask status="pending">Run pnpm format and verify formatting works</subtask>
+          <subtask status="pending">Verify Ctrl+C cleanly terminates concurrent processes</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-1.5.1" name="Concurrent Development Command" status="ready">
+      <given>the monorepo with all packages configured</given>
+      <when>I run pnpm dev</when>
+      <then>both the Tauri client (with hot reload) and Hono server start concurrently</then>
+      <and>output from both processes is visible in the terminal</and>
+      <implementation>Script exists: "dev": "concurrently \"pnpm dev:client\" \"pnpm dev:server\""</implementation>
+    </criterion>
+    <criterion id="AC-1.5.2" name="Individual Package Scripts" status="ready">
+      <given>the root package.json</given>
+      <when>I examine the available scripts</when>
+      <then>the following scripts are available: dev:client, dev:server, build, build:client, build:server</then>
+      <implementation>All scripts exist in package.json</implementation>
+    </criterion>
+    <criterion id="AC-1.5.3" name="Code Quality Scripts" status="partial">
+      <given>the root package.json</given>
+      <when>I examine the available scripts</when>
+      <then>the following scripts are available: typecheck, lint, lint:fix, format</then>
+      <implementation>lint, lint:fix, format exist. typecheck is MISSING - needs to be added</implementation>
+    </criterion>
+    <criterion id="AC-1.5.4" name="VS Code Configuration" status="incomplete">
+      <given>the project is opened in VS Code</given>
+      <when>I examine the workspace settings</when>
+      <then>.vscode/settings.json exists with ESLint auto-fix on save, Prettier as default formatter, format on save enabled, TypeScript import preferences configured</then>
+      <implementation>File exists but only has rust-analyzer config. Needs: formatOnSave, defaultFormatter, codeActionsOnSave</implementation>
+    </criterion>
+    <criterion id="AC-1.5.5" name="Recommended Extensions" status="missing">
+      <given>the project is opened in VS Code</given>
+      <when>VS Code prompts for recommended extensions</when>
+      <then>.vscode/extensions.json lists ESLint, Prettier, Tailwind CSS IntelliSense, Rust Analyzer, and Tauri extensions</then>
+      <implementation>File does not exist - needs to be created</implementation>
+    </criterion>
+    <criterion id="AC-1.5.6" name="Concurrent Script Execution" status="ready">
+      <given>concurrently is installed</given>
+      <when>I run pnpm dev</when>
+      <then>both client and server processes run in parallel</then>
+      <and>I can see prefixed output distinguishing each process</and>
+      <and>Ctrl+C terminates both processes cleanly</and>
+      <implementation>concurrently ^9.0.0 is installed</implementation>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/sprint-artifacts/tech-spec-epic-1.md</path>
+        <title>Epic Technical Specification: Foundation &amp; Project Setup</title>
+        <section>AC-1.6: Development Tooling</section>
+        <snippet>Scripts to implement: dev, dev:client, dev:server, build, build:client, build:server, typecheck, lint, lint:fix, format. VS Code extensions: ESLint, Prettier, Tailwind CSS, Rust Analyzer, Tauri.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Development Environment</section>
+        <snippet>Prerequisites: Node.js 20 LTS, pnpm 8+, Rust 1.70+, Docker 24+. VS Code extensions recommended: dbaeumer.vscode-eslint, esbenp.prettier-vscode, bradlc.vscode-tailwindcss, rust-lang.rust-analyzer, tauri-apps.tauri-vscode.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>Setup Commands</section>
+        <snippet>pnpm dev runs client + server concurrently. pnpm lint runs ESLint + Prettier check. pnpm lint:fix auto-fixes issues. pnpm typecheck checks all packages.</snippet>
+      </doc>
+      <doc>
+        <path>docs/architecture.md</path>
+        <title>Architecture</title>
+        <section>IDE Setup</section>
+        <snippet>VS Code settings: editor.formatOnSave: true, editor.defaultFormatter: esbenp.prettier-vscode, typescript.preferences.importModuleSpecifier: non-relative.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 1.5: Configure Development Scripts and Tooling</section>
+        <snippet>Use concurrently for parallel script execution. Configure VS Code for ESLint, Prettier, Tailwind CSS IntelliSense. Recommended extensions listed.</snippet>
+      </doc>
+      <doc>
+        <path>docs/sprint-artifacts/1-4-set-up-vitest-testing-framework.md</path>
+        <title>Story 1.4 - Set Up Vitest Testing Framework</title>
+        <section>Dev Notes - Learnings</section>
+        <snippet>Test scripts already added to root package.json: test, test:watch, test:coverage, test:client, test:server, test:shared. Pattern established for pnpm --filter commands.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>package.json</path>
+        <kind>config</kind>
+        <symbol>scripts</symbol>
+        <lines>6-23</lines>
+        <reason>Root package.json scripts section. Current state: dev, dev:client, dev:server, build, build:client, build:server, lint, lint:fix, format, test scripts exist. MISSING: typecheck script.</reason>
+        <currentScripts>
+          dev, dev:client, dev:server, build, build:client, build:server,
+          lint, lint:fix, format, format:check,
+          test, test:watch, test:coverage, test:client, test:server, test:shared
+        </currentScripts>
+        <missingScripts>typecheck</missingScripts>
+      </file>
+      <file>
+        <path>.vscode/settings.json</path>
+        <kind>config</kind>
+        <symbol>VS Code workspace settings</symbol>
+        <lines>1-5</lines>
+        <reason>Current content only has rust-analyzer.linkedProjects. NEEDS: editor.formatOnSave, editor.defaultFormatter, editor.codeActionsOnSave, typescript settings</reason>
+        <currentContent>{"rust-analyzer.linkedProjects": ["client-tauri-poc/src-tauri/Cargo.toml"]}</currentContent>
+      </file>
+      <file>
+        <path>.vscode/extensions.json</path>
+        <kind>config</kind>
+        <symbol>VS Code extensions recommendations</symbol>
+        <reason>FILE DOES NOT EXIST - must be created with all 5 recommended extensions</reason>
+        <exists>false</exists>
+      </file>
+      <file>
+        <path>vitest.config.ts</path>
+        <kind>config</kind>
+        <symbol>coverage configuration</symbol>
+        <lines>1-30</lines>
+        <reason>Root vitest config with coverage thresholds (60%). Pattern for root-level configuration files.</reason>
+      </file>
+      <file>
+        <path>.prettierrc</path>
+        <kind>config</kind>
+        <symbol>Prettier configuration</symbol>
+        <lines>1-10</lines>
+        <reason>Existing Prettier config: semi: false, singleQuote: true, tabWidth: 2. Already configured correctly.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <node>
+        <devDependencies>
+          <package name="@typescript-eslint/eslint-plugin" version="^8.0.0" installed="true" />
+          <package name="@typescript-eslint/parser" version="^8.0.0" installed="true" />
+          <package name="@vitest/coverage-v8" version="^2.1.9" installed="true" />
+          <package name="concurrently" version="^9.0.0" installed="true" />
+          <package name="eslint" version="^8.57.0" installed="true" />
+          <package name="eslint-config-prettier" version="^9.0.0" installed="true" />
+          <package name="eslint-plugin-react" version="^7.35.0" installed="true" />
+          <package name="eslint-plugin-react-hooks" version="^4.6.0" installed="true" />
+          <package name="prettier" version="^3.3.0" installed="true" />
+          <package name="typescript" version="^5.6.0" installed="true" />
+          <package name="vitest" version="^2.0.0" installed="true" />
+        </devDependencies>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <actionItems priority="high">
+    <item id="1" ac="AC-1.5.3" effort="low">
+      <action>Add typecheck script to package.json</action>
+      <implementation>"typecheck": "tsc --noEmit"</implementation>
+      <file>package.json</file>
+    </item>
+    <item id="2" ac="AC-1.5.4" effort="low">
+      <action>Update .vscode/settings.json with required settings</action>
+      <implementation>Add formatOnSave, defaultFormatter, codeActionsOnSave, typescript settings</implementation>
+      <file>.vscode/settings.json</file>
+    </item>
+    <item id="3" ac="AC-1.5.5" effort="low">
+      <action>Create .vscode/extensions.json with recommended extensions</action>
+      <implementation>Add all 5 extensions: ESLint, Prettier, Tailwind, Rust Analyzer, Tauri</implementation>
+      <file>.vscode/extensions.json</file>
+    </item>
+    <item id="4" ac="all" effort="medium">
+      <action>Verify all scripts work correctly</action>
+      <implementation>Run pnpm dev, build, typecheck, lint, format and verify each works</implementation>
+    </item>
+  </actionItems>
+
+  <constraints>
+    <constraint source="architecture">Use pnpm workspaces with --filter syntax for package-specific commands</constraint>
+    <constraint source="architecture">Node.js 20 LTS required, pnpm 8+ required</constraint>
+    <constraint source="tech-spec">Scripts must match exact format: "dev": "concurrently \"pnpm dev:client\" \"pnpm dev:server\""</constraint>
+    <constraint source="tech-spec">VS Code settings must include editor.codeActionsOnSave with source.fixAll.eslint set to "explicit"</constraint>
+    <constraint source="story">All scripts must be available from root package.json</constraint>
+    <constraint source="learnings">Use pnpm add -D -w for root dev dependencies (pattern from Story 1.4)</constraint>
+    <constraint source="story">typecheck script should use tsc --noEmit per tech spec</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>pnpm workspace filter</name>
+      <kind>CLI pattern</kind>
+      <signature>pnpm --filter &lt;package&gt; &lt;script&gt;</signature>
+      <path>package.json</path>
+    </interface>
+    <interface>
+      <name>concurrently</name>
+      <kind>CLI tool</kind>
+      <signature>concurrently "cmd1" "cmd2" --names "c,s" --prefix-colors "cyan,green"</signature>
+      <path>package.json</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Testing is configured via Vitest with coverage thresholds at 60%. Tests are co-located with source files (*.test.ts). React Testing Library configured for component tests. Use pnpm test to run all tests, pnpm test:coverage for coverage reports.</standards>
+    <locations>
+      <location>packages/*/src/**/*.test.ts</location>
+      <location>packages/*/src/**/*.test.tsx</location>
+      <location>vitest.config.ts (root)</location>
+      <location>packages/*/vitest.config.ts (per-package)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-1.5.1,AC-1.5.6">Verify pnpm dev command starts both processes by checking process output contains both client and server startup messages</idea>
+      <idea ac="AC-1.5.2">Verify each script (dev:client, dev:server, build, build:client, build:server) exists and can be invoked without error</idea>
+      <idea ac="AC-1.5.3">Verify typecheck, lint, lint:fix, format scripts exist and execute successfully</idea>
+      <idea ac="AC-1.5.4">Verify .vscode/settings.json contains required keys: editor.formatOnSave, editor.defaultFormatter, editor.codeActionsOnSave</idea>
+      <idea ac="AC-1.5.5">Verify .vscode/extensions.json contains all 5 recommended extensions</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,0 +1,114 @@
+# Workflow Status - BMad Method Tracking
+# This tracks progress through BMM methodology Analysis, Planning, and Solutioning phases.
+# Implementation phase is tracked separately in sprint-status.yaml
+
+# STATUS DEFINITIONS:
+# ==================
+# Initial Status (before completion):
+#   - required: Must be completed to progress
+#   - optional: Can be completed but not required
+#   - recommended: Strongly suggested but not required
+#   - conditional: Required only if certain conditions met (e.g., if_has_ui)
+#
+# Completion Status:
+#   - {file-path}: File created/found (e.g., "docs/product-brief.md")
+#   - skipped: Optional/conditional workflow that was skipped
+
+generated: "2025-11-29"
+project: "etch"
+project_type: "Open-Source Meeting Platform with Annotations"
+selected_track: "method"
+field_type: "greenfield"
+workflow_path: "method-greenfield.yaml"
+
+workflow_status:
+  # Phase 0: Discovery (Optional)
+  - phase: 0
+    name: "Discovery"
+    workflows:
+      - id: "brainstorm-project"
+        status: "docs/brainstorming-session-results-2025-11-29.md"
+        agent: "analyst"
+        command: "/bmad:bmm:workflows:brainstorm-project"
+      - id: "research"
+        status: "completed"
+        agent: "analyst"
+        command: "/bmad:bmm:workflows:research"
+        completed_at: "2025-12-01"
+        reports:
+          - type: "market"
+            file: "docs/research-market-2025-12-01.md"
+          - type: "competitive"
+            file: "docs/research-competitive-2025-12-01.md"
+          - type: "user"
+            file: "docs/research-user-2025-12-01.md"
+          - type: "domain"
+            file: "docs/research-domain-2025-12-01.md"
+          - type: "deep-prompts"
+            file: "docs/research-deep-prompts-2025-12-01.md"
+      - id: "product-brief"
+        status: "docs/product-brief-etch-2025-11-29.md"
+        agent: "analyst"
+        command: "/bmad:bmm:workflows:product-brief"
+
+  # Phase 1: Planning
+  - phase: 1
+    name: "Planning"
+    workflows:
+      - id: "prd"
+        status: "docs/prd.md"
+        agent: "pm"
+        command: "/bmad:bmm:workflows:prd"
+        output: "Product Requirements Document with FRs and NFRs"
+      - id: "validate-prd"
+        status: "validated-manually"
+        agent: "pm"
+        command: "/bmad:bmm:workflows:validate-prd"
+        completed_at: "2025-12-01"
+        result: "97% pass rate - EXCELLENT"
+      - id: "create-ux-design"
+        status: "docs/ux-design-specification.md"
+        agent: "ux-designer"
+        command: "/bmad:bmm:workflows:create-ux-design"
+        note: "Completed - UX specification exists"
+
+  # Phase 2: Solutioning
+  - phase: 2
+    name: "Solutioning"
+    workflows:
+      - id: "architecture"
+        status: "docs/architecture.md"
+        agent: "architect"
+        command: "/bmad:bmm:workflows:architecture"
+        output: "System architecture document"
+      - id: "create-epics-and-stories"
+        status: "docs/epics.md"
+        agent: "pm"
+        command: "/bmad:bmm:workflows:create-epics-and-stories"
+      - id: "test-design"
+        status: "docs/test-design-system.md"
+        agent: "tea"
+        command: "/bmad:bmm:workflows:testarch-test-design"
+        completed_at: "2025-11-30"
+        mode: "system-level"
+      - id: "validate-architecture"
+        status: "optional"
+        agent: "architect"
+        command: "/bmad:bmm:workflows:validate-architecture"
+      - id: "implementation-readiness"
+        status: "docs/implementation-readiness-report-2025-11-30.md"
+        agent: "architect"
+        command: "/bmad:bmm:workflows:implementation-readiness"
+        completed_at: "2025-11-30"
+        result: "READY_FOR_IMPLEMENTATION"
+
+  # Phase 3: Implementation
+  - phase: 3
+    name: "Implementation"
+    workflows:
+      - id: "sprint-planning"
+        status: "docs/sprint-artifacts/sprint-status.yaml"
+        agent: "sm"
+        command: "/bmad:bmm:workflows:sprint-planning"
+        completed_at: "2025-11-30"
+        note: "Sprint status initialized - 7 epics, 59 stories in backlog"

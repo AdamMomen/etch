@@ -1,0 +1,28 @@
+# Shared target directory for all Rust packages
+# This prevents duplicate build artifacts and saves disk space
+[build]
+target-dir = "target"
+
+# Incremental compilation for faster rebuilds
+[profile.dev]
+incremental = true
+# Strip debug info from dependencies to reduce target size
+split-debuginfo = "unpacked"
+
+# Use fewer codegen units for faster builds (less parallelism in codegen)
+[profile.dev.package."*"]
+opt-level = 0
+# Strip debug symbols from dependencies
+debug = false
+
+# Release profile optimizations
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+
+# Windows: Force static CRT linking to match WebRTC's precompiled binaries
+# This fixes the "RuntimeLibrary mismatch" linker error on Windows where
+# WebRTC is compiled with /MT (static CRT) but Rust defaults to /MD (dynamic CRT)
+[target.x86_64-pc-windows-msvc]
+rustflags = ["-C", "target-feature=+crt-static"]
