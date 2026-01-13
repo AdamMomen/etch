@@ -1,12 +1,15 @@
-name: CI - Tests, Linting & Type Checking
+name: CI - Tests, Linting & Type Checking (LEGACY - DISABLED)
 
+# DISABLED: This is the old monolithic CI workflow kept as backup
+# The new modular CI is in ci.yml
+# Uncomment the triggers below to re-enable if needed
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
+  # pull_request:
+  #   branches:
+  #     - main
   workflow_dispatch:
 
 # Cancel in-progress runs when a new workflow with the same group is triggered
