@@ -5,8 +5,8 @@
 
 use etch_core::socket::{IncomingMessage, OutgoingMessage};
 use etch_core::{
-    AnnotationTool, ConnectionState, FrameFormat, ParticipantData,
-    ParticipantRole, PermissionState, PermissionStatus, ScreenInfo, SourceType,
+    AnnotationTool, ConnectionState, FrameFormat, ParticipantData, ParticipantRole,
+    PermissionState, PermissionStatus, ScreenInfo, SourceType,
 };
 
 // ============================================================================
@@ -249,6 +249,8 @@ fn test_serialize_available_content() {
         screens: vec![ScreenInfo {
             id: "screen-0".to_string(),
             name: "Primary Display".to_string(),
+            x: 0,
+            y: 0,
             width: 1920,
             height: 1080,
             is_primary: true,

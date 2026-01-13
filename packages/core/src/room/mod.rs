@@ -73,7 +73,11 @@ impl RoomService {
     pub fn connect(&self, token: String) -> Result<(), String> {
         eprintln!("[DEBUG] RoomService::connect - starting");
         eprintln!("[DEBUG] Token length: {} chars", token.len());
-        eprintln!("[DEBUG] Token preview: {}...{}", &token[..50.min(token.len())], &token[token.len().saturating_sub(20)..]);
+        eprintln!(
+            "[DEBUG] Token preview: {}...{}",
+            &token[..50.min(token.len())],
+            &token[token.len().saturating_sub(20)..]
+        );
 
         let server_url = self.server_url.clone();
         let event_proxy = self.event_proxy.clone();
@@ -84,12 +88,18 @@ impl RoomService {
         eprintln!("[DEBUG] RoomService::connect - calling runtime.block_on()");
 
         let result = self.runtime.block_on(async move {
-            eprintln!("[DEBUG] Inside block_on - calling Room::connect to {}", server_url);
+            eprintln!(
+                "[DEBUG] Inside block_on - calling Room::connect to {}",
+                server_url
+            );
 
             // Close existing room if any
             {
-                let mut room_guard = room_holder.lock();
-                if let Some(room) = room_guard.take() {
+                let room_to_close = {
+                    let mut room_guard = room_holder.lock();
+                    room_guard.take()
+                };
+                if let Some(room) = room_to_close {
                     eprintln!("[DEBUG] Closing existing room");
                     let _ = room.close().await;
                 }
@@ -121,7 +131,9 @@ impl RoomService {
                 }
                 Err(_) => {
                     eprintln!("[DEBUG] Room::connect TIMED OUT after 45s");
-                    eprintln!("[DEBUG] This usually indicates WebSocket or ICE connectivity issues");
+                    eprintln!(
+                        "[DEBUG] This usually indicates WebSocket or ICE connectivity issues"
+                    );
                     Err("Connection timed out after 45s".to_string())
                 }
             }
@@ -132,7 +144,8 @@ impl RoomService {
             Ok(room_events) => {
                 eprintln!("[DEBUG] Connection succeeded, spawning event handler");
                 let event_proxy = self.event_proxy.clone();
-                self.runtime.spawn(handle_room_events(room_events, event_proxy));
+                self.runtime
+                    .spawn(handle_room_events(room_events, event_proxy));
                 eprintln!("[DEBUG] Event handler spawned");
                 Ok(())
             }
@@ -159,16 +172,20 @@ impl RoomService {
     }
 
     /// Publish screen share track (blocking), returns the video source
-    pub fn publish_screen_share(&self, width: u32, height: u32) -> Result<NativeVideoSource, String> {
+    pub fn publish_screen_share(
+        &self,
+        width: u32,
+        height: u32,
+    ) -> Result<NativeVideoSource, String> {
         tracing::info!("RoomService::publish_screen_share {}x{}", width, height);
 
         let room_holder = self.room.clone();
         let screen_share_holder = self.screen_share_track.clone();
         let event_proxy = self.event_proxy.clone();
 
+        #[allow(clippy::await_holding_lock)]
         self.runtime.block_on(async move {
             let room_guard = room_holder.lock();
-
             if let Some(room) = room_guard.as_ref() {
                 tracing::info!("Publishing screen share track {}x{}", width, height);
 
@@ -238,6 +255,7 @@ impl RoomService {
         let room_holder = self.room.clone();
         let screen_share_holder = self.screen_share_track.clone();
 
+        #[allow(clippy::await_holding_lock)]
         self.runtime.block_on(async move {
             let track_info = screen_share_holder.lock().take();
 
@@ -259,14 +277,15 @@ impl RoomService {
     pub fn send_data(&self, data: Vec<u8>, reliable: bool) {
         let room_holder = self.room.clone();
 
-        // Use block_on to ensure data is sent (Room doesn't implement Clone)
+        // Use block_on to ensure data is sent
+        #[allow(clippy::await_holding_lock)]
         self.runtime.block_on(async move {
             let room_guard = room_holder.lock();
             if let Some(room) = room_guard.as_ref() {
                 let _ = room
                     .local_participant()
                     .publish_data(DataPacket {
-                        payload: data.into(),
+                        payload: data,
                         reliable,
                         ..Default::default()
                     })
@@ -327,13 +346,30 @@ async fn handle_room_events(
                     },
                 ));
             }
-            RoomEvent::TrackSubscribed { track, participant, .. } => {
-                tracing::info!("Track subscribed: {} from {}", track.sid(), participant.identity());
+            RoomEvent::TrackSubscribed {
+                track, participant, ..
+            } => {
+                tracing::info!(
+                    "Track subscribed: {} from {}",
+                    track.sid(),
+                    participant.identity()
+                );
             }
-            RoomEvent::TrackUnsubscribed { track, participant, .. } => {
-                tracing::info!("Track unsubscribed: {} from {}", track.sid(), participant.identity());
+            RoomEvent::TrackUnsubscribed {
+                track, participant, ..
+            } => {
+                tracing::info!(
+                    "Track unsubscribed: {} from {}",
+                    track.sid(),
+                    participant.identity()
+                );
             }
-            RoomEvent::DataReceived { payload, kind, participant, .. } => {
+            RoomEvent::DataReceived {
+                payload,
+                kind,
+                participant,
+                ..
+            } => {
                 if let Some(p) = participant {
                     tracing::debug!(
                         "Data received from {}: {} bytes, reliable: {}",

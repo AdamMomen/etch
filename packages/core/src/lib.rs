@@ -57,9 +57,7 @@ pub enum UserEvent {
 
     /// Available content enumerated (response to GetAvailableContent)
     /// Note: Window capture is not supported - only screen capture is available.
-    AvailableContentReady {
-        screens: Vec<ScreenInfo>,
-    },
+    AvailableContentReady { screens: Vec<ScreenInfo> },
 
     // ═══════════════════════════════════════════════════════════════════════
     // ANNOTATIONS (Core Feature)
@@ -80,22 +78,16 @@ pub enum UserEvent {
     },
 
     /// Remote participant completed their stroke
-    StrokeComplete {
-        stroke_id: String,
-    },
+    StrokeComplete { stroke_id: String },
 
     /// Delete a specific stroke (eraser or moderation)
-    StrokeDelete {
-        stroke_id: String,
-    },
+    StrokeDelete { stroke_id: String },
 
     /// Clear all annotations (host/sharer action)
     ClearAllAnnotations,
 
     /// Annotation permissions changed
-    AnnotationPermissionChanged {
-        enabled: bool,
-    },
+    AnnotationPermissionChanged { enabled: bool },
 
     // ═══════════════════════════════════════════════════════════════════════
     // REMOTE CURSORS (Visual feedback only, no input simulation)
@@ -118,18 +110,13 @@ pub enum UserEvent {
     // LIVEKIT / ROOM EVENTS
     // ═══════════════════════════════════════════════════════════════════════
     /// Connect to LiveKit room
-    JoinRoom {
-        server_url: String,
-        token: String,
-    },
+    JoinRoom { server_url: String, token: String },
 
     /// Leave the current room
     LeaveRoom,
 
     /// Room connected successfully
-    RoomConnected {
-        room_name: String,
-    },
+    RoomConnected { room_name: String },
 
     /// Room disconnected
     RoomDisconnected,
@@ -193,10 +180,7 @@ pub enum UserEvent {
     SocketDisconnected,
 
     /// Error occurred
-    Error {
-        code: String,
-        message: String,
-    },
+    Error { code: String, message: String },
 
     // ═══════════════════════════════════════════════════════════════════════
     // PERMISSIONS
@@ -304,12 +288,42 @@ pub struct Color {
 }
 
 impl Color {
-    pub const RED: Color = Color { r: 255, g: 87, b: 87, a: 255 };
-    pub const BLUE: Color = Color { r: 87, g: 166, b: 255, a: 255 };
-    pub const GREEN: Color = Color { r: 87, g: 255, b: 144, a: 255 };
-    pub const ORANGE: Color = Color { r: 255, g: 193, b: 87, a: 255 };
-    pub const PURPLE: Color = Color { r: 200, g: 87, b: 255, a: 255 };
-    pub const PINK: Color = Color { r: 255, g: 87, b: 200, a: 255 };
+    pub const RED: Color = Color {
+        r: 255,
+        g: 87,
+        b: 87,
+        a: 255,
+    };
+    pub const BLUE: Color = Color {
+        r: 87,
+        g: 166,
+        b: 255,
+        a: 255,
+    };
+    pub const GREEN: Color = Color {
+        r: 87,
+        g: 255,
+        b: 144,
+        a: 255,
+    };
+    pub const ORANGE: Color = Color {
+        r: 255,
+        g: 193,
+        b: 87,
+        a: 255,
+    };
+    pub const PURPLE: Color = Color {
+        r: 200,
+        g: 87,
+        b: 255,
+        a: 255,
+    };
+    pub const PINK: Color = Color {
+        r: 255,
+        g: 87,
+        b: 200,
+        a: 255,
+    };
 
     pub const PALETTE: [Color; 6] = [
         Self::RED,
@@ -505,7 +519,10 @@ impl Application {
                 self.handle_stop_screen_share();
             }
 
-            UserEvent::ScreenShareStateChanged { is_sharing, source_id } => {
+            UserEvent::ScreenShareStateChanged {
+                is_sharing,
+                source_id,
+            } => {
                 self.is_sharing = is_sharing;
                 self.shared_source_id = source_id;
                 self.send_screen_share_state();
@@ -525,8 +542,13 @@ impl Application {
                 color,
                 start_point,
             } => {
-                self.annotation_store
-                    .start_stroke(&stroke_id, &participant_id, tool, color, start_point);
+                self.annotation_store.start_stroke(
+                    &stroke_id,
+                    &participant_id,
+                    tool,
+                    color,
+                    start_point,
+                );
             }
 
             UserEvent::StrokeUpdate { stroke_id, points } => {
@@ -659,7 +681,14 @@ impl Application {
                 height,
                 format,
             } => {
-                self.send_video_frame(&participant_id, &track_id, frame_data, width, height, format);
+                self.send_video_frame(
+                    &participant_id,
+                    &track_id,
+                    frame_data,
+                    width,
+                    height,
+                    format,
+                );
             }
 
             // ═══════════════════════════════════════════════════════════════
@@ -798,10 +827,12 @@ impl Application {
             match capturer.start_capture(&msg.source_id, msg.source_type, &msg.config) {
                 Ok(()) => {
                     tracing::info!("Screen capture started for source: {}", msg.source_id);
-                    let _ = self.event_loop_proxy.send_event(UserEvent::ScreenShareStateChanged {
-                        is_sharing: true,
-                        source_id: Some(source_id),
-                    });
+                    let _ = self
+                        .event_loop_proxy
+                        .send_event(UserEvent::ScreenShareStateChanged {
+                            is_sharing: true,
+                            source_id: Some(source_id),
+                        });
                 }
                 Err(e) => {
                     tracing::error!("Failed to start capture: {}", e);
@@ -827,10 +858,12 @@ impl Application {
             }
         }
 
-        let _ = self.event_loop_proxy.send_event(UserEvent::ScreenShareStateChanged {
-            is_sharing: false,
-            source_id: None,
-        });
+        let _ = self
+            .event_loop_proxy
+            .send_event(UserEvent::ScreenShareStateChanged {
+                is_sharing: false,
+                source_id: None,
+            });
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -841,7 +874,9 @@ impl Application {
         let proxy = self.event_loop_proxy.clone();
         let room_service_holder = self.room_service.clone();
 
-        let _ = proxy.send_event(UserEvent::ConnectionStateChanged(ConnectionState::Connecting));
+        let _ = proxy.send_event(UserEvent::ConnectionStateChanged(
+            ConnectionState::Connecting,
+        ));
 
         // Spawn a thread for the blocking connection (don't block winit event loop)
         std::thread::spawn(move || {
@@ -856,7 +891,9 @@ impl Application {
                         Ok(()) => {
                             eprintln!("[DEBUG] connect() succeeded, storing RoomService");
                             *room_service_holder.lock() = Some(room_service);
-                            let _ = proxy.send_event(UserEvent::ConnectionStateChanged(ConnectionState::Connected));
+                            let _ = proxy.send_event(UserEvent::ConnectionStateChanged(
+                                ConnectionState::Connected,
+                            ));
                             eprintln!("[DEBUG] Connected state sent to frontend");
                         }
                         Err(e) => {
@@ -865,7 +902,9 @@ impl Application {
                                 code: "room_join_failed".to_string(),
                                 message: e,
                             });
-                            let _ = proxy.send_event(UserEvent::ConnectionStateChanged(ConnectionState::Disconnected));
+                            let _ = proxy.send_event(UserEvent::ConnectionStateChanged(
+                                ConnectionState::Disconnected,
+                            ));
                         }
                     }
                 }
@@ -875,7 +914,9 @@ impl Application {
                         code: "room_service_failed".to_string(),
                         message: e.to_string(),
                     });
-                    let _ = proxy.send_event(UserEvent::ConnectionStateChanged(ConnectionState::Disconnected));
+                    let _ = proxy.send_event(UserEvent::ConnectionStateChanged(
+                        ConnectionState::Disconnected,
+                    ));
                 }
             }
             eprintln!("[DEBUG] handle_join_room thread finished");
@@ -894,7 +935,9 @@ impl Application {
 
         let _ = self
             .event_loop_proxy
-            .send_event(UserEvent::ConnectionStateChanged(ConnectionState::Disconnected));
+            .send_event(UserEvent::ConnectionStateChanged(
+                ConnectionState::Disconnected,
+            ));
     }
 
     fn handle_data_received(&mut self, participant_id: &str, payload: &[u8]) {
@@ -916,27 +959,34 @@ impl Application {
                     });
                 }
                 socket::DataTrackMessage::StrokeUpdate { stroke_id, points } => {
-                    let _ = self.event_loop_proxy.send_event(UserEvent::StrokeUpdate {
-                        stroke_id,
-                        points,
-                    });
+                    let _ = self
+                        .event_loop_proxy
+                        .send_event(UserEvent::StrokeUpdate { stroke_id, points });
                 }
                 socket::DataTrackMessage::StrokeComplete { stroke_id } => {
-                    let _ = self.event_loop_proxy.send_event(UserEvent::StrokeComplete { stroke_id });
+                    let _ = self
+                        .event_loop_proxy
+                        .send_event(UserEvent::StrokeComplete { stroke_id });
                 }
                 socket::DataTrackMessage::StrokeDelete { stroke_id } => {
-                    let _ = self.event_loop_proxy.send_event(UserEvent::StrokeDelete { stroke_id });
+                    let _ = self
+                        .event_loop_proxy
+                        .send_event(UserEvent::StrokeDelete { stroke_id });
                 }
                 socket::DataTrackMessage::ClearAll => {
-                    let _ = self.event_loop_proxy.send_event(UserEvent::ClearAllAnnotations);
+                    let _ = self
+                        .event_loop_proxy
+                        .send_event(UserEvent::ClearAllAnnotations);
                 }
                 socket::DataTrackMessage::CursorMove { x, y, visible } => {
-                    let _ = self.event_loop_proxy.send_event(UserEvent::RemoteCursorPosition {
-                        participant_id: participant_id.to_string(),
-                        x,
-                        y,
-                        visible,
-                    });
+                    let _ = self
+                        .event_loop_proxy
+                        .send_event(UserEvent::RemoteCursorPosition {
+                            participant_id: participant_id.to_string(),
+                            x,
+                            y,
+                            visible,
+                        });
                 }
             }
         }

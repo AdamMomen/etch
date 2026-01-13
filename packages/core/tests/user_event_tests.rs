@@ -3,9 +3,7 @@
 //! These tests verify that the socket message handling correctly
 //! translates IncomingMessages to UserEvents.
 
-use etch_core::{
-    AnnotationTool, CaptureConfig, Color, SourceType, UserEvent,
-};
+use etch_core::{AnnotationTool, CaptureConfig, Color, SourceType, UserEvent};
 
 // Note: The socket::handle_message function is private, so we can't test it directly.
 // These tests verify the UserEvent enum structure and associated types.
@@ -140,11 +138,7 @@ fn test_connection_state_variants() {
 fn test_frame_format_variants() {
     use etch_core::FrameFormat;
 
-    let formats = [
-        FrameFormat::Jpeg,
-        FrameFormat::Rgba,
-        FrameFormat::Nv12,
-    ];
+    let formats = [FrameFormat::Jpeg, FrameFormat::Rgba, FrameFormat::Nv12];
 
     // Verify all formats are distinct
     assert_ne!(formats[0], formats[1]);
@@ -242,18 +236,25 @@ fn test_screen_info_thumbnail_field() {
     let screen_with_thumb = ScreenInfo {
         id: "screen:1".to_string(),
         name: "Display 1".to_string(),
+        x: 0,
+        y: 0,
         width: 1920,
         height: 1080,
         is_primary: true,
         thumbnail: Some("base64encodeddata".to_string()),
     };
 
-    assert_eq!(screen_with_thumb.thumbnail, Some("base64encodeddata".to_string()));
+    assert_eq!(
+        screen_with_thumb.thumbnail,
+        Some("base64encodeddata".to_string())
+    );
 
     // ScreenInfo without thumbnail
     let screen_without_thumb = ScreenInfo {
         id: "screen:2".to_string(),
         name: "Display 2".to_string(),
+        x: 1920,
+        y: 0,
         width: 2560,
         height: 1440,
         is_primary: false,
@@ -272,6 +273,8 @@ fn test_screen_info_serialization_with_thumbnail() {
     let screen = ScreenInfo {
         id: "screen:1".to_string(),
         name: "Display 1".to_string(),
+        x: 0,
+        y: 0,
         width: 1920,
         height: 1080,
         is_primary: true,
@@ -293,6 +296,8 @@ fn test_screen_info_serialization_without_thumbnail() {
     let screen = ScreenInfo {
         id: "screen:1".to_string(),
         name: "Display 1".to_string(),
+        x: 0,
+        y: 0,
         width: 1920,
         height: 1080,
         is_primary: true,
@@ -306,7 +311,6 @@ fn test_screen_info_serialization_without_thumbnail() {
     assert!(json.contains("\"id\":\"screen:1\""));
 }
 
-
 #[test]
 fn test_screen_info_deserialization_with_thumbnail() {
     use etch_core::ScreenInfo;
@@ -314,6 +318,8 @@ fn test_screen_info_deserialization_with_thumbnail() {
     let json = r#"{
         "id": "screen:1",
         "name": "Display 1",
+        "x": 0,
+        "y": 0,
         "width": 1920,
         "height": 1080,
         "is_primary": true,
@@ -334,6 +340,8 @@ fn test_screen_info_deserialization_without_thumbnail() {
     let json = r#"{
         "id": "screen:2",
         "name": "Display 2",
+        "x": 0,
+        "y": 0,
         "width": 2560,
         "height": 1440,
         "is_primary": false
@@ -344,4 +352,3 @@ fn test_screen_info_deserialization_without_thumbnail() {
     assert_eq!(screen.id, "screen:2");
     assert_eq!(screen.thumbnail, None);
 }
-

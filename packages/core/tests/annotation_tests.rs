@@ -140,21 +140,33 @@ fn test_stroke_render_order() {
         "p1",
         AnnotationTool::Pen,
         Color::RED,
-        Point { x: 0.1, y: 0.1, pressure: 1.0 },
+        Point {
+            x: 0.1,
+            y: 0.1,
+            pressure: 1.0,
+        },
     );
     store.start_stroke(
         "stroke-b",
         "p2",
         AnnotationTool::Pen,
         Color::BLUE,
-        Point { x: 0.2, y: 0.2, pressure: 1.0 },
+        Point {
+            x: 0.2,
+            y: 0.2,
+            pressure: 1.0,
+        },
     );
     store.start_stroke(
         "stroke-c",
         "p1",
         AnnotationTool::Pen,
         Color::GREEN,
-        Point { x: 0.3, y: 0.3, pressure: 1.0 },
+        Point {
+            x: 0.3,
+            y: 0.3,
+            pressure: 1.0,
+        },
     );
 
     let strokes = store.strokes();
@@ -172,8 +184,17 @@ fn test_highlighter_tool() {
         "highlight-1",
         "p1",
         AnnotationTool::Highlighter,
-        Color { r: 255, g: 255, b: 0, a: 128 }, // Semi-transparent yellow
-        Point { x: 0.1, y: 0.1, pressure: 1.0 },
+        Color {
+            r: 255,
+            g: 255,
+            b: 0,
+            a: 128,
+        }, // Semi-transparent yellow
+        Point {
+            x: 0.1,
+            y: 0.1,
+            pressure: 1.0,
+        },
     );
 
     let stroke = store.get("highlight-1").unwrap();

@@ -10,9 +10,10 @@ use super::{PermissionState, PermissionStatus};
 
 /// Detect if running on Wayland display server.
 fn is_wayland() -> bool {
-    std::env::var("WAYLAND_DISPLAY").is_ok() || std::env::var("XDG_SESSION_TYPE")
-        .map(|v| v.to_lowercase() == "wayland")
-        .unwrap_or(false)
+    std::env::var("WAYLAND_DISPLAY").is_ok()
+        || std::env::var("XDG_SESSION_TYPE")
+            .map(|v| v.to_lowercase() == "wayland")
+            .unwrap_or(false)
 }
 
 /// Detect if running on X11 display server.
@@ -73,5 +74,8 @@ pub fn get_permission_state() -> PermissionState {
 pub fn has_screen_share_permission() -> bool {
     let status = check_screen_recording();
     // On Wayland, NotDetermined means "will be prompted", which is acceptable
-    matches!(status, PermissionStatus::Granted | PermissionStatus::NotDetermined)
+    matches!(
+        status,
+        PermissionStatus::Granted | PermissionStatus::NotDetermined
+    )
 }

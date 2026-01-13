@@ -15,7 +15,7 @@ use std::sync::{mpsc, Arc, Mutex as StdMutex};
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
 use livekit::webrtc::{
     desktop_capturer::{
-        CaptureError, DesktopCapturer, DesktopCapturerOptions, DesktopCaptureSourceType,
+        CaptureError, DesktopCaptureSourceType, DesktopCapturer, DesktopCapturerOptions,
         DesktopFrame,
     },
     native::yuv_helper,
@@ -106,10 +106,18 @@ pub enum StreamCaptureError {
 
 /// Messages for stream runtime control
 #[derive(Debug, Clone, Copy)]
+#[allow(dead_code)]
 enum StreamMessage {
     Stop,
     /// Sent when capture encounters permanent errors and needs restart
     Failed,
+}
+
+/// State for capture restart operations
+struct CaptureRestartState {
+    restart_attempts: Arc<Mutex<u64>>,
+    failures: Arc<Mutex<u64>>,
+    temp_error_count: Arc<Mutex<u64>>,
 }
 
 /// Screen capturer using LiveKit DesktopCapturer
@@ -169,7 +177,10 @@ impl Capturer {
         let sources = capturer.get_source_list();
         let source_count = sources.len();
 
-        tracing::info!("enumerate_sources: found {} sources (screens only)", source_count);
+        tracing::info!(
+            "enumerate_sources: found {} sources (screens only)",
+            source_count
+        );
 
         // Shared storage for thumbnail results: (source_id, index, thumbnail_base64)
         let results: Arc<StdMutex<Vec<(u64, usize, String)>>> = Arc::new(StdMutex::new(Vec::new()));
@@ -209,13 +220,7 @@ impl Capturer {
             let (stop_tx, stop_rx) = std::sync::mpsc::channel::<()>();
 
             let handle = std::thread::spawn(move || {
-                capture_thumbnail_thread(
-                    id,
-                    screen_idx,
-                    name,
-                    results_clone,
-                    stop_rx,
-                );
+                capture_thumbnail_thread(id, screen_idx, name, results_clone, stop_rx);
             });
 
             handles.push((handle, stop_tx));
@@ -371,7 +376,11 @@ fn capture_thumbnail_thread(
     results: Arc<StdMutex<Vec<(u64, usize, String)>>>,
     stop_rx: mpsc::Receiver<()>,
 ) {
-    tracing::debug!("Starting thumbnail capture thread for screen {} ({})", source_id, display_name);
+    tracing::debug!(
+        "Starting thumbnail capture thread for screen {} ({})",
+        source_id,
+        display_name
+    );
 
     // Check if we already have a result for this source (avoid duplicates)
     {
@@ -428,14 +437,18 @@ fn capture_thumbnail_thread(
                     // ARGB -> RGB (skip alpha, reorder BGR to RGB)
                     raw_rgb.push(data[src_idx + 2]); // R
                     raw_rgb.push(data[src_idx + 1]); // G
-                    raw_rgb.push(data[src_idx]);     // B
+                    raw_rgb.push(data[src_idx]); // B
                 }
             }
         }
 
         // Scale and encode to JPEG
         if let Some(thumbnail) = create_thumbnail_from_rgb(&raw_rgb, width as u32, height as u32) {
-            tracing::info!("Thumbnail captured for screen {} ({})", source_id, display_name);
+            tracing::info!(
+                "Thumbnail captured for screen {} ({})",
+                source_id,
+                display_name
+            );
             let mut res = results_cb.lock().unwrap();
             res.push((source_id, idx, thumbnail));
             captured_cb.store(true, std::sync::atomic::Ordering::SeqCst);
@@ -528,7 +541,8 @@ fn create_thumbnail_from_rgb(rgb_data: &[u8], width: u32, height: u32) -> Option
 
     // Encode to JPEG
     let mut jpeg_buffer = Cursor::new(Vec::new());
-    let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_buffer, THUMBNAIL_QUALITY);
+    let mut encoder =
+        image::codecs::jpeg::JpegEncoder::new_with_quality(&mut jpeg_buffer, THUMBNAIL_QUALITY);
 
     if let Err(e) = encoder.encode(
         resized.as_raw(),
@@ -556,20 +570,15 @@ fn create_thumbnail_from_rgb(rgb_data: &[u8], width: u32, height: u32) -> Option
 fn restart_capture<F>(
     source_id: u64,
     capturer: &Arc<Mutex<DesktopCapturer>>,
-    _target_width: u32,
-    _target_height: u32,
-    _video_source: &Arc<Mutex<Option<NativeVideoSource>>>,
     event_proxy: &Option<EventLoopProxy<UserEvent>>,
-    restart_attempts: &Arc<Mutex<u64>>,
-    failures: &Arc<Mutex<u64>>,
-    temp_error_count: &Arc<Mutex<u64>>,
+    restart_state: &CaptureRestartState,
     create_callback: F,
 ) -> Result<(), StreamCaptureError>
 where
     F: Fn() -> Box<dyn FnMut(Result<DesktopFrame, CaptureError>) + Send + 'static>,
 {
     // Increment restart attempt counter
-    let mut restart_count = restart_attempts.lock();
+    let mut restart_count = restart_state.restart_attempts.lock();
     *restart_count += 1;
     let current_restart = *restart_count;
     drop(restart_count);
@@ -585,8 +594,8 @@ where
     std::thread::sleep(std::time::Duration::from_millis(RESTART_DELAY_MS));
 
     // Reset failure counters for new attempt
-    *failures.lock() = 0;
-    *temp_error_count.lock() = 0;
+    *restart_state.failures.lock() = 0;
+    *restart_state.temp_error_count.lock() = 0;
 
     // Retry start_capture up to MAX_RESTART_ATTEMPTS times (following Hopp's pattern)
     for retry_num in 0..MAX_RESTART_ATTEMPTS {
@@ -721,157 +730,158 @@ fn run_capture_loop(
     let temp_error_count = Arc::new(Mutex::new(0u64));
 
     // Create callback factory - generates callbacks for initial and restart captures
-    let create_callback = || -> Box<dyn FnMut(Result<DesktopFrame, CaptureError>) + Send + 'static> {
-        let video_source_cb = video_source.clone();
-        let video_frame_cb = video_frame.clone();
-        let buffer_dims_cb = buffer_dims.clone();
-        let failures_cb = failures.clone();
-        let should_stop_cb = should_stop.clone();
-        let needs_restart_cb = needs_restart.clone();
-        let restart_attempts_cb = restart_attempts.clone();
-        let frame_count_cb = frame_count.clone();
-        let last_fps_log_cb = last_fps_log.clone();
-        let temp_error_count_cb = temp_error_count.clone();
+    let create_callback =
+        || -> Box<dyn FnMut(Result<DesktopFrame, CaptureError>) + Send + 'static> {
+            let video_source_cb = video_source.clone();
+            let video_frame_cb = video_frame.clone();
+            let buffer_dims_cb = buffer_dims.clone();
+            let failures_cb = failures.clone();
+            let should_stop_cb = should_stop.clone();
+            let needs_restart_cb = needs_restart.clone();
+            let restart_attempts_cb = restart_attempts.clone();
+            let frame_count_cb = frame_count.clone();
+            let last_fps_log_cb = last_fps_log.clone();
+            let temp_error_count_cb = temp_error_count.clone();
 
-        Box::new(move |result: Result<DesktopFrame, CaptureError>| {
-            if *should_stop_cb.lock() {
-                return;
-            }
-
-            // Handle capture result
-            let frame = match result {
-                Ok(frame) => {
-                    // Reset failure counts on success
-                    *failures_cb.lock() = 0;
-                    *temp_error_count_cb.lock() = 0;
-                    frame
-                }
-                Err(_) => {
-                    // Treat all errors as permanent (following Hopp's pattern)
-                    let mut fail_count = failures_cb.lock();
-                    *fail_count += 1;
-                    let current_fails = *fail_count;
-
-                    tracing::error!(
-                        source_id = source_id,
-                        failure_count = current_fails,
-                        max_failures = MAX_FAILURES,
-                        "Capture error - display may be unavailable or went to sleep"
-                    );
-
-                    if current_fails >= MAX_FAILURES {
-                        let restart_count = *restart_attempts_cb.lock();
-                        tracing::error!(
-                            source_id = source_id,
-                            total_failures = current_fails,
-                            restart_attempts = restart_count,
-                            "Too many consecutive failures - triggering restart"
-                        );
-
-                        // Check if we've exhausted restart attempts
-                        if restart_count >= MAX_RESTART_ATTEMPTS {
-                            tracing::error!(
-                                source_id = source_id,
-                                restart_attempts = restart_count,
-                                max_restarts = MAX_RESTART_ATTEMPTS,
-                                "Exhausted all restart attempts - stopping capture permanently"
-                            );
-                            *should_stop_cb.lock() = true;
-                        } else {
-                            // Trigger restart
-                            *needs_restart_cb.lock() = true;
-                        }
-                    }
+            Box::new(move |result: Result<DesktopFrame, CaptureError>| {
+                if *should_stop_cb.lock() {
                     return;
                 }
-            };
 
-            let frame_width = frame.width();
-            let frame_height = frame.height();
-            let frame_stride = frame.stride();
-            let frame_data = frame.data();
+                // Handle capture result
+                let frame = match result {
+                    Ok(frame) => {
+                        // Reset failure counts on success
+                        *failures_cb.lock() = 0;
+                        *temp_error_count_cb.lock() = 0;
+                        frame
+                    }
+                    Err(_) => {
+                        // Treat all errors as permanent (following Hopp's pattern)
+                        let mut fail_count = failures_cb.lock();
+                        *fail_count += 1;
+                        let current_fails = *fail_count;
 
-            if frame_width == 0 || frame_height == 0 {
-                return;
-            }
+                        tracing::error!(
+                            source_id = source_id,
+                            failure_count = current_fails,
+                            max_failures = MAX_FAILURES,
+                            "Capture error - display may be unavailable or went to sleep"
+                        );
 
-            tracing::trace!(
-                "Captured frame: {}x{}, stride: {}",
-                frame_width,
-                frame_height,
-                frame_stride
-            );
+                        if current_fails >= MAX_FAILURES {
+                            let restart_count = *restart_attempts_cb.lock();
+                            tracing::error!(
+                                source_id = source_id,
+                                total_failures = current_fails,
+                                restart_attempts = restart_count,
+                                "Too many consecutive failures - triggering restart"
+                            );
 
-            // Lock the reusable frame buffer and convert ABGR to I420 in-place
-            // This follows the Hopp pattern for zero-allocation frame capture
-            let mut framebuffer = video_frame_cb.lock().unwrap();
+                            // Check if we've exhausted restart attempts
+                            if restart_count >= MAX_RESTART_ATTEMPTS {
+                                tracing::error!(
+                                    source_id = source_id,
+                                    restart_attempts = restart_count,
+                                    max_restarts = MAX_RESTART_ATTEMPTS,
+                                    "Exhausted all restart attempts - stopping capture permanently"
+                                );
+                                *should_stop_cb.lock() = true;
+                            } else {
+                                // Trigger restart
+                                *needs_restart_cb.lock() = true;
+                            }
+                        }
+                        return;
+                    }
+                };
 
-            // Check if we need to resize the buffer (first frame or resolution change)
-            // Note: frame_width/height are i32 from libwebrtc, convert to u32
-            let frame_w = frame_width as u32;
-            let frame_h = frame_height as u32;
-            {
-                let mut dims = buffer_dims_cb.lock().unwrap();
-                if dims.0 != frame_w || dims.1 != frame_h {
-                    tracing::info!(
-                        "Resizing buffer from {}x{} to {}x{}",
-                        dims.0,
-                        dims.1,
-                        frame_w,
-                        frame_h
-                    );
-                    framebuffer.buffer = I420Buffer::new(frame_w, frame_h);
-                    *dims = (frame_w, frame_h);
+                let frame_width = frame.width();
+                let frame_height = frame.height();
+                let frame_stride = frame.stride();
+                let frame_data = frame.data();
+
+                if frame_width == 0 || frame_height == 0 {
+                    return;
                 }
-            }
 
-            let buffer = &mut framebuffer.buffer;
+                tracing::trace!(
+                    "Captured frame: {}x{}, stride: {}",
+                    frame_width,
+                    frame_height,
+                    frame_stride
+                );
 
-            // Get mutable access to Y, U, V planes
-            let (stride_y, stride_u, stride_v) = buffer.strides();
-            let (data_y, data_u, data_v) = buffer.data_mut();
+                // Lock the reusable frame buffer and convert ABGR to I420 in-place
+                // This follows the Hopp pattern for zero-allocation frame capture
+                let mut framebuffer = video_frame_cb.lock().unwrap();
 
-            // Convert ABGR to I420 (same as Hopp)
-            // Note: DesktopCapturer provides ABGR format on most platforms
-            yuv_helper::abgr_to_i420(
-                frame_data,
-                frame_stride,
-                data_y,
-                stride_y,
-                data_u,
-                stride_u,
-                data_v,
-                stride_v,
-                frame_width,
-                frame_height,
-            );
-
-            // Update timestamp
-            framebuffer.timestamp_us = std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_micros() as i64;
-
-            // Publish frame to LiveKit (pass reference, not ownership)
-            if let Some(source) = video_source_cb.lock().as_ref() {
-                source.capture_frame(&*framebuffer);
-            }
-
-            // FPS counter - log every second
-            {
-                let mut count = frame_count_cb.lock();
-                *count += 1;
-                let mut last_log = last_fps_log_cb.lock();
-                let elapsed = last_log.elapsed();
-                if elapsed >= std::time::Duration::from_secs(1) {
-                    let fps = *count as f64 / elapsed.as_secs_f64();
-                    tracing::info!("Screen capture FPS: {:.1}", fps);
-                    *count = 0;
-                    *last_log = std::time::Instant::now();
+                // Check if we need to resize the buffer (first frame or resolution change)
+                // Note: frame_width/height are i32 from libwebrtc, convert to u32
+                let frame_w = frame_width as u32;
+                let frame_h = frame_height as u32;
+                {
+                    let mut dims = buffer_dims_cb.lock().unwrap();
+                    if dims.0 != frame_w || dims.1 != frame_h {
+                        tracing::info!(
+                            "Resizing buffer from {}x{} to {}x{}",
+                            dims.0,
+                            dims.1,
+                            frame_w,
+                            frame_h
+                        );
+                        framebuffer.buffer = I420Buffer::new(frame_w, frame_h);
+                        *dims = (frame_w, frame_h);
+                    }
                 }
-            }
-        })
-    };
+
+                let buffer = &mut framebuffer.buffer;
+
+                // Get mutable access to Y, U, V planes
+                let (stride_y, stride_u, stride_v) = buffer.strides();
+                let (data_y, data_u, data_v) = buffer.data_mut();
+
+                // Convert ABGR to I420 (same as Hopp)
+                // Note: DesktopCapturer provides ABGR format on most platforms
+                yuv_helper::abgr_to_i420(
+                    frame_data,
+                    frame_stride,
+                    data_y,
+                    stride_y,
+                    data_u,
+                    stride_u,
+                    data_v,
+                    stride_v,
+                    frame_width,
+                    frame_height,
+                );
+
+                // Update timestamp
+                framebuffer.timestamp_us = std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap()
+                    .as_micros() as i64;
+
+                // Publish frame to LiveKit (pass reference, not ownership)
+                if let Some(source) = video_source_cb.lock().as_ref() {
+                    source.capture_frame(&*framebuffer);
+                }
+
+                // FPS counter - log every second
+                {
+                    let mut count = frame_count_cb.lock();
+                    *count += 1;
+                    let mut last_log = last_fps_log_cb.lock();
+                    let elapsed = last_log.elapsed();
+                    if elapsed >= std::time::Duration::from_secs(1) {
+                        let fps = *count as f64 / elapsed.as_secs_f64();
+                        tracing::info!("Screen capture FPS: {:.1}", fps);
+                        *count = 0;
+                        *last_log = std::time::Instant::now();
+                    }
+                }
+            })
+        };
 
     // Create the capturer (following Hopp's pattern)
     tracing::info!(
@@ -903,7 +913,10 @@ fn run_capture_loop(
     }
 
     let capturer = Arc::new(Mutex::new(capturer.unwrap()));
-    tracing::info!(source_id = source_id, "DesktopCapturer created successfully");
+    tracing::info!(
+        source_id = source_id,
+        "DesktopCapturer created successfully"
+    );
 
     // Find and select the source
     {
@@ -993,17 +1006,18 @@ fn run_capture_loop(
                     );
 
                     // Perform restart
+                    let restart_state = CaptureRestartState {
+                        restart_attempts: restart_attempts.clone(),
+                        failures: failures.clone(),
+                        temp_error_count: temp_error_count.clone(),
+                    };
+
                     match restart_capture(
                         source_id,
                         &capturer,
-                        target_width,
-                        target_height,
-                        &video_source,
                         &event_proxy,
-                        &restart_attempts,
-                        &failures,
-                        &temp_error_count,
-                        &create_callback,
+                        &restart_state,
+                        create_callback,
                     ) {
                         Ok(_) => {
                             tracing::info!(source_id = source_id, "Restart successful");

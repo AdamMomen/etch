@@ -268,7 +268,7 @@ impl CoreSocket {
                                     match reader.read_line(&mut line).await {
                                         Ok(0) => break, // EOF
                                         Ok(_) => {
-                                            if let Err(e) = Self::handle_message(&line.trim(), &proxy) {
+                                            if let Err(e) = Self::handle_message(line.trim(), &proxy) {
                                                 tracing::warn!("Failed to handle message: {}", e);
                                             }
                                         }

@@ -5,7 +5,7 @@
 // These benchmarks measure the performance characteristics of the capture
 // error handling system under various failure scenarios.
 
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BenchmarkId};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::sync::{Arc, Mutex};
 
 /// Simulates the failure counting logic from capture callback
@@ -74,23 +74,17 @@ fn bench_mixed_errors(c: &mut Criterion) {
 
     // Realistic scenario: 100 temp errors, 3 permanent errors, max=3
     group.bench_function("realistic_mix", |b| {
-        b.iter(|| {
-            black_box(simulate_mixed_errors(100, 3, 3))
-        });
+        b.iter(|| black_box(simulate_mixed_errors(100, 3, 3)));
     });
 
     // Worst case: all permanent errors
     group.bench_function("worst_case_all_permanent", |b| {
-        b.iter(|| {
-            black_box(simulate_mixed_errors(0, 10, 3))
-        });
+        b.iter(|| black_box(simulate_mixed_errors(0, 10, 3)));
     });
 
     // Best case: all temporary errors
     group.bench_function("best_case_all_temporary", |b| {
-        b.iter(|| {
-            black_box(simulate_mixed_errors(1000, 0, 3))
-        });
+        b.iter(|| black_box(simulate_mixed_errors(1000, 0, 3)));
     });
 
     group.finish();
