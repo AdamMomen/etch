@@ -224,6 +224,7 @@ jobs:
             libjavascriptcoregtk-4.1-dev \
             libdrm-dev \
             libgbm-dev \
+            libva-dev \
             libasound2-dev \
             libpulse-dev
 
@@ -264,6 +265,7 @@ jobs:
             libjavascriptcoregtk-4.1-dev \
             libdrm-dev \
             libgbm-dev \
+            libva-dev \
             libasound2-dev \
             libpulse-dev
 
@@ -304,6 +306,7 @@ jobs:
             libjavascriptcoregtk-4.1-dev \
             libdrm-dev \
             libgbm-dev \
+            libva-dev \
             libasound2-dev \
             libpulse-dev
 
@@ -346,6 +349,7 @@ jobs:
             libjavascriptcoregtk-4.1-dev \
             libdrm-dev \
             libgbm-dev \
+            libva-dev \
             libasound2-dev \
             libpulse-dev
 
