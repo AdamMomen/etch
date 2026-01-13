@@ -52,9 +52,6 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
 
-            # Short SHA for commits
-            type=sha,prefix={{branch}}-
-
             # Branch name
             type=ref,event=branch
 
