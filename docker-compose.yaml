@@ -14,7 +14,7 @@ services:
           API_SECRET=$$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 40);
           echo \"LIVEKIT_API_KEY=$$API_KEY\" > /config/api-keys.env;
           echo \"LIVEKIT_API_SECRET=$$API_SECRET\" >> /config/api-keys.env;
-          echo \"LIVEKIT_KEYS=$$API_KEY: $$API_SECRET\" >> /config/api-keys.env;
+          echo \"LIVEKIT_KEYS='$$API_KEY: $$API_SECRET'\" >> /config/api-keys.env;
           echo 'API credentials generated and saved to /config/api-keys.env';
           cat /config/api-keys.env;
         else
@@ -35,18 +35,35 @@ services:
     volumes:
       - livekit-config:/config
       - ./livekit.yaml:/livekit.yaml:ro
-    environment:
-      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
-      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
-      - LIVEKIT_KEYS=${LIVEKIT_KEYS}
-    command: --config /livekit.yaml
+    # Entrypoint that sources credentials from volume and starts LiveKit
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "
+      echo 'Waiting for API credentials...';
+      TIMEOUT=60;
+      COUNTER=0;
+      while [ ! -f /config/api-keys.env ] && [ $$COUNTER -lt $$TIMEOUT ]; do
+        sleep 1;
+        COUNTER=$$((COUNTER + 1));
+      done;
+      if [ ! -f /config/api-keys.env ]; then
+        echo 'ERROR: API credentials not found after 60 seconds';
+        exit 1;
+      fi;
+      echo 'Loading API credentials...';
+      set -a;
+      . /config/api-keys.env;
+      set +a;
+      echo 'Starting LiveKit server...';
+      exec /livekit-server --config /livekit.yaml
+      "
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7880/"]
       interval: 5s
       timeout: 3s
       retries: 10
-      start_period: 15s
+      start_period: 30s
 
   # Redis for LiveKit (required for production)
   redis:
@@ -73,7 +90,7 @@ services:
     labels:
       - "coolify.port=3000"  # Main app port
     volumes:
-      - livekit-config:/livekit-config:ro
+      - livekit-config:/config:ro
       - app-data:/app/data
     environment:
       # App settings
@@ -89,10 +106,29 @@ services:
 
       # Redis
       - REDIS_URL=redis://redis:6379
-
-      # LiveKit API credentials (set in Coolify environment variables)
-      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
-      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+    # Entrypoint that sources credentials from volume and starts app
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "
+      echo 'Waiting for API credentials...';
+      TIMEOUT=60;
+      COUNTER=0;
+      while [ ! -f /config/api-keys.env ] && [ $$COUNTER -lt $$TIMEOUT ]; do
+        sleep 1;
+        COUNTER=$$((COUNTER + 1));
+      done;
+      if [ ! -f /config/api-keys.env ]; then
+        echo 'ERROR: API credentials not found after 60 seconds';
+        exit 1;
+      fi;
+      echo 'Loading API credentials...';
+      set -a;
+      . /config/api-keys.env;
+      set +a;
+      echo 'Credentials loaded';
+      echo 'Starting Etch app...';
+      cd /app && exec pnpm --filter server exec tsx src/index.ts
+      "
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
