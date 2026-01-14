@@ -4,6 +4,8 @@ services:
     image: alpine:latest
     volumes:
       - livekit-config:/config
+    labels:
+      - "coolify.exclude=true"  # Not a web service, skip domain requirement
     command: >
       sh -c "
         if [ ! -f /config/api-keys.env ]; then
@@ -27,10 +29,12 @@ services:
       init:
         condition: service_completed_successfully
     ports:
-      - "7880:7880"      # HTTP/WebSocket
+      - "7880:7880"      # HTTP/WebSocket - REQUIRED for desktop clients
       - "7881:7881"      # gRPC (not exposed publicly)
       - "7882:7882/udp"  # TURN/UDP
       - "50000-50100:50000-50100/udp"  # RTP/UDP (limited range for Coolify)
+    labels:
+      - "coolify.port=7880"  # Main WebSocket port for external access
     volumes:
       - livekit-config:/config
       - ./livekit.yaml:/livekit.yaml:ro
@@ -59,7 +63,7 @@ services:
 
   # Your Etch App
   app:
-    image: etch-local:latest
+    image: ghcr.io/adammomen/etch:latest
     depends_on:
       livekit:
         condition: service_healthy
@@ -67,6 +71,8 @@ services:
         condition: service_healthy
     ports:
       - "${APP_PORT:-3000}:3000"
+    labels:
+      - "coolify.port=3000"  # Main app port
     volumes:
       - livekit-config:/livekit-config:ro
       - app-data:/app/data
