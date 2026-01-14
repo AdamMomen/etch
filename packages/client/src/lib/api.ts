@@ -86,9 +86,11 @@ export async function validateRoomExists(roomId: string): Promise<boolean> {
 
     // Handle network errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error(
-        'Cannot connect to server. Please check your network connection and API Server URL in Settings.'
-      )
+      // Different message for desktop vs web
+      const message = import.meta.env.TAURI_FAMILY
+        ? 'Cannot connect to server. Please check your network connection and API Server URL in Settings.'
+        : 'Cannot connect to server. Please check your network connection.'
+      throw new Error(message)
     }
 
     throw error
@@ -126,9 +128,10 @@ export async function createRoom(
 
       // Provide helpful error messages based on status code
       if (response.status === 404) {
-        throw new Error(
-          'API server not found. Please check the API Server URL in Settings.'
-        )
+        const message = import.meta.env.TAURI_FAMILY
+          ? 'API server not found. Please check the API Server URL in Settings.'
+          : 'API server not found. Please contact support.'
+        throw new Error(message)
       } else if (response.status >= 500) {
         throw new Error('Server error. Please try again or contact support.')
       }
@@ -198,9 +201,10 @@ export async function joinRoom(
             'This room does not exist or has ended. Please check the room code.'
           )
         }
-        throw new Error(
-          'API server not found. Please check the API Server URL in Settings.'
-        )
+        const message = import.meta.env.TAURI_FAMILY
+          ? 'API server not found. Please check the API Server URL in Settings.'
+          : 'API server not found. Please contact support.'
+        throw new Error(message)
       } else if (response.status >= 500) {
         throw new Error('Server error. Please try again or contact support.')
       }

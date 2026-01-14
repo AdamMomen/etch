@@ -120,24 +120,26 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
             </p>
           </div>
 
-          {/* API Server URL */}
-          <div className="space-y-2">
-            <label htmlFor="settings-api-url" className="text-sm font-medium">
-              API Server URL
-            </label>
-            <Input
-              id="settings-api-url"
-              type="text"
-              placeholder="http://localhost:3000/api"
-              value={localApiBaseUrl}
-              onChange={(e) => handleApiBaseUrlChange(e.target.value)}
-              onBlur={handleApiBaseUrlBlur}
-            />
-            <p className="text-xs text-muted-foreground">
-              The server URL for creating and joining rooms. Required for
-              production builds.
-            </p>
-          </div>
+          {/* API Server URL - Desktop only */}
+          {import.meta.env.TAURI_FAMILY && (
+            <div className="space-y-2">
+              <label htmlFor="settings-api-url" className="text-sm font-medium">
+                API Server URL
+              </label>
+              <Input
+                id="settings-api-url"
+                type="text"
+                placeholder="http://localhost:3000/api"
+                value={localApiBaseUrl}
+                onChange={(e) => handleApiBaseUrlChange(e.target.value)}
+                onBlur={handleApiBaseUrlBlur}
+              />
+              <p className="text-xs text-muted-foreground">
+                The server URL for creating and joining rooms. Required for
+                production builds.
+              </p>
+            </div>
+          )}
 
           {/* Theme Toggle */}
           <div className="flex items-center justify-between">
