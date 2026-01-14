@@ -44,16 +44,13 @@ COPY packages/client/package.json ./packages/client/
 COPY packages/server/package.json ./packages/server/
 COPY packages/shared/package.json ./packages/shared/
 
-# Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
+# Install dependencies (include tsx for running TypeScript directly)
+RUN pnpm install --frozen-lockfile
 
-# Copy built files from builder
-COPY --from=builder /app/packages/shared/dist ./packages/shared/dist
-COPY --from=builder /app/packages/server/dist ./packages/server/dist
+# Copy source files and built client
+COPY --from=builder /app/packages/shared ./packages/shared
+COPY --from=builder /app/packages/server ./packages/server
 COPY --from=builder /app/packages/client/dist ./packages/client/dist
-
-# Copy server package.json to access scripts
-COPY --from=builder /app/packages/server/package.json ./packages/server/
 
 # Create data directory for SQLite
 RUN mkdir -p /app/data
@@ -69,6 +66,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD curl -f http://localhost:3000/api/health || exit 1
 
-# Start the server
+# Start the server using tsx (runs TypeScript directly)
 # The server will serve the built client files
-CMD ["pnpm", "--filter", "server", "start"]
+CMD ["pnpm", "exec", "tsx", "packages/server/src/index.ts"]
