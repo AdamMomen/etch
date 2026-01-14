@@ -68,4 +68,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Start the server using tsx (runs TypeScript directly)
 # The server will serve the built client files
-CMD ["pnpm", "exec", "tsx", "packages/server/src/index.ts"]
+CMD ["pnpm", "--filter", "server", "exec", "tsx", "src/index.ts"]
