@@ -25,9 +25,6 @@ services:
   # LiveKit Media Server
   livekit:
     image: livekit/livekit-server:latest
-    depends_on:
-      init:
-        condition: service_completed_successfully
     ports:
       - "7880:7880"      # HTTP/WebSocket - REQUIRED for desktop clients
       - "7881:7881"      # gRPC (not exposed publicly)
@@ -38,8 +35,10 @@ services:
     volumes:
       - livekit-config:/config
       - ./livekit.yaml:/livekit.yaml:ro
-    env_file:
-      - livekit-config/api-keys.env
+    environment:
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
+      - LIVEKIT_KEYS=${LIVEKIT_KEYS}
     command: --config /livekit.yaml
     restart: unless-stopped
     healthcheck:
@@ -91,10 +90,9 @@ services:
       # Redis
       - REDIS_URL=redis://redis:6379
 
-      # First-time setup flag
-      - CONFIG_PATH=/livekit-config/api-keys.env
-    env_file:
-      - livekit-config/api-keys.env
+      # LiveKit API credentials (set in Coolify environment variables)
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
