@@ -8,18 +8,26 @@ services:
       - "coolify.exclude=true"  # Not a web service, skip domain requirement
     command: >
       sh -c "
+        echo '[Init] Starting credential generation check...';
         if [ ! -f /config/api-keys.env ]; then
-          echo 'Generating LiveKit API credentials...';
+          echo '[Init] No existing credentials found. Generating new LiveKit API credentials...';
           API_KEY=APIKey$$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 20);
           API_SECRET=$$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 40);
           echo \"LIVEKIT_API_KEY=$$API_KEY\" > /config/api-keys.env;
           echo \"LIVEKIT_API_SECRET=$$API_SECRET\" >> /config/api-keys.env;
           echo \"LIVEKIT_KEYS='$$API_KEY: $$API_SECRET'\" >> /config/api-keys.env;
-          echo 'API credentials generated and saved to /config/api-keys.env';
+          echo '[Init] API credentials generated successfully';
+          echo '[Init] Contents of /config/api-keys.env:';
           cat /config/api-keys.env;
+          echo '[Init] File permissions:';
+          ls -la /config/api-keys.env;
+          echo '[Init] Credential generation complete';
         else
-          echo 'API credentials already exist, skipping generation';
-        fi
+          echo '[Init] API credentials already exist, skipping generation';
+          echo '[Init] Existing file contents:';
+          cat /config/api-keys.env;
+        fi;
+        echo '[Init] Init container finished successfully';
       "
 
   # LiveKit Media Server
@@ -39,31 +47,36 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: >
       "
-      echo 'Waiting for API credentials...';
-      TIMEOUT=60;
+      echo '[LiveKit] Waiting for API credentials...';
+      TIMEOUT=120;
       COUNTER=0;
       while [ ! -f /config/api-keys.env ] && [ $$COUNTER -lt $$TIMEOUT ]; do
+        if [ $$((COUNTER % 10)) -eq 0 ]; then
+          echo '[LiveKit] Still waiting for credentials... ($$COUNTER/$$TIMEOUT seconds)';
+        fi;
         sleep 1;
         COUNTER=$$((COUNTER + 1));
       done;
       if [ ! -f /config/api-keys.env ]; then
-        echo 'ERROR: API credentials not found after 60 seconds';
+        echo '[LiveKit] ERROR: API credentials not found after $$TIMEOUT seconds';
+        echo '[LiveKit] Contents of /config:';
+        ls -la /config/;
         exit 1;
       fi;
-      echo 'Loading API credentials...';
+      echo '[LiveKit] Credentials file found. Loading...';
       set -a;
       . /config/api-keys.env;
       set +a;
-      echo 'Starting LiveKit server...';
+      echo '[LiveKit] Credentials loaded. Starting LiveKit server...';
       exec /livekit-server --config /livekit.yaml
       "
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7880/"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-      start_period: 30s
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
 
   # Redis for LiveKit (required for production)
   redis:
@@ -110,23 +123,28 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: >
       "
-      echo 'Waiting for API credentials...';
-      TIMEOUT=60;
+      echo '[App] Waiting for API credentials...';
+      TIMEOUT=120;
       COUNTER=0;
       while [ ! -f /config/api-keys.env ] && [ $$COUNTER -lt $$TIMEOUT ]; do
+        if [ $$((COUNTER % 10)) -eq 0 ]; then
+          echo '[App] Still waiting for credentials... ($$COUNTER/$$TIMEOUT seconds)';
+        fi;
         sleep 1;
         COUNTER=$$((COUNTER + 1));
       done;
       if [ ! -f /config/api-keys.env ]; then
-        echo 'ERROR: API credentials not found after 60 seconds';
+        echo '[App] ERROR: API credentials not found after $$TIMEOUT seconds';
+        echo '[App] Contents of /config:';
+        ls -la /config/;
         exit 1;
       fi;
-      echo 'Loading API credentials...';
+      echo '[App] Credentials file found. Loading...';
       set -a;
       . /config/api-keys.env;
       set +a;
-      echo 'Credentials loaded';
-      echo 'Starting Etch app...';
+      echo '[App] Credentials loaded';
+      echo '[App] Starting Etch app...';
       cd /app && exec pnpm --filter server exec tsx src/index.ts
       "
     restart: unless-stopped
