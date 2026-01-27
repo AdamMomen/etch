@@ -1,82 +1,63 @@
-services:
-  # Init container - generates API keys on first run
-  init:
-    image: alpine:latest
-    volumes:
-      - livekit-config:/config
-    labels:
-      - "coolify.exclude=true"  # Not a web service, skip domain requirement
-    command: >
-      sh -c "
-        echo '[Init] Starting credential generation check...';
-        if [ ! -f /config/api-keys.env ]; then
-          echo '[Init] No existing credentials found. Generating new LiveKit API credentials...';
-          API_KEY=APIKey$$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 20);
-          API_SECRET=$$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 40);
-          echo \"LIVEKIT_API_KEY=$$API_KEY\" > /config/api-keys.env;
-          echo \"LIVEKIT_API_SECRET=$$API_SECRET\" >> /config/api-keys.env;
-          echo \"LIVEKIT_KEYS='$$API_KEY: $$API_SECRET'\" >> /config/api-keys.env;
-          echo '[Init] API credentials generated successfully';
-          echo '[Init] Contents of /config/api-keys.env:';
-          cat /config/api-keys.env;
-          echo '[Init] File permissions:';
-          ls -la /config/api-keys.env;
-          echo '[Init] Credential generation complete';
-        else
-          echo '[Init] API credentials already exist, skipping generation';
-          echo '[Init] Existing file contents:';
-          cat /config/api-keys.env;
-        fi;
-        echo '[Init] Init container finished successfully';
-      "
+# Docker Compose for Etch - Self-hosted Video Conferencing
+#
+# One-click deployment with auto-configured credentials.
+# Override LIVEKIT_API_KEY and LIVEKIT_API_SECRET for production.
 
+services:
   # LiveKit Media Server
   livekit:
     image: livekit/livekit-server:latest
     ports:
-      - "7880:7880"      # HTTP/WebSocket - REQUIRED for desktop clients
-      - "7881:7881"      # gRPC (not exposed publicly)
-      - "7882:7882/udp"  # TURN/UDP
-      - "50000-50100:50000-50100/udp"  # RTP/UDP (limited range for Coolify)
+      - "7880:7880"           # HTTP/WebSocket - REQUIRED for clients
+      - "7881:7881"           # TCP fallback for restrictive networks
+      - "7882:7882/udp"       # TURN/UDP
+      - "50000-50100:50000-50100/udp"  # RTP/UDP media ports
     labels:
-      - "coolify.port=7880"  # Main WebSocket port for external access
-    volumes:
-      - livekit-config:/config
-      - ./livekit.yaml:/livekit.yaml:ro
-    # Entrypoint that sources credentials from volume and starts LiveKit
+      - "coolify.port=7880"
+    environment:
+      # API keys - override in Coolify or .env for production
+      - LIVEKIT_KEYS=${LIVEKIT_API_KEY:-APIKeyEtchDefault123}:${LIVEKIT_API_SECRET:-EtchSecretKey456DefaultValueForDev789}
     entrypoint: ["/bin/sh", "-c"]
     command: >
       "
-      echo '[LiveKit] Waiting for API credentials...';
-      TIMEOUT=120;
-      COUNTER=0;
-      while [ ! -f /config/api-keys.env ] && [ $$COUNTER -lt $$TIMEOUT ]; do
-        if [ $$((COUNTER % 10)) -eq 0 ]; then
-          echo '[LiveKit] Still waiting for credentials... ($$COUNTER/$$TIMEOUT seconds)';
-        fi;
-        sleep 1;
-        COUNTER=$$((COUNTER + 1));
-      done;
-      if [ ! -f /config/api-keys.env ]; then
-        echo '[LiveKit] ERROR: API credentials not found after $$TIMEOUT seconds';
-        echo '[LiveKit] Contents of /config:';
-        ls -la /config/;
-        exit 1;
-      fi;
-      echo '[LiveKit] Credentials file found. Loading...';
-      set -a;
-      . /config/api-keys.env;
-      set +a;
-      echo '[LiveKit] Credentials loaded. Starting LiveKit server...';
-      exec /livekit-server --config /livekit.yaml
+      echo '[LiveKit] Generating configuration...';
+      cat > /tmp/livekit.yaml << 'EOFCONFIG'
+      port: 7880
+      bind_addresses:
+        - \"0.0.0.0\"
+      rtc:
+        port_range_start: 50000
+        port_range_end: 50100
+        use_ice_lite: true
+        tcp_port: 7881
+      redis:
+        address: redis:6379
+      room:
+        auto_create: true
+        empty_timeout: 300
+        max_participants: 50
+      logging:
+        level: info
+        sample: false
+      turn:
+        enabled: true
+        udp_port: 7882
+      signal_relay:
+        retry_timeout: 15s
+      EOFCONFIG
+      echo '[LiveKit] Starting server with keys from environment...';
+      exec /livekit-server --config /tmp/livekit.yaml
       "
+    depends_on:
+      redis:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7880/"]
       interval: 10s
       timeout: 5s
       retries: 12
-      start_period: 60s
+      start_period: 30s
 
   # Redis for LiveKit (required for production)
   redis:
@@ -90,7 +71,7 @@ services:
       timeout: 3s
       retries: 5
 
-  # Your Etch App
+  # Etch Application
   app:
     image: ghcr.io/adammomen/etch:latest
     depends_on:
@@ -101,52 +82,21 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     labels:
-      - "coolify.port=3000"  # Main app port
+      - "coolify.port=3000"
     volumes:
-      - livekit-config:/config:ro
       - app-data:/app/data
     environment:
-      # App settings
       - NODE_ENV=production
       - APP_URL=${APP_URL:-http://localhost:3000}
-
-      # Database (if using one)
       - DATABASE_URL=${DATABASE_URL:-sqlite:///app/data/etch.db}
-
-      # LiveKit connection (internal)
+      # LiveKit connection (internal Docker network)
       - LIVEKIT_WS_URL=${LIVEKIT_WS_URL:-ws://livekit:7880}
       - LIVEKIT_HTTP_URL=http://livekit:7880
-
+      # API keys - must match LiveKit service
+      - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-APIKeyEtchDefault123}
+      - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-EtchSecretKey456DefaultValueForDev789}
       # Redis
       - REDIS_URL=redis://redis:6379
-    # Entrypoint that sources credentials from volume and starts app
-    entrypoint: ["/bin/sh", "-c"]
-    command: >
-      "
-      echo '[App] Waiting for API credentials...';
-      TIMEOUT=120;
-      COUNTER=0;
-      while [ ! -f /config/api-keys.env ] && [ $$COUNTER -lt $$TIMEOUT ]; do
-        if [ $$((COUNTER % 10)) -eq 0 ]; then
-          echo '[App] Still waiting for credentials... ($$COUNTER/$$TIMEOUT seconds)';
-        fi;
-        sleep 1;
-        COUNTER=$$((COUNTER + 1));
-      done;
-      if [ ! -f /config/api-keys.env ]; then
-        echo '[App] ERROR: API credentials not found after $$TIMEOUT seconds';
-        echo '[App] Contents of /config:';
-        ls -la /config/;
-        exit 1;
-      fi;
-      echo '[App] Credentials file found. Loading...';
-      set -a;
-      . /config/api-keys.env;
-      set +a;
-      echo '[App] Credentials loaded';
-      echo '[App] Starting Etch app...';
-      cd /app && exec pnpm --filter server exec tsx src/index.ts
-      "
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
@@ -155,8 +105,6 @@ services:
       retries: 3
 
 volumes:
-  livekit-config:
-    driver: local
   redis-data:
     driver: local
   app-data:
