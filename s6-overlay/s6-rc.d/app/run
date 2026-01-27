@@ -1,0 +1,14 @@
+#!/bin/sh
+exec 2>&1
+
+# Required for static file serving
+export NODE_ENV=production
+
+# Set defaults for internal connections
+export LIVEKIT_HTTP_URL="${LIVEKIT_HTTP_URL:-http://localhost:7880}"
+export LIVEKIT_WS_URL="${LIVEKIT_WS_URL:-ws://localhost:7880}"
+export REDIS_URL="${REDIS_URL:-redis://localhost:6379}"
+
+# Must run from server package directory for correct path resolution
+cd /app/packages/server
+exec /usr/local/bin/node --import tsx src/index.ts
