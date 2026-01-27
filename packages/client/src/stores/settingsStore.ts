@@ -25,7 +25,7 @@ interface SettingsState {
 }
 
 const defaultSettings = {
-  displayName: '',
+  displayName: '', // auto genearte a name
   apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
   inviteDomain: null as string | null,
   sidebarCollapsed: false,
