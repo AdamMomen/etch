@@ -2,7 +2,7 @@
 #
 # One-click deployment with auto-configured credentials.
 # Override LIVEKIT_API_KEY and LIVEKIT_API_SECRET for production.
-# Set NODE_IP to your server's public IP for WebRTC connectivity.
+# Set NODE_IP to your server's public IP for production (defaults to 127.0.0.1 for local dev).
 #
 # Required ports: 7880 (TCP), 7881 (TCP), 7882 (UDP)
 #
@@ -21,8 +21,8 @@ services:
     environment:
       # API keys - override in Coolify or .env for production
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-APIKeyEtchDefault123}: ${LIVEKIT_API_SECRET:-EtchSecretKey456DefaultValueForDev789}"
-      # Node IP - set to server's public IP in production (auto-detected if empty)
-      NODE_IP: "${NODE_IP:-}"
+      # Node IP for WebRTC - defaults to 127.0.0.1 for local dev, set to server's public IP in production
+      NODE_IP: "${NODE_IP:-127.0.0.1}"
       # Config passed directly via environment variable
       LIVEKIT_CONFIG: |
         port: 7880
@@ -31,7 +31,7 @@ services:
         rtc:
           tcp_port: 7881
           udp_port: 7882
-          use_external_ip: true
+          node_ip: ${NODE_IP:-127.0.0.1}
           use_ice_lite: true
         redis:
           address: redis:6379
