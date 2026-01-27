@@ -98,7 +98,10 @@ ENV REDIS_URL=redis://localhost:6379
 # 7880 - LiveKit WebSocket/API
 # 7881 - LiveKit ICE/TCP
 # 7882 - LiveKit ICE/UDP
-EXPOSE 3000 7880 7881 7882/udp
+EXPOSE 3000
+EXPOSE 7880
+EXPOSE 7881
+EXPOSE 7882/udp
 
 # s6-overlay entrypoint
 ENTRYPOINT ["/init"]
