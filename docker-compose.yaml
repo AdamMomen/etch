@@ -2,6 +2,8 @@
 #
 # One-click deployment with auto-configured credentials.
 # Override LIVEKIT_API_KEY and LIVEKIT_API_SECRET for production.
+#
+# For Coolify: Set SERVICE_FQDN_APP and SERVICE_FQDN_LIVEKIT in environment variables
 
 services:
   # LiveKit Media Server
@@ -13,13 +15,21 @@ services:
       - "7882:7882/udp"       # TURN/UDP
       - "50000-50100:50000-50100/udp"  # RTP/UDP media ports
     labels:
-      - "coolify.port=7880"
+      # Coolify labels
+      - "coolify.managed=true"
+      # Traefik labels for HTTPS routing
+      - "traefik.enable=true"
+      - "traefik.http.routers.livekit.rule=Host(`${SERVICE_FQDN_LIVEKIT:-livekit.localhost}`)"
+      - "traefik.http.routers.livekit.entrypoints=https"
+      - "traefik.http.routers.livekit.tls=true"
+      - "traefik.http.routers.livekit.tls.certresolver=letsencrypt"
+      - "traefik.http.services.livekit.loadbalancer.server.port=7880"
     environment:
       # API keys - override in Coolify or .env for production
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-APIKeyEtchDefault123}: ${LIVEKIT_API_SECRET:-EtchSecretKey456DefaultValueForDev789}"
-      # Config passed directly via environment variable
       # NODE_IP: Set to host IP for local dev (127.0.0.1), leave empty for production (auto-detect)
       NODE_IP: "${NODE_IP:-}"
+      # Config passed directly via environment variable
       LIVEKIT_CONFIG: |
         port: 7880
         bind_addresses:
@@ -77,16 +87,26 @@ services:
     ports:
       - "${APP_PORT:-3000}:3000"
     labels:
-      - "coolify.port=3000"
+      # Coolify labels
+      - "coolify.managed=true"
+      # Traefik labels for HTTPS routing
+      - "traefik.enable=true"
+      - "traefik.http.routers.app.rule=Host(`${SERVICE_FQDN_APP:-app.localhost}`)"
+      - "traefik.http.routers.app.entrypoints=https"
+      - "traefik.http.routers.app.tls=true"
+      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
+      - "traefik.http.services.app.loadbalancer.server.port=3000"
     volumes:
       - app-data:/app/data
     environment:
       - NODE_ENV=production
       - APP_URL=${APP_URL:-http://localhost:3000}
       - DATABASE_URL=${DATABASE_URL:-sqlite:///app/data/etch.db}
-      # LiveKit connection (internal Docker network)
+      # LiveKit connection - use public URL for browser, internal for server
       - LIVEKIT_WS_URL=${LIVEKIT_WS_URL:-ws://livekit:7880}
       - LIVEKIT_HTTP_URL=http://livekit:7880
+      # Public LiveKit URL for browser clients (set in Coolify)
+      - LIVEKIT_URL=${LIVEKIT_URL:-ws://localhost:7880}
       # API keys - must match LiveKit service
       - LIVEKIT_API_KEY=${LIVEKIT_API_KEY:-APIKeyEtchDefault123}
       - LIVEKIT_API_SECRET=${LIVEKIT_API_SECRET:-EtchSecretKey456DefaultValueForDev789}
