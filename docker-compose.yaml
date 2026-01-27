@@ -3,7 +3,9 @@
 # One-click deployment with auto-configured credentials.
 # Override LIVEKIT_API_KEY and LIVEKIT_API_SECRET for production.
 #
-# For Coolify: Set SERVICE_FQDN_APP and SERVICE_FQDN_LIVEKIT in environment variables
+# For Coolify: After deploying, click each service and add your domain in the UI.
+# - app service: your main domain (e.g., etch.yourdomain.com)
+# - livekit service: WebSocket domain (e.g., livekit.yourdomain.com)
 
 services:
   # LiveKit Media Server
@@ -14,16 +16,6 @@ services:
       - "7881:7881"           # TCP fallback for restrictive networks
       - "7882:7882/udp"       # TURN/UDP
       - "50000-50100:50000-50100/udp"  # RTP/UDP media ports
-    labels:
-      # Coolify labels
-      - "coolify.managed=true"
-      # Traefik labels for HTTPS routing
-      - "traefik.enable=true"
-      - "traefik.http.routers.livekit.rule=Host(`${SERVICE_FQDN_LIVEKIT:-livekit.localhost}`)"
-      - "traefik.http.routers.livekit.entrypoints=https"
-      - "traefik.http.routers.livekit.tls=true"
-      - "traefik.http.routers.livekit.tls.certresolver=letsencrypt"
-      - "traefik.http.services.livekit.loadbalancer.server.port=7880"
     environment:
       # API keys - override in Coolify or .env for production
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-APIKeyEtchDefault123}: ${LIVEKIT_API_SECRET:-EtchSecretKey456DefaultValueForDev789}"
@@ -86,16 +78,6 @@ services:
         condition: service_healthy
     ports:
       - "${APP_PORT:-3000}:3000"
-    labels:
-      # Coolify labels
-      - "coolify.managed=true"
-      # Traefik labels for HTTPS routing
-      - "traefik.enable=true"
-      - "traefik.http.routers.app.rule=Host(`${SERVICE_FQDN_APP:-app.localhost}`)"
-      - "traefik.http.routers.app.entrypoints=https"
-      - "traefik.http.routers.app.tls=true"
-      - "traefik.http.routers.app.tls.certresolver=letsencrypt"
-      - "traefik.http.services.app.loadbalancer.server.port=3000"
     volumes:
       - app-data:/app/data
     environment:
