@@ -3,7 +3,9 @@
 # One-click deployment with auto-configured credentials.
 # Override LIVEKIT_API_KEY and LIVEKIT_API_SECRET for production.
 #
-# For Coolify: After deploying, click each service and add your domain in the UI.
+# Required ports: 7880 (TCP), 7881 (TCP), 7882 (UDP)
+#
+# For Coolify: After deploying, configure domains in the UI:
 # - app service: your main domain (e.g., etch.yourdomain.com)
 # - livekit service: WebSocket domain (e.g., livekit.yourdomain.com)
 
@@ -12,25 +14,22 @@ services:
   livekit:
     image: livekit/livekit-server:latest
     ports:
-      - "7880:7880"           # HTTP/WebSocket - REQUIRED for clients
-      - "7881:7881"           # TCP fallback for restrictive networks
-      - "7882:7882/udp"       # TURN/UDP
-      - "50000-50100:50000-50100/udp"  # RTP/UDP media ports
+      - "7880:7880"           # HTTP/WebSocket API
+      - "7881:7881"           # ICE/TCP fallback for restrictive networks
+      - "7882:7882/udp"       # ICE/UDP mux - all WebRTC UDP traffic
     environment:
       # API keys - override in Coolify or .env for production
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-APIKeyEtchDefault123}: ${LIVEKIT_API_SECRET:-EtchSecretKey456DefaultValueForDev789}"
-      # NODE_IP: Set to host IP for local dev (127.0.0.1), leave empty for production (auto-detect)
-      NODE_IP: "${NODE_IP:-}"
       # Config passed directly via environment variable
       LIVEKIT_CONFIG: |
         port: 7880
         bind_addresses:
           - "0.0.0.0"
         rtc:
-          port_range_start: 50000
-          port_range_end: 50100
-          use_ice_lite: true
           tcp_port: 7881
+          udp_port: 7882
+          use_external_ip: true
+          use_ice_lite: true
         redis:
           address: redis:6379
         room:
