@@ -18,6 +18,8 @@ services:
       # API keys - override in Coolify or .env for production
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-APIKeyEtchDefault123}: ${LIVEKIT_API_SECRET:-EtchSecretKey456DefaultValueForDev789}"
       # Config passed directly via environment variable
+      # NODE_IP: Set to host IP for local dev (127.0.0.1), leave empty for production (auto-detect)
+      NODE_IP: "${NODE_IP:-}"
       LIVEKIT_CONFIG: |
         port: 7880
         bind_addresses:
