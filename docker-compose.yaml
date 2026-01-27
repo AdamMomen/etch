@@ -17,35 +17,11 @@ services:
     environment:
       # API keys - override in Coolify or .env for production
       - LIVEKIT_KEYS=${LIVEKIT_API_KEY:-APIKeyEtchDefault123}:${LIVEKIT_API_SECRET:-EtchSecretKey456DefaultValueForDev789}
-    entrypoint: ["/bin/sh", "-c"]
     command: >
-      "
+      /bin/sh -c "
       echo '[LiveKit] Generating configuration...';
-      cat > /tmp/livekit.yaml << 'EOFCONFIG'
-      port: 7880
-      bind_addresses:
-        - \"0.0.0.0\"
-      rtc:
-        port_range_start: 50000
-        port_range_end: 50100
-        use_ice_lite: true
-        tcp_port: 7881
-      redis:
-        address: redis:6379
-      room:
-        auto_create: true
-        empty_timeout: 300
-        max_participants: 50
-      logging:
-        level: info
-        sample: false
-      turn:
-        enabled: true
-        udp_port: 7882
-      signal_relay:
-        retry_timeout: 15s
-      EOFCONFIG
-      echo '[LiveKit] Starting server with keys from environment...';
+      printf 'port: 7880\nbind_addresses:\n  - \"0.0.0.0\"\nrtc:\n  port_range_start: 50000\n  port_range_end: 50100\n  use_ice_lite: true\n  tcp_port: 7881\nredis:\n  address: redis:6379\nroom:\n  auto_create: true\n  empty_timeout: 300\n  max_participants: 50\nlogging:\n  level: info\n  sample: false\nturn:\n  enabled: true\n  udp_port: 7882\nsignal_relay:\n  retry_timeout: 15s\n' > /tmp/livekit.yaml;
+      echo '[LiveKit] Config written. Starting server...';
       exec /livekit-server --config /tmp/livekit.yaml
       "
     depends_on:
