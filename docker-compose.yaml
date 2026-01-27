@@ -71,7 +71,9 @@ services:
 
   # Etch Application
   app:
-    image: ghcr.io/adammomen/etch:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.byol
     depends_on:
       livekit:
         condition: service_healthy
