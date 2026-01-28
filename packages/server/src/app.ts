@@ -6,6 +6,7 @@ import { roomsRouter } from './routes/rooms'
 import { inviteRouter } from './routes/invite'
 import { setupRouter } from './routes/setup'
 import { logger } from './middleware/logger'
+import { rateLimiter } from './middleware/rateLimiter'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -14,17 +15,45 @@ const __dirname = path.dirname(__filename)
 
 const app = new Hono()
 
+// Allowed origins for CORS
+const allowedOrigins = [
+  // Production
+  'https://etch.momen.earth',
+  'https://etch.coolify.momen.earth',
+  // Development
+  'http://localhost:3000',
+  'http://localhost:5173',
+  // Tauri desktop app
+  'etch://',
+  'tauri://localhost',
+]
+
 // Global middleware
 app.use('*', logger())
 app.use(
   '*',
   cors({
-    // Allow all origins in development for local network access
-    origin: '*', //(origin) => origin || '*',
+    origin: (origin) => {
+      // Allow requests with no origin (same-origin, curl, etc.)
+      if (!origin) return origin
+      // Allow if origin matches or starts with allowed origins
+      if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+        return origin
+      }
+      // In development, allow all origins
+      if (process.env.NODE_ENV !== 'production') {
+        return origin
+      }
+      return null
+    },
     credentials: true,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   })
 )
+
+// Rate limiting for sensitive endpoints
+app.use('/api/rooms', rateLimiter({ limit: 20, windowMs: 60000 })) // 20 requests per minute
+app.use('/api/rooms/*/join', rateLimiter({ limit: 10, windowMs: 60000 })) // 10 joins per minute
 
 // Mount routes
 app.route('/api', healthRouter)
