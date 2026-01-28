@@ -12,22 +12,39 @@ const setupRouter = new Hono()
  */
 setupRouter.get('/status', async (c) => {
   try {
+    // Check for credentials in environment variables first (docker-compose mode)
+    const envApiKey = process.env.LIVEKIT_API_KEY
+    const envApiSecret = process.env.LIVEKIT_API_SECRET
+
+    if (envApiKey && envApiSecret) {
+      // Credentials from environment variables (Coolify/docker-compose)
+      return c.json({
+        isFirstTimeSetup: false,
+        configured: true,
+        publicUrls: {
+          appUrl: process.env.APP_URL,
+          livekitUrl: process.env.LIVEKIT_URL,
+        },
+        message: 'LiveKit is configured via environment variables.',
+      })
+    }
+
+    // Fall back to config file (unified Dockerfile mode)
     const configPath = process.env.CONFIG_PATH || '/livekit-config/api-keys.env'
 
-    // Check if config file exists
     if (!existsSync(configPath)) {
       return c.json(
         {
           isFirstTimeSetup: true,
           error:
-            'Configuration file not found. LiveKit may still be initializing.',
-          message: 'Please wait a few moments for the system to initialize.',
+            'Configuration not found. Set LIVEKIT_API_KEY and LIVEKIT_API_SECRET environment variables.',
+          message: 'LiveKit credentials are not configured.',
         },
         503
       )
     }
 
-    // Read the API keys
+    // Read the API keys from file
     const configContent = await readFile(configPath, 'utf-8')
     const lines = configContent.split('\n')
 
@@ -39,10 +56,6 @@ setupRouter.get('/status', async (c) => {
       }
     })
 
-    // Check if this is first-time access
-    // In a real deployment, you'd want to track this in a database
-    // For now, we'll always show it (can add auth later)
-
     return c.json({
       isFirstTimeSetup: false,
       credentials: {
@@ -52,9 +65,7 @@ setupRouter.get('/status', async (c) => {
         httpUrl: process.env.LIVEKIT_HTTP_URL || 'http://livekit:7880',
       },
       publicUrls: {
-        // These should be set by Coolify or the user
         appUrl: process.env.APP_URL,
-        // For external access, users need to configure this
         livekitUrl:
           process.env.LIVEKIT_PUBLIC_URL || 'Set this in environment variables',
       },
