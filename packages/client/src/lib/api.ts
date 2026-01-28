@@ -7,17 +7,29 @@ import { useSettingsStore } from '@/stores/settingsStore'
  *
  * Now uses runtime configuration from settingsStore to support production builds.
  * Fallback order:
- * 1. User-configured URL from settingsStore
+ * 1. User-configured URL from settingsStore (unless it's localhost and we're not)
  * 2. Build-time VITE_API_URL env var
- * 3. Default localhost
+ * 3. Current origin + /api (for web deployments)
+ * 4. Default localhost (for Tauri)
  */
 function getValidatedApiBaseUrl(): string {
   // Get runtime config from settingsStore
   const runtimeUrl = useSettingsStore.getState().apiBaseUrl
 
-  // Fallback: build-time env var, then localhost
+  // Check if we're in a browser on a non-localhost origin
+  const isWeb = typeof window !== 'undefined' && window.location.origin
+  const currentOrigin = isWeb ? window.location.origin : null
+  const isOnLocalhost = currentOrigin?.includes('localhost') || currentOrigin?.includes('127.0.0.1')
+
+  // If stored URL points to localhost but we're on a different origin, use current origin
+  const storedIsLocalhost = runtimeUrl?.includes('localhost') || runtimeUrl?.includes('127.0.0.1')
+  if (isWeb && !isOnLocalhost && storedIsLocalhost) {
+    return `${currentOrigin}/api`
+  }
+
+  // Fallback: build-time env var, then current origin, then localhost
   const url =
-    runtimeUrl || import.meta.env.VITE_API_URL || 'http://localhost:3000/api'
+    runtimeUrl || import.meta.env.VITE_API_URL || (currentOrigin ? `${currentOrigin}/api` : 'http://localhost:3000/api')
 
   try {
     // Validate URL is well-formed
@@ -26,14 +38,14 @@ function getValidatedApiBaseUrl(): string {
     // Only allow http/https protocols
     if (!['http:', 'https:'].includes(parsed.protocol)) {
       console.error(`Invalid API URL protocol: ${parsed.protocol}`)
-      return 'http://localhost:3000/api'
+      return currentOrigin ? `${currentOrigin}/api` : 'http://localhost:3000/api'
     }
 
     // Remove trailing slash for consistency
     return url.replace(/\/$/, '')
   } catch {
     console.error(`Invalid API URL: ${url}`)
-    return 'http://localhost:3000/api'
+    return currentOrigin ? `${currentOrigin}/api` : 'http://localhost:3000/api'
   }
 }
 
