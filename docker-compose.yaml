@@ -72,7 +72,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile.byol
+      dockerfile: Dockerfile
     depends_on:
       livekit:
         condition: service_healthy
