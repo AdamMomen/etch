@@ -4,6 +4,43 @@ import { html } from 'hono/html'
 const inviteRouter = new Hono()
 
 /**
+ * Escape HTML special characters to prevent XSS attacks
+ */
+function escapeHtml(str: string): string {
+  const htmlEscapes: Record<string, string> = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#x27;',
+    '/': '&#x2F;',
+    '`': '&#x60;',
+  }
+  return str.replace(/[&<>"'`/]/g, (char) => htmlEscapes[char])
+}
+
+/**
+ * Escape string for use in JavaScript string literals
+ */
+function escapeJs(str: string): string {
+  return str
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/<\/script/gi, '<\\/script')
+}
+
+/**
+ * Validate room ID format (alphanumeric with hyphens, reasonable length)
+ */
+function isValidRoomId(roomId: string): boolean {
+  // Room IDs should be alphanumeric with hyphens, 3-50 chars
+  return /^[a-zA-Z0-9-]{3,50}$/.test(roomId)
+}
+
+/**
  * GET /join/:roomId - Invite landing page
  *
  * This page:
@@ -12,8 +49,18 @@ const inviteRouter = new Hono()
  */
 inviteRouter.get('/:roomId', (c) => {
   const roomId = c.req.param('roomId')
-  const deepLink = `etch://room/${roomId}`
-  const webAppUrl = `/room/${roomId}`
+
+  // Validate room ID to prevent injection attacks
+  if (!isValidRoomId(roomId)) {
+    return c.text('Invalid room ID', 400)
+  }
+
+  // Escape for safe HTML and JS embedding
+  const safeRoomId = escapeHtml(roomId)
+  const deepLink = `etch://room/${escapeHtml(roomId)}`
+  const webAppUrl = `/room/${escapeHtml(roomId)}`
+  const jsDeepLink = escapeJs(`etch://room/${roomId}`)
+  const jsWebAppUrl = escapeJs(`/room/${roomId}`)
 
   // Get the base URL for the web app (for absolute URLs if needed)
   const protocol = c.req.header('x-forwarded-proto') || 'http'
@@ -164,7 +211,7 @@ inviteRouter.get('/:roomId', (c) => {
           <div class="container">
             <div class="logo">📹</div>
             <h1>Join Meeting</h1>
-            <div class="room-id">${roomId}</div>
+            <div class="room-id">${safeRoomId}</div>
 
             <div class="status" id="status">
               <div class="spinner"></div>
@@ -186,8 +233,8 @@ inviteRouter.get('/:roomId', (c) => {
 
           <script>
             ;(function () {
-              var deepLink = '${deepLink}'
-              var webAppUrl = '${webAppUrl}'
+              var deepLink = '${jsDeepLink}'
+              var webAppUrl = '${jsWebAppUrl}'
               var statusEl = document.getElementById('status')
               var fallbackEl = document.getElementById('fallback')
 

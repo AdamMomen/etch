@@ -1,14 +1,13 @@
 import { Hono } from 'hono'
-import { readFile } from 'fs/promises'
 import { existsSync } from 'fs'
-import path from 'path'
 
 const setupRouter = new Hono()
 
 /**
- * Get setup status and API credentials (first-time setup only)
- * This endpoint allows admins to retrieve auto-generated LiveKit credentials
- * on first deployment.
+ * Get setup status (configuration check only)
+ *
+ * SECURITY: This endpoint never exposes API secrets.
+ * Admins must retrieve credentials via secure channels (env vars, container access, etc.)
  */
 setupRouter.get('/status', async (c) => {
   try {
@@ -17,7 +16,7 @@ setupRouter.get('/status', async (c) => {
     const envApiSecret = process.env.LIVEKIT_API_SECRET
 
     if (envApiKey && envApiSecret) {
-      // Credentials from environment variables (Coolify/docker-compose)
+      // Credentials configured via environment variables (Coolify/docker-compose)
       return c.json({
         isFirstTimeSetup: false,
         configured: true,
@@ -25,17 +24,18 @@ setupRouter.get('/status', async (c) => {
           appUrl: process.env.APP_URL,
           livekitUrl: process.env.LIVEKIT_URL,
         },
-        message: 'LiveKit is configured via environment variables.',
+        message: 'LiveKit is configured and ready.',
       })
     }
 
-    // Fall back to config file (unified Dockerfile mode)
+    // Fall back to config file check (unified Dockerfile mode)
     const configPath = process.env.CONFIG_PATH || '/livekit-config/api-keys.env'
 
     if (!existsSync(configPath)) {
       return c.json(
         {
           isFirstTimeSetup: true,
+          configured: false,
           error:
             'Configuration not found. Set LIVEKIT_API_KEY and LIVEKIT_API_SECRET environment variables.',
           message: 'LiveKit credentials are not configured.',
@@ -44,45 +44,27 @@ setupRouter.get('/status', async (c) => {
       )
     }
 
-    // Read the API keys from file
-    const configContent = await readFile(configPath, 'utf-8')
-    const lines = configContent.split('\n')
-
-    const config: Record<string, string> = {}
-    lines.forEach((line) => {
-      const [key, ...valueParts] = line.split('=')
-      if (key && valueParts.length > 0) {
-        config[key.trim()] = valueParts.join('=').trim()
-      }
-    })
-
+    // Config file exists - system is configured
+    // SECURITY: Never expose credentials via API. Admins should access via SSH/container.
     return c.json({
       isFirstTimeSetup: false,
-      credentials: {
-        apiKey: config.LIVEKIT_API_KEY,
-        apiSecret: config.LIVEKIT_API_SECRET,
-        wsUrl: process.env.LIVEKIT_WS_URL || 'ws://livekit:7880',
-        httpUrl: process.env.LIVEKIT_HTTP_URL || 'http://livekit:7880',
-      },
+      configured: true,
       publicUrls: {
         appUrl: process.env.APP_URL,
         livekitUrl:
-          process.env.LIVEKIT_PUBLIC_URL || 'Set this in environment variables',
+          process.env.LIVEKIT_PUBLIC_URL || process.env.LIVEKIT_URL,
       },
-      message:
-        'Store these credentials securely. You will need them for administration.',
-      warnings: [
-        'Keep your API secret safe - it grants full access to LiveKit',
-        'If using externally, configure LIVEKIT_PUBLIC_URL in your environment',
-        'Consider setting up authentication for this endpoint in production',
-      ],
+      message: 'LiveKit is configured. Access credentials via environment variables or container.',
     })
   } catch (error) {
-    console.error('Error reading setup config:', error)
+    console.error('Error checking setup config:', error)
     return c.json(
       {
-        error: 'Failed to read configuration',
-        message: error instanceof Error ? error.message : 'Unknown error',
+        error: 'Failed to check configuration',
+        // Don't expose error details in production
+        message: process.env.NODE_ENV === 'production'
+          ? 'Configuration check failed'
+          : error instanceof Error ? error.message : 'Unknown error',
       },
       500
     )

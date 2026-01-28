@@ -24,9 +24,27 @@ interface SettingsState {
   clearPreferences: () => void
 }
 
+// Determine the default API URL based on environment
+function getDefaultApiBaseUrl(): string {
+  // Build-time env var takes precedence
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL
+  }
+  // For Tauri (desktop), default to localhost (user configures in settings)
+  if (import.meta.env.TAURI_FAMILY) {
+    return 'http://localhost:3000/api'
+  }
+  // For web, use same origin (works when served from same server)
+  if (typeof window !== 'undefined' && window.location.origin) {
+    return `${window.location.origin}/api`
+  }
+  // Fallback
+  return 'http://localhost:3000/api'
+}
+
 const defaultSettings = {
   displayName: '', // auto genearte a name
-  apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
+  apiBaseUrl: getDefaultApiBaseUrl(),
   inviteDomain: null as string | null,
   sidebarCollapsed: false,
   isMuted: true, // Users start muted by default per UX spec

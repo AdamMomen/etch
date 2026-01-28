@@ -54,6 +54,7 @@ app.use(
 // Rate limiting for sensitive endpoints
 app.use('/api/rooms', rateLimiter({ limit: 20, windowMs: 60000 })) // 20 requests per minute
 app.use('/api/rooms/*/join', rateLimiter({ limit: 10, windowMs: 60000 })) // 10 joins per minute
+app.use('/api/setup/*', rateLimiter({ limit: 5, windowMs: 300000 })) // 5 requests per 5 minutes (strict)
 
 // Mount routes
 app.route('/api', healthRouter)

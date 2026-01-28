@@ -49,6 +49,13 @@ function getClientIp(c: Context): string {
 }
 
 /**
+ * Clear the rate limit store (for testing)
+ */
+export function clearRateLimitStore() {
+  store.clear()
+}
+
+/**
  * Rate limiting middleware for Hono
  *
  * @param options - Rate limit configuration
@@ -58,6 +65,12 @@ export function rateLimiter(options: RateLimitOptions) {
   const { limit, windowMs, keyGenerator } = options
 
   return async (c: Context, next: Next) => {
+    // Skip rate limiting in test environment (unless testing rate limiter itself)
+    if (process.env.NODE_ENV === 'test' && !c.req.header('x-forwarded-for') && !c.req.header('cf-connecting-ip')) {
+      await next()
+      return
+    }
+
     const key = keyGenerator ? keyGenerator(c) : getClientIp(c)
     const now = Date.now()
 
