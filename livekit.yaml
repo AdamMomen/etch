@@ -6,19 +6,17 @@ bind_addresses:
   - "0.0.0.0"
 
 rtc:
-  # Port range for WebRTC media (limited for Coolify compatibility)
-  port_range_start: 50000
-  port_range_end: 50100
-
-  # Use ICE Lite mode (server only provides candidates)
-  use_ice_lite: true
-
   # TCP fallback for restrictive networks
   tcp_port: 7881
 
-  # Use localhost for local development, auto-discover in production
-  # This can be overridden with LIVEKIT_NODE_IP environment variable
-  node_ip: ""
+  # UDP mux - all WebRTC UDP on single port
+  udp_port: 7882
+
+  # Auto-detect public IP via STUN
+  use_external_ip: true
+
+  # Use ICE Lite mode (server only provides candidates)
+  use_ice_lite: true
 
 # Redis for scalability (optional but recommended)
 redis:
@@ -52,15 +50,9 @@ logging:
 #   urls:
 #     - http://app:3000/webhooks/livekit
 
-# Turn settings (for NAT traversal)
+# TURN disabled - using UDP mux on rtc.udp_port instead
 turn:
-  enabled: true
-  # Use embedded TURN server on UDP port
-  udp_port: 7882
-  # Use embedded TURN server on TCP (optional)
-  # tcp_port: 7883
-  # External TURN server can be configured here if needed
-  # external_tls: false
+  enabled: false
 
 # Signal relay (for better connectivity)
 signal_relay:
