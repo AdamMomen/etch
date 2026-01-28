@@ -16,7 +16,7 @@ A modern video conferencing platform you can connect to [LiveKit Cloud](https://
 - Full media controls (mute, camera, speaker selection)
 - Low-latency WebRTC streaming
 
-## Quick Start
+## Deployment
 
 ### LiveKit Cloud (Recommended)
 
@@ -31,7 +31,7 @@ A modern video conferencing platform you can connect to [LiveKit Cloud](https://
    docker compose -f docker-compose.cloud.yaml up
    ```
 
-### Self-Hosted (Full Control)
+### Self-Hosted
 
 Runs LiveKit, Redis, and the app together — no external accounts needed:
 
@@ -39,7 +39,17 @@ Runs LiveKit, Redis, and the app together — no external accounts needed:
 docker compose up
 ```
 
-See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for Coolify one-click deploy and other options.
+See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for Coolify deploy instructions.
+
+## Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `LIVEKIT_URL` | LiveKit server URL | `ws://localhost:7880` |
+| `LIVEKIT_API_KEY` | LiveKit API key | — |
+| `LIVEKIT_API_SECRET` | LiveKit API secret | — |
+| `APP_URL` | Public URL of your app | `http://localhost:3000` |
+| `APP_PORT` | Port for the web server | `3000` |
 
 ## Local Development
 
@@ -68,31 +78,12 @@ docker compose up livekit redis -d
 pnpm dev
 ```
 
-## Deployment
-
-Deploy to [Coolify](https://coolify.io) with either LiveKit Cloud or a self-hosted LiveKit server. See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for full instructions.
-
-[![Deploy on Coolify](https://img.shields.io/badge/Deploy%20on-Coolify-6B16ED?style=for-the-badge)](https://app.coolify.io/deploy?repository=https://github.com/adammomen/etch)
-
-## Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `LIVEKIT_URL` | LiveKit server URL | `ws://localhost:7880` |
-| `LIVEKIT_API_KEY` | LiveKit API key | — |
-| `LIVEKIT_API_SECRET` | LiveKit API secret | — |
-| `APP_URL` | Public URL of your app | `http://localhost:3000` |
-| `APP_PORT` | Port for the web server | `3000` |
-
 ## Contributing
 
 See [CONTRIBUTING.md](./docs/CONTRIBUTING.md) for development setup, testing, and CI details.
-
-## License
-
-[MIT](./LICENSE)
 
 ## Acknowledgments
 
 - [LiveKit](https://livekit.io) — WebRTC infrastructure
 - [Coolify](https://coolify.io) — Self-hosting platform
+- [Hopp](https://gethopp.app/) — Design inspiration
