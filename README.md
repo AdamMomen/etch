@@ -39,7 +39,7 @@ Runs LiveKit, Redis, and the app together — no external accounts needed:
 docker compose up
 ```
 
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for Coolify one-click deploy and other options.
+See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for Coolify one-click deploy and other options.
 
 ## Local Development
 
@@ -70,7 +70,7 @@ pnpm dev
 
 ## Deployment
 
-Deploy to [Coolify](https://coolify.io) with either LiveKit Cloud or a self-hosted LiveKit server. See [DEPLOYMENT.md](./DEPLOYMENT.md) for full instructions.
+Deploy to [Coolify](https://coolify.io) with either LiveKit Cloud or a self-hosted LiveKit server. See [DEPLOYMENT.md](./docs/DEPLOYMENT.md) for full instructions.
 
 [![Deploy on Coolify](https://img.shields.io/badge/Deploy%20on-Coolify-6B16ED?style=for-the-badge)](https://app.coolify.io/deploy?repository=https://github.com/adammomen/etch)
 
@@ -86,7 +86,7 @@ Deploy to [Coolify](https://coolify.io) with either LiveKit Cloud or a self-host
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md) for development setup, testing, and CI details.
+See [CONTRIBUTING.md](./docs/CONTRIBUTING.md) for development setup, testing, and CI details.
 
 ## License
 
