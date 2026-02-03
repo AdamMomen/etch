@@ -11,6 +11,18 @@
     "core:window:allow-start-dragging",
     "core:event:default",
     "core:event:allow-emit",
-    "core:event:allow-listen"
+    "core:event:allow-listen",
+    "shell:allow-spawn",
+    "shell:allow-kill",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "etch-core",
+          "sidecar": true,
+          "args": true
+        }
+      ]
+    }
   ]
 }

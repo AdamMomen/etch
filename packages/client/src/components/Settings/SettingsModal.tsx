@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Sun, Moon, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
@@ -31,6 +31,12 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
   const [localDisplayName, setLocalDisplayName] = useState(displayName)
   const [localApiBaseUrl, setLocalApiBaseUrl] = useState(apiBaseUrl)
   const [showClearConfirm, setShowClearConfirm] = useState(false)
+  const [isTauri, setIsTauri] = useState(false)
+
+  useEffect(() => {
+    // Detect Tauri at runtime (window.__TAURI_INTERNALS__ exists in Tauri v2)
+    setIsTauri('__TAURI_INTERNALS__' in window)
+  }, [])
 
   const handleDisplayNameChange = (value: string) => {
     setLocalDisplayName(value)
@@ -121,7 +127,7 @@ export function SettingsModal({ open, onOpenChange }: SettingsModalProps) {
           </div>
 
           {/* API Server URL - Desktop only */}
-          {import.meta.env.TAURI_FAMILY && (
+          {isTauri && (
             <div className="space-y-2">
               <label htmlFor="settings-api-url" className="text-sm font-medium">
                 API Server URL

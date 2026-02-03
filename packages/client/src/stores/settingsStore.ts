@@ -11,6 +11,7 @@ interface SettingsState {
   preferredMicrophoneId: string | null
   preferredCameraId: string | null
   theme: 'dark' | 'light'
+  hasCompletedOnboarding: boolean
   setDisplayName: (name: string) => void
   setApiBaseUrl: (url: string) => void
   setInviteDomain: (domain: string | null) => void
@@ -21,6 +22,7 @@ interface SettingsState {
   setPreferredMicrophone: (id: string | null) => void
   setPreferredCamera: (id: string | null) => void
   setTheme: (theme: 'dark' | 'light') => void
+  setHasCompletedOnboarding: (completed: boolean) => void
   clearPreferences: () => void
 }
 
@@ -52,6 +54,7 @@ const defaultSettings = {
   preferredMicrophoneId: null as string | null,
   preferredCameraId: null as string | null,
   theme: 'dark' as const,
+  hasCompletedOnboarding: false,
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -69,6 +72,8 @@ export const useSettingsStore = create<SettingsState>()(
       setPreferredMicrophone: (id) => set({ preferredMicrophoneId: id }),
       setPreferredCamera: (id) => set({ preferredCameraId: id }),
       setTheme: (theme) => set({ theme }),
+      setHasCompletedOnboarding: (completed) =>
+        set({ hasCompletedOnboarding: completed }),
       clearPreferences: () => set(defaultSettings),
     }),
     { name: 'etch-settings' }

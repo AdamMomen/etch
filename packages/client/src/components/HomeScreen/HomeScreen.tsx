@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react'
+import { useState, useEffect, type KeyboardEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Video,
@@ -16,6 +16,7 @@ import { useRoomStore } from '@/stores/roomStore'
 import { createRoom, validateRoomExists } from '@/lib/api'
 import { parseRoomId } from '@/utils/roomId'
 import { SettingsModal } from '@/components/Settings'
+import { OnboardingModal } from '@/components/Onboarding'
 
 // Dev mode constant - only show dev button in development
 const IS_DEV = import.meta.env.DEV
@@ -27,8 +28,19 @@ export function HomeScreen() {
   const [isValidatingRoom, setIsValidatingRoom] = useState(false)
   const [isJoiningDevRoom, setIsJoiningDevRoom] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const { displayName, setDisplayName } = useSettingsStore()
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [isTauri, setIsTauri] = useState(false)
+  const { displayName, setDisplayName, hasCompletedOnboarding } = useSettingsStore()
   const { setCurrentRoom } = useRoomStore()
+
+  // Detect Tauri and show onboarding if needed
+  useEffect(() => {
+    const isTauriEnv = '__TAURI_INTERNALS__' in window
+    setIsTauri(isTauriEnv)
+    if (isTauriEnv && !hasCompletedOnboarding) {
+      setShowOnboarding(true)
+    }
+  }, [hasCompletedOnboarding])
 
   const handleStartMeeting = async () => {
     // If no display name, prompt for it
@@ -233,6 +245,14 @@ export function HomeScreen() {
 
       {/* Settings Modal */}
       <SettingsModal open={settingsOpen} onOpenChange={setSettingsOpen} />
+
+      {/* Onboarding Modal - Tauri only */}
+      {isTauri && (
+        <OnboardingModal
+          open={showOnboarding}
+          onComplete={() => setShowOnboarding(false)}
+        />
+      )}
     </div>
   )
 }

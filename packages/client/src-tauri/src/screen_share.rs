@@ -309,15 +309,37 @@ pub async fn spawn_core(app: AppHandle, state: State<'_, CoreState>) -> Result<S
         }
     });
 
-    // Wait a moment for Core to start its socket server
-    std::thread::sleep(Duration::from_millis(500));
+    // Wait for Core to start its socket server with retry
+    // Core can take up to 1-2 seconds to initialize
+    #[cfg(unix)]
+    let stream = {
+        let max_retries = 20;
+        let retry_delay = Duration::from_millis(100);
+        let mut last_error = String::new();
 
-    // Connect to the socket
+        let mut connected_stream = None;
+        for attempt in 1..=max_retries {
+            std::thread::sleep(retry_delay);
+            match UnixStream::connect(&socket_path) {
+                Ok(s) => {
+                    log::info!("Connected to Core socket on attempt {}", attempt);
+                    connected_stream = Some(s);
+                    break;
+                }
+                Err(e) => {
+                    last_error = e.to_string();
+                    if attempt % 5 == 0 {
+                        log::info!("Waiting for Core socket... attempt {}/{}", attempt, max_retries);
+                    }
+                }
+            }
+        }
+
+        connected_stream.ok_or_else(|| format!("Failed to connect to Core socket after {} attempts: {}", max_retries, last_error))?
+    };
+
     #[cfg(unix)]
     {
-        let stream = UnixStream::connect(&socket_path)
-            .map_err(|e| format!("Failed to connect to Core socket: {}", e))?;
-
         // Set non-blocking for reads
         stream
             .set_nonblocking(false)
