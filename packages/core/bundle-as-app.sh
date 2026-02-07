@@ -36,8 +36,8 @@ else
     echo "⚠️  Warning: Icon not found at ${ICON_SOURCE}"
 fi
 
-# Create Info.plist
-cat > "${BUNDLE_PATH}/Contents/Info.plist" << 'EOF'
+# Create Info.plist (note: no quotes on EOF to allow variable expansion)
+cat > "${BUNDLE_PATH}/Contents/Info.plist" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">

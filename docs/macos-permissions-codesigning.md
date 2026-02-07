@@ -1,14 +1,39 @@
 # macOS Permissions & Code Signing Guide
 
-## Problem: Duplicate Permission Entries
+## Understanding Permission Entries
 
-When Etch runs on macOS, users may see **two separate entries** in System Settings > Privacy & Security:
-- ✅ **Etch** (main app)
-- ⚠️ **etch-core** (sidecar binary - may show as "shell script")
+When Etch runs on macOS, the Screen Recording permission dialog behavior depends on how the app is signed:
 
-This happens because `etch-core` is an external binary that macOS treats as a separate executable.
+### Development (Unsigned)
 
-## Solution: Proper Code Signing
+You'll see **separate entries** in System Settings > Privacy & Security > Screen Recording:
+- **Etch** (main app) - or your terminal if running via `pnpm dev`
+- **etch-core-aarch64-apple-darwin** (sidecar binary)
+
+This is **expected behavior** during development. macOS tracks each unsigned binary separately.
+
+### Production (Code Signed)
+
+With proper code signing, users see a **single "Etch" entry** that covers both the main app and etch-core.
+
+## Development: Granting Permissions
+
+During development, you need to grant Screen Recording permission to `etch-core`:
+
+1. Click "Grant" in the onboarding flow
+2. System Settings opens to Privacy & Security > Screen Recording
+3. Find and enable **etch-core-aarch64-apple-darwin** (or similar name with your architecture)
+4. You may need to restart the app after granting permission
+
+**Note:** If you're running via terminal (`pnpm dev`), you might also need to grant permission to Terminal.app or your terminal emulator.
+
+## Why Separate Entries Appear
+
+`etch-core` is an external sidecar binary that handles screen capture via LiveKit. macOS treats each unsigned binary as a separate application, requiring individual permission grants.
+
+The only way to consolidate permissions under a single app name is through **code signing** with an Apple Developer certificate.
+
+## Solution: Code Signing (Production)
 
 To make permissions appear under a single "Etch" entry, both the main app and `etch-core` must be **code signed with the same Apple Developer certificate**.
 
