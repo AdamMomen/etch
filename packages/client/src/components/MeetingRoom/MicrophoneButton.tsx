@@ -50,6 +50,9 @@ export function MicrophoneButton({
         return
       }
 
+      // Annotation shortcuts (capture phase) take priority during screen share
+      if (e.defaultPrevented) return
+
       if (e.key === 'm' || e.key === 'M') {
         e.preventDefault()
         toggleMute()

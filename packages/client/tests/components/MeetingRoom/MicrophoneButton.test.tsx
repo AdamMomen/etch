@@ -211,6 +211,21 @@ describe('MicrophoneButton', () => {
 
       expect(mockSetMicrophoneEnabled).not.toHaveBeenCalled()
     })
+
+    it('does not toggle when M is already defaultPrevented (annotation shortcut won)', async () => {
+      render(<MicrophoneButton room={mockRoom as Room} />)
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'm',
+        cancelable: true,
+      })
+      event.preventDefault()
+      await act(async () => {
+        window.dispatchEvent(event)
+      })
+
+      expect(mockSetMicrophoneEnabled).not.toHaveBeenCalled()
+    })
   })
 
   describe('visual feedback (AC-2.7.4)', () => {

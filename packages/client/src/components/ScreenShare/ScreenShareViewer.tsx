@@ -105,7 +105,7 @@ export function ScreenShareViewer({
   } = useAnnotations({ sync })
 
   // Register keyboard shortcuts for annotation tools
-  useAnnotationKeyboard({ onClearAll: clearAll })
+  useAnnotationKeyboard({ onClearAll: clearAll, isScreenShareActive })
 
   // Attach screen share track to video element
   useEffect(() => {
