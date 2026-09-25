@@ -6,6 +6,11 @@ import { useRoomStore } from '@/stores/roomStore'
 import { useScreenShareStore } from '@/stores/screenShareStore'
 import { PARTICIPANT_COLORS } from '@etch/shared'
 import type { Stroke, Point } from '@etch/shared'
+import { toast } from 'sonner'
+
+vi.mock('sonner', () => ({
+  toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() },
+}))
 
 // Mock crypto.randomUUID for deterministic testing
 const mockUUID = 'test-uuid-12345'
@@ -709,6 +714,107 @@ describe('useAnnotations', () => {
       // Verify stroke uses participant color
       expect(result.current.strokes[0].tool).toBe('highlighter')
       expect(result.current.strokes[0].color).toBe(customColor)
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
+  // CLEAR ALL WITH UNDO TESTS (Story 5.4)
+  // ─────────────────────────────────────────────────────────
+
+  describe('clearAll with undo (Story 5.4)', () => {
+    const testStroke = (id: string): Stroke => ({
+      id,
+      participantId: 'participant-123',
+      tool: 'pen',
+      color: PARTICIPANT_COLORS[0],
+      points: [{ x: 0.1, y: 0.1 }],
+      createdAt: Date.now(),
+      isComplete: true,
+    })
+
+    const createSync = () => ({
+      publishStroke: vi.fn(),
+      publishStrokeUpdate: vi.fn(),
+      publishDelete: vi.fn(),
+      publishClearAll: vi.fn(),
+      publishClearAllUndo: vi.fn(),
+    })
+
+    it('clears strokes locally and publishes clear_all', () => {
+      const sync = createSync()
+      act(() => {
+        useAnnotationStore.setState({ strokes: [testStroke('s1')] })
+      })
+
+      const { result } = renderHook(() => useAnnotations({ sync }))
+
+      act(() => {
+        result.current.clearAll()
+      })
+
+      expect(result.current.strokes).toHaveLength(0)
+      expect(sync.publishClearAll).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows Undo toast for 5 seconds when strokes were cleared', () => {
+      const sync = createSync()
+      act(() => {
+        useAnnotationStore.setState({ strokes: [testStroke('s1')] })
+      })
+
+      const { result } = renderHook(() => useAnnotations({ sync }))
+
+      act(() => {
+        result.current.clearAll()
+      })
+
+      expect(toast.success).toHaveBeenCalledWith(
+        'All annotations cleared',
+        expect.objectContaining({
+          duration: 5000,
+          action: expect.objectContaining({ label: 'Undo' }),
+        })
+      )
+    })
+
+    it('restores strokes and publishes clear_all_undo when Undo is clicked', () => {
+      const sync = createSync()
+      const cleared = [testStroke('s1'), testStroke('s2')]
+      act(() => {
+        useAnnotationStore.setState({ strokes: cleared })
+      })
+
+      const { result } = renderHook(() => useAnnotations({ sync }))
+
+      act(() => {
+        result.current.clearAll()
+      })
+
+      const toastCall = vi.mocked(toast.success).mock.calls[0]
+      const options = toastCall[1] as {
+        action: { label: string; onClick: () => void }
+      }
+
+      act(() => {
+        options.action.onClick()
+      })
+
+      expect(result.current.strokes).toEqual(cleared)
+      expect(sync.publishClearAllUndo).toHaveBeenCalledTimes(1)
+      expect(sync.publishClearAllUndo).toHaveBeenCalledWith(cleared)
+    })
+
+    it('does not show toast when there were no strokes to clear', () => {
+      const sync = createSync()
+
+      const { result } = renderHook(() => useAnnotations({ sync }))
+
+      act(() => {
+        result.current.clearAll()
+      })
+
+      expect(sync.publishClearAll).toHaveBeenCalledTimes(1)
+      expect(toast.success).not.toHaveBeenCalled()
     })
   })
 

@@ -495,7 +495,7 @@ describe('useAnnotationKeyboard', () => {
   // ─────────────────────────────────────────────────────────
 
   describe('clear all shortcut (AC-4.6.6)', () => {
-    it('clears all strokes when "0" key is pressed by host', () => {
+    it('calls onClearAll when "0" key is pressed by host (Story 5.4)', () => {
       act(() => {
         useRoomStore.setState({
           localParticipant: {
@@ -521,16 +521,20 @@ describe('useAnnotationKeyboard', () => {
         })
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      const onClearAll = vi.fn()
+      renderHook(() => useAnnotationKeyboard({ onClearAll }))
 
       act(() => {
         dispatchKeyDown('0')
       })
 
-      expect(useAnnotationStore.getState().strokes).toHaveLength(0)
+      // Hook delegates clearing to the callback (broadcasts + undo toast)
+      expect(onClearAll).toHaveBeenCalledTimes(1)
+      // Strokes remain until the callback clears them
+      expect(useAnnotationStore.getState().strokes).toHaveLength(1)
     })
 
-    it('does not clear strokes when "0" key is pressed by annotator', () => {
+    it('does not call onClearAll when "0" key is pressed by annotator', () => {
       act(() => {
         useRoomStore.setState({
           localParticipant: {
@@ -556,13 +560,15 @@ describe('useAnnotationKeyboard', () => {
         })
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      const onClearAll = vi.fn()
+      renderHook(() => useAnnotationKeyboard({ onClearAll }))
 
       act(() => {
         dispatchKeyDown('0')
       })
 
-      // Strokes should remain (annotator cannot clear all)
+      // Annotator cannot clear all
+      expect(onClearAll).not.toHaveBeenCalled()
       expect(useAnnotationStore.getState().strokes).toHaveLength(1)
     })
 
@@ -592,13 +598,15 @@ describe('useAnnotationKeyboard', () => {
         })
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      const onClearAll = vi.fn()
+      renderHook(() => useAnnotationKeyboard({ onClearAll }))
 
       act(() => {
         dispatchKeyDown('0', { ctrlKey: true })
       })
 
-      // Strokes should remain (modifier key pressed)
+      // Modifier key pressed
+      expect(onClearAll).not.toHaveBeenCalled()
       expect(useAnnotationStore.getState().strokes).toHaveLength(1)
     })
 
@@ -628,7 +636,8 @@ describe('useAnnotationKeyboard', () => {
         })
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      const onClearAll = vi.fn()
+      renderHook(() => useAnnotationKeyboard({ onClearAll }))
 
       // Create an input element
       const input = document.createElement('input')
@@ -642,7 +651,8 @@ describe('useAnnotationKeyboard', () => {
       Object.defineProperty(event, 'target', { value: input })
       window.dispatchEvent(event)
 
-      // Strokes should remain (typing in input)
+      // Typing in input
+      expect(onClearAll).not.toHaveBeenCalled()
       expect(useAnnotationStore.getState().strokes).toHaveLength(1)
 
       document.body.removeChild(input)
@@ -743,13 +753,14 @@ describe('useAnnotationKeyboard', () => {
         })
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      const onClearAll = vi.fn()
+      renderHook(() => useAnnotationKeyboard({ onClearAll }))
 
       act(() => {
         dispatchKeyDown('0')
       })
 
-      expect(useAnnotationStore.getState().strokes).toHaveLength(0)
+      expect(onClearAll).toHaveBeenCalledTimes(1)
     })
   })
 

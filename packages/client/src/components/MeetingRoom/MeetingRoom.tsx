@@ -177,6 +177,7 @@ export function MeetingRoom() {
     publishStrokeUpdate,
     publishDelete,
     publishClearAll,
+    publishClearAllUndo,
   } = useAnnotationSync(room, isScreenShareActive)
 
   // Get resetVolumes from volumeStore for cleanup on leave
@@ -534,6 +535,7 @@ export function MeetingRoom() {
                 publishStrokeUpdate={publishStrokeUpdate}
                 publishDelete={publishDelete}
                 publishClearAll={publishClearAll}
+                publishClearAllUndo={publishClearAllUndo}
                 className="flex-1"
               />
 

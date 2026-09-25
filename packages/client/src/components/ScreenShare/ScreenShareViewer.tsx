@@ -31,6 +31,8 @@ interface ScreenShareViewerProps {
   publishDelete: (strokeId: string) => void
   /** Publish clear all */
   publishClearAll: () => void
+  /** Publish clear all undo (Story 5.4) */
+  publishClearAllUndo: (strokes: Stroke[]) => void
   className?: string
 }
 
@@ -52,6 +54,7 @@ export function ScreenShareViewer({
   publishStrokeUpdate,
   publishDelete,
   publishClearAll,
+  publishClearAllUndo,
   className,
 }: ScreenShareViewerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -68,9 +71,17 @@ export function ScreenShareViewer({
             publishStrokeUpdate,
             publishDelete,
             publishClearAll,
+            publishClearAllUndo,
           }
         : null,
-    [room, publishStroke, publishStrokeUpdate, publishDelete, publishClearAll]
+    [
+      room,
+      publishStroke,
+      publishStrokeUpdate,
+      publishDelete,
+      publishClearAll,
+      publishClearAllUndo,
+    ]
   )
 
   // Use annotation hook for drawing functionality with sync integration
@@ -89,10 +100,12 @@ export function ScreenShareViewer({
     hoveredStrokeId,
     // Remote strokes (Story 4.7)
     remoteActiveStrokes,
+    // Clear all with undo + broadcast (Story 5.4)
+    clearAll,
   } = useAnnotations({ sync })
 
   // Register keyboard shortcuts for annotation tools
-  useAnnotationKeyboard()
+  useAnnotationKeyboard({ onClearAll: clearAll })
 
   // Attach screen share track to video element
   useEffect(() => {
@@ -176,7 +189,10 @@ export function ScreenShareViewer({
 
       {/* Annotation toolbar - top center (AC-4.6.1) */}
       <div className="absolute left-1/2 top-4 z-10 -translate-x-1/2">
-        <AnnotationToolbar isScreenShareActive={isScreenShareActive} />
+        <AnnotationToolbar
+          isScreenShareActive={isScreenShareActive}
+          onClearAll={clearAll}
+        />
       </div>
 
       {/* Video container with annotation overlay */}

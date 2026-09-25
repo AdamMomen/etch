@@ -53,6 +53,9 @@ export interface AnnotationState {
   /** Clear strokes by a specific participant (clear my drawings) */
   clearByParticipant: (participantId: string) => void
 
+  /** Restore previously cleared strokes (Story 5.4 clear-all undo) */
+  restoreStrokes: (strokes: Stroke[]) => void
+
   // ─────────────────────────────────────────────────────────
   // TOOL ACTIONS
   // ─────────────────────────────────────────────────────────
@@ -170,6 +173,15 @@ export const useAnnotationStore = create<AnnotationState>((set, get) => ({
       activeStroke: null,
       remoteActiveStrokes: new Map(),
     }),
+
+  restoreStrokes: (strokes) =>
+    set((state) => ({
+      // Restored strokes go first (underneath); dedupe by id
+      strokes: [
+        ...strokes.filter((s) => !state.strokes.some((c) => c.id === s.id)),
+        ...state.strokes,
+      ],
+    })),
 
   clearByParticipant: (participantId) =>
     set((state) => ({

@@ -3,6 +3,7 @@ import { useAnnotationStore, type Tool } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useScreenShareStore } from '@/stores/screenShareStore'
 import { findTopmostStrokeAtPoint } from '@/lib/canvas'
+import { toast } from 'sonner'
 import {
   PARTICIPANT_COLORS,
   canAnnotate as sharedCanAnnotate,
@@ -28,6 +29,8 @@ export interface AnnotationSyncCallbacks {
   publishDelete: (strokeId: string) => void
   /** Publish clear all (host only) */
   publishClearAll: () => void
+  /** Publish clear all undo (Story 5.4) */
+  publishClearAllUndo: (strokes: Stroke[]) => void
 }
 
 /**
@@ -83,6 +86,7 @@ export function useAnnotations(options: UseAnnotationsOptions = {}) {
   const setActiveTool = useAnnotationStore((state) => state.setActiveTool)
   const deleteStroke = useAnnotationStore((state) => state.deleteStroke)
   const clearAllStrokes = useAnnotationStore((state) => state.clearAll)
+  const restoreStrokes = useAnnotationStore((state) => state.restoreStrokes)
 
   // Get local participant info
   const localParticipant = useRoomStore((state) => state.localParticipant)
@@ -426,14 +430,21 @@ export function useAnnotations(options: UseAnnotationsOptions = {}) {
    * AC-4.7.6: Clear all syncs to all participants.
    */
   const clearAll = useCallback((): void => {
-    // Clear locally
+    const cleared = useAnnotationStore.getState().strokes
     clearAllStrokes()
-
-    // Publish clear all via sync (AC-4.7.6)
-    if (sync) {
-      sync.publishClearAll()
-    }
-  }, [clearAllStrokes, sync])
+    sync?.publishClearAll()
+    if (cleared.length === 0) return
+    toast.success('All annotations cleared', {
+      duration: 5000,
+      action: {
+        label: 'Undo',
+        onClick: () => {
+          restoreStrokes(cleared)
+          sync?.publishClearAllUndo(cleared)
+        },
+      },
+    })
+  }, [clearAllStrokes, restoreStrokes, sync])
 
   return {
     // State

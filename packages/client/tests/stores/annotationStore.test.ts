@@ -751,7 +751,10 @@ describe('annotationStore', () => {
 
     describe('addRemoteActiveStroke', () => {
       it('adds a remote in-progress stroke', () => {
-        const stroke = createMockStroke({ id: 'remote-1', participantId: 'remote-user' })
+        const stroke = createMockStroke({
+          id: 'remote-1',
+          participantId: 'remote-user',
+        })
 
         act(() => {
           useAnnotationStore.getState().addRemoteActiveStroke(stroke)
@@ -763,8 +766,14 @@ describe('annotationStore', () => {
       })
 
       it('adds multiple remote strokes', () => {
-        const stroke1 = createMockStroke({ id: 'remote-1', participantId: 'user-1' })
-        const stroke2 = createMockStroke({ id: 'remote-2', participantId: 'user-2' })
+        const stroke1 = createMockStroke({
+          id: 'remote-1',
+          participantId: 'user-1',
+        })
+        const stroke2 = createMockStroke({
+          id: 'remote-2',
+          participantId: 'user-2',
+        })
 
         act(() => {
           useAnnotationStore.getState().addRemoteActiveStroke(stroke1)
@@ -807,7 +816,9 @@ describe('annotationStore', () => {
         ]
 
         act(() => {
-          useAnnotationStore.getState().updateRemoteActiveStroke('remote-1', newPoints)
+          useAnnotationStore
+            .getState()
+            .updateRemoteActiveStroke('remote-1', newPoints)
         })
 
         const { remoteActiveStrokes } = useAnnotationStore.getState()
@@ -893,7 +904,9 @@ describe('annotationStore', () => {
 
       it('handles non-existent stroke gracefully', () => {
         act(() => {
-          useAnnotationStore.getState().completeRemoteActiveStroke('non-existent')
+          useAnnotationStore
+            .getState()
+            .completeRemoteActiveStroke('non-existent')
         })
 
         const { remoteActiveStrokes } = useAnnotationStore.getState()
@@ -901,16 +914,71 @@ describe('annotationStore', () => {
       })
     })
 
+    describe('restoreStrokes (Story 5.4)', () => {
+      it('restores cleared strokes', () => {
+        const stroke1 = createMockStroke({ id: 'stroke-1' })
+        const stroke2 = createMockStroke({ id: 'stroke-2' })
+
+        act(() => {
+          useAnnotationStore.getState().addStroke(stroke1)
+          useAnnotationStore.getState().addStroke(stroke2)
+          useAnnotationStore.getState().clearAll()
+        })
+
+        act(() => {
+          useAnnotationStore.getState().restoreStrokes([stroke1, stroke2])
+        })
+
+        const { strokes } = useAnnotationStore.getState()
+        expect(strokes).toHaveLength(2)
+        expect(strokes.map((s) => s.id)).toEqual(['stroke-1', 'stroke-2'])
+      })
+
+      it('dedupes restored strokes by id', () => {
+        const stroke1 = createMockStroke({ id: 'stroke-1' })
+
+        act(() => {
+          useAnnotationStore.getState().addStroke(stroke1)
+        })
+
+        act(() => {
+          useAnnotationStore.getState().restoreStrokes([stroke1])
+        })
+
+        const { strokes } = useAnnotationStore.getState()
+        expect(strokes).toHaveLength(1)
+      })
+
+      it('keeps strokes drawn after the clear, restored strokes go first', () => {
+        const old = createMockStroke({ id: 'old-stroke' })
+        const fresh = createMockStroke({ id: 'new-stroke' })
+
+        act(() => {
+          useAnnotationStore.getState().addStroke(old)
+          useAnnotationStore.getState().clearAll()
+          useAnnotationStore.getState().addStroke(fresh)
+        })
+
+        act(() => {
+          useAnnotationStore.getState().restoreStrokes([old])
+        })
+
+        const { strokes } = useAnnotationStore.getState()
+        expect(strokes).toHaveLength(2)
+        expect(strokes.map((s) => s.id)).toEqual(['old-stroke', 'new-stroke'])
+      })
+    })
+
     describe('clearAll clears remoteActiveStrokes', () => {
       it('clears remoteActiveStrokes along with other state', () => {
         act(() => {
           useAnnotationStore.getState().addStroke(createMockStroke())
-          useAnnotationStore.getState().addRemoteActiveStroke(
-            createMockStroke({ id: 'remote-1' })
-          )
-          useAnnotationStore.getState().addRemoteActiveStroke(
-            createMockStroke({ id: 'remote-2' })
-          )
+          useAnnotationStore
+            .getState()
+            .addRemoteActiveStroke(createMockStroke({ id: 'remote-1' }))
+          useAnnotationStore
+            .getState()
+            .addRemoteActiveStroke(createMockStroke({ id: 'remote-2' }))
         })
 
         act(() => {

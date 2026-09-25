@@ -9,10 +9,16 @@ import {
   ANNOTATION_MESSAGE_TYPES,
   ANNOTATION_TOPIC,
   encodeAnnotationMessage,
+  decodeAnnotationMessage,
   type StateRequestMessage,
   type StateSnapshotMessage,
   type Stroke,
 } from '@etch/shared'
+import { toast } from 'sonner'
+
+vi.mock('sonner', () => ({
+  toast: { info: vi.fn(), success: vi.fn(), error: vi.fn() },
+}))
 
 // Mock stores
 vi.mock('@/stores/roomStore', () => ({
@@ -39,7 +45,13 @@ const createMockStroke = (overrides: Partial<Stroke> = {}): Stroke => ({
 })
 
 // Helper to create mock room
-type MockRoom = Room & { __simulateDataReceived: (payload: Uint8Array, participant?: { identity: string }, topic?: string) => void }
+type MockRoom = Room & {
+  __simulateDataReceived: (
+    payload: Uint8Array,
+    participant?: { identity: string },
+    topic?: string
+  ) => void
+}
 
 const createMockRoom = (overrides: Partial<Room> = {}): MockRoom => {
   const handlers = new Map<string, Function[]>()
@@ -66,9 +78,15 @@ const createMockRoom = (overrides: Partial<Room> = {}): MockRoom => {
       }
     }),
     // Helper to simulate DataReceived events
-    __simulateDataReceived: (payload: Uint8Array, participant?: { identity: string }, topic?: string) => {
+    __simulateDataReceived: (
+      payload: Uint8Array,
+      participant?: { identity: string },
+      topic?: string
+    ) => {
       const eventHandlers = handlers.get(RoomEvent.DataReceived) || []
-      eventHandlers.forEach((handler) => handler(payload, participant, undefined, topic))
+      eventHandlers.forEach((handler) =>
+        handler(payload, participant, undefined, topic)
+      )
     },
     ...overrides,
   } as unknown as MockRoom
@@ -80,6 +98,7 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
   let mockAddStroke: ReturnType<typeof vi.fn>
   let mockDeleteStroke: ReturnType<typeof vi.fn>
   let mockClearAll: ReturnType<typeof vi.fn>
+  let mockRestoreStrokes: ReturnType<typeof vi.fn>
   let mockAddRemoteActiveStroke: ReturnType<typeof vi.fn>
   let mockUpdateRemoteActiveStroke: ReturnType<typeof vi.fn>
   let mockCompleteRemoteActiveStroke: ReturnType<typeof vi.fn>
@@ -93,6 +112,7 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
     mockAddStroke = vi.fn()
     mockDeleteStroke = vi.fn()
     mockClearAll = vi.fn()
+    mockRestoreStrokes = vi.fn()
     mockAddRemoteActiveStroke = vi.fn()
     mockUpdateRemoteActiveStroke = vi.fn()
     mockCompleteRemoteActiveStroke = vi.fn()
@@ -112,6 +132,7 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
         addStroke: mockAddStroke,
         deleteStroke: mockDeleteStroke,
         clearAll: mockClearAll,
+        restoreStrokes: mockRestoreStrokes,
         addRemoteActiveStroke: mockAddRemoteActiveStroke,
         updateRemoteActiveStroke: mockUpdateRemoteActiveStroke,
         completeRemoteActiveStroke: mockCompleteRemoteActiveStroke,
@@ -153,7 +174,8 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
   describe('late-joiner state request (AC-4.8.3)', () => {
     it('should send state_request when screen share becomes active', () => {
       const { result, rerender } = renderHook(
-        ({ room, isScreenShareActive }) => useAnnotationSync(room, isScreenShareActive),
+        ({ room, isScreenShareActive }) =>
+          useAnnotationSync(room, isScreenShareActive),
         {
           initialProps: { room: mockRoom, isScreenShareActive: false },
         }
@@ -169,8 +191,11 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
       expect(mockRoom.localParticipant.publishData).toHaveBeenCalled()
       expect(result.current.syncState).toBe('synced')
 
-      const publishCall = (mockRoom.localParticipant.publishData as any).mock.calls[0]
-      const decodedMessage = JSON.parse(new TextDecoder().decode(publishCall[0]))
+      const publishCall = (mockRoom.localParticipant.publishData as any).mock
+        .calls[0]
+      const decodedMessage = JSON.parse(
+        new TextDecoder().decode(publishCall[0])
+      )
 
       expect(decodedMessage.type).toBe(ANNOTATION_MESSAGE_TYPES.STATE_REQUEST)
       expect(decodedMessage.requesterId).toBe('local-participant-id')
@@ -217,8 +242,11 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
       // Should have responded with state_snapshot
       expect(mockRoom.localParticipant.publishData).toHaveBeenCalled()
 
-      const publishCall = (mockRoom.localParticipant.publishData as any).mock.calls[0]
-      const decodedMessage = JSON.parse(new TextDecoder().decode(publishCall[0]))
+      const publishCall = (mockRoom.localParticipant.publishData as any).mock
+        .calls[0]
+      const decodedMessage = JSON.parse(
+        new TextDecoder().decode(publishCall[0])
+      )
 
       expect(decodedMessage.type).toBe(ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT)
       expect(decodedMessage.requesterId).toBe('new-joiner-id')
@@ -243,8 +271,11 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
 
       expect(mockRoom.localParticipant.publishData).toHaveBeenCalled()
 
-      const publishCall = (mockRoom.localParticipant.publishData as any).mock.calls[0]
-      const decodedMessage = JSON.parse(new TextDecoder().decode(publishCall[0]))
+      const publishCall = (mockRoom.localParticipant.publishData as any).mock
+        .calls[0]
+      const decodedMessage = JSON.parse(
+        new TextDecoder().decode(publishCall[0])
+      )
 
       // Should only have the completed stroke (existing-1, not existing-2)
       expect(decodedMessage.strokes).toHaveLength(1)
@@ -481,7 +512,77 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
       const { result } = renderHook(() => useAnnotationSync(mockRoom))
 
       expect(result.current).toHaveProperty('syncState')
-      expect(['idle', 'requesting', 'synced']).toContain(result.current.syncState)
+      expect(['idle', 'requesting', 'synced']).toContain(
+        result.current.syncState
+      )
+    })
+  })
+
+  describe('clear all + undo (Story 5.4)', () => {
+    it('publishClearAllUndo sends an encoded clear_all_undo message', () => {
+      const { result } = renderHook(() => useAnnotationSync(mockRoom))
+      const strokes = [
+        createMockStroke({ id: 's1' }),
+        createMockStroke({ id: 's2' }),
+      ]
+
+      act(() => {
+        result.current.publishClearAllUndo(strokes)
+      })
+
+      expect(mockRoom.localParticipant.publishData).toHaveBeenCalledTimes(1)
+      const publishCall = (mockRoom.localParticipant.publishData as any).mock
+        .calls[0]
+      const decoded = decodeAnnotationMessage(publishCall[0])
+      expect(decoded.type).toBe(ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO)
+      expect(decoded.restoredBy).toBe('local-participant-id')
+      expect(decoded.strokes).toEqual(strokes)
+      expect(typeof decoded.timestamp).toBe('number')
+      expect(publishCall[1].topic).toBe(ANNOTATION_TOPIC)
+      expect(publishCall[1].reliable).toBe(true)
+    })
+
+    it('receiving clear_all_undo restores strokes via restoreStrokes', () => {
+      renderHook(() => useAnnotationSync(mockRoom))
+
+      const strokes = [createMockStroke({ id: 'restored-1' })]
+      const message = encodeAnnotationMessage({
+        type: ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO,
+        restoredBy: 'remote-1',
+        strokes,
+        timestamp: Date.now(),
+      })
+
+      act(() => {
+        mockRoom.__simulateDataReceived(
+          message,
+          { identity: 'remote-1' },
+          ANNOTATION_TOPIC
+        )
+      })
+
+      expect(mockRestoreStrokes).toHaveBeenCalledWith(strokes)
+    })
+
+    it('receiving clear_all clears strokes and shows a toast', () => {
+      renderHook(() => useAnnotationSync(mockRoom))
+
+      const message = encodeAnnotationMessage({
+        type: ANNOTATION_MESSAGE_TYPES.CLEAR_ALL,
+        clearedBy: 'remote-1',
+        timestamp: Date.now(),
+      })
+
+      act(() => {
+        mockRoom.__simulateDataReceived(
+          message,
+          { identity: 'remote-1' },
+          ANNOTATION_TOPIC
+        )
+      })
+
+      expect(mockClearAll).toHaveBeenCalledTimes(1)
+      expect(toast.info).toHaveBeenCalledWith('All annotations cleared')
     })
   })
 })

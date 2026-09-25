@@ -15,9 +15,16 @@ import { useCanAnnotate } from '@/hooks/useCanAnnotate'
  *
  * @see docs/sprint-artifacts/tech-spec-epic-4.md
  */
-export function useAnnotationKeyboard(): void {
+export interface UseAnnotationKeyboardOptions {
+  /** Called when the host presses `0` to clear all annotations (Story 5.4) */
+  onClearAll?: () => void
+}
+
+export function useAnnotationKeyboard(
+  options: UseAnnotationKeyboardOptions = {}
+): void {
+  const { onClearAll } = options
   const setActiveTool = useAnnotationStore((state) => state.setActiveTool)
-  const clearAll = useAnnotationStore((state) => state.clearAll)
   const localParticipant = useRoomStore((state) => state.localParticipant)
   const isHost = localParticipant?.role === 'host'
   const canAnnotate = useCanAnnotate()
@@ -67,9 +74,9 @@ export function useAnnotationKeyboard(): void {
           setActiveTool('eraser')
           break
         case '0':
-          // Clear all is host-only
+          // Clear all is host-only (Story 5.4)
           if (isHost) {
-            clearAll()
+            onClearAll?.()
           }
           break
       }
@@ -80,5 +87,5 @@ export function useAnnotationKeyboard(): void {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [setActiveTool, clearAll, isHost, canAnnotate])
+  }, [setActiveTool, isHost, canAnnotate, onClearAll])
 }
