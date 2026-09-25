@@ -922,8 +922,9 @@ describe('AnnotationToolbar', () => {
 
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
-      const penButton = screen.getByTestId('tool-button-pen')
-      await user.hover(penButton)
+      // Hover the wrapper span - disabled buttons don't receive pointer events
+      const penWrapper = screen.getByTestId('tool-button-pen-wrapper')
+      await user.hover(penWrapper)
 
       const tooltip = await screen.findByRole('tooltip', { hidden: true })
       expect(tooltip).toHaveTextContent("You don't have permission to annotate")
