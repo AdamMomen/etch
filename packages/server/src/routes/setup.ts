@@ -51,10 +51,10 @@ setupRouter.get('/status', async (c) => {
       configured: true,
       publicUrls: {
         appUrl: process.env.APP_URL,
-        livekitUrl:
-          process.env.LIVEKIT_PUBLIC_URL || process.env.LIVEKIT_URL,
+        livekitUrl: process.env.LIVEKIT_PUBLIC_URL || process.env.LIVEKIT_URL,
       },
-      message: 'LiveKit is configured. Access credentials via environment variables or container.',
+      message:
+        'LiveKit is configured. Access credentials via environment variables or container.',
     })
   } catch (error) {
     console.error('Error checking setup config:', error)
@@ -62,9 +62,12 @@ setupRouter.get('/status', async (c) => {
       {
         error: 'Failed to check configuration',
         // Don't expose error details in production
-        message: process.env.NODE_ENV === 'production'
-          ? 'Configuration check failed'
-          : error instanceof Error ? error.message : 'Unknown error',
+        message:
+          process.env.NODE_ENV === 'production'
+            ? 'Configuration check failed'
+            : error instanceof Error
+              ? error.message
+              : 'Unknown error',
       },
       500
     )

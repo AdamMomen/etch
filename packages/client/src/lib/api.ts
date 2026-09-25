@@ -19,17 +19,21 @@ function getValidatedApiBaseUrl(): string {
   // Check if we're in a browser on a non-localhost origin
   const isWeb = typeof window !== 'undefined' && window.location.origin
   const currentOrigin = isWeb ? window.location.origin : null
-  const isOnLocalhost = currentOrigin?.includes('localhost') || currentOrigin?.includes('127.0.0.1')
+  const isOnLocalhost =
+    currentOrigin?.includes('localhost') || currentOrigin?.includes('127.0.0.1')
 
   // If stored URL points to localhost but we're on a different origin, use current origin
-  const storedIsLocalhost = runtimeUrl?.includes('localhost') || runtimeUrl?.includes('127.0.0.1')
+  const storedIsLocalhost =
+    runtimeUrl?.includes('localhost') || runtimeUrl?.includes('127.0.0.1')
   if (isWeb && !isOnLocalhost && storedIsLocalhost) {
     return `${currentOrigin}/api`
   }
 
   // Fallback: build-time env var, then current origin, then localhost
   const url =
-    runtimeUrl || import.meta.env.VITE_API_URL || (currentOrigin ? `${currentOrigin}/api` : 'http://localhost:3000/api')
+    runtimeUrl ||
+    import.meta.env.VITE_API_URL ||
+    (currentOrigin ? `${currentOrigin}/api` : 'http://localhost:3000/api')
 
   try {
     // Validate URL is well-formed
@@ -38,7 +42,9 @@ function getValidatedApiBaseUrl(): string {
     // Only allow http/https protocols
     if (!['http:', 'https:'].includes(parsed.protocol)) {
       console.error(`Invalid API URL protocol: ${parsed.protocol}`)
-      return currentOrigin ? `${currentOrigin}/api` : 'http://localhost:3000/api'
+      return currentOrigin
+        ? `${currentOrigin}/api`
+        : 'http://localhost:3000/api'
     }
 
     // Remove trailing slash for consistency
