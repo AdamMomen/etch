@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef, useState } from 'react'
 import { Room, RoomEvent, RemoteParticipant } from 'livekit-client'
+import { toast } from 'sonner'
 import { useAnnotationStore } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
 import {
@@ -12,6 +13,7 @@ import {
   type StrokeCompleteMessage,
   type StrokeDeleteMessage,
   type ClearAllMessage,
+  type ClearAllUndoMessage,
   type StateRequestMessage,
   type StateSnapshotMessage,
   type Point,
@@ -50,6 +52,8 @@ export interface UseAnnotationSyncReturn {
   publishDelete: (strokeId: string) => void
   /** Publish clear all (host only) */
   publishClearAll: () => void
+  /** Publish clear all undo (host only, Story 5.4) */
+  publishClearAllUndo: (strokes: Stroke[]) => void
 }
 
 /** Retry configuration for late-joiner sync (Story 4.8 AC-4.8.6) */
@@ -115,6 +119,7 @@ export function useAnnotationSync(
   const addStroke = useAnnotationStore((state) => state.addStroke)
   const deleteStroke = useAnnotationStore((state) => state.deleteStroke)
   const clearAll = useAnnotationStore((state) => state.clearAll)
+  const restoreStrokes = useAnnotationStore((state) => state.restoreStrokes)
   const setStrokes = useAnnotationStore((state) => state.setStrokes)
   const addRemoteActiveStroke = useAnnotationStore(
     (state) => state.addRemoteActiveStroke
@@ -382,6 +387,13 @@ export function useAnnotationSync(
 
         case ANNOTATION_MESSAGE_TYPES.CLEAR_ALL: {
           clearAll()
+          toast.info('All annotations cleared')
+          break
+        }
+
+        case ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO: {
+          const undoMsg = message as ClearAllUndoMessage
+          restoreStrokes(undoMsg.strokes)
           break
         }
 
@@ -400,6 +412,7 @@ export function useAnnotationSync(
       addStroke,
       deleteStroke,
       clearAll,
+      restoreStrokes,
     ]
   )
 
@@ -636,6 +649,31 @@ export function useAnnotationSync(
     })
   }, [room, localParticipantId])
 
+  /**
+   * Publish clear all undo (host only, Story 5.4).
+   * Restores the previously cleared strokes on all participants.
+   */
+  const publishClearAllUndo = useCallback(
+    (strokes: Stroke[]): void => {
+      if (!room) return
+
+      const message: ClearAllUndoMessage = {
+        type: ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO,
+        restoredBy: localParticipantId,
+        strokes,
+        timestamp: Date.now(),
+      }
+
+      const encoded = encodeAnnotationMessage(message)
+
+      room.localParticipant.publishData(encoded, {
+        reliable: true,
+        topic: ANNOTATION_TOPIC,
+      })
+    },
+    [room, localParticipantId]
+  )
+
   return {
     isConnected,
     syncState,
@@ -643,5 +681,6 @@ export function useAnnotationSync(
     publishStrokeUpdate,
     publishDelete,
     publishClearAll,
+    publishClearAllUndo,
   }
 }

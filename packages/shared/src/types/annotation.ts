@@ -19,6 +19,7 @@ export const ANNOTATION_MESSAGE_TYPES = {
   STROKE_COMPLETE: 'stroke_complete',
   STROKE_DELETE: 'stroke_delete',
   CLEAR_ALL: 'clear_all',
+  CLEAR_ALL_UNDO: 'clear_all_undo',
   STATE_REQUEST: 'state_request',
   STATE_SNAPSHOT: 'state_snapshot',
 } as const
@@ -102,6 +103,21 @@ export interface ClearAllMessage {
 }
 
 /**
+ * Clear all undo message sent when the host undoes a clear all (Story 5.4).
+ *
+ * Used for: Restoring cleared annotations on all participants' stores
+ */
+export interface ClearAllUndoMessage {
+  type: typeof ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO
+  /** ID of the host who undid the clear */
+  restoredBy: string
+  /** Strokes to restore */
+  strokes: Stroke[]
+  /** Unix timestamp in milliseconds */
+  timestamp: number
+}
+
+/**
  * State request message sent by late-joining participants.
  * Requests the current annotation state from existing participants.
  *
@@ -154,6 +170,7 @@ export type AnnotationMessage =
   | StrokeCompleteMessage
   | StrokeDeleteMessage
   | ClearAllMessage
+  | ClearAllUndoMessage
   | StateRequestMessage
   | StateSnapshotMessage
 
@@ -191,6 +208,15 @@ export function isClearAllMessage(
   msg: AnnotationMessage
 ): msg is ClearAllMessage {
   return msg.type === ANNOTATION_MESSAGE_TYPES.CLEAR_ALL
+}
+
+/**
+ * Type guard to check if a message is a ClearAllUndoMessage.
+ */
+export function isClearAllUndoMessage(
+  msg: AnnotationMessage
+): msg is ClearAllUndoMessage {
+  return msg.type === ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO
 }
 
 /**
@@ -264,6 +290,13 @@ export function isValidAnnotationMessage(
     case ANNOTATION_MESSAGE_TYPES.CLEAR_ALL:
       return (
         typeof msg.clearedBy === 'string' && typeof msg.timestamp === 'number'
+      )
+
+    case ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO:
+      return (
+        typeof msg.restoredBy === 'string' &&
+        Array.isArray(msg.strokes) &&
+        typeof msg.timestamp === 'number'
       )
 
     case ANNOTATION_MESSAGE_TYPES.STATE_REQUEST:

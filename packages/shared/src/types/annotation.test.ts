@@ -6,6 +6,7 @@ import {
   isStrokeCompleteMessage,
   isStrokeDeleteMessage,
   isClearAllMessage,
+  isClearAllUndoMessage,
   isStateRequestMessage,
   isStateSnapshotMessage,
   isValidAnnotationMessage,
@@ -15,9 +16,9 @@ import {
   type StrokeCompleteMessage,
   type StrokeDeleteMessage,
   type ClearAllMessage,
+  type ClearAllUndoMessage,
   type StateRequestMessage,
   type StateSnapshotMessage,
-  type AnnotationMessage,
 } from './annotation'
 import type { Stroke } from './stroke'
 
@@ -74,6 +75,16 @@ const createClearAllMessage = (
   ...overrides,
 })
 
+const createClearAllUndoMessage = (
+  overrides?: Partial<ClearAllUndoMessage>
+): ClearAllUndoMessage => ({
+  type: ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO,
+  restoredBy: 'host-1',
+  strokes: [],
+  timestamp: Date.now(),
+  ...overrides,
+})
+
 const createStateRequestMessage = (
   overrides?: Partial<StateRequestMessage>
 ): StateRequestMessage => ({
@@ -121,6 +132,7 @@ describe('annotation message types', () => {
       expect(ANNOTATION_MESSAGE_TYPES.STROKE_COMPLETE).toBe('stroke_complete')
       expect(ANNOTATION_MESSAGE_TYPES.STROKE_DELETE).toBe('stroke_delete')
       expect(ANNOTATION_MESSAGE_TYPES.CLEAR_ALL).toBe('clear_all')
+      expect(ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO).toBe('clear_all_undo')
       expect(ANNOTATION_MESSAGE_TYPES.STATE_REQUEST).toBe('state_request')
       expect(ANNOTATION_MESSAGE_TYPES.STATE_SNAPSHOT).toBe('state_snapshot')
     })
@@ -172,6 +184,18 @@ describe('annotation message types', () => {
       it('returns false for other message types', () => {
         const msg = createStrokeUpdateMessage()
         expect(isClearAllMessage(msg)).toBe(false)
+      })
+    })
+
+    describe('isClearAllUndoMessage (Story 5.4)', () => {
+      it('returns true for clear_all_undo messages', () => {
+        const msg = createClearAllUndoMessage()
+        expect(isClearAllUndoMessage(msg)).toBe(true)
+      })
+
+      it('returns false for other message types', () => {
+        const msg = createClearAllMessage()
+        expect(isClearAllUndoMessage(msg)).toBe(false)
       })
     })
 
@@ -229,6 +253,22 @@ describe('annotation message types', () => {
     it('validates clear_all message', () => {
       const msg = createClearAllMessage()
       expect(isValidAnnotationMessage(msg)).toBe(true)
+    })
+
+    it('validates clear_all_undo message (Story 5.4)', () => {
+      const msg = createClearAllUndoMessage({
+        strokes: [createMockStroke()],
+      })
+      expect(isValidAnnotationMessage(msg)).toBe(true)
+    })
+
+    it('rejects clear_all_undo message with missing fields', () => {
+      expect(
+        isValidAnnotationMessage({
+          type: ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO,
+          restoredBy: 'host-1',
+        })
+      ).toBe(false)
     })
 
     it('validates state_request message (Story 4.8)', () => {
@@ -397,6 +437,16 @@ describe('annotation message types', () => {
       expect(decoded).toEqual(original)
     })
 
+    it('encodes and decodes clear_all_undo message (Story 5.4)', () => {
+      const original = createClearAllUndoMessage({
+        strokes: [createMockStroke()],
+      })
+      const encoded = encodeAnnotationMessage(original)
+      const decoded = decodeAnnotationMessage(encoded)
+
+      expect(decoded).toEqual(original)
+    })
+
     it('encodes and decodes state_request message (Story 4.8)', () => {
       const original = createStateRequestMessage()
       const encoded = encodeAnnotationMessage(original)
@@ -504,6 +554,14 @@ describe('annotation message types', () => {
       const msg = createClearAllMessage()
       expect(msg.type).toBe(ANNOTATION_MESSAGE_TYPES.CLEAR_ALL)
       expect(msg.clearedBy).toBeDefined()
+      expect(msg.timestamp).toBeDefined()
+    })
+
+    it('ClearAllUndoMessage has required fields (Story 5.4)', () => {
+      const msg = createClearAllUndoMessage()
+      expect(msg.type).toBe(ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO)
+      expect(msg.restoredBy).toBeDefined()
+      expect(msg.strokes).toBeDefined()
       expect(msg.timestamp).toBeDefined()
     })
 

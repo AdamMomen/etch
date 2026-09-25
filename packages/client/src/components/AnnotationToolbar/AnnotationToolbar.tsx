@@ -19,17 +19,6 @@ import {
   TooltipProvider,
 } from '@/components/ui/tooltip'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -80,6 +69,8 @@ const KEYBOARD_SHORTCUTS = [
 interface AnnotationToolbarProps {
   /** Whether screen share is currently active */
   isScreenShareActive: boolean
+  /** Called when the host clicks Clear All (broadcasts + undo toast, Story 5.4) */
+  onClearAll: () => void
   /** Optional className for the toolbar container */
   className?: string
 }
@@ -100,12 +91,12 @@ interface AnnotationToolbarProps {
  */
 export function AnnotationToolbar({
   isScreenShareActive,
+  onClearAll,
   className,
 }: AnnotationToolbarProps) {
   // Get active tool from store
   const activeTool = useAnnotationStore((state) => state.activeTool)
   const setActiveTool = useAnnotationStore((state) => state.setActiveTool)
-  const clearAll = useAnnotationStore((state) => state.clearAll)
 
   // Get local participant to check role
   const localParticipant = useRoomStore((state) => state.localParticipant)
@@ -120,10 +111,10 @@ export function AnnotationToolbar({
     setActiveTool(tool)
   }
 
-  // Handler for Clear All confirmation
-  const handleClearAllConfirm = () => {
+  // Handler for Clear All click (Undo toast replaces confirmation, Story 5.4)
+  const handleClearAllClick = () => {
     if (!isScreenShareActive || !isHost) return
-    clearAll()
+    onClearAll()
   }
 
   // Get stroke count for confirmation message
@@ -223,59 +214,32 @@ export function AnnotationToolbar({
               data-testid="toolbar-separator"
             />
 
-            {/* Clear All button with confirmation - host only (AC-4.6.3) */}
-            <AlertDialog>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <span
-                    tabIndex={0}
-                    className="inline-flex"
-                    data-testid="tool-button-clear-all-wrapper"
+            {/* Clear All button - host only (AC-4.6.3, Story 5.4) */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  tabIndex={0}
+                  className="inline-flex"
+                  data-testid="tool-button-clear-all-wrapper"
+                >
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleClearAllClick}
+                    disabled={
+                      !isScreenShareActive || !canAnnotate || strokeCount === 0
+                    }
+                    aria-label="Clear all annotations (0)"
+                    className="relative h-10 w-10 flex-col gap-0.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    data-testid="tool-button-clear-all"
                   >
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        disabled={
-                          !isScreenShareActive ||
-                          !canAnnotate ||
-                          strokeCount === 0
-                        }
-                        aria-label="Clear all annotations (0)"
-                        className="relative h-10 w-10 flex-col gap-0.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                        data-testid="tool-button-clear-all"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="text-[10px] text-muted-foreground">
-                          0
-                        </span>
-                      </Button>
-                    </AlertDialogTrigger>
-                  </span>
-                </TooltipTrigger>
-                <TooltipContent side="bottom">Clear All (0)</TooltipContent>
-              </Tooltip>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Clear all annotations?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete {strokeCount} annotation
-                    {strokeCount !== 1 ? 's' : ''} from the canvas. This action
-                    cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction
-                    onClick={handleClearAllConfirm}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    data-testid="clear-all-confirm"
-                  >
-                    Clear All
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                    <Trash2 className="h-4 w-4" />
+                    <span className="text-[10px] text-muted-foreground">0</span>
+                  </Button>
+                </span>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Clear All (0)</TooltipContent>
+            </Tooltip>
           </>
         )}
 

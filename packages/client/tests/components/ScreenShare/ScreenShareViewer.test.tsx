@@ -24,14 +24,17 @@ vi.mock('livekit-client', async () => {
 })
 
 // Create a mock track
-const createMockTrack = (overrides: Partial<RemoteVideoTrack> = {}): RemoteVideoTrack => ({
-  kind: Track.Kind.Video as unknown as RemoteVideoTrack['kind'],
-  source: Track.Source.ScreenShare as unknown as RemoteVideoTrack['source'],
-  sid: 'track-123',
-  attach: vi.fn(),
-  detach: vi.fn(),
-  ...overrides,
-} as unknown as RemoteVideoTrack)
+const createMockTrack = (
+  overrides: Partial<RemoteVideoTrack> = {}
+): RemoteVideoTrack =>
+  ({
+    kind: Track.Kind.Video as unknown as RemoteVideoTrack['kind'],
+    source: Track.Source.ScreenShare as unknown as RemoteVideoTrack['source'],
+    sid: 'track-123',
+    attach: vi.fn(),
+    detach: vi.fn(),
+    ...overrides,
+  }) as unknown as RemoteVideoTrack
 
 // Default sync props for testing (Story 4.11 - sync moved to MeetingRoom level)
 const defaultSyncProps = {
@@ -40,6 +43,7 @@ const defaultSyncProps = {
   publishStrokeUpdate: vi.fn(),
   publishDelete: vi.fn(),
   publishClearAll: vi.fn(),
+  publishClearAllUndo: vi.fn(),
 }
 
 describe('ScreenShareViewer', () => {
@@ -54,7 +58,12 @@ describe('ScreenShareViewer', () => {
   describe('rendering', () => {
     it('should return null when track is null (AC-cleanup)', () => {
       const { container } = render(
-        <ScreenShareViewer track={null} sharerName="Test User" room={null} {...defaultSyncProps} />
+        <ScreenShareViewer
+          track={null}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
       )
 
       expect(container.firstChild).toBeNull()
@@ -63,7 +72,14 @@ describe('ScreenShareViewer', () => {
     it('should render when track is provided (AC-3.2.1)', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       expect(screen.getByTestId('screen-share-viewer')).toBeInTheDocument()
     })
@@ -71,7 +87,14 @@ describe('ScreenShareViewer', () => {
     it('should render video element for screen share (AC-3.2.1)', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       const video = screen.getByTestId('screen-share-video')
       expect(video).toBeInTheDocument()
@@ -81,7 +104,14 @@ describe('ScreenShareViewer', () => {
     it('should apply object-contain class for aspect ratio preservation (AC-3.2.1)', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       const video = screen.getByTestId('screen-share-video')
       expect(video).toHaveClass('object-contain')
@@ -90,7 +120,14 @@ describe('ScreenShareViewer', () => {
     it('should apply 16px padding via p-4 class (AC-3.2.2)', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       const container = screen.getByTestId('screen-share-viewer')
       expect(container).toHaveClass('p-4')
@@ -99,7 +136,14 @@ describe('ScreenShareViewer', () => {
     it('should apply dark background via bg-background class (AC-3.2.2)', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       const container = screen.getByTestId('screen-share-viewer')
       expect(container).toHaveClass('bg-background')
@@ -127,7 +171,14 @@ describe('ScreenShareViewer', () => {
     it('should display sharer name in indicator', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="John Doe" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="John Doe"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       expect(screen.getByText('John Doe is sharing')).toBeInTheDocument()
     })
@@ -135,7 +186,14 @@ describe('ScreenShareViewer', () => {
     it('should display fallback text when sharerName is null', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName={null} room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName={null}
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       expect(screen.getByText('Someone is sharing')).toBeInTheDocument()
     })
@@ -143,7 +201,14 @@ describe('ScreenShareViewer', () => {
     it('should position indicator in top-left corner', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       const indicator = screen.getByTestId('sharer-indicator')
       expect(indicator).toHaveClass('left-4', 'top-4')
@@ -152,7 +217,14 @@ describe('ScreenShareViewer', () => {
     it('should render MonitorUp icon in indicator', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       const indicator = screen.getByTestId('sharer-indicator')
       // MonitorUp icon should be rendered as SVG
@@ -165,7 +237,14 @@ describe('ScreenShareViewer', () => {
     it('should attach track to video element on mount', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       expect(mockTrack.attach).toHaveBeenCalled()
     })
@@ -174,7 +253,12 @@ describe('ScreenShareViewer', () => {
       const mockTrack = createMockTrack()
 
       const { unmount } = render(
-        <ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
       )
 
       unmount()
@@ -187,12 +271,24 @@ describe('ScreenShareViewer', () => {
       const mockTrack2 = createMockTrack({ sid: 'track-2' })
 
       const { rerender } = render(
-        <ScreenShareViewer track={mockTrack1} sharerName="User 1" room={null} {...defaultSyncProps} />
+        <ScreenShareViewer
+          track={mockTrack1}
+          sharerName="User 1"
+          room={null}
+          {...defaultSyncProps}
+        />
       )
 
       expect(mockTrack1.attach).toHaveBeenCalledTimes(1)
 
-      rerender(<ScreenShareViewer track={mockTrack2} sharerName="User 2" room={null} {...defaultSyncProps} />)
+      rerender(
+        <ScreenShareViewer
+          track={mockTrack2}
+          sharerName="User 2"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       // Should detach old track and attach new one
       expect(mockTrack1.detach).toHaveBeenCalled()
@@ -204,7 +300,14 @@ describe('ScreenShareViewer', () => {
     it('should have autoPlay attribute', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       const video = screen.getByTestId('screen-share-video') as HTMLVideoElement
       expect(video.autoplay).toBe(true)
@@ -213,7 +316,14 @@ describe('ScreenShareViewer', () => {
     it('should have playsInline attribute', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       const video = screen.getByTestId('screen-share-video') as HTMLVideoElement
       expect(video.playsInline).toBe(true)
@@ -222,7 +332,14 @@ describe('ScreenShareViewer', () => {
     it('should be muted', () => {
       const mockTrack = createMockTrack()
 
-      render(<ScreenShareViewer track={mockTrack} sharerName="Test User" room={null} {...defaultSyncProps} />)
+      render(
+        <ScreenShareViewer
+          track={mockTrack}
+          sharerName="Test User"
+          room={null}
+          {...defaultSyncProps}
+        />
+      )
 
       const video = screen.getByTestId('screen-share-video') as HTMLVideoElement
       expect(video.muted).toBe(true)
