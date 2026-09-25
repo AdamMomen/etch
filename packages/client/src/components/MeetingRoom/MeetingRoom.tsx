@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { getCurrentWindow } from '@tauri-apps/api/window'
@@ -16,6 +16,7 @@ import {
 import { useDevices } from '@/hooks/useDevices'
 import { useDeviceDisconnection } from '@/hooks/useDeviceDisconnection'
 import { useAnnotationSync } from '@/hooks/useAnnotationSync'
+import { useParticipants } from '@/hooks/useParticipants'
 import { validateRoomExists, joinRoom } from '@/lib/api'
 import { Sidebar } from './Sidebar'
 import { MeetingControlsBar } from './MeetingControlsBar'
@@ -183,26 +184,8 @@ export function MeetingRoom() {
   // Get resetVolumes from volumeStore for cleanup on leave
   const resetVolumes = useVolumeStore((state) => state.resetVolumes)
 
-  // Check if local participant is the host
-  const isHost = localParticipant?.role === 'host'
-
-  // Combine local and remote participants for display
-  const participants = useMemo(() => {
-    const all = []
-    if (localParticipant) {
-      all.push(localParticipant)
-    }
-    all.push(...remoteParticipants)
-
-    // Sort: host first, then by join order (local first among same role)
-    return all.sort((a, b) => {
-      if (a.role === 'host' && b.role !== 'host') return -1
-      if (b.role === 'host' && a.role !== 'host') return 1
-      if (a.isLocal && !b.isLocal) return -1
-      if (b.isLocal && !a.isLocal) return 1
-      return 0
-    })
-  }, [localParticipant, remoteParticipants])
+  // Participants sorted for display (host first, local first) + host check
+  const { participants, isHost } = useParticipants()
 
   // Transfer host role to next participant before leaving (if host and others remain)
   const transferHostRole = useCallback(async () => {

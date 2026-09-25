@@ -1,5 +1,4 @@
 mod screen_share;
-mod floating_windows;
 
 use screen_share::{CoreState, SharingTrayState, WindowBoundsState};
 
