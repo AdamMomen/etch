@@ -804,7 +804,7 @@ describe('useAnnotations', () => {
       expect(sync.publishClearAllUndo).toHaveBeenCalledWith(cleared)
     })
 
-    it('does not show toast when there were no strokes to clear', () => {
+    it('is a no-op when there are no strokes to clear', () => {
       const sync = createSync()
 
       const { result } = renderHook(() => useAnnotations({ sync }))
@@ -813,7 +813,7 @@ describe('useAnnotations', () => {
         result.current.clearAll()
       })
 
-      expect(sync.publishClearAll).toHaveBeenCalledTimes(1)
+      expect(sync.publishClearAll).not.toHaveBeenCalled()
       expect(toast.success).not.toHaveBeenCalled()
     })
   })

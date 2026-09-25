@@ -431,9 +431,9 @@ export function useAnnotations(options: UseAnnotationsOptions = {}) {
    */
   const clearAll = useCallback((): void => {
     const cleared = useAnnotationStore.getState().strokes
+    if (cleared.length === 0) return
     clearAllStrokes()
     sync?.publishClearAll()
-    if (cleared.length === 0) return
     toast.success('All annotations cleared', {
       duration: 5000,
       action: {
