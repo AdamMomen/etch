@@ -36,6 +36,7 @@ describe('useAnnotations', () => {
         isConnecting: false,
         isConnected: true,
         connectionError: null,
+        annotationsEnabled: true,
       })
 
       useScreenShareStore.setState({
@@ -184,6 +185,33 @@ describe('useAnnotations', () => {
 
       const { result } = renderHook(() => useAnnotations())
       expect(result.current.canAnnotate).toBe(false)
+    })
+
+    it('returns false for annotator when annotationsEnabled is false', () => {
+      act(() => {
+        useRoomStore.setState({ annotationsEnabled: false })
+      })
+
+      const { result } = renderHook(() => useAnnotations())
+      expect(result.current.canAnnotate).toBe(false)
+    })
+
+    it('returns true for host even when annotationsEnabled is false', () => {
+      act(() => {
+        useRoomStore.setState({
+          annotationsEnabled: false,
+          localParticipant: {
+            id: 'participant-123',
+            name: 'Test User',
+            role: 'host',
+            color: PARTICIPANT_COLORS[0],
+            isLocal: true,
+          },
+        })
+      })
+
+      const { result } = renderHook(() => useAnnotations())
+      expect(result.current.canAnnotate).toBe(true)
     })
 
     it('returns false when no local participant', () => {
@@ -637,11 +665,15 @@ describe('useAnnotations', () => {
       // Verify pen strokes are unchanged
       expect(result.current.strokes[0].id).toBe(penStroke1.id)
       expect(result.current.strokes[0].tool).toBe('pen')
-      expect(result.current.strokes[0].points).toHaveLength(penStroke1.points.length)
+      expect(result.current.strokes[0].points).toHaveLength(
+        penStroke1.points.length
+      )
 
       expect(result.current.strokes[1].id).toBe(penStroke2.id)
       expect(result.current.strokes[1].tool).toBe('pen')
-      expect(result.current.strokes[1].points).toHaveLength(penStroke2.points.length)
+      expect(result.current.strokes[1].points).toHaveLength(
+        penStroke2.points.length
+      )
 
       // Verify highlighter stroke was added correctly
       expect(result.current.strokes[2].tool).toBe('highlighter')
@@ -730,7 +762,12 @@ describe('useAnnotations', () => {
         const { result } = renderHook(() => useAnnotations())
 
         // Stroke from another participant
-        const otherStroke = createTestStroke('stroke-1', 'other-participant', 0.5, 0.5)
+        const otherStroke = createTestStroke(
+          'stroke-1',
+          'other-participant',
+          0.5,
+          0.5
+        )
         expect(result.current.canEraseStroke(otherStroke)).toBe(true)
       })
 
@@ -750,7 +787,12 @@ describe('useAnnotations', () => {
         const { result } = renderHook(() => useAnnotations())
 
         // Stroke from another participant
-        const otherStroke = createTestStroke('stroke-1', 'other-participant', 0.5, 0.5)
+        const otherStroke = createTestStroke(
+          'stroke-1',
+          'other-participant',
+          0.5,
+          0.5
+        )
         expect(result.current.canEraseStroke(otherStroke)).toBe(true)
       })
 
@@ -758,7 +800,12 @@ describe('useAnnotations', () => {
         const { result } = renderHook(() => useAnnotations())
 
         // Stroke from the current annotator
-        const ownStroke = createTestStroke('stroke-1', 'participant-123', 0.5, 0.5)
+        const ownStroke = createTestStroke(
+          'stroke-1',
+          'participant-123',
+          0.5,
+          0.5
+        )
         expect(result.current.canEraseStroke(ownStroke)).toBe(true)
       })
 
@@ -766,7 +813,12 @@ describe('useAnnotations', () => {
         const { result } = renderHook(() => useAnnotations())
 
         // Stroke from another participant
-        const otherStroke = createTestStroke('stroke-1', 'other-participant', 0.5, 0.5)
+        const otherStroke = createTestStroke(
+          'stroke-1',
+          'other-participant',
+          0.5,
+          0.5
+        )
         expect(result.current.canEraseStroke(otherStroke)).toBe(false)
       })
 
@@ -868,8 +920,18 @@ describe('useAnnotations', () => {
 
       it('erases topmost stroke when multiple overlap (AC-4.5.4)', () => {
         // Add two overlapping strokes at (0.5, 0.5)
-        const bottomStroke = createTestStroke('stroke-bottom', 'participant-123', 0.5, 0.5)
-        const topStroke = createTestStroke('stroke-top', 'participant-123', 0.5, 0.5)
+        const bottomStroke = createTestStroke(
+          'stroke-bottom',
+          'participant-123',
+          0.5,
+          0.5
+        )
+        const topStroke = createTestStroke(
+          'stroke-top',
+          'participant-123',
+          0.5,
+          0.5
+        )
 
         act(() => {
           useAnnotationStore.getState().addStroke(bottomStroke)
@@ -892,7 +954,12 @@ describe('useAnnotations', () => {
 
       it('does not erase stroke user lacks permission for (AC-4.5.5)', () => {
         // Add a stroke from another participant
-        const otherStroke = createTestStroke('stroke-1', 'other-participant', 0.5, 0.5)
+        const otherStroke = createTestStroke(
+          'stroke-1',
+          'other-participant',
+          0.5,
+          0.5
+        )
         act(() => {
           useAnnotationStore.getState().addStroke(otherStroke)
           useAnnotationStore.getState().setActiveTool('eraser')
@@ -972,7 +1039,12 @@ describe('useAnnotations', () => {
 
       it('does not set hoveredStrokeId for strokes user cannot erase', () => {
         // Add a stroke from another participant
-        const otherStroke = createTestStroke('stroke-1', 'other-participant', 0.5, 0.5)
+        const otherStroke = createTestStroke(
+          'stroke-1',
+          'other-participant',
+          0.5,
+          0.5
+        )
         act(() => {
           useAnnotationStore.getState().addStroke(otherStroke)
           useAnnotationStore.getState().setActiveTool('eraser')

@@ -3,7 +3,10 @@ import { useAnnotationStore, type Tool } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { useScreenShareStore } from '@/stores/screenShareStore'
 import { findTopmostStrokeAtPoint } from '@/lib/canvas'
-import { PARTICIPANT_COLORS } from '@etch/shared'
+import {
+  PARTICIPANT_COLORS,
+  canAnnotate as sharedCanAnnotate,
+} from '@etch/shared'
 import type { Point, Stroke } from '@etch/shared'
 
 /**
@@ -92,10 +95,11 @@ export function useAnnotations(options: UseAnnotationsOptions = {}) {
   const myColor = localParticipant?.color ?? PARTICIPANT_COLORS[0]
 
   // Determine if local user can annotate
-  // Can annotate if: screen is being shared AND user has annotator/host/sharer role
+  // Can annotate if: screen is being shared AND role permits (Story 5.3)
   const role = localParticipant?.role
+  const annotationsEnabled = useRoomStore((state) => state.annotationsEnabled)
   const canAnnotate =
-    isSharing && (role === 'annotator' || role === 'host' || role === 'sharer')
+    isSharing && !!role && sharedCanAnnotate(role, annotationsEnabled)
 
   /**
    * Generates a unique stroke ID using crypto.randomUUID().

@@ -333,7 +333,9 @@ describe('AnnotationCanvas', () => {
       )
 
       const container = screen.getByTestId('annotation-canvas-container')
-      expect(container.style.cursor).toBe('crosshair')
+      // Custom pencil cursor SVG with crosshair fallback
+      expect(container.style.cursor).toContain('data:image/svg+xml')
+      expect(container.style.cursor).toMatch(/, crosshair$/)
     })
 
     it('should have crosshair cursor when canAnnotate is true and tool is highlighter', () => {
@@ -349,7 +351,9 @@ describe('AnnotationCanvas', () => {
       )
 
       const container = screen.getByTestId('annotation-canvas-container')
-      expect(container.style.cursor).toBe('crosshair')
+      // Custom pencil cursor SVG with crosshair fallback
+      expect(container.style.cursor).toContain('data:image/svg+xml')
+      expect(container.style.cursor).toMatch(/, crosshair$/)
     })
 
     it('should have default cursor when canAnnotate is false', () => {
@@ -382,7 +386,9 @@ describe('AnnotationCanvas', () => {
 
       const container = screen.getByTestId('annotation-canvas-container')
       // Eraser shows crosshair by default, pointer when hovering over erasable stroke
-      expect(container.style.cursor).toBe('crosshair')
+      // Custom pencil cursor SVG with crosshair fallback
+      expect(container.style.cursor).toContain('data:image/svg+xml')
+      expect(container.style.cursor).toMatch(/, crosshair$/)
     })
 
     it('should have pointer cursor when eraser hovers over a stroke (AC-4.5.7)', () => {
@@ -665,6 +671,40 @@ describe('Test helpers', () => {
       expect(stroke.id).toBe('custom-id')
       expect(stroke.tool).toBe('highlighter')
       expect(stroke.color).toBe('#00ff00')
+    })
+  })
+
+  describe('No-permission overlay (Story 5.3)', () => {
+    it('renders annotation-no-permission-overlay when canAnnotate is false', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={false}
+        />
+      )
+
+      expect(
+        screen.getByTestId('annotation-no-permission-overlay')
+      ).toBeInTheDocument()
+    })
+
+    it('does not render annotation-no-permission-overlay when canAnnotate is true', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={true}
+        />
+      )
+
+      expect(
+        screen.queryByTestId('annotation-no-permission-overlay')
+      ).not.toBeInTheDocument()
     })
   })
 

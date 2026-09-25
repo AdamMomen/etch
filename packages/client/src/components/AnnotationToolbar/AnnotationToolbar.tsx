@@ -10,6 +10,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useAnnotationStore, type Tool } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
+import { useCanAnnotate } from '@/hooks/useCanAnnotate'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -110,9 +111,12 @@ export function AnnotationToolbar({
   const localParticipant = useRoomStore((state) => state.localParticipant)
   const isHost = localParticipant?.role === 'host'
 
+  // Whether the local user's role permits annotating (Story 5.3)
+  const canAnnotate = useCanAnnotate()
+
   // Handler for tool button clicks
   const handleToolClick = (tool: Tool) => {
-    if (!isScreenShareActive) return
+    if (!isScreenShareActive || !canAnnotate) return
     setActiveTool(tool)
   }
 
@@ -166,6 +170,7 @@ export function AnnotationToolbar({
           className
         )}
         data-testid="annotation-toolbar"
+        aria-disabled={!canAnnotate}
       >
         {/* Tool buttons */}
         {TOOLS.map(({ tool, icon: Icon, label, shortcut }) => {
@@ -174,27 +179,35 @@ export function AnnotationToolbar({
           return (
             <Tooltip key={tool}>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleToolClick(tool)}
-                  disabled={!isScreenShareActive}
-                  aria-pressed={isActive}
-                  aria-label={`${label} tool (${shortcut})`}
-                  className={cn(
-                    'relative h-10 w-10 flex-col gap-0.5',
-                    isActive && 'bg-accent text-accent-foreground'
-                  )}
-                  data-testid={`tool-button-${tool}`}
+                <span
+                  tabIndex={0}
+                  className="inline-flex"
+                  data-testid={`tool-button-${tool}-wrapper`}
                 >
-                  <Icon className="h-4 w-4" />
-                  <span className="text-[10px] text-muted-foreground">
-                    {shortcut.split(' ')[0]}
-                  </span>
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleToolClick(tool)}
+                    disabled={!isScreenShareActive || !canAnnotate}
+                    aria-pressed={isActive}
+                    aria-label={`${label} tool (${shortcut})`}
+                    className={cn(
+                      'relative h-10 w-10 flex-col gap-0.5',
+                      isActive && 'bg-accent text-accent-foreground'
+                    )}
+                    data-testid={`tool-button-${tool}`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-[10px] text-muted-foreground">
+                      {shortcut.split(' ')[0]}
+                    </span>
+                  </Button>
+                </span>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                {label} ({shortcut})
+                {canAnnotate
+                  ? `${label} (${shortcut})`
+                  : "You don't have permission to annotate"}
               </TooltipContent>
             </Tooltip>
           )
@@ -214,21 +227,31 @@ export function AnnotationToolbar({
             <AlertDialog>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      disabled={!isScreenShareActive || strokeCount === 0}
-                      aria-label="Clear all annotations (0)"
-                      className="relative h-10 w-10 flex-col gap-0.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      data-testid="tool-button-clear-all"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span className="text-[10px] text-muted-foreground">
-                        0
-                      </span>
-                    </Button>
-                  </AlertDialogTrigger>
+                  <span
+                    tabIndex={0}
+                    className="inline-flex"
+                    data-testid="tool-button-clear-all-wrapper"
+                  >
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        disabled={
+                          !isScreenShareActive ||
+                          !canAnnotate ||
+                          strokeCount === 0
+                        }
+                        aria-label="Clear all annotations (0)"
+                        className="relative h-10 w-10 flex-col gap-0.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        data-testid="tool-button-clear-all"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                        <span className="text-[10px] text-muted-foreground">
+                          0
+                        </span>
+                      </Button>
+                    </AlertDialogTrigger>
+                  </span>
                 </TooltipTrigger>
                 <TooltipContent side="bottom">Clear All (0)</TooltipContent>
               </Tooltip>

@@ -7,6 +7,12 @@ import {
 } from '@/utils/coordinates'
 import type { Tool } from '@/stores/annotationStore'
 import type { SyncState } from '@/hooks/useAnnotationSync'
+import {
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+  TooltipProvider,
+} from '@/components/ui/tooltip'
 
 /**
  * Props for the AnnotationCanvas component.
@@ -561,6 +567,28 @@ export function AnnotationCanvas({
       onPointerUp={handlePointerUp}
       onPointerLeave={handlePointerLeave}
     >
+      {/* Permission overlay for viewers (Story 5.3) */}
+      {!canAnnotate && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  pointerEvents: 'auto',
+                  cursor: 'default',
+                }}
+                data-testid="annotation-no-permission-overlay"
+              />
+            </TooltipTrigger>
+            <TooltipContent>
+              You don&apos;t have permission to annotate
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
+
       <canvas
         ref={canvasRef}
         style={{

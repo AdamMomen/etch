@@ -14,6 +14,7 @@ import { useRoomStore } from '@/stores/roomStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { parseParticipantMetadata } from '@/utils/participantMetadata'
 import { validateRoomExists, createRoom } from '@/lib/api'
+import { canAnnotate as sharedCanAnnotate } from '@etch/shared'
 import type { Participant } from '@etch/shared'
 
 // Role transfer message type
@@ -201,6 +202,24 @@ export function useLiveKit({
       // Skip screen share participants
       if (metadata.isScreenShare) {
         return
+      }
+
+      // Notify on annotation permission changes for the local user (Story 5.3)
+      if (participant.identity === room.localParticipant.identity) {
+        const { localParticipant, annotationsEnabled } = useRoomStore.getState()
+        const prevRole = localParticipant?.role
+        const prevCanAnnotate =
+          !!prevRole && sharedCanAnnotate(prevRole, annotationsEnabled)
+        const nextCanAnnotate = sharedCanAnnotate(
+          metadata.role,
+          annotationsEnabled
+        )
+
+        if (!prevCanAnnotate && nextCanAnnotate) {
+          toast.success('You can now annotate')
+        } else if (prevCanAnnotate && !nextCanAnnotate) {
+          toast.info('You can no longer annotate')
+        }
       }
 
       // Update participant with new role and color from metadata

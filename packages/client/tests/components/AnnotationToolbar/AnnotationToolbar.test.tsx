@@ -27,6 +27,7 @@ describe('AnnotationToolbar', () => {
           isLocal: true,
         },
         remoteParticipants: [],
+        annotationsEnabled: true,
       })
     })
     vi.clearAllMocks()
@@ -126,9 +127,15 @@ describe('AnnotationToolbar', () => {
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
       // Other buttons should not have active class
-      expect(screen.getByTestId('tool-button-select')).not.toHaveClass('bg-accent')
-      expect(screen.getByTestId('tool-button-highlighter')).not.toHaveClass('bg-accent')
-      expect(screen.getByTestId('tool-button-eraser')).not.toHaveClass('bg-accent')
+      expect(screen.getByTestId('tool-button-select')).not.toHaveClass(
+        'bg-accent'
+      )
+      expect(screen.getByTestId('tool-button-highlighter')).not.toHaveClass(
+        'bg-accent'
+      )
+      expect(screen.getByTestId('tool-button-eraser')).not.toHaveClass(
+        'bg-accent'
+      )
     })
   })
 
@@ -170,7 +177,9 @@ describe('AnnotationToolbar', () => {
 
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
-      expect(screen.queryByTestId('tool-button-clear-all')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('tool-button-clear-all')
+      ).not.toBeInTheDocument()
     })
 
     it('hides Clear All button for viewer role', () => {
@@ -188,7 +197,9 @@ describe('AnnotationToolbar', () => {
 
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
-      expect(screen.queryByTestId('tool-button-clear-all')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('tool-button-clear-all')
+      ).not.toBeInTheDocument()
     })
 
     it('hides Clear All button for sharer role', () => {
@@ -206,7 +217,9 @@ describe('AnnotationToolbar', () => {
 
       render(<AnnotationToolbar isScreenShareActive={true} />)
 
-      expect(screen.queryByTestId('tool-button-clear-all')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('tool-button-clear-all')
+      ).not.toBeInTheDocument()
     })
   })
 
@@ -378,7 +391,10 @@ describe('AnnotationToolbar', () => {
               participantId: 'local-1',
               tool: 'pen',
               color: '#ff0000',
-              points: [{ x: 0, y: 0 }, { x: 1, y: 1 }],
+              points: [
+                { x: 0, y: 0 },
+                { x: 1, y: 1 },
+              ],
               createdAt: Date.now(),
               isComplete: true,
             },
@@ -391,8 +407,12 @@ describe('AnnotationToolbar', () => {
       fireEvent.click(screen.getByTestId('tool-button-clear-all'))
 
       // Dialog should appear
-      expect(await screen.findByText('Clear all annotations?')).toBeInTheDocument()
-      expect(screen.getByText(/This will permanently delete 1 annotation/)).toBeInTheDocument()
+      expect(
+        await screen.findByText('Clear all annotations?')
+      ).toBeInTheDocument()
+      expect(
+        screen.getByText(/This will permanently delete 1 annotation/)
+      ).toBeInTheDocument()
     })
 
     it('clears strokes when confirmation is confirmed', async () => {
@@ -413,7 +433,10 @@ describe('AnnotationToolbar', () => {
               participantId: 'local-1',
               tool: 'pen',
               color: '#ff0000',
-              points: [{ x: 0, y: 0 }, { x: 1, y: 1 }],
+              points: [
+                { x: 0, y: 0 },
+                { x: 1, y: 1 },
+              ],
               createdAt: Date.now(),
               isComplete: true,
             },
@@ -450,7 +473,10 @@ describe('AnnotationToolbar', () => {
               participantId: 'local-1',
               tool: 'pen',
               color: '#ff0000',
-              points: [{ x: 0, y: 0 }, { x: 1, y: 1 }],
+              points: [
+                { x: 0, y: 0 },
+                { x: 1, y: 1 },
+              ],
               createdAt: Date.now(),
               isComplete: true,
             },
@@ -561,7 +587,9 @@ describe('AnnotationToolbar', () => {
 
       fireEvent.click(screen.getByTestId('tool-button-clear-all'))
 
-      expect(await screen.findByText(/This will permanently delete 2 annotations/)).toBeInTheDocument()
+      expect(
+        await screen.findByText(/This will permanently delete 2 annotations/)
+      ).toBeInTheDocument()
     })
   })
 
@@ -728,7 +756,9 @@ describe('AnnotationToolbar', () => {
       expect(screen.getByText('Pen tool')).toBeInTheDocument()
       expect(screen.getByText('Highlighter tool')).toBeInTheDocument()
       expect(screen.getByText('Eraser tool')).toBeInTheDocument()
-      expect(screen.getByText('Clear all annotations (host only)')).toBeInTheDocument()
+      expect(
+        screen.getByText('Clear all annotations (host only)')
+      ).toBeInTheDocument()
       expect(screen.getByText('Show keyboard shortcuts')).toBeInTheDocument()
     })
 
@@ -780,6 +810,128 @@ describe('AnnotationToolbar', () => {
   })
 
   // ─────────────────────────────────────────────────────────
+  // PERMISSION TESTS (Story 5.3)
+  // ─────────────────────────────────────────────────────────
+
+  describe('annotation permissions (Story 5.3)', () => {
+    it('disables tool buttons and sets aria-disabled for viewer role', () => {
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Viewer',
+            role: 'viewer',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+      })
+
+      render(<AnnotationToolbar isScreenShareActive={true} />)
+
+      const toolbar = screen.getByTestId('annotation-toolbar')
+      expect(toolbar).toHaveAttribute('aria-disabled', 'true')
+      expect(screen.getByTestId('tool-button-select')).toBeDisabled()
+      expect(screen.getByTestId('tool-button-pen')).toBeDisabled()
+      expect(screen.getByTestId('tool-button-highlighter')).toBeDisabled()
+      expect(screen.getByTestId('tool-button-eraser')).toBeDisabled()
+    })
+
+    it('does not switch tools on click for viewer role', () => {
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Viewer',
+            role: 'viewer',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+        useAnnotationStore.getState().setActiveTool('pen')
+      })
+
+      render(<AnnotationToolbar isScreenShareActive={true} />)
+
+      fireEvent.click(screen.getByTestId('tool-button-highlighter'))
+
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+    })
+
+    it('disables tool buttons for annotator when annotationsEnabled is false', () => {
+      act(() => {
+        useRoomStore.setState({ annotationsEnabled: false })
+      })
+
+      render(<AnnotationToolbar isScreenShareActive={true} />)
+
+      expect(screen.getByTestId('annotation-toolbar')).toHaveAttribute(
+        'aria-disabled',
+        'true'
+      )
+      expect(screen.getByTestId('tool-button-pen')).toBeDisabled()
+    })
+
+    it('enables tool buttons for annotator when annotations are enabled', () => {
+      render(<AnnotationToolbar isScreenShareActive={true} />)
+
+      const toolbar = screen.getByTestId('annotation-toolbar')
+      expect(toolbar).toHaveAttribute('aria-disabled', 'false')
+      expect(screen.getByTestId('tool-button-select')).toBeEnabled()
+      expect(screen.getByTestId('tool-button-pen')).toBeEnabled()
+      expect(screen.getByTestId('tool-button-highlighter')).toBeEnabled()
+      expect(screen.getByTestId('tool-button-eraser')).toBeEnabled()
+    })
+
+    it('enables tool buttons for host even when annotationsEnabled is false', () => {
+      act(() => {
+        useRoomStore.setState({
+          annotationsEnabled: false,
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Host',
+            role: 'host',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+      })
+
+      render(<AnnotationToolbar isScreenShareActive={true} />)
+
+      expect(screen.getByTestId('annotation-toolbar')).toHaveAttribute(
+        'aria-disabled',
+        'false'
+      )
+      expect(screen.getByTestId('tool-button-pen')).toBeEnabled()
+    })
+
+    it('shows permission tooltip for tool buttons when user cannot annotate', async () => {
+      const user = userEvent.setup()
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Viewer',
+            role: 'viewer',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+      })
+
+      render(<AnnotationToolbar isScreenShareActive={true} />)
+
+      // Hover the wrapper span - disabled buttons don't receive pointer events
+      const penWrapper = screen.getByTestId('tool-button-pen-wrapper')
+      await user.hover(penWrapper)
+
+      const tooltip = await screen.findByRole('tooltip', { hidden: true })
+      expect(tooltip).toHaveTextContent("You don't have permission to annotate")
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
   // EDGE CASE TESTS
   // ─────────────────────────────────────────────────────────
 
@@ -795,11 +947,18 @@ describe('AnnotationToolbar', () => {
 
       // Should render without Clear All (null is not host)
       expect(screen.getByTestId('annotation-toolbar')).toBeInTheDocument()
-      expect(screen.queryByTestId('tool-button-clear-all')).not.toBeInTheDocument()
+      expect(
+        screen.queryByTestId('tool-button-clear-all')
+      ).not.toBeInTheDocument()
     })
 
     it('applies custom className', () => {
-      render(<AnnotationToolbar isScreenShareActive={true} className="custom-class" />)
+      render(
+        <AnnotationToolbar
+          isScreenShareActive={true}
+          className="custom-class"
+        />
+      )
 
       const toolbar = screen.getByTestId('annotation-toolbar')
       expect(toolbar).toHaveClass('custom-class')
