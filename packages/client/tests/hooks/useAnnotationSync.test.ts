@@ -10,6 +10,7 @@ import {
   ANNOTATION_TOPIC,
   encodeAnnotationMessage,
   decodeAnnotationMessage,
+  isClearAllUndoMessage,
   type StateRequestMessage,
   type StateSnapshotMessage,
   type Stroke,
@@ -534,6 +535,9 @@ describe('useAnnotationSync (Story 4.8 - Late-Joiner Sync)', () => {
       const publishCall = (mockRoom.localParticipant.publishData as any).mock
         .calls[0]
       const decoded = decodeAnnotationMessage(publishCall[0])
+      if (decoded === null || !isClearAllUndoMessage(decoded)) {
+        throw new Error('expected clear_all_undo message')
+      }
       expect(decoded.type).toBe(ANNOTATION_MESSAGE_TYPES.CLEAR_ALL_UNDO)
       expect(decoded.restoredBy).toBe('local-participant-id')
       expect(decoded.strokes).toEqual(strokes)
