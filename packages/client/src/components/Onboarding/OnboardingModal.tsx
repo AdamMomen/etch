@@ -32,7 +32,8 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
   const [step, setStep] = useState<Step>('welcome')
   const [serverType, setServerType] = useState<ServerType | null>(null)
   const [serverUrl, setServerUrl] = useState('')
-  const [permissionState, setPermissionState] = useState<PermissionState | null>(null)
+  const [permissionState, setPermissionState] =
+    useState<PermissionState | null>(null)
   const [coreReady, setCoreReady] = useState(false)
   const [requestingPermission, setRequestingPermission] = useState(false)
 
@@ -143,7 +144,7 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
             <DialogHeader>
               <DialogTitle className="text-2xl">Welcome to Etch</DialogTitle>
               <DialogDescription>
-                Let's get you set up in just a few steps.
+                Let&apos;s get you set up in just a few steps.
               </DialogDescription>
             </DialogHeader>
 
@@ -220,8 +221,8 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
 
               {!isScreenRecordingGranted && coreReady && (
                 <p className="text-xs text-muted-foreground">
-                  Clicking Grant will open System Settings. Enable Etch in Privacy
-                  & Security {'>'} Screen Recording, then return here.
+                  Clicking Grant will open System Settings. Enable Etch in
+                  Privacy & Security {'>'} Screen Recording, then return here.
                 </p>
               )}
 
@@ -230,8 +231,9 @@ export function OnboardingModal({ open, onComplete }: OnboardingModalProps) {
                   <div className="flex items-start gap-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
                     <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
                     <p>
-                      Permission denied. Please enable Screen Recording in System
-                      Settings {'>'} Privacy & Security {'>'} Screen Recording.
+                      Permission denied. Please enable Screen Recording in
+                      System Settings {'>'} Privacy & Security {'>'} Screen
+                      Recording.
                     </p>
                   </div>
                   <Button

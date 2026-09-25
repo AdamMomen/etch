@@ -30,7 +30,8 @@ export function HomeScreen() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [isTauri, setIsTauri] = useState(false)
-  const { displayName, setDisplayName, hasCompletedOnboarding } = useSettingsStore()
+  const { displayName, setDisplayName, hasCompletedOnboarding } =
+    useSettingsStore()
   const { setCurrentRoom } = useRoomStore()
 
   // Detect Tauri and show onboarding if needed

@@ -37,7 +37,11 @@ app.use(
       // Allow requests with no origin (same-origin, curl, etc.)
       if (!origin) return origin
       // Allow if origin matches or starts with allowed origins
-      if (allowedOrigins.some(allowed => origin === allowed || origin.startsWith(allowed))) {
+      if (
+        allowedOrigins.some(
+          (allowed) => origin === allowed || origin.startsWith(allowed)
+        )
+      ) {
         return origin
       }
       // In development, allow all origins

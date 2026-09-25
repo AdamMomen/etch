@@ -74,7 +74,9 @@ export function SetupBanner() {
               Configuration Required
             </AlertDialogTitle>
             <AlertDialogDescription className="text-base">
-              {setupStatus.error || setupStatus.message || 'LiveKit is not configured.'}
+              {setupStatus.error ||
+                setupStatus.message ||
+                'LiveKit is not configured.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
 
@@ -93,7 +95,11 @@ export function SetupBanner() {
           </div>
 
           <AlertDialogFooter>
-            <Button onClick={handleAcknowledge} variant="outline" className="w-full">
+            <Button
+              onClick={handleAcknowledge}
+              variant="outline"
+              className="w-full"
+            >
               Dismiss
             </Button>
           </AlertDialogFooter>

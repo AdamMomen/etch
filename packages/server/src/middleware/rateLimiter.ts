@@ -19,14 +19,17 @@ interface RateLimitEntry {
 const store = new Map<string, RateLimitEntry>()
 
 // Cleanup old entries periodically (every 5 minutes)
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, entry] of store.entries()) {
-    if (entry.resetTime < now) {
-      store.delete(key)
+setInterval(
+  () => {
+    const now = Date.now()
+    for (const [key, entry] of store.entries()) {
+      if (entry.resetTime < now) {
+        store.delete(key)
+      }
     }
-  }
-}, 5 * 60 * 1000)
+  },
+  5 * 60 * 1000
+)
 
 /**
  * Extract client IP from request headers (handles proxies)
@@ -66,7 +69,11 @@ export function rateLimiter(options: RateLimitOptions) {
 
   return async (c: Context, next: Next) => {
     // Skip rate limiting in test environment (unless testing rate limiter itself)
-    if (process.env.NODE_ENV === 'test' && !c.req.header('x-forwarded-for') && !c.req.header('cf-connecting-ip')) {
+    if (
+      process.env.NODE_ENV === 'test' &&
+      !c.req.header('x-forwarded-for') &&
+      !c.req.header('cf-connecting-ip')
+    ) {
       await next()
       return
     }
