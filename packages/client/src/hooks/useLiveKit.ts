@@ -13,6 +13,10 @@ import { toast } from 'sonner'
 import { useRoomStore } from '@/stores/roomStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { parseParticipantMetadata } from '@/utils/participantMetadata'
+import {
+  isScreenShareParticipant,
+  getHumanRemoteParticipants,
+} from '@/lib/participants'
 import { validateRoomExists, createRoom } from '@/lib/api'
 import { canAnnotate as sharedCanAnnotate } from '@etch/shared'
 import type { Participant } from '@etch/shared'
@@ -109,10 +113,8 @@ export function useLiveKit({
     const handleParticipantConnected = (participant: RemoteParticipant) => {
       if (cancelled) return
 
-      // Check if this is a screen share participant (should not be shown in participant list)
-      const metadata = parseParticipantMetadata(participant.metadata || '')
-      if (metadata.isScreenShare) {
-        // Don't add screen share participants to the list - their tracks will still be processed
+      // Skip screen share companion participants - their tracks will still be processed
+      if (isScreenShareParticipant(participant)) {
         return
       }
 
@@ -124,10 +126,8 @@ export function useLiveKit({
     const handleParticipantDisconnected = (participant: RemoteParticipant) => {
       if (cancelled) return
 
-      // Check if this is a screen share participant (don't show toast for them)
-      const metadata = parseParticipantMetadata(participant.metadata || '')
-      if (metadata.isScreenShare) {
-        // Screen share participants were never added, so just ignore disconnect
+      // Screen share companions were never added, so ignore their disconnect
+      if (isScreenShareParticipant(participant)) {
         return
       }
 
@@ -175,8 +175,8 @@ export function useLiveKit({
       // Get all participant IDs that are currently speaking
       const speakingIds = new Set(speakers.map((s) => s.identity))
 
-      // Update all remote participants
-      room.remoteParticipants.forEach((participant) => {
+      // Update all remote participants (screen-share companions excluded)
+      getHumanRemoteParticipants(room).forEach((participant) => {
         const isSpeaking = speakingIds.has(participant.identity)
         updateParticipant(participant.identity, { isSpeaking })
       })
@@ -196,13 +196,13 @@ export function useLiveKit({
     ) => {
       if (cancelled) return
 
-      // Parse updated metadata
-      const metadata = parseParticipantMetadata(participant.metadata || '')
-
       // Skip screen share participants
-      if (metadata.isScreenShare) {
+      if (isScreenShareParticipant(participant)) {
         return
       }
+
+      // Parse updated metadata
+      const metadata = parseParticipantMetadata(participant.metadata || '')
 
       // Notify on annotation permission changes for the local user (Story 5.3)
       if (participant.identity === room.localParticipant.identity) {
@@ -307,12 +307,7 @@ export function useLiveKit({
         setLocalParticipant(localParticipant)
 
         // Add existing remote participants (excluding screen share participants)
-        room.remoteParticipants.forEach((participant) => {
-          const metadata = parseParticipantMetadata(participant.metadata || '')
-          if (metadata.isScreenShare) {
-            // Don't add screen share participants to the list
-            return
-          }
+        getHumanRemoteParticipants(room).forEach((participant) => {
           const converted = convertLKParticipant(participant, false)
           addRemoteParticipant(converted)
         })

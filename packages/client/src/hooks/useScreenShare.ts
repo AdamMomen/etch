@@ -15,7 +15,7 @@ import { useScreenShareStore } from '@/stores/screenShareStore'
 import { useRoomStore } from '@/stores/roomStore'
 import { getSidecarClient } from '@/lib/sidecar'
 import { getCoreClient, type ScreenInfo } from '@/lib/core'
-import { parseParticipantMetadata } from '@/utils/participantMetadata'
+import { getScreenShareParentId } from '@/lib/participants'
 import {
   useAnnotationOverlay,
   type OverlayBounds,
@@ -795,13 +795,12 @@ export function useScreenShare({
       ) {
         setRemoteScreenTrack(track as RemoteVideoTrack)
 
-        // Parse metadata to find the main participant (parentId)
-        const metadata = parseParticipantMetadata(participant.metadata || '')
+        // Find the real user behind a screen-share companion participant
+        const parentId = getScreenShareParentId(participant)
 
-        if (metadata.isScreenShare && metadata.parentId) {
+        if (parentId) {
           // Check if this is OUR screen share from our sidecar/Core process
-          const isOwnScreenShare =
-            metadata.parentId === room.localParticipant?.identity
+          const isOwnScreenShare = parentId === room.localParticipant?.identity
 
           if (isOwnScreenShare) {
             // This is our own screen share - don't treat as remote
@@ -811,11 +810,11 @@ export function useScreenShare({
           }
 
           // This is a screen share from another user's sidecar - associate with main participant
-          const mainParticipant = room.remoteParticipants.get(metadata.parentId)
-          const mainParticipantName = mainParticipant?.name || metadata.parentId
+          const mainParticipant = room.remoteParticipants.get(parentId)
+          const mainParticipantName = mainParticipant?.name || parentId
 
-          setRemoteSharer(metadata.parentId, mainParticipantName)
-          updateParticipant(metadata.parentId, { isScreenSharing: true })
+          setRemoteSharer(parentId, mainParticipantName)
+          updateParticipant(parentId, { isScreenSharing: true })
         } else {
           // This is a direct screen share (Windows getDisplayMedia) - use participant directly
           setRemoteSharer(
@@ -847,13 +846,12 @@ export function useScreenShare({
         console.log('[ScreenShare] Processing screen share unpublish - START', {
           timestamp: Date.now(),
         })
-        // Parse metadata to find the main participant
-        const metadata = parseParticipantMetadata(participant.metadata || '')
+        // Find the real user behind a screen-share companion participant
+        const parentId = getScreenShareParentId(participant)
 
-        if (metadata.isScreenShare && metadata.parentId) {
+        if (parentId) {
           // Check if this is OUR screen share from our sidecar/Core process
-          const isOwnScreenShare =
-            metadata.parentId === room.localParticipant?.identity
+          const isOwnScreenShare = parentId === room.localParticipant?.identity
 
           if (isOwnScreenShare) {
             // This is our own screen share stopping - handled by handleStopShare()
@@ -862,8 +860,8 @@ export function useScreenShare({
           }
 
           // Screen share from another user's sidecar - find main participant's name
-          const mainParticipant = room.remoteParticipants.get(metadata.parentId)
-          const sharerDisplayName = mainParticipant?.name || metadata.parentId
+          const mainParticipant = room.remoteParticipants.get(parentId)
+          const sharerDisplayName = mainParticipant?.name || parentId
 
           // Notify viewers that the sharer stopped (AC-3.3.8)
           toast.info(`${sharerDisplayName} stopped sharing`)
@@ -881,7 +879,7 @@ export function useScreenShare({
             '[ScreenShare] Called setRemoteSharer(null, null) - isSharing should be false now',
             { timestamp: Date.now() }
           )
-          updateParticipant(metadata.parentId, { isScreenSharing: false })
+          updateParticipant(parentId, { isScreenSharing: false })
           // Re-enable local share button when remote participant stops sharing (AC-3.4.3)
           setCanShare(true)
         } else {
@@ -962,13 +960,12 @@ export function useScreenShare({
         timestamp: Date.now(),
       })
 
-      // Parse metadata to find the main participant
-      const metadata = parseParticipantMetadata(participant.metadata || '')
+      // Find the real user behind a screen-share companion participant
+      const parentId = getScreenShareParentId(participant)
 
-      if (metadata.isScreenShare && metadata.parentId) {
+      if (parentId) {
         // This is a screen share sidecar participant disconnecting
-        const isOwnScreenShare =
-          metadata.parentId === room.localParticipant?.identity
+        const isOwnScreenShare = parentId === room.localParticipant?.identity
 
         if (isOwnScreenShare) {
           // Our own sidecar - handled by LocalTrackUnpublished
@@ -982,7 +979,7 @@ export function useScreenShare({
         )
         setRemoteScreenTrack(null)
         setRemoteSharer(null, null)
-        updateParticipant(metadata.parentId, { isScreenSharing: false })
+        updateParticipant(parentId, { isScreenSharing: false })
         setCanShare(true)
       }
     }

@@ -3,6 +3,7 @@ import { Room, RoomEvent, RemoteParticipant } from 'livekit-client'
 import { toast } from 'sonner'
 import { useAnnotationStore } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
+import { getHumanRemoteParticipants } from '@/lib/participants'
 import {
   ANNOTATION_TOPIC,
   ANNOTATION_MESSAGE_TYPES,
@@ -474,8 +475,9 @@ export function useAnnotationSync(
     }
 
     // Check if there are any remote participants to request state from
-    const remoteParticipants = room.remoteParticipants
-    if (remoteParticipants.size === 0) {
+    // (screen-share companion connections don't answer state requests)
+    const remoteParticipants = getHumanRemoteParticipants(room)
+    if (remoteParticipants.length === 0) {
       // No one to request from, we're the first
       hasReceivedSnapshotRef.current = true
       if (import.meta.env.DEV) {
