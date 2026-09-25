@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useAnnotationStore } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
+import { useCanAnnotate } from '@/hooks/useCanAnnotate'
 
 /**
  * Hook that registers global keyboard shortcuts for annotation tools.
@@ -19,6 +20,7 @@ export function useAnnotationKeyboard(): void {
   const clearAll = useAnnotationStore((state) => state.clearAll)
   const localParticipant = useRoomStore((state) => state.localParticipant)
   const isHost = localParticipant?.role === 'host'
+  const canAnnotate = useCanAnnotate()
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -35,6 +37,18 @@ export function useAnnotationKeyboard(): void {
       // Don't fire if modifier keys are pressed
       if (event.ctrlKey || event.metaKey || event.altKey) {
         return
+      }
+
+      switch (event.key) {
+        case '1':
+        case 'v':
+        case 'V':
+        case '2':
+        case '3':
+        case '7':
+          // Tool switching requires annotation permission (Story 5.3)
+          if (!canAnnotate) return
+          break
       }
 
       switch (event.key) {
@@ -66,5 +80,5 @@ export function useAnnotationKeyboard(): void {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [setActiveTool, clearAll, isHost])
+  }, [setActiveTool, clearAll, isHost, canAnnotate])
 }

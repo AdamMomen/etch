@@ -26,6 +26,7 @@ describe('useAnnotationKeyboard', () => {
           isLocal: true,
         },
         remoteParticipants: [],
+        annotationsEnabled: true,
       })
     })
     vi.clearAllMocks()
@@ -36,7 +37,10 @@ describe('useAnnotationKeyboard', () => {
   })
 
   // Helper to dispatch keyboard event
-  function dispatchKeyDown(key: string, options: Partial<KeyboardEventInit> = {}) {
+  function dispatchKeyDown(
+    key: string,
+    options: Partial<KeyboardEventInit> = {}
+  ) {
     const event = new KeyboardEvent('keydown', {
       key,
       bubbles: true,
@@ -642,6 +646,110 @@ describe('useAnnotationKeyboard', () => {
       expect(useAnnotationStore.getState().strokes).toHaveLength(1)
 
       document.body.removeChild(input)
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
+  // PERMISSION TESTS (Story 5.3)
+  // ─────────────────────────────────────────────────────────
+
+  describe('annotation permissions (Story 5.3)', () => {
+    it('does not switch tools for viewer role', () => {
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Viewer',
+            role: 'viewer',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+        useAnnotationStore.getState().setActiveTool('pen')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('2')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+    })
+
+    it('does not switch tools for annotator when annotationsEnabled is false', () => {
+      act(() => {
+        useRoomStore.setState({ annotationsEnabled: false })
+        useAnnotationStore.getState().setActiveTool('select')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('2')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('select')
+    })
+
+    it('still switches tools for host when annotationsEnabled is false', () => {
+      act(() => {
+        useRoomStore.setState({
+          annotationsEnabled: false,
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Host',
+            role: 'host',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+        useAnnotationStore.getState().setActiveTool('select')
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('2')
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+    })
+
+    it('still allows host to clear all with "0" when annotationsEnabled is false', () => {
+      act(() => {
+        useRoomStore.setState({
+          annotationsEnabled: false,
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Host',
+            role: 'host',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+        useAnnotationStore.setState({
+          strokes: [
+            {
+              id: '1',
+              participantId: 'local-1',
+              tool: 'pen',
+              color: '#ff0000',
+              points: [{ x: 0, y: 0 }],
+              createdAt: Date.now(),
+              isComplete: true,
+            },
+          ],
+        })
+      })
+
+      renderHook(() => useAnnotationKeyboard())
+
+      act(() => {
+        dispatchKeyDown('0')
+      })
+
+      expect(useAnnotationStore.getState().strokes).toHaveLength(0)
     })
   })
 

@@ -5,6 +5,7 @@ import { useRoomStore } from '@/stores/roomStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import * as api from '@/lib/api'
 import { toast } from 'sonner'
+import { Room } from 'livekit-client'
 
 // Mock API functions
 vi.mock('@/lib/api', () => ({
@@ -153,7 +154,9 @@ describe('useLiveKit - Retry Functionality (Story 2-16)', () => {
 
       await waitFor(() => {
         expect(api.validateRoomExists).toHaveBeenCalled()
-        expect(toast.info).toHaveBeenCalledWith('Room closed. Creating new room...')
+        expect(toast.info).toHaveBeenCalledWith(
+          'Room closed. Creating new room...'
+        )
       })
     })
   })
@@ -388,7 +391,9 @@ describe('useLiveKit - Retry Functionality (Story 2-16)', () => {
 
       await waitFor(() => {
         // Should show creating message
-        expect(toast.info).toHaveBeenCalledWith('Room closed. Creating new room...')
+        expect(toast.info).toHaveBeenCalledWith(
+          'Room closed. Creating new room...'
+        )
         // Should show success message
         expect(toast.success).toHaveBeenCalledWith('New room created')
       })
@@ -515,8 +520,91 @@ describe('useLiveKit - Retry Functionality (Story 2-16)', () => {
       await result.current.retry()
 
       await waitFor(() => {
-        expect(toast.info).toHaveBeenCalledWith('Room closed. Creating new room...')
+        expect(toast.info).toHaveBeenCalledWith(
+          'Room closed. Creating new room...'
+        )
       })
+    })
+  })
+
+  describe('Annotation permission toasts (Story 5.3)', () => {
+    // Helper: render the hook and grab the ParticipantMetadataChanged handler
+    async function setupAndGetHandler() {
+      renderHook(() =>
+        useLiveKit({
+          token: 'test-token',
+          livekitUrl: 'wss://test-livekit.example.com',
+        })
+      )
+
+      // Wait for the mocked connection to resolve and populate the store
+      await waitFor(() => {
+        expect(useRoomStore.getState().localParticipant).not.toBeNull()
+      })
+
+      const room = vi.mocked(Room).mock.results[0].value as {
+        on: ReturnType<typeof vi.fn>
+      }
+      const onCalls = room.on.mock.calls
+      const entry = onCalls.find(
+        ([event]) => event === 'participantMetadataChanged'
+      )
+      expect(entry).toBeDefined()
+      return entry![1] as (
+        prevMetadata: string | undefined,
+        participant: unknown
+      ) => void
+    }
+
+    it('shows "You can now annotate" when local role changes viewer -> annotator', async () => {
+      const handler = await setupAndGetHandler()
+
+      // Simulate local user currently a viewer
+      useRoomStore.getState().setLocalParticipant({
+        id: 'test-user',
+        name: 'Test User',
+        role: 'viewer',
+        color: '#ff0000',
+        isLocal: true,
+      })
+
+      handler(undefined, {
+        identity: 'test-user',
+        metadata: JSON.stringify({ role: 'annotator', color: '#ff0000' }),
+      })
+
+      expect(toast.success).toHaveBeenCalledWith('You can now annotate')
+    })
+
+    it('shows "You can no longer annotate" when local role changes annotator -> viewer', async () => {
+      const handler = await setupAndGetHandler()
+
+      useRoomStore.getState().setLocalParticipant({
+        id: 'test-user',
+        name: 'Test User',
+        role: 'annotator',
+        color: '#ff0000',
+        isLocal: true,
+      })
+
+      handler(undefined, {
+        identity: 'test-user',
+        metadata: JSON.stringify({ role: 'viewer', color: '#ff0000' }),
+      })
+
+      expect(toast.info).toHaveBeenCalledWith('You can no longer annotate')
+    })
+
+    it('does not toast when a remote participant metadata changes', async () => {
+      const handler = await setupAndGetHandler()
+
+      handler(undefined, {
+        identity: 'someone-else',
+        metadata: JSON.stringify({ role: 'viewer', color: '#ff0000' }),
+      })
+
+      expect(toast.success).not.toHaveBeenCalledWith('You can now annotate')
+      expect(toast.info).not.toHaveBeenCalledWith('You can no longer annotate')
     })
   })
 })

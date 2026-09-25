@@ -10,6 +10,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useAnnotationStore, type Tool } from '@/stores/annotationStore'
 import { useRoomStore } from '@/stores/roomStore'
+import { useCanAnnotate } from '@/hooks/useCanAnnotate'
 import { Button } from '@/components/ui/button'
 import {
   Tooltip,
@@ -110,9 +111,12 @@ export function AnnotationToolbar({
   const localParticipant = useRoomStore((state) => state.localParticipant)
   const isHost = localParticipant?.role === 'host'
 
+  // Whether the local user's role permits annotating (Story 5.3)
+  const canAnnotate = useCanAnnotate()
+
   // Handler for tool button clicks
   const handleToolClick = (tool: Tool) => {
-    if (!isScreenShareActive) return
+    if (!isScreenShareActive || !canAnnotate) return
     setActiveTool(tool)
   }
 
@@ -166,6 +170,7 @@ export function AnnotationToolbar({
           className
         )}
         data-testid="annotation-toolbar"
+        aria-disabled={!canAnnotate}
       >
         {/* Tool buttons */}
         {TOOLS.map(({ tool, icon: Icon, label, shortcut }) => {
@@ -178,7 +183,7 @@ export function AnnotationToolbar({
                   variant="ghost"
                   size="icon"
                   onClick={() => handleToolClick(tool)}
-                  disabled={!isScreenShareActive}
+                  disabled={!isScreenShareActive || !canAnnotate}
                   aria-pressed={isActive}
                   aria-label={`${label} tool (${shortcut})`}
                   className={cn(
@@ -194,7 +199,9 @@ export function AnnotationToolbar({
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">
-                {label} ({shortcut})
+                {canAnnotate
+                  ? `${label} (${shortcut})`
+                  : "You don't have permission to annotate"}
               </TooltipContent>
             </Tooltip>
           )
@@ -218,7 +225,11 @@ export function AnnotationToolbar({
                     <Button
                       variant="ghost"
                       size="icon"
-                      disabled={!isScreenShareActive || strokeCount === 0}
+                      disabled={
+                        !isScreenShareActive ||
+                        !canAnnotate ||
+                        strokeCount === 0
+                      }
                       aria-label="Clear all annotations (0)"
                       className="relative h-10 w-10 flex-col gap-0.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
                       data-testid="tool-button-clear-all"

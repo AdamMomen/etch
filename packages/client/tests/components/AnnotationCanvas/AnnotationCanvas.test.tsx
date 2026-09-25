@@ -668,6 +668,40 @@ describe('Test helpers', () => {
     })
   })
 
+  describe('No-permission overlay (Story 5.3)', () => {
+    it('renders annotation-no-permission-overlay when canAnnotate is false', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={false}
+        />
+      )
+
+      expect(
+        screen.getByTestId('annotation-no-permission-overlay')
+      ).toBeInTheDocument()
+    })
+
+    it('does not render annotation-no-permission-overlay when canAnnotate is true', () => {
+      const videoRef = createMockVideoRef()
+
+      render(
+        <AnnotationCanvas
+          videoRef={videoRef}
+          isScreenShareActive={true}
+          canAnnotate={true}
+        />
+      )
+
+      expect(
+        screen.queryByTestId('annotation-no-permission-overlay')
+      ).not.toBeInTheDocument()
+    })
+  })
+
   describe('createMockPoint', () => {
     it('should create a valid point', () => {
       const point = createMockPoint()
