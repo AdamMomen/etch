@@ -333,7 +333,9 @@ describe('AnnotationCanvas', () => {
       )
 
       const container = screen.getByTestId('annotation-canvas-container')
-      expect(container.style.cursor).toBe('crosshair')
+      // Custom pencil cursor SVG with crosshair fallback
+      expect(container.style.cursor).toContain('data:image/svg+xml')
+      expect(container.style.cursor).toMatch(/, crosshair$/)
     })
 
     it('should have crosshair cursor when canAnnotate is true and tool is highlighter', () => {
@@ -349,7 +351,9 @@ describe('AnnotationCanvas', () => {
       )
 
       const container = screen.getByTestId('annotation-canvas-container')
-      expect(container.style.cursor).toBe('crosshair')
+      // Custom pencil cursor SVG with crosshair fallback
+      expect(container.style.cursor).toContain('data:image/svg+xml')
+      expect(container.style.cursor).toMatch(/, crosshair$/)
     })
 
     it('should have default cursor when canAnnotate is false', () => {
@@ -382,7 +386,9 @@ describe('AnnotationCanvas', () => {
 
       const container = screen.getByTestId('annotation-canvas-container')
       // Eraser shows crosshair by default, pointer when hovering over erasable stroke
-      expect(container.style.cursor).toBe('crosshair')
+      // Custom pencil cursor SVG with crosshair fallback
+      expect(container.style.cursor).toContain('data:image/svg+xml')
+      expect(container.style.cursor).toMatch(/, crosshair$/)
     })
 
     it('should have pointer cursor when eraser hovers over a stroke (AC-4.5.7)', () => {
