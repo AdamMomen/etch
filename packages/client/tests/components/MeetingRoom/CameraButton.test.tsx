@@ -219,5 +219,18 @@ describe('CameraButton', () => {
 
       expect(mockSetCameraEnabled).not.toHaveBeenCalled()
     })
+
+    it('does not toggle when V is already defaultPrevented (annotation shortcut won)', () => {
+      render(<CameraButton room={mockRoom as Room} />)
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'v',
+        cancelable: true,
+      })
+      event.preventDefault()
+      window.dispatchEvent(event)
+
+      expect(mockSetCameraEnabled).not.toHaveBeenCalled()
+    })
   })
 })

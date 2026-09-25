@@ -59,7 +59,7 @@ describe('useAnnotationKeyboard', () => {
       // Start with pen tool (default)
       expect(useAnnotationStore.getState().activeTool).toBe('pen')
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('1')
@@ -69,7 +69,7 @@ describe('useAnnotationKeyboard', () => {
     })
 
     it('activates select tool when "v" key is pressed', () => {
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('v')
@@ -79,7 +79,7 @@ describe('useAnnotationKeyboard', () => {
     })
 
     it('activates select tool when "V" key is pressed', () => {
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('V')
@@ -93,7 +93,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('select')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('1')
@@ -114,7 +114,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('highlighter')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('2')
@@ -124,7 +124,7 @@ describe('useAnnotationKeyboard', () => {
     })
 
     it('pen tool remains active when already selected', () => {
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('2')
@@ -143,7 +143,7 @@ describe('useAnnotationKeyboard', () => {
       // Start with pen tool (default)
       expect(useAnnotationStore.getState().activeTool).toBe('pen')
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('3')
@@ -157,7 +157,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('highlighter')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('3')
@@ -171,7 +171,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('pen')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('3')
@@ -185,7 +185,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('pen')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       // Create an input element and focus it
       const input = document.createElement('input')
@@ -210,7 +210,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('pen')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('3', { ctrlKey: true })
@@ -224,7 +224,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('pen')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('3', { metaKey: true })
@@ -238,7 +238,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('pen')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('3', { altKey: true })
@@ -257,7 +257,7 @@ describe('useAnnotationKeyboard', () => {
       // Start with pen tool (default)
       expect(useAnnotationStore.getState().activeTool).toBe('pen')
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('7')
@@ -271,7 +271,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('eraser')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('7')
@@ -285,7 +285,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('highlighter')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('7')
@@ -299,7 +299,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('pen')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       // Create an input element and focus it
       const input = document.createElement('input')
@@ -324,7 +324,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('pen')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('7', { ctrlKey: true })
@@ -338,7 +338,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('pen')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('7', { metaKey: true })
@@ -352,7 +352,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('pen')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('7', { altKey: true })
@@ -372,7 +372,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('highlighter')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       // Create an input element and focus it
       const input = document.createElement('input')
@@ -397,7 +397,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('highlighter')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       const textarea = document.createElement('textarea')
       document.body.appendChild(textarea)
@@ -420,7 +420,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('highlighter')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       const div = document.createElement('div')
       div.contentEditable = 'true'
@@ -452,7 +452,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('highlighter')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('2', { ctrlKey: true })
@@ -466,7 +466,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('highlighter')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('2', { metaKey: true })
@@ -480,7 +480,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('highlighter')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('2', { altKey: true })
@@ -522,7 +522,7 @@ describe('useAnnotationKeyboard', () => {
       })
 
       const onClearAll = vi.fn()
-      renderHook(() => useAnnotationKeyboard({ onClearAll }))
+      renderHook(() => useAnnotationKeyboard({ onClearAll, isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('0')
@@ -561,7 +561,7 @@ describe('useAnnotationKeyboard', () => {
       })
 
       const onClearAll = vi.fn()
-      renderHook(() => useAnnotationKeyboard({ onClearAll }))
+      renderHook(() => useAnnotationKeyboard({ onClearAll, isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('0')
@@ -599,7 +599,7 @@ describe('useAnnotationKeyboard', () => {
       })
 
       const onClearAll = vi.fn()
-      renderHook(() => useAnnotationKeyboard({ onClearAll }))
+      renderHook(() => useAnnotationKeyboard({ onClearAll, isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('0', { ctrlKey: true })
@@ -637,7 +637,7 @@ describe('useAnnotationKeyboard', () => {
       })
 
       const onClearAll = vi.fn()
-      renderHook(() => useAnnotationKeyboard({ onClearAll }))
+      renderHook(() => useAnnotationKeyboard({ onClearAll, isScreenShareActive: true }))
 
       // Create an input element
       const input = document.createElement('input')
@@ -678,7 +678,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('pen')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('2')
@@ -693,7 +693,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('select')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('2')
@@ -717,7 +717,7 @@ describe('useAnnotationKeyboard', () => {
         useAnnotationStore.getState().setActiveTool('select')
       })
 
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('2')
@@ -754,7 +754,7 @@ describe('useAnnotationKeyboard', () => {
       })
 
       const onClearAll = vi.fn()
-      renderHook(() => useAnnotationKeyboard({ onClearAll }))
+      renderHook(() => useAnnotationKeyboard({ onClearAll, isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('0')
@@ -770,7 +770,7 @@ describe('useAnnotationKeyboard', () => {
 
   describe('other keys', () => {
     it('does not change tool for unrelated keys', () => {
-      renderHook(() => useAnnotationKeyboard())
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       act(() => {
         dispatchKeyDown('a')
@@ -791,22 +791,102 @@ describe('useAnnotationKeyboard', () => {
       const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
       const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener')
 
-      const { unmount } = renderHook(() => useAnnotationKeyboard())
+      const { unmount } = renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
 
       expect(addEventListenerSpy).toHaveBeenCalledWith(
         'keydown',
-        expect.any(Function)
+        expect.any(Function),
+        true
       )
 
       unmount()
 
       expect(removeEventListenerSpy).toHaveBeenCalledWith(
         'keydown',
-        expect.any(Function)
+        expect.any(Function),
+        true
       )
 
       addEventListenerSpy.mockRestore()
       removeEventListenerSpy.mockRestore()
+    })
+  })
+
+  // ─────────────────────────────────────────────────────────
+  // SHORTCUT CONFLICT PRIORITY (V vs camera toggle)
+  // ─────────────────────────────────────────────────────────
+
+  describe('shortcut priority during screen share', () => {
+    it('does not handle "v" when screen share is inactive', () => {
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: false }))
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'v',
+        cancelable: true,
+      })
+      act(() => {
+        window.dispatchEvent(event)
+      })
+
+      // Tool unchanged and key left for other listeners (camera toggle)
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('handles "v" and calls preventDefault when share active and canAnnotate', () => {
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'v',
+        cancelable: true,
+      })
+      act(() => {
+        window.dispatchEvent(event)
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('select')
+      expect(event.defaultPrevented).toBe(true)
+    })
+
+    it('does not preventDefault "v" when canAnnotate is false', () => {
+      act(() => {
+        useRoomStore.setState({
+          localParticipant: {
+            id: 'local-1',
+            name: 'Test Viewer',
+            role: 'viewer',
+            color: '#ff0000',
+            isLocal: true,
+          },
+        })
+      })
+
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'v',
+        cancelable: true,
+      })
+      act(() => {
+        window.dispatchEvent(event)
+      })
+
+      expect(useAnnotationStore.getState().activeTool).toBe('pen')
+      expect(event.defaultPrevented).toBe(false)
+    })
+
+    it('registers the keydown listener in the capture phase', () => {
+      const addEventListenerSpy = vi.spyOn(window, 'addEventListener')
+
+      renderHook(() => useAnnotationKeyboard({ isScreenShareActive: true }))
+
+      expect(addEventListenerSpy).toHaveBeenCalledWith(
+        'keydown',
+        expect.any(Function),
+        true
+      )
+
+      addEventListenerSpy.mockRestore()
     })
   })
 })
